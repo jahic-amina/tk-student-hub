@@ -1,6 +1,6 @@
 # TK Student Hub — Platforma
 
-Ovo je kopija originalnog projekta "girls-in-science", rebrendirana i lokalizovana kao **TK Student Hub** — platforma za studente telekomunikacija.
+**TK Student Hub** — platforma za studente telekomunikacija koja omogućava dijeljenje materijala, korisnih linkova, učestvovanje u forumu i upravljaju svojim profilom.
 
 ## Struktura projekta
 
@@ -15,7 +15,7 @@ Brzi koraci za pokretanje (zsh)
 Frontend:
 
 ```bash
-cd /Users/amina.jahic/FET/RTPP/tk-student-hub/telecommunications-student-hub/frontend
+cd /frontend
 npm install
 npm run dev
 ```
@@ -32,14 +32,29 @@ uvicorn app.main:app --reload --port 8000
 
 API dokumentacija (kad backend radi): `http://127.0.0.1:8000/docs`
 
-Napomene i daljnji koraci
-
-- Frontend je već preimenovan i preveden na bosanski; još uvijek možete zatražiti potpunu reviziju sadržaja, poruka grešaka i validacije.
-- Boje su promijenjene na primarnu narandžastu (#ff7a00) i bijelu za TK brend.
-- Ako želite, mogu zamijeniti slike (hero, favicon) sa prilagođenim orange/white assetima.
-- Kontakt forma i drugi vanjski servisi su ostali kao u originalu; javite ako želite podesiti Formspree ili backend endpoint za slanje poruka.
-
 Za detalje o frontend i backend specifičnim uputama pogledajte:
 
 - `frontend/README.md`
 - `backend/README.md`
+
+## Timovi i funkcionalnosti
+
+| PRojektni tim | Funkcionalnost | Folder |
+|-----|---------------|--------|
+| Tim 1 | Workshops | `backend/app/routers/workshops.py`, `frontend/src/views/workshops/` |
+| Tim 2 | Materijali | `backend/app/routers/materials.py`, `frontend/src/views/materials/` |
+| Tim 3 | Forum | `backend/app/routers/forum.py`, `frontend/src/views/forum/` |
+| Tim 4 | Profili & Dashboard | `backend/app/routers/profiles.py`, `frontend/src/views/profiles/` |
+
+## Tehnologije
+
+- **Backend:** Python, FastAPI, SQLAlchemy, Alembic, JWT
+- **Frontend:** Vue 3, Vite, Tailwind CSS, Vue Router
+- **Baza:** SQLite (development), PostgreSQL (produkcija)
+
+## Autentifikacija
+
+Platforma koristi JWT tokene. Nakon prijave token se čuva u `localStorage` i šalje sa svakim API pozivom u headeru:
+```
+Authorization: Bearer YOUR_TOKEN_HERE
+```
