@@ -5,7 +5,7 @@
 ## Struktura projekta
 
 ```
-telecommunications-student-hub/
+tk-student-hub/
   backend/       — FastAPI backend
   frontend/      — Vue 3 frontend
 ```
@@ -15,7 +15,7 @@ Brzi koraci za pokretanje (zsh)
 Frontend:
 
 ```bash
-cd /frontend
+cd frontend
 npm install
 npm run dev
 ```
@@ -23,7 +23,7 @@ npm run dev
 Backend (opcionalno):
 
 ```bash
-cd /Users/amina.jahic/FET/RTPP/tk-student-hub/telecommunications-student-hub/backend
+cd backend
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
