@@ -22,9 +22,9 @@ const routes = [
     meta: { guestOnly: true }
   },
   {
-    path: '/workshops',
-    name: 'workshops',
-    component: () => import('../views/workshops/WorkshopsView.vue'),
+    path: '/prakse-i-edukacije',
+    name: 'prakse',
+    component: () => import('../views/prakse/PrakseView.vue'),
     meta: { requiresAuth: true }
   },
   {

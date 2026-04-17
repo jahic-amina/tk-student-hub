@@ -35,7 +35,7 @@ app/
     user.py         — tabela korisnika (dijele sve ekipe)
   routers/
     auth.py         — registracija i prijava (ne mijenjati)
-    workshops.py    — Projektni tim 1
+    prakse.py       — Projektni tim 1 (Prakse i edukacije)
     mentoring.py    — Projektni tim 2
     forum.py        — Projektni tim 3
     profiles.py     — Projektni tim 4

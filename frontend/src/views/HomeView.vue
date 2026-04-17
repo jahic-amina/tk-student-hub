@@ -10,8 +10,8 @@
       <router-link to="/register" class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90 transition font-medium">
         Pridruži se
       </router-link>
-      <router-link to="/workshops" class="border border-primary text-primary px-6 py-3 rounded-lg hover:bg-primary hover:text-white transition font-medium">
-        Pregledaj događaje
+      <router-link to="/prakse-i-edukacije" class="border border-primary text-primary px-6 py-3 rounded-lg hover:bg-primary hover:text-white transition font-medium">
+        Pregledaj prakse i edukacije
       </router-link>
     </div>
   </div>

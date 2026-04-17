@@ -31,7 +31,7 @@ src/
     HomeView.vue        — početna stranica
     LoginView.vue       — forma za prijavu
     RegisterView.vue    — forma za registraciju
-  workshops/          — Ekipa 1
+  prakse/             — Ekipa 1
   mentoring/          — Ekipa 2
   forum/              — Ekipa 3
   profiles/           — Ekipa 4

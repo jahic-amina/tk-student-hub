@@ -41,7 +41,7 @@ Za detalje o frontend i backend specifičnim uputama pogledajte:
 
 | PRojektni tim | Funkcionalnost | Folder |
 |-----|---------------|--------|
-| Tim 1 | Workshops | `backend/app/routers/workshops.py`, `frontend/src/views/workshops/` |
+| Tim 1 | Prakse i edukacije | `backend/app/routers/prakse.py`, `frontend/src/views/prakse/` |
 | Tim 2 | Materijali | `backend/app/routers/materials.py`, `frontend/src/views/materials/` |
 | Tim 3 | Forum | `backend/app/routers/forum.py`, `frontend/src/views/forum/` |
 | Tim 4 | Profili & Dashboard | `backend/app/routers/profiles.py`, `frontend/src/views/profiles/` |
