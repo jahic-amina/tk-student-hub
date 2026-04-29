@@ -1,19 +1,19 @@
-from sqlalchemy import Column, Integer, String, Enum, DateTime
-from sqlalchemy.sql import func
-from app.database import Base
-import enum
+from sqlmodel import SQLModel, Field
+from typing import Optional
+from enum import Enum
+from datetime import datetime
 
-class UserRole(enum.Enum):
+class UserRole(str, Enum):
     member = "member"
     mentor = "mentor"
     admin = "admin"
 
-class User(Base):
+class User(SQLModel, table=True):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True, nullable=False)
-    full_name = Column(String, nullable=False)
-    password_hash = Column(String, nullable=False)
-    role = Column(Enum(UserRole), default=UserRole.member)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    id: Optional[int] = Field(default=None, primary_key=True)
+    email: str = Field(unique=True, index=True)
+    full_name: str
+    password_hash: str
+    role: UserRole = Field(default=UserRole.member)
+    created_at: Optional[datetime] = Field(default=None)
