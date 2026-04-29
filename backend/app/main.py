@@ -2,12 +2,12 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer
 from app.core.config import settings
-from app.database import Base, engine
+from app.database import create_db_and_tables
 from app.routers import auth, mentoring, forum, prakse, profiles   
 from app.core.security import get_current_user
 from app.models.user import User
 
-Base.metadata.create_all(bind=engine)
+create_db_and_tables()
 
 security = HTTPBearer()
 
