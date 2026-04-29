@@ -1,6 +1,6 @@
 # TK Student Hub — Backend
 
-Izgrađeno sa FastAPI, SQLAlchemy i SQLite (za razvoj).
+Izgrađeno sa FastAPI, SQLModel i SQLite.
 
 ## Postavljanje projekta
 
@@ -36,7 +36,7 @@ app/
   routers/
     auth.py         — registracija i prijava (ne mijenjati)
     prakse.py       — Projektni tim 1 (Prakse i edukacije)
-    mentoring.py    — Projektni tim 2
+    materials.py    — Projektni tim 2 (Materijali)
     forum.py        — Projektni tim 3
     profiles.py     — Projektni tim 4
   main.py           — ulazna tačka aplikacije

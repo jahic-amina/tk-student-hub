@@ -48,9 +48,9 @@ Za detalje o frontend i backend specifičnim uputama pogledajte:
 
 ## Tehnologije
 
-- **Backend:** Python, FastAPI, SQLAlchemy, Alembic, JWT
+- **Backend:** Python, FastAPI, SQLModel, JWT
 - **Frontend:** Vue 3, Vite, Tailwind CSS, Vue Router
-- **Baza:** SQLite (development), PostgreSQL (produkcija)
+- **Baza:** SQLite
 
 ## Autentifikacija
 
