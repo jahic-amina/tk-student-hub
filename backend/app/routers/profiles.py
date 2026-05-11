@@ -69,3 +69,22 @@ async def upload_avatar(
     db.refresh(current_user)
     
     return {"profilna_slika_url": current_user.profilna_slika_url}
+
+@router.delete("/me/avatar")
+def delete_avatar(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user.profilna_slika_url:
+        raise HTTPException(status_code=400, detail="Nema postavljenu profilnu sliku.")
+    
+    file_path = current_user.profilna_slika_url.lstrip("/")
+    if os.path.exists(file_path):
+        os.remove(file_path)
+    
+    current_user.profilna_slika_url = None
+    db.add(current_user)
+    db.commit()
+    db.refresh(current_user)
+    
+    return {"message": "Profilna slika obrisana."}
