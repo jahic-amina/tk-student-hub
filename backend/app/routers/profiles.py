@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from sqlmodel import Session
 from app.database import get_db
 from app.core.security import get_current_user
-from app.models.user import User
+from app.models.user import User, AvatarUploadResponse, AvatarDeleteResponse
 from uuid import uuid4
 import os
 
@@ -44,7 +44,7 @@ def get_my_profile(
         "profilna_slika_url": current_user.profilna_slika_url
     }
 
-@router.post("/me/avatar")
+@router.post("/me/avatar", response_model=AvatarUploadResponse)
 async def upload_avatar(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
@@ -70,7 +70,7 @@ async def upload_avatar(
     
     return {"profilna_slika_url": current_user.profilna_slika_url}
 
-@router.delete("/me/avatar")
+@router.delete("/me/avatar", response_model=AvatarDeleteResponse)
 def delete_avatar(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
