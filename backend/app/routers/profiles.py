@@ -29,3 +29,43 @@ def get_my_profile(
         "created_at": current_user.created_at,
         "profilna_slika_url": current_user.profilna_slika_url
     }
+
+@router.get("/me")
+def get_my_profile(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "full_name": current_user.full_name,
+        "role": current_user.role,
+        "created_at": current_user.created_at,
+        "profilna_slika_url": current_user.profilna_slika_url
+    }
+
+@router.post("/me/avatar")
+async def upload_avatar(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(status_code=400, detail="Neispravan format slike. Dozvoljeni formati su JPEG i PNG.")
+    
+    contents = await file.read()
+    if len(contents) > MAX_FILE_SIZE_MB * 1024 * 1024:
+        raise HTTPException(status_code=400, detail=f"Slika je prevelika. Maksimalna veličina je {MAX_FILE_SIZE_MB} MB.")
+    
+    ext = os.path.splitext(file.filename)[1]
+    filename = f"{uuid4()}{ext}"
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    with open(f"{UPLOAD_DIR}{filename}", "wb") as f:
+            f.write(contents)
+    
+    current_user.profilna_slika_url = f"/uploads/{filename}"
+    db.add(current_user)
+    db.commit()
+    db.refresh(current_user)
+    
+    return {"profilna_slika_url": current_user.profilna_slika_url}
