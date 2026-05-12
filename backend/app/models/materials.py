@@ -54,3 +54,16 @@ class Comment(SQLModel, table=True):
     user_id: int = Field(foreign_key="users.id")
 
     material: Optional[Material] = Relationship(back_populates="comments")
+
+class MaterialCreate(SQLModel):
+    title: str
+    description: Optional[str] = None
+    file_type: str
+    subject_id: int  
+class CommentCreate(SQLModel):
+    content: str
+    material_id: int
+
+class RatingCreate(SQLModel):
+    rating: int = Field(ge=1, le=5)
+    material_id: int
