@@ -4,7 +4,7 @@ from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
 
-router = APIRouter(prefix="/mentoring", tags=["mentoring"])
+router = APIRouter(prefix="/materials", tags=["materials"])
 
 # -------------------------------------------------------
 # Team 2 — Mentoring
