@@ -39,3 +39,14 @@ class Rating(SQLModel, table=True):
 
     material: Optional[Material] = Relationship(back_populates="ratings")
 
+
+class Comment(SQLModel, table=True):
+    __tablename__ = "comments"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    content: str
+    created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
+
+    material_id: int = Field(foreign_key="materials.id")
+    user_id: int = Field(foreign_key="users.id")
+
+    material: Optional[Material] = Relationship(back_populates="comments")
