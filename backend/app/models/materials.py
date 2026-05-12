@@ -11,6 +11,8 @@ class Subject(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(unique=True, index=True)
     study_year: int
+    
+    materials: list["Material"] = Relationship(back_populates="subject")
 
 class Material(SQLModel, table=True):
     __tablename__ = "materials"
@@ -27,6 +29,8 @@ class Material(SQLModel, table=True):
     user_id: int = Field(foreign_key="users.id")
 
     subject: Optional[Subject] = Relationship(back_populates="materials")
+    comments: list["Comment"] = Relationship(back_populates="material")
+    ratings: list["Rating"] = Relationship(back_populates="material")
 
 
 class Rating(SQLModel, table=True):
