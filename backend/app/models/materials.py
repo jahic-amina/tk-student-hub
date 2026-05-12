@@ -27,3 +27,15 @@ class Material(SQLModel, table=True):
     user_id: int = Field(foreign_key="users.id")
 
     subject: Optional[Subject] = Relationship(back_populates="materials")
+
+
+class Rating(SQLModel, table=True):
+    __tablename__ = "ratings"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    rating: int = Field(ge=1, le=5)
+
+    material_id: int = Field(foreign_key="materials.id")
+    user_id: int = Field(foreign_key="users.id")
+
+    material: Optional[Material] = Relationship(back_populates="ratings")
+
