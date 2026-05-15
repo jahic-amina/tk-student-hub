@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File,Form
 from sqlmodel import Session
 from app.database import get_db
 from app.core.security import get_current_user
@@ -32,6 +32,14 @@ ALLOWED_FORMATS = {
     ".txt",
 }
 # -------------------------------------------------------
+def validate_file_format(file: UploadFile):
+    extension = "." + file.filename.split(".")[-1].lower()
+    if extension not in ALLOWED_FORMATS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Format {extension} nije podržan. Dozvoljeni formati: PDF, DOC, DOCX, PPT, PPTX, ZIP, TXT"
+        )
+    return extension
 
 @router.get("/")
 def mentoring_placeholder():
