@@ -24,3 +24,25 @@ class Company(SQLModel, table=True):
 	is_deleted: bool = Field(default=False)
 	address: str
 
+
+class CompanyCreate(SQLModel):
+	company_name: str
+	description: str
+	website_url: str
+	logo_url: str
+	email: str
+	phone_number: str
+	jib: str
+	address: str
+
+
+class CompanyUpdate(SQLModel):
+	company_name: Optional[str] = None
+	description: Optional[str] = None
+	website_url: Optional[str] = None
+	logo_url: Optional[str] = None
+	email: Optional[str] = None
+	phone_number: Optional[str] = None
+	jib: Optional[str] = None
+	address: Optional[str] = None
+	status: Optional[CompanyStatus] = None
