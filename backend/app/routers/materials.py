@@ -21,6 +21,18 @@ router = APIRouter(prefix="/materials", tags=["materials"])
 #
 # -------------------------------------------------------
 
+# -------------------------------------------------------
+#SCRUM-31
+
+ALLOWED_FORMATS = {
+    ".pdf",
+    ".doc", ".docx",
+    ".ppt", ".pptx",
+    ".zip",
+    ".txt",
+}
+# -------------------------------------------------------
+
 @router.get("/")
 def mentoring_placeholder():
     return {"message": "Mentoring router is working — Team 2 builds here"}
