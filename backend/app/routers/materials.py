@@ -3,6 +3,7 @@ from sqlmodel import Session
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
+import shutil, os
 
 router = APIRouter(prefix="/materials", tags=["materials"])
 
@@ -40,6 +41,17 @@ def validate_file_format(file: UploadFile):
             detail=f"Format {extension} nije podržan. Dozvoljeni formati: PDF, DOC, DOCX, PPT, PPTX, ZIP, TXT"
         )
     return extension
+
+def save_file_to_disk(file: UploadFile) -> str:
+    os.makedirs("uploads", exist_ok=True)
+    file_path = f"uploads/{file.filename}"
+    
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    return file_path
+
+
 
 @router.get("/")
 def mentoring_placeholder():
