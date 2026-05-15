@@ -4,6 +4,7 @@ from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
 import shutil, os
+from app.models.materials import Material
 
 router = APIRouter(prefix="/materials", tags=["materials"])
 
@@ -33,6 +34,7 @@ ALLOWED_FORMATS = {
     ".txt",
 }
 # -------------------------------------------------------
+#SCRUM-32, SCRUM-33, SCRUM-34
 def validate_file_format(file: UploadFile):
     extension = "." + file.filename.split(".")[-1].lower()
     if extension not in ALLOWED_FORMATS:
@@ -51,7 +53,39 @@ def save_file_to_disk(file: UploadFile) -> str:
     
     return file_path
 
+@router.post("/upload")
+def upload_material(
+    title: str = Form(...),
+    description: str = Form(""),
+    subject_id: int = Form(...),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
 
+    extension = validate_file_format(file)
+    file_path = save_file_to_disk(file)
+    
+    try:
+    
+        new_material = Material(
+            title=title,
+            description=description,
+            file_path=file_path,
+            file_type=extension,
+            subject_id=subject_id,
+            user_id=current_user.id
+        )
+        db.add(new_material)
+        db.commit()
+        db.refresh(new_material)
+        return new_material
+
+    except Exception as e:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        raise HTTPException(status_code=500, detail="Greška pri uploadu.")
+# -------------------------------------------------------
 
 @router.get("/")
 def mentoring_placeholder():
