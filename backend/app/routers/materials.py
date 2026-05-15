@@ -58,6 +58,7 @@ def upload_material(
     title: str = Form(...),
     description: str = Form(""),
     subject_id: int = Form(...),
+    file_type: str = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
