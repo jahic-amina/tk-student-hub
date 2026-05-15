@@ -1,0 +1,26 @@
+from sqlmodel import SQLModel, Field
+from typing import Optional
+from enum import Enum
+from datetime import datetime, timezone
+
+class CompanyStatus(str, Enum):
+	approved = "approved"
+	denied = "denied"
+	pending = "pending"
+
+class Company(SQLModel, table=True):
+	__tablename__ = "companies"
+
+	id: Optional[int] = Field(default=None, primary_key=True)
+	company_name: str = Field(index=True)
+	description: str
+	website_url: str
+	logo_url: str
+	email: str = Field(index=True)
+	phone_number: str = Field(index=True)
+	jib: str = Field(index=True)
+	status: CompanyStatus = Field(default=CompanyStatus.pending)
+	created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+	is_deleted: bool = Field(default=False)
+	address: str
+
