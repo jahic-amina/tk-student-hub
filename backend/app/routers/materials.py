@@ -29,7 +29,8 @@ def get_materials(session : Session = Depends(get_db)):
     query = (
         select(Material)
         .where(Material.status == "approved")
-        .options(selectinload(Material.subject))
+        .options(selectinload(Material.subject), 
+                 selectinload(Material.user))
         .order_by(Material.created_at.desc())
     )
     materials = session.exec(query).all()
