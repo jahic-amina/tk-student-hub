@@ -17,7 +17,7 @@ MAX_FILE_SIZE_MB = 5
 def profiles_placeholder():
     return {"message": "Profiles router is working — Team 4 builds here"}
 
-@router.get("/me")
+@router.get("/me",response_model=UserProfileResponse)
 def get_my_profile(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
