@@ -83,3 +83,10 @@ error.value = null
   reader.onload = (e) => { preview.value = e.target.result }
   reader.readAsDataURL(file)
 }
+
+function onSave() {
+  if (selectedFile.value) {
+    emit('save', selectedFile.value)
+  }
+}
+</script>
