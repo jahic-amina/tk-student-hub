@@ -67,3 +67,15 @@ class CommentCreate(SQLModel):
 class RatingCreate(SQLModel):
     rating: int = Field(ge=1, le=5)
     material_id: int
+    
+    
+class MaterialsResponse(SQLModel):
+    id: int
+    title: str
+    description: Optional[str] = None
+    file_type: str
+    status: str
+    created_at: datetime
+    number_of_downloads: int
+    subject: Subject
+    
