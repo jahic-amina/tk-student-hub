@@ -40,3 +40,24 @@
     </div>
   </div>
 </template>
+
+<script setup>
+import { ref } from 'vue'
+
+const props = defineProps({
+  initials: {
+    type: String,
+    default: '?'
+  }
+})
+
+const emit = defineEmits(['close', 'save', 'remove'])
+
+const fileInput = ref(null)
+const preview = ref(null)
+const selectedFile = ref(null)
+const error = ref(null)
+
+function triggerFilePicker() {
+  fileInput.value.click()
+}
