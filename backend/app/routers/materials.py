@@ -5,6 +5,7 @@ from app.core.security import get_current_user
 from app.models.user import User
 import shutil, os
 from app.models.materials import Material
+import uuid
 
 router = APIRouter(prefix="/materials", tags=["materials"])
 
@@ -46,7 +47,7 @@ def validate_file_format(file: UploadFile):
 
 def save_file_to_disk(file: UploadFile) -> str:
     os.makedirs("uploads", exist_ok=True)
-    file_path = f"uploads/{file.filename}"
+    file_path = f"uploads/{uuid.uuid4()}_{file.filename}"
     
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -73,7 +74,7 @@ def upload_material(
             title=title,
             description=description,
             file_path=file_path,
-            file_type=extension,
+            file_type=file_type,
             subject_id=subject_id,
             user_id=current_user.id
         )
