@@ -46,3 +46,11 @@ export async function uploadAvatar(token, file) {
   })
   return response.json()
 }
+
+export async function removeAvatar(token) {
+  const response = await fetch(`${BASE_URL}/profile/me/avatar`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  return response.json()
+}
