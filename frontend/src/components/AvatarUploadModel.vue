@@ -69,3 +69,9 @@ if(!allowedTypes.includes(file.type)) {
   preview.value = null
   return
 }
+if(file.size > 5 * 1024 * 1024) {
+  error.value = 'Fajl je prevelik. Maksimalna veličina je 5MB.'
+  selectedFile.value = null
+  preview.value = null
+  return
+}
