@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from requests import session
 from sqlmodel import Session, select
 from app.database import get_db
@@ -35,3 +35,21 @@ def get_materials(session : Session = Depends(get_db)):
     )
     materials = session.exec(query).all()
     return materials
+
+@router.get("/{material_id}", response_model=MaterialsResponse)
+def get_material(material_id: int, session: Session = Depends(get_db)):
+    query = (
+        select(Material)
+        .where(Material.id == material_id)
+        .where(Material.status == "approved")
+        .options(
+            selectinload(Material.subject),
+            selectinload(Material.user)
+        )
+    )
+    material = session.exec(query).first()
+    
+    if not material:
+        raise HTTPException(status_code=404, detail="Materijal nije pronadjen")
+    
+    return material@router.get("/{material_id}", response_model=MaterialsResponse)
