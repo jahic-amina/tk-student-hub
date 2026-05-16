@@ -34,3 +34,15 @@ export async function getMyProfile(token) {
   })
   return response.json()
 }
+
+export async function uploadAvatar(token, file) {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const response = await fetch(`${BASE_URL}/profile/me/avatar`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: formData
+  })
+  return response.json()
+}
