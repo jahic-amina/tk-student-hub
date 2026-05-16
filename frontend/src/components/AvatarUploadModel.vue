@@ -75,3 +75,11 @@ if(file.size > 5 * 1024 * 1024) {
   preview.value = null
   return
 }
+
+error.value = null
+  selectedFile.value = file
+
+  const reader = new FileReader()
+  reader.onload = (e) => { preview.value = e.target.result }
+  reader.readAsDataURL(file)
+}
