@@ -16,3 +16,11 @@
           </svg>
         </div>
       </div>
+       <div class="flex-1">
+        <div class="flex justify-between items-start">
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ profile.full_name }}</h1>
+            <p class="text-gray-500 text-sm mt-1">{{ profile.role }}</p>
+          </div>
+          <button class="bg-primary text-white px-4 py-2 rounded-lg text-sm hover:opacity-90 flex items-center gap-2"> Uredi profil </button>
+        </div>
