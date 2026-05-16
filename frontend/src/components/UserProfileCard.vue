@@ -61,3 +61,11 @@ const initials = computed(() => {
     .join('')
     .toUpperCase()
 })
+const formattedDate = computed(() => {
+  if (!props.profile?.created_at) return ''
+  return new Date(props.profile.created_at).toLocaleDateString('bs-BA', {
+    month: 'long',
+    year: 'numeric'
+  })
+})
+</script>
