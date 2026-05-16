@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends
+from requests import session
 from sqlmodel import Session, select
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from app.models.materials import Material
+from app.models.materials import Material, MaterialsResponse
+from sqlalchemy.orm import selectinload
 
 router = APIRouter(prefix="/materials", tags=["materials"])
 
@@ -22,9 +24,13 @@ router = APIRouter(prefix="/materials", tags=["materials"])
 #
 # -------------------------------------------------------
 
-@router.get("/", response_model=list[Material])
+@router.get("/", response_model=list[MaterialsResponse])
 def get_materials(session : Session = Depends(get_db)):
-    query = select(Material).where(Material.status == "approved")
-    query = query.order_by(Material.created_at.desc())
+    query = (
+        select(Material)
+        .where(Material.status == "approved")
+        .options(selectinload(Material.subject))
+        .order_by(Material.created_at.desc())
+    )
     materials = session.exec(query).all()
     return materials
