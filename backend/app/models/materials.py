@@ -1,6 +1,7 @@
 from sqlmodel import SQLModel, Field, Relationship
 from typing import Optional
 from datetime import datetime
+from user import User 
 
 from sqlmodel import SQLModel, Field, Relationship
 from typing import Optional
@@ -31,6 +32,7 @@ class Material(SQLModel, table=True):
     subject: Optional[Subject] = Relationship(back_populates="materials")
     comments: list["Comment"] = Relationship(back_populates="material")
     ratings: list["Rating"] = Relationship(back_populates="material")
+    user: Optional["User"] = Relationship(back_populates="materials")
 
 
 class Rating(SQLModel, table=True):
@@ -69,6 +71,10 @@ class RatingCreate(SQLModel):
     material_id: int
     
     
+
+class UserResponse(SQLModel):
+    full_name: str
+    
 class MaterialsResponse(SQLModel):
     id: int
     title: str
@@ -78,4 +84,5 @@ class MaterialsResponse(SQLModel):
     created_at: datetime
     number_of_downloads: int
     subject: Subject
+    user: UserResponse
     
