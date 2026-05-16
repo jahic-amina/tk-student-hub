@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from sqlmodel import Session
 from app.database import get_db
 from app.core.security import get_current_user
-from app.models.user import User, AvatarUploadResponse, AvatarDeleteResponse
+from app.models.user import User
+from app.models.profile import UserProfileResponse, AvatarUploadResponse, AvatarDeleteResponse
 from uuid import uuid4
 import os
 
