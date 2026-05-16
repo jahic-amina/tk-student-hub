@@ -1,13 +1,13 @@
 <template>
   <div>
     
-    <button
-      @click="showForm = true"
-      class="bg-primary text-white px-6 py-3 rounded-lg font-semibold
-             hover:bg-orange-600 hover:shadow-md transition-all duration-200"
-    >
-      + DODAJTE MATERIJAL
-    </button>
+  <button
+  @click="handleDodajKlik"
+  class="bg-primary text-white px-6 py-3 rounded-lg font-semibold
+         hover:bg-orange-600 hover:shadow-md transition-all duration-200"
+>
+  + DODAJTE MATERIJAL
+</button>
 
     
     <div v-if="showForm" class="bg-white rounded-lg shadow p-6 mt-6">
@@ -58,4 +58,13 @@ const showForm = ref(false)
 const successMessage = ref('')
 const uploadError = ref('')
 const isSubmitting = ref(false)
+
+function handleDodajKlik() {
+  const isLoggedIn = !!localStorage.getItem('token')
+  if (!isLoggedIn) {
+    window.location.href = '/login'
+  } else {
+    showForm.value = true
+  }
+}
 </script>
