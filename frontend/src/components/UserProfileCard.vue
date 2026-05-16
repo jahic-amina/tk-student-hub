@@ -52,3 +52,12 @@ const props = defineProps({
     required: true
   }
 })
+
+const initials = computed(() => {
+  if (!props.profile?.full_name) return '?'
+  return props.profile.full_name
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+})
