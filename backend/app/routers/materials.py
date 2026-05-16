@@ -4,7 +4,7 @@ from sqlmodel import Session, select
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from app.models.materials import Material, MaterialsResponse
+from app.models.materials import Material, MaterialsResponse, MaterialDetailResponse
 from sqlalchemy.orm import selectinload
 
 router = APIRouter(prefix="/materials", tags=["materials"])
@@ -36,7 +36,7 @@ def get_materials(session : Session = Depends(get_db)):
     materials = session.exec(query).all()
     return materials
 
-@router.get("/{material_id}", response_model=MaterialsResponse)
+@router.get("/{material_id}", response_model=MaterialDetailResponse)
 def get_material(material_id: int, session: Session = Depends(get_db)):
     query = (
         select(Material)
@@ -44,7 +44,9 @@ def get_material(material_id: int, session: Session = Depends(get_db)):
         .where(Material.status == "approved")
         .options(
             selectinload(Material.subject),
-            selectinload(Material.user)
+            selectinload(Material.user),
+            selectinload(Material.comments),
+            selectinload(Material.ratings)
         )
     )
     material = session.exec(query).first()
@@ -52,4 +54,4 @@ def get_material(material_id: int, session: Session = Depends(get_db)):
     if not material:
         raise HTTPException(status_code=404, detail="Materijal nije pronadjen")
     
-    return material@router.get("/{material_id}", response_model=MaterialsResponse)
+    return material
