@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends
-from sqlmodel import Session
+from sqlmodel import Session, select
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
+from app.models.materials import Material
 
 router = APIRouter(prefix="/materials", tags=["materials"])
 
@@ -21,6 +22,9 @@ router = APIRouter(prefix="/materials", tags=["materials"])
 #
 # -------------------------------------------------------
 
-@router.get("/")
-def mentoring_placeholder():
-    return {"message": "Mentoring router is working — Team 2 builds here"}
+@router.get("/", response_model=list[Material])
+def get_materials(session : Session = Depends(get_db)):
+    query = select(Material).where(Material.status == "approved")
+    query = query.order_by(Material.created_at.desc())
+    materials = session.exec(query).all()
+    return materials
