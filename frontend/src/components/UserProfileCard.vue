@@ -24,3 +24,10 @@
           </div>
           <button class="bg-primary text-white px-4 py-2 rounded-lg text-sm hover:opacity-90 flex items-center gap-2"> Uredi profil </button>
         </div>
+         <div class="grid grid-cols-2 gap-3 mt-4 text-sm text-gray-600">
+          <div class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+            </svg>
+            <span>{{ profile.email }}</span>
+          </div>
