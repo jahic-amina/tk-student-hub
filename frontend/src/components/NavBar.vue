@@ -8,7 +8,7 @@
 
       <div class="flex gap-6">
       <router-link to="/prakse-i-edukacije" class="text-gray-600 hover:text-primary font-medium transition">Prakse i edukacije</router-link>
-      <router-link to="/mentoring" class="text-gray-600 hover:text-primary font-medium transition">Materijali</router-link>
+      <router-link to="/materials" class="text-gray-600 hover:text-primary font-medium transition">Materijali</router-link>
       <router-link to="/forum" class="text-gray-600 hover:text-primary font-medium transition">Forum</router-link>
       <router-link to="/profiles" class="text-gray-600 hover:text-primary font-medium transition">Profili</router-link>
         </div>
