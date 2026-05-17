@@ -41,3 +41,17 @@ const loading = ref(false)
 const error = ref(null)
 const token = localStorage.getItem('token')
 
+async function fetchProfile() {
+  loading.value = true
+  error.value = null
+  try {
+    const data = await getMyProfile(token)
+    profile.value = data
+  } catch (err) {
+    error.value = "Greška pri učitavanju profila. Molimo pokušajte ponovo."
+  } finally {
+    loading.value = false
+  }
+}
+onMounted(fetchProfile)
+
