@@ -35,6 +35,8 @@
 import { ref, onMounted } from 'vue'
 import UserProfileCard from '../../components/UserProfileCard.vue'
 import { getMyProfile } from '../../services/api.js'
+import AvatarUploadModal from '../../components/AvatarUploadModal.vue'
+import { uploadAvatar, removeAvatar } from '../../services/api.js'
 
 const profile = ref(null)
 const loading = ref(false)
@@ -54,5 +56,8 @@ async function fetchProfile() {
   }
 }
 onMounted(fetchProfile)
+
+
+
 </script>
 
