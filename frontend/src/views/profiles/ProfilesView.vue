@@ -36,3 +36,8 @@ import { ref, onMounted } from 'vue'
 import UserProfileCard from '../../components/UserProfileCard.vue'
 import getMyProfile from '@/services/profileService'
 
+const profile = ref(null)
+const loading = ref(false)
+const error = ref(null)
+const token = localStorage.getItem('token')
+
