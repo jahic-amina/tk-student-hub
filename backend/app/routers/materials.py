@@ -44,11 +44,11 @@ def download_material(
             detail="Materijal sa tim ID-em ne postoji.",
         )
 
-    # Provjera statusa — samo aktivni materijali mogu se preuzeti
-    if material.status != "active":
+    # Provjera statusa 
+    if material.status != "pending":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Materijal nije aktivan i ne moze se preuzeti.",
+            detail="Materijal nije odobren i ne moze se preuzeti.",
         )
 
     # Provjera da fajl fizicki postoji na disku
