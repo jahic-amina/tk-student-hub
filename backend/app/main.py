@@ -1,11 +1,13 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer
+from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.database import create_db_and_tables
 from app.routers import applications, auth, forum, prakse, profiles   
 from app.core.security import get_current_user
-from app.models.user import User
+from app.models.application import User
+import os 
 
 create_db_and_tables()
 
@@ -23,7 +25,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+LOCAL_UPLOAD_DIR = os.path.join(os.getcwd(), "uploads")
+os.makedirs(LOCAL_UPLOAD_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=LOCAL_UPLOAD_DIR), name="uploads")
 app.include_router(auth.router)
 app.include_router(applications.router)
 app.include_router(prakse.router)
