@@ -1,7 +1,7 @@
 <template>
   <div class="bg-white rounded-xl shadow p-6 mb-6">
     <div class="flex items-start gap-6">
-      <div class="relative flex-shrink-0">
+      <div class="relative flex-shrink-0 cursor-pointer" @click="$emit('edit-avatar')">
         <div class="w-20 h-20 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
           <img
             v-if="profile.profilna_slika_url"
@@ -35,7 +35,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
             </svg>
-            <span>Clan od {{ formattedDate }}</span>
+            <span>Član od {{ formattedDate }}</span>
           </div>
         </div>
       </div>
@@ -52,6 +52,7 @@ const props = defineProps({
     required: true
   }
 })
+defineEmits(['edit-avatar'])
 
 const initials = computed(() => {
   if (!props.profile?.full_name) return '?'

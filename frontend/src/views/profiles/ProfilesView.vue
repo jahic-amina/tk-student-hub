@@ -7,7 +7,7 @@
        {{ error }} </div>
     
     <div v-else-if="profile">
-      <UserProfileCard :profile="profile" />
+      <UserProfileCard :profile="profile" @edit-avatar="showModal = true"/>
       <div class="bg-white rounded-xl shadow p-6 mb-6">
         <h2 class="text-lg font-bold mb-3">O meni</h2>
         <p class="text-gray-600 text-sm">{{ profile.biografija || 'Nije unesena biografija.' }}</p>
@@ -25,7 +25,12 @@
         </div>
 
       </div>
-
+      <div v-if="successMessage">{{ successMessage }} </div>
+      <AvatarUploadModal v-if="showModal"
+      :currentImageUrl="profile.profilna_slika_url"
+      @close="showModal = false"
+      @save="onSave"
+      @remove="onRemove"/>
     </div>
 
   </div>
@@ -35,11 +40,15 @@
 import { ref, onMounted } from 'vue'
 import UserProfileCard from '../../components/UserProfileCard.vue'
 import { getMyProfile } from '../../services/api.js'
+import AvatarUploadModal from '../../components/AvatarUploadModal.vue'
+import { uploadAvatar, removeAvatar } from '../../services/api.js'
 
 const profile = ref(null)
 const loading = ref(false)
 const error = ref(null)
 const token = localStorage.getItem('token')
+const showModal = ref(false)
+const successMessage = ref(null)
 
 async function fetchProfile() {
   loading.value = true
@@ -54,5 +63,29 @@ async function fetchProfile() {
   }
 }
 onMounted(fetchProfile)
+async function onSave(file) {
+  showModal.value = false
+  try {
+    const data = await uploadAvatar(token, file)
+    profile.value.profilna_slika_url = data.profilna_slika_url
+    successMessage.value = 'Profilna slika je uspjesno azurirana.'
+    setTimeout(() => { successMessage.value = null }, 3000)
+  } catch (e) {
+    error.value = 'Greska pri uploadu slike.'
+  }
+}
+
+async function onRemove() {
+  showModal.value = false
+  try {
+    await removeAvatar(token)
+    profile.value.profilna_slika_url = null
+    successMessage.value = 'Profilna slika je uklonjena.'
+    setTimeout(() => { successMessage.value = null }, 3000)
+  } catch (e) {
+    error.value = 'Greska pri uklanjanju slike.'
+  }
+}
+
 </script>
 
