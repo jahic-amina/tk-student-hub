@@ -264,10 +264,58 @@ function validateForm() {
   return valid
 }
 
-// Klik na "Dodaj materijal" — prvo validira, pa emit
-function handleSubmit() {
+// Klik na "Dodaj materijal" — validira, pa šalje FormData na backend
+async function handleSubmit() {
   if (!validateForm()) return
-  emit('submit')
+
+  uploadError.value = ''
+  successMessage.value = ''
+  isSubmitting.value = true
+
+  try {
+    const formData = new FormData()
+    formData.append('title', title.value.trim())
+    formData.append('description', description.value.trim())
+    formData.append('subject_id', subjectId.value)
+    formData.append('file_type', materialType.value)
+    formData.append('file', selectedFile.value)
+
+    const token = localStorage.getItem('token')
+
+    const response = await fetch('http://127.0.0.1:8000/materials/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token
+      },
+      body: formData
+    })
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}))
+      if (response.status === 401) throw new Error('Morate biti prijavljeni.')
+      if (response.status === 400) throw new Error(data.detail || 'Format fajla nije podržan.')
+      if (response.status === 409) throw new Error(data.detail || 'Materijal već postoji.')
+      throw new Error(data.detail || 'Greška prilikom dodavanja materijala.')
+    }
+
+    const created = await response.json()
+    successMessage.value = 'Materijal je uspješno poslan na pregled. Status: Na čekanju.'
+
+    title.value = ''
+    description.value = ''
+    studyYear.value = ''
+    subjectId.value = ''
+    materialType.value = ''
+    selectedFile.value = null
+    errors.value = {}
+
+    emit('submit', created)
+
+  } catch (err) {
+    uploadError.value = err.message || 'Greška prilikom dodavanja materijala.'
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 // Watch — kad korisnik promijeni bilo koje polje, ako je validacija već
