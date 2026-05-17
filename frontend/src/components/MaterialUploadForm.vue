@@ -10,9 +10,20 @@
 </button>
 
   
-  <div v-if="successMessage" class="bg-green-50 border border-green-300 text-green-700 px-4 py-3 rounded-lg mt-4">
-    ✅ {{ successMessage }}
+  <div v-if="successMessage" class="fixed inset-0 flex items-center justify-center z-50">
+  <div class="bg-white rounded-xl shadow-xl p-8 max-w-md w-full mx-4 text-center">
+    <div class="text-5xl mb-4">✅</div>
+    <h3 class="text-xl font-bold text-gray-800 mb-2">Materijal poslan!</h3>
+    <p class="text-gray-600 mb-6">{{ successMessage }}</p>
+    <button
+      @click="successMessage = ''"
+      class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition"
+    >
+      U redu
+    </button>
   </div>
+  <div class="fixed inset-0 bg-black opacity-40 -z-10"></div>
+</div>
     <div v-if="showForm" class="bg-white rounded-lg shadow p-6 mt-6">
       
       <!-- Naslov -->
@@ -292,7 +303,8 @@ async function handleSubmit() {
 
     const created = await response.json()
     successMessage.value = 'Materijal je uspješno poslan na pregled. Status: Na čekanju.'
-
+    showForm.value = false
+    
     title.value = ''
     description.value = ''
     studyYear.value = ''
