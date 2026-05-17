@@ -10,6 +10,7 @@
     <div class="flex justify-center mb-6">
         <div class="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
           <img v-if="preview" :src="preview" class="w-full h-full object-cover" />
+          <img v-else-if="currentImageUrl" :src="`http://localhost:8000${currentImageUrl}`" class="w-full h-full object-cover" />
           <span v-else class="text-gray-500 text-3xl font-bold">{{ props.initials }}</span>
         </div>
       </div>
