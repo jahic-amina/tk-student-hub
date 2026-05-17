@@ -34,7 +34,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import UserProfileCard from '../../components/UserProfileCard.vue'
-import getMyProfile from '@/services/profileService'
+import { getMyProfile } from '../../services/api.js'
 
 const profile = ref(null)
 const loading = ref(false)
@@ -54,4 +54,5 @@ async function fetchProfile() {
   }
 }
 onMounted(fetchProfile)
+</script>
 
