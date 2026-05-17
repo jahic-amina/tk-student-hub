@@ -42,6 +42,8 @@ const profile = ref(null)
 const loading = ref(false)
 const error = ref(null)
 const token = localStorage.getItem('token')
+const showModal = ref(false)
+const successMessage = ref(null)
 
 async function fetchProfile() {
   loading.value = true
@@ -56,8 +58,29 @@ async function fetchProfile() {
   }
 }
 onMounted(fetchProfile)
+async function onSave(file) {
+  showModal.value = false
+  try {
+    const data = await uploadAvatar(token, file)
+    profile.value.profilna_slika_url = data.profilna_slika_url
+    successMessage.value = 'Profilna slika je uspjesno azurirana.'
+    setTimeout(() => { successMessage.value = null }, 3000)
+  } catch (e) {
+    error.value = 'Greska pri uploadu slike.'
+  }
+}
 
-
+async function onRemove() {
+  showModal.value = false
+  try {
+    await removeAvatar(token)
+    profile.value.profilna_slika_url = null
+    successMessage.value = 'Profilna slika je uklonjena.'
+    setTimeout(() => { successMessage.value = null }, 3000)
+  } catch (e) {
+    error.value = 'Greska pri uklanjanju slike.'
+  }
+}
 
 </script>
 
