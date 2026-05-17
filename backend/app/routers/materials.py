@@ -6,6 +6,7 @@ from app.models.user import User
 import shutil, os
 from app.models.materials import Material
 import uuid
+from sqlalchemy import func
 
 router = APIRouter(prefix="/materials", tags=["materials"])
 
@@ -70,7 +71,7 @@ def upload_material(
    # SCRUM-28 — provjera duplikata
     existing_title = db.exec(
         select(Material).where(
-            Material.title == title,
+            func.lower(Material.title) == title.strip().lower(),
             Material.user_id == current_user.id
         )
     ).first()
@@ -104,7 +105,8 @@ def upload_material(
             file_path=file_path,
             file_type=file_type,
             subject_id=subject_id,
-            user_id=current_user.id
+            user_id=current_user.id,
+            status="pending"
         )
         db.add(new_material)
         db.commit()
