@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File,Form
-from sqlmodel import Session
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from sqlmodel import Session, select, func
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
+from app.models.materials import Material, MaterialsResponse, MaterialDetailResponse, Rating, Comment
+from sqlalchemy.orm import selectinload
 import shutil, os
-from app.models.materials import Material
 import uuid
 
 router = APIRouter(prefix="/materials", tags=["materials"])
@@ -24,7 +25,7 @@ router = APIRouter(prefix="/materials", tags=["materials"])
 #
 # -------------------------------------------------------
 
-# -------------------------------------------------------
+
 #SCRUM-31
 
 ALLOWED_FORMATS = {
@@ -48,10 +49,10 @@ def validate_file_format(file: UploadFile):
 def save_file_to_disk(file: UploadFile) -> str:
     os.makedirs("uploads", exist_ok=True)
     file_path = f"uploads/{uuid.uuid4()}_{file.filename}"
-    
+
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-    
+
     return file_path
 
 @router.post("/upload")
@@ -66,17 +67,46 @@ def upload_material(
 ):
 
     extension = validate_file_format(file)
+#-------------------------------------------------------------------
+   # SCRUM-28 — provjera duplikata
+    existing_title = db.exec(
+        select(Material).where(
+            func.lower(Material.title) == title.strip().lower(),
+            Material.user_id == current_user.id
+        )
+    ).first()
+
+    if existing_title:
+        raise HTTPException(
+            status_code=409,
+            detail="Već ste dodali materijal sa ovim nazivom."
+        )
+
+    existing_file = db.exec(
+        select(Material).where(
+            Material.file_path.contains(file.filename)
+        )
+    ).first()
+
+    if existing_file:
+        raise HTTPException(
+            status_code=409,
+            detail="Ovaj fajl je već uploadovan."
+        )
+    # -------------------------------------------------------------
+
     file_path = save_file_to_disk(file)
-    
+
     try:
-    
+
         new_material = Material(
             title=title,
             description=description,
             file_path=file_path,
             file_type=file_type,
             subject_id=subject_id,
-            user_id=current_user.id
+            user_id=current_user.id,
+            status="pending"
         )
         db.add(new_material)
         db.commit()
@@ -89,6 +119,53 @@ def upload_material(
         raise HTTPException(status_code=500, detail="Greška pri uploadu.")
 # -------------------------------------------------------
 
-@router.get("/")
-def mentoring_placeholder():
-    return {"message": "Mentoring router is working — Team 2 builds here"}
+@router.get("/", response_model=list[MaterialsResponse])
+def get_materials(session: Session = Depends(get_db)):
+    query = (
+        select(
+            Material,
+            func.avg(Rating.rating).label("average_rating"),
+            func.count(Rating.id).label("rating_count")
+        )
+        .outerjoin(Rating, Rating.material_id == Material.id)
+        .options(
+            selectinload(Material.subject),
+            selectinload(Material.user)
+        )
+        .where(Material.status == "approved")
+        .group_by(Material.id)
+        .order_by(Material.created_at.desc())
+    )
+    results = session.exec(query).all()
+    materials = []
+    for material, avg, count in results:
+        response = MaterialsResponse(
+            **material.model_dump(),
+            subject=material.subject,
+            user=material.user,
+            average_rating=round(avg, 1) if avg is not None else None,
+            rating_count=count
+        )
+        materials.append(response)
+    return materials
+
+@router.get("/{material_id}", response_model=MaterialDetailResponse)
+def get_material(material_id: int, session: Session = Depends(get_db)):
+    query = (
+        select(Material)
+        .where(Material.id == material_id)
+        .where(Material.status == "approved")
+        .options(
+            selectinload(Material.subject),
+            selectinload(Material.user),
+            selectinload(Material.comments).selectinload(Comment.user),
+            selectinload(Material.ratings),
+        )
+    )
+    material = session.exec(query).first()
+    
+    if not material:
+        raise HTTPException(status_code=404, detail="Materijal nije pronadjen")
+    
+    material.comments.sort(key=lambda c: c.created_at, reverse=True) 
+    return material
