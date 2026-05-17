@@ -27,6 +27,7 @@
       </div>
       <div v-if="successMessage">{{ successMessage }} </div>
       <AvatarUploadModal v-if="showModal"
+      :currentImageUrl="profile.profilna_slika_url"
       @close="showModal = false"
       @save="onSave"
       @remove="onRemove"/>
