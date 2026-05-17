@@ -34,7 +34,15 @@
                         <span class="text-gray-600">{{ material.average_rating }} / 5.0 ({{ material.rating_count }}
                             ocjena)</span>
             </div>
-            <p class="text-sm text-gray-500 mt-2">⬇ {{ material.number_of_downloads }} preuzimanja</p>
+            <p class="text-sm text-gray-500 mt-2 flex gap-2 items-center"><svg xmlns="http://www.w3.org/2000/svg"
+                    width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download w-4 h-4"
+                    data-fg-d3bl133="0.8:79.665:/src/app/App.tsx:544:25:21266:32:e:Download::::::yh6"
+                    data-fgid-d3bl133=":r2p:">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" x2="12" y1="15" y2="3"></line>
+                </svg> {{ material.number_of_downloads }} preuzimanja</p>
 
             <!-- Ocijeni -->
             <div class="mt-4">
@@ -49,8 +57,17 @@
         </div>
 
         <!-- Preuzmi dugme -->
-        <button class="w-full bg-black text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition mb-6">
-            ⬇ PREUZMI MATERIJAL
+        <button
+            class="w-full bg-black text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition mb-6 flex items-center justify-center gap-2  ">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                class="lucide lucide-download w-4 h-4"
+                data-fg-d3bl133="0.8:79.665:/src/app/App.tsx:544:25:21266:32:e:Download::::::yh6"
+                data-fgid-d3bl133=":r2p:">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" x2="12" y1="15" y2="3"></line>
+            </svg> PREUZMI MATERIJAL
         </button>
 
         <!-- Komentari -->
@@ -60,7 +77,7 @@
             <div v-else class="flex flex-col gap-4">
                 <div v-for="comment in material.comments" :key="comment.id" class="border rounded-lg p-3">
                     <div class="flex justify-between text-sm text-gray-500 mb-1">
-                        <span class="font-medium text-gray-700">{{ comment.user_id }}</span>
+                        <span class="font-medium text-gray-700">{{ comment.user.full_name }}</span>
                         <span>{{ formatDate(comment.created_at) }}</span>
                     </div>
                     <p class="text-sm text-gray-600">{{ comment.content }}</p>
