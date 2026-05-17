@@ -1,5 +1,6 @@
 <template>
-  <div class="py-8">
-    Ovo radi tim 4.
-  </div>
-</template>
+  <div>
+
+    <div v-if="loading"> Učitavanje...</div>
+
+    <div v-else-if="error"> {{ error }} </div>
