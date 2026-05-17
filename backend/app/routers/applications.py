@@ -6,12 +6,12 @@ from botocore.exceptions import ClientError
 from app.core.security import get_current_user
 from app.database import get_db
 from app.models.application import Application, ApplicationCreate, ApplicationRead, ApplicationStatus, ApplicationUpdate
-from app.models.application import User, UserRole
+from app.models.user import User, UserRole
 from fastapi import UploadFile, File
 import os
 from uuid import uuid4
 from typing import Optional
-from app.models.application import Ad
+from app.models.ads import Ad
 from datetime import datetime, timezone
 
 S3_BUCKET = os.getenv("S3_BUCKET")
