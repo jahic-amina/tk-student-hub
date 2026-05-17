@@ -21,7 +21,7 @@ class Material(SQLModel, table=True):
     description: Optional[str] = None
     file_path: str
     file_type: str
-    status: str = Field(default="active")
+    status: str = Field(default="pending")
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
     number_of_downloads: int = Field(default=0)
 
