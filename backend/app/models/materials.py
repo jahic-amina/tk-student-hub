@@ -56,6 +56,7 @@ class Comment(SQLModel, table=True):
     user_id: int = Field(foreign_key="users.id")
 
     material: Optional[Material] = Relationship(back_populates="comments")
+    user: Optional["User"] = Relationship()
 
 class MaterialCreate(SQLModel):
     title: str
@@ -74,6 +75,11 @@ class RatingCreate(SQLModel):
 
 class UserResponse(SQLModel):
     full_name: str
+    
+class CommentResponse(SQLModel):
+    content: str
+    created_at: datetime
+    user: UserResponse
     
 class MaterialsResponse(SQLModel):
     id: int
@@ -97,5 +103,6 @@ class MaterialDetailResponse(SQLModel):
     number_of_downloads: int
     subject: Subject
     user: UserResponse
-    comments: list[Comment] = []
+    comments: list[CommentResponse] = []
     ratings: list[Rating] = []
+    
