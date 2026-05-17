@@ -10,7 +10,7 @@ class UserProfileResponse(SQLModel):
     role: str
     created_at: Optional[datetime]
     profilna_slika_url: Optional[str]
-    biografija: Optional[str]
+    biografija: Optional[str] = None
 
 class AvatarUploadResponse(SQLModel):
     profilna_slika_url: str
