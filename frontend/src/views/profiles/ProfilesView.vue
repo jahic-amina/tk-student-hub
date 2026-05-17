@@ -13,14 +13,15 @@
         <p class="text-gray-600 text-sm">{{ profile.biografija || 'Nije unesena biografija.' }}</p>
       </div>
 
-       <div>
-          <h2>Trenutne prakse</h2>
-          <p>Nema trenutnih praksi.</p>
+      <div class="grid grid-cols-2 gap-6">
+       <div class="bg-white rounded-xl shadow p-6">
+          <h2 class="text-lg font-bold mb-4">Trenutne prakse</h2>
+          <p class="text-gray-400 text-sm">Nema trenutnih praksi.</p>
         </div>
 
-        <div>
-          <h2>Nedavna aktivnost</h2>
-          <p>Nema nedavne aktivnosti.</p>
+        <div class="bg-white rounded-xl shadow p-6">
+          <h2 class="text-lg font-bold mb-4">Nedavna aktivnost</h2>
+          <p class="text-gray-400 text-sm">Nema nedavne aktivnosti.</p>
         </div>
 
       </div>
