@@ -11,7 +11,7 @@ from fastapi import UploadFile, File
 import os
 from uuid import uuid4
 from typing import Optional
-from app.models.ads import Ad
+from app.models.ads_model import Ad
 from datetime import datetime, timezone
 
 S3_BUCKET = os.getenv("S3_BUCKET")

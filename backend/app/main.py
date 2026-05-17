@@ -6,7 +6,7 @@ from app.core.config import settings
 from app.database import create_db_and_tables
 from app.routers import applications, auth, forum, prakse, profiles   
 from app.core.security import get_current_user
-from app.models.application import User
+from app.models.user import User
 import os 
 
 create_db_and_tables()
