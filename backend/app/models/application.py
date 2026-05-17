@@ -7,8 +7,8 @@ from sqlalchemy import UniqueConstraint
 from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from app.models.application import User
-    from app.models.application import Ad
+  from app.models.user import User
+  from app.models.ads import Ad
 
 class ApplicationStatus(str, Enum):
     pending = "pending"
