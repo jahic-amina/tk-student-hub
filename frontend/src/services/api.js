@@ -27,3 +27,15 @@ export async function getMe(token) {
   })
   return response.json()
 }
+
+export async function uploadMaterial(formData) {
+  const token = localStorage.getItem('token')
+  const response = await fetch(`${BASE_URL}/materials/upload`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    },
+    body: formData
+  })
+  return response
+}
