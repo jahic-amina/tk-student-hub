@@ -48,6 +48,10 @@ const props = defineProps({
   initials: {
     type: String,
     default: '?'
+  },
+  currentImageUrl: {
+    type: String,
+    default: null
   }
 })
 
