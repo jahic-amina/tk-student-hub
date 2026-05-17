@@ -217,3 +217,34 @@ def get_material(material_id: int, session: Session = Depends(get_db)):
     
     material.comments.sort(key=lambda c: c.created_at, reverse=True) 
     return material
+
+
+#amer
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_material(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    material = db.query(Material).filter(Material.id == id).first()
+    if not material:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Materijal sa tim ID-em ne postoji."
+        )
+
+    is_admin = getattr(current_user, "role", "") == "admin" or getattr(current_user, "is_admin", False)
+    is_author = material.user_id == current_user.id
+
+    if not is_admin and not is_author:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Nemate dozvolu za brisanje ovog materijala."
+        )
+
+    material.status = "deleted"
+    
+    db.add(material)
+    db.commit()
+    
+    return None
