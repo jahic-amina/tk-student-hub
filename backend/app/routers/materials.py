@@ -25,14 +25,14 @@ router = APIRouter(prefix="/materials", tags=["materials"])
 # -------------------------------------------------------
 
 @router.get("/", response_model=list[MaterialsResponse])
-def get_materials(session : Session = Depends(get_db)):
+def get_materials(session: Session = Depends(get_db)):
     query = (
         select(
             Material,
             func.avg(Rating.rating).label("average_rating"),
             func.count(Rating.id).label("rating_count")
-        )  
-        .outerjoin(Rating, Rating.material_id == Material.id) 
+        )
+        .outerjoin(Rating, Rating.material_id == Material.id)
         .options(
             selectinload(Material.subject),
             selectinload(Material.user)
@@ -44,9 +44,14 @@ def get_materials(session : Session = Depends(get_db)):
     results = session.exec(query).all()
     materials = []
     for material, avg, count in results:
-        material.rating_count = count
-        material.average_rating = round(avg, 1) if avg is not None else None
-        materials.append(material)
+        response = MaterialsResponse(
+            **material.model_dump(),
+            subject=material.subject,
+            user=material.user,
+            average_rating=round(avg, 1) if avg is not None else None,
+            rating_count=count
+        )
+        materials.append(response)
     return materials
 
 @router.get("/{material_id}", response_model=MaterialDetailResponse)
