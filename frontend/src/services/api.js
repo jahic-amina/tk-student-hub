@@ -37,3 +37,12 @@ export async function uploadMaterial(formData) {
   })
   return response
 }
+export async function getMaterials() {
+  const response = await fetch(`${BASE_URL}/materials`)
+  return response.json()
+}
+
+export async function getMaterial(id) {
+  const response = await fetch(`${BASE_URL}/materials/${id}`)
+  return response.json()
+}
