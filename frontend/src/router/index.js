@@ -31,7 +31,7 @@ const routes = [
     path: '/materials',
     name: 'materials',
     component: () => import('../views/materials/MaterialsView.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: false }
   },
   {
     path: '/forum',
