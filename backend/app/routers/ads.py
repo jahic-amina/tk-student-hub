@@ -5,6 +5,8 @@ from sqlmodel import Session, select
 from pydantic import BaseModel
 
 from app.models.ads_model import Oglas, OglasStatus, OglasTip
+from app.models.user import User, UserRole
+from app.core.security import get_current_user
 from app.database import get_session
 
 router = APIRouter(prefix="/oglasi", tags=["Oglasi"])
@@ -195,8 +197,12 @@ def update_status(
     oglas_id: int,
     data: StatusUpdate,
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Admin endpoint za promjenu statusa oglasa (approve, reject, itd.)."""
+    if current_user.role != UserRole.admin:
+        raise HTTPException(status_code=403, detail="Nemate dozvolu za ovu akciju.")
+
     oglas = session.get(Oglas, oglas_id)
     if not oglas or oglas.is_deleted:
         raise HTTPException(status_code=404, detail="Oglas nije pronađen.")
