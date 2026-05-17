@@ -1,15 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
+import boto3
+from botocore.exceptions import ClientError
 
 from app.core.security import get_current_user
 from app.database import get_db
-from app.models.application import Application, ApplicationCreate, ApplicationStatus, ApplicationUpdate
-from app.models.user import User, UserRole
+from app.models.application import Application, ApplicationCreate, ApplicationRead, ApplicationStatus, ApplicationUpdate
+from app.models.application import User, UserRole
 from fastapi import UploadFile, File
 import os
 from uuid import uuid4
 from typing import Optional
-from app.models.ad import Ad
+from app.models.application import Ad
 from datetime import datetime, timezone
 
 S3_BUCKET = os.getenv("S3_BUCKET")
@@ -33,7 +35,7 @@ def require_admin(current_user: User) -> None:
         )
 
 
-@router.post("/", response_model=Application, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=ApplicationRead, status_code=status.HTTP_201_CREATED)
 def create_application(
     payload: ApplicationCreate,
     db: Session = Depends(get_db),
@@ -78,7 +80,7 @@ def create_application(
     return application
 
 
-@router.get("/", response_model=list[Application])
+@router.get("/", response_model=list[ApplicationRead])
 def list_applications(
     status: ApplicationStatus | None = None,
     ad_id: int | None = None,
@@ -89,7 +91,7 @@ def list_applications(
     statement = select(Application)
     if current_user.role != UserRole.admin:
         statement = statement.where(Application.user_id == current_user.id)
-    elif ad_id is not None:
+    if ad_id is not None:
         statement = statement.where(Application.ad_id == ad_id)
     if status is not None:
         statement = statement.where(Application.status == status)
@@ -99,7 +101,7 @@ def list_applications(
     return db.exec(statement).all()
 
 
-@router.get("/{application_id}", response_model=Application)
+@router.get("/{application_id}", response_model=ApplicationRead)
 def get_application(
     application_id: int,
     db: Session = Depends(get_db),
@@ -121,7 +123,7 @@ def get_application(
     return application
 
 
-@router.patch("/{application_id}", response_model=Application)
+@router.patch("/{application_id}", response_model=ApplicationRead)
 def update_application(
     application_id: int,
     payload: ApplicationUpdate,
@@ -153,11 +155,10 @@ def get_presigned_upload(
     content_type: Optional[str] = None,
     current_user: User = Depends(get_current_user),
 ):
-    """Generate a presigned PUT URL for uploading CVs. Falls back to local upload info if S3 not configured."""
     safe_filename="".join(c for c in filename if c.isalnum() or c in (' ', '.', '_')).rstrip()
     key = f"applications/{current_user.id}/{uuid4().hex}_{safe_filename}"
 
-    # Try S3/MinIO if boto3 and config present
+    
     try:
         import boto3
 
@@ -181,7 +182,7 @@ def get_presigned_upload(
         )
         return {"upload_url": url, "method": "PUT", "key": key}
     except Exception:
-        # Fallback: instruct client to POST file to local upload endpoint
+        
         return {
             "upload_url": "/applications/upload-cv",
             "method": "POST",
@@ -196,7 +197,6 @@ def upload_cv_local(
     key: Optional[str] = None,
     current_user: User = Depends(get_current_user),
 ):
-    """Local upload handler used when S3 is not configured. Returns stored path (relative)."""
     if key:
         filename = os.path.basename(key)
     else:
@@ -227,4 +227,4 @@ def delete_application(
     application.is_archived = True
     db.add(application)
     db.commit()
-    return None
+    return 
