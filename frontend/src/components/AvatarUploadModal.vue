@@ -61,7 +61,9 @@ const error = ref(null)
 function triggerFilePicker() {
   fileInput.value.click()
 }
-
+function onFileSelected(event) {
+  const file = event.target.files[0]
+  if (!file) return
 const allowedTypes = ['image/jpeg', 'image/png']
 if(!allowedTypes.includes(file.type)) {
   error.value = 'Neispravan format. Podržani formati su JPG i PNG.'
