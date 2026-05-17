@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer
+from fastapi.staticfiles import StaticFiles  
+import os                                    
 from app.core.config import settings
 from app.database import create_db_and_tables
 from app.routers import auth, forum, prakse, profiles   
@@ -8,6 +10,8 @@ from app.core.security import get_current_user
 from app.models.user import User
 
 create_db_and_tables()
+
+os.makedirs("uploads", exist_ok=True)
 
 security = HTTPBearer()
 
@@ -23,6 +27,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 app.include_router(auth.router)
 app.include_router(prakse.router)

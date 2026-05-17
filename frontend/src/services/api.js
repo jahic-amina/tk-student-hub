@@ -27,3 +27,30 @@ export async function getMe(token) {
   })
   return response.json()
 }
+
+export async function getMyProfile(token) {
+  const response = await fetch(`${BASE_URL}/profiles/me`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  return response.json()
+}
+
+export async function uploadAvatar(token, file) {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const response = await fetch(`${BASE_URL}/profiles/me/avatar`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: formData
+  })
+  return response.json()
+}
+
+export async function removeAvatar(token) {
+  const response = await fetch(`${BASE_URL}/profiles/me/avatar`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  return response.json()
+}

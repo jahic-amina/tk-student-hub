@@ -17,3 +17,4 @@ class User(SQLModel, table=True):
     password_hash: str
     role: UserRole = Field(default=UserRole.member)
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    profilna_slika_url: Optional[str] = Field(default=None)
