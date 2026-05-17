@@ -30,3 +30,9 @@
 
   </div>
 </template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import UserProfileCard from '../../components/UserProfileCard.vue'
+import getMyProfile from '@/services/profileService'
+
