@@ -1,8 +1,11 @@
-from fastapi import APIRouter, Depends
-from sqlmodel import Session
+from fastapi import APIRouter, Depends, HTTPException
+from requests import session
+from sqlmodel import Session, select, func
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
+from app.models.materials import Material, MaterialsResponse, MaterialDetailResponse, Rating, Comment
+from sqlalchemy.orm import selectinload
 
 router = APIRouter(prefix="/materials", tags=["materials"])
 
@@ -21,6 +24,53 @@ router = APIRouter(prefix="/materials", tags=["materials"])
 #
 # -------------------------------------------------------
 
-@router.get("/")
-def mentoring_placeholder():
-    return {"message": "Mentoring router is working — Team 2 builds here"}
+@router.get("/", response_model=list[MaterialsResponse])
+def get_materials(session: Session = Depends(get_db)):
+    query = (
+        select(
+            Material,
+            func.avg(Rating.rating).label("average_rating"),
+            func.count(Rating.id).label("rating_count")
+        )
+        .outerjoin(Rating, Rating.material_id == Material.id)
+        .options(
+            selectinload(Material.subject),
+            selectinload(Material.user)
+        )
+        .where(Material.status == "approved")
+        .group_by(Material.id)
+        .order_by(Material.created_at.desc())
+    )
+    results = session.exec(query).all()
+    materials = []
+    for material, avg, count in results:
+        response = MaterialsResponse(
+            **material.model_dump(),
+            subject=material.subject,
+            user=material.user,
+            average_rating=round(avg, 1) if avg is not None else None,
+            rating_count=count
+        )
+        materials.append(response)
+    return materials
+
+@router.get("/{material_id}", response_model=MaterialDetailResponse)
+def get_material(material_id: int, session: Session = Depends(get_db)):
+    query = (
+        select(Material)
+        .where(Material.id == material_id)
+        .where(Material.status == "approved")
+        .options(
+            selectinload(Material.subject),
+            selectinload(Material.user),
+            selectinload(Material.comments).selectinload(Comment.user),
+            selectinload(Material.ratings),
+        )
+    )
+    material = session.exec(query).first()
+    
+    if not material:
+        raise HTTPException(status_code=404, detail="Materijal nije pronadjen")
+    
+    material.comments.sort(key=lambda c: c.created_at, reverse=True) 
+    return material
