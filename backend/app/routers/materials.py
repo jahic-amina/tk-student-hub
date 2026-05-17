@@ -224,27 +224,24 @@ def get_material(material_id: int, session: Session = Depends(get_db)):
 def delete_material(
     id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user) # Vraćena autentifikacija
 ):
     material = db.query(Material).filter(Material.id == id).first()
     if not material:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Materijal sa tim ID-em ne postoji."
-        )
+        raise HTTPException(status_code=404, detail="Materijal ne postoji.")
 
-    is_admin = getattr(current_user, "role", "") == "admin" or getattr(current_user, "is_admin", False)
+    # Provjera: Admin ili autor materijala
+    is_admin = getattr(current_user, "role", "") == "admin"
     is_author = material.user_id == current_user.id
 
     if not is_admin and not is_author:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=403, 
             detail="Nemate dozvolu za brisanje ovog materijala."
         )
 
+    # Soft delete
     material.status = "deleted"
-    
     db.add(material)
     db.commit()
-    
     return None
