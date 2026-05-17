@@ -264,38 +264,50 @@ function validateForm() {
   return valid
 }
 
-// Klik na "Dodaj materijal" — prvo validira, pa emit
+// Klik na "Dodaj materijal" — validira, pa šalje FormData na backend
 async function handleSubmit() {
   if (!validateForm()) return
 
-  isSubmitting.value = true
   uploadError.value = ''
   successMessage.value = ''
+  isSubmitting.value = true
 
-  const formData = new FormData()
-  formData.append('title', title.value)
-  formData.append('description', description.value)
-  formData.append('subject_id', subjectId.value)
-  formData.append('file_type', materialType.value)
-  formData.append('file', selectedFile.value)
+  try {
+    const formData = new FormData()
+    formData.append('title', title.value.trim())
+    formData.append('description', description.value.trim())
+    formData.append('subject_id', subjectId.value)
+    formData.append('file_type', materialType.value)
+    formData.append('file', selectedFile.value)
 
-  const response = await uploadMaterial(formData)
+    const response = await uploadMaterial(formData)
 
-  if (response.ok) {
-    successMessage.value = 'Materijal je uspješno poslan na pregled!'
-    showForm.value = false
-  } else {
-    const data = await response.json()
-    if (response.status === 409) {
-      uploadError.value = 'Materijal sa istim nazivom ili fajlom već postoji.'
-    } else if (response.status === 400) {
-      uploadError.value = data.detail || 'Format fajla nije podržan.'
-    } else {
-      uploadError.value = 'Došlo je do greške. Pokušajte ponovo.'
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}))
+      if (response.status === 401) throw new Error('Morate biti prijavljeni.')
+      if (response.status === 400) throw new Error(data.detail || 'Format fajla nije podržan.')
+      if (response.status === 409) throw new Error(data.detail || 'Materijal već postoji.')
+      throw new Error(data.detail || 'Greška prilikom dodavanja materijala.')
     }
-  }
 
-  isSubmitting.value = false
+    const created = await response.json()
+    successMessage.value = 'Materijal je uspješno poslan na pregled. Status: Na čekanju.'
+
+    title.value = ''
+    description.value = ''
+    studyYear.value = ''
+    subjectId.value = ''
+    materialType.value = ''
+    selectedFile.value = null
+    errors.value = {}
+
+    emit('submit', created)
+
+  } catch (err) {
+    uploadError.value = err.message || 'Greška prilikom dodavanja materijala.'
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 // Watch — kad korisnik promijeni bilo koje polje, ako je validacija već
