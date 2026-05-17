@@ -4,6 +4,11 @@ from typing import Optional
 from enum import Enum
 from datetime import datetime, timezone
 from sqlalchemy import UniqueConstraint
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.application import User
+    from app.models.application import Ad
 
 class ApplicationStatus(str, Enum):
     pending = "pending"
