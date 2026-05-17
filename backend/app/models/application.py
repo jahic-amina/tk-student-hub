@@ -1,3 +1,4 @@
+from pydantic import ConfigDict
 from sqlmodel import SQLModel, Field, Relationship
 from typing import Optional
 from enum import Enum
@@ -13,7 +14,7 @@ class Application(SQLModel, table=True):
     __tablename__ = "applications"
     __table_args__ = (UniqueConstraint("user_id", "ad_id", name="uq_user_ad"),)
 
-    id: int = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id", index=True)
     ad_id: int = Field(foreign_key="ads.id", index=True)
 
@@ -52,6 +53,8 @@ class ApplicationRead(SQLModel):
     is_archived: bool
     created_at: datetime
     updated_at: datetime
+    model_config=ConfigDict(from_attributes=True)
+    
 
 class ApplicationUpdate(SQLModel):
     status: Optional[ApplicationStatus] = None
@@ -59,3 +62,4 @@ class ApplicationUpdate(SQLModel):
     is_archived: Optional[bool] = None
 
 
+Application.model_rebuild()
