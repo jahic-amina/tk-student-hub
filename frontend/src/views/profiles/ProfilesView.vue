@@ -25,7 +25,11 @@
         </div>
 
       </div>
-
+      <div v-if="successMessage">{{ successMessage }} </div>
+      <AvatarUploadModal v-if="showModal"
+      @close="showModal = false"
+      @save="onSave"
+      @remove="onRemove"/>
     </div>
 
   </div>
