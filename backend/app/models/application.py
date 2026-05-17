@@ -8,7 +8,7 @@ from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
   from app.models.user import User
-  from app.models.ads import Ad
+  from app.models.ads_model import Oglas
 
 class ApplicationStatus(str, Enum):
     pending = "pending"
@@ -36,7 +36,7 @@ class Application(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     user: "User" = Relationship(back_populates="applications")
-    ad: "Ad" = Relationship(back_populates="applications")
+    ad: "Oglas" = Relationship(back_populates="applications")
 
 class ApplicationCreate(SQLModel):
     ad_id: int

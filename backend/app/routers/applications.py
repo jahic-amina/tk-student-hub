@@ -11,7 +11,7 @@ from fastapi import UploadFile, File
 import os
 from uuid import uuid4
 from typing import Optional
-from app.models.ads_model import Ad
+from app.models.ads_model import Oglas
 from datetime import datetime, timezone
 
 S3_BUCKET = os.getenv("S3_BUCKET")
@@ -41,7 +41,7 @@ def create_application(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    ad=db.get(Ad, payload.ad_id)
+    ad=db.get(Oglas, payload.ad_id)
     if not ad:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
