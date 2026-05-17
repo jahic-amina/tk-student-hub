@@ -26,7 +26,7 @@ class Oglas(SQLModel, table=True):
     # Foreign keys
     kompanija_id: int = Field(foreign_key="kompanije.id")
     approved_by: Optional[int] = Field(
-        default=None, foreign_key="korisnici.id"
+        default=None, foreign_key="users.id"
     )
 
     # Basic info

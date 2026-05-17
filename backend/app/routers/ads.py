@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from app.models.ads_model import Oglas, OglasStatus, OglasTip
 from app.models.user import User, UserRole
 from app.core.security import get_current_user
-from app.database import get_session
+from app.database import get_db
 
 router = APIRouter(prefix="/oglasi", tags=["Oglasi"])
 
@@ -60,8 +60,6 @@ class OglasPatch(BaseModel):
     placeno: Optional[bool] = None
     requirements: Optional[str] = None
     benefits: Optional[str] = None
-    status: Optional[OglasStatus] = None
-    admin_comment: Optional[str] = None
 
 
 # GET /oglasi  – list (with optional filters)
@@ -75,7 +73,7 @@ def get_oglasi(
     kompanija_id: Optional[int] = Query(default=None),
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_db),
 ):
     """Vrati listu oglasa. Podržava filtriranje i paginaciju."""
     query = select(Oglas).where(Oglas.is_deleted == False)
@@ -98,7 +96,7 @@ def get_oglasi(
 # GET /oglasi/{id}  – single oglas
 
 @router.get("/{oglas_id}", response_model=Oglas)
-def get_oglas(oglas_id: int, session: Session = Depends(get_session)):
+def get_oglas(oglas_id: int, session: Session = Depends(get_db)):
     """Vrati jedan oglas po ID-u."""
     oglas = session.get(Oglas, oglas_id)
     if not oglas or oglas.is_deleted:
@@ -109,7 +107,7 @@ def get_oglas(oglas_id: int, session: Session = Depends(get_session)):
 # POST /oglasi  – create
 
 @router.post("/", response_model=Oglas, status_code=201)
-def create_oglas(data: OglasCreate, session: Session = Depends(get_session)):
+def create_oglas(data: OglasCreate, session: Session = Depends(get_db)):
     """Kreiraj novi oglas. Status je automatski 'pending'."""
     oglas = Oglas(**data.model_dump())
     session.add(oglas)
@@ -124,7 +122,7 @@ def create_oglas(data: OglasCreate, session: Session = Depends(get_session)):
 def update_oglas(
     oglas_id: int,
     data: OglasUpdate,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_db),
 ):
     """Potpuno ažuriranje oglasa (sva polja moraju biti proslijeđena)."""
     oglas = session.get(Oglas, oglas_id)
@@ -147,7 +145,7 @@ def update_oglas(
 def patch_oglas(
     oglas_id: int,
     data: OglasPatch,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_db),
 ):
     """Djelimično ažuriranje oglasa (samo proslijeđena polja se mijenjaju)."""
     oglas = session.get(Oglas, oglas_id)
@@ -172,7 +170,7 @@ def patch_oglas(
 # DELETE /oglasi/{id}  – soft delete
 
 @router.delete("/{oglas_id}", status_code=204)
-def delete_oglas(oglas_id: int, session: Session = Depends(get_session)):
+def delete_oglas(oglas_id: int, session: Session = Depends(get_db)):
     """Soft-delete oglasa (postavlja is_deleted=True, ne briše iz baze)."""
     oglas = session.get(Oglas, oglas_id)
     if not oglas or oglas.is_deleted:
@@ -196,7 +194,7 @@ class StatusUpdate(BaseModel):
 def update_status(
     oglas_id: int,
     data: StatusUpdate,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Admin endpoint za promjenu statusa oglasa (approve, reject, itd.)."""
