@@ -1,9 +1,10 @@
 <template>
-  <div>
+  <div class="max-w-4xl mx-auto py-8 px-4">
 
-    <div v-if="loading"> Učitavanje...</div>
+    <div v-if="loading" class="text-center py-20 text-gray-400"> Učitavanje...</div>
 
-    <div v-else-if="error"> {{ error }} </div>
+    <div v-else-if="error" class="bg-red-100 text-red-600 p-4 rounded-lg">
+       {{ error }} </div>
     
     <div v-else-if="profile">
       <UserProfileCard :profile="profile" />
