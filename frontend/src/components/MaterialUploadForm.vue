@@ -9,7 +9,10 @@
   + DODAJTE MATERIJAL
 </button>
 
-    
+  
+  <div v-if="successMessage" class="bg-green-50 border border-green-300 text-green-700 px-4 py-3 rounded-lg mt-4">
+    ✅ {{ successMessage }}
+  </div>
     <div v-if="showForm" class="bg-white rounded-lg shadow p-6 mt-6">
       
       <!-- Naslov -->
@@ -161,15 +164,11 @@
 
 </div>
 
-      <!-- NEDOVRŠENO:poruka uspjeha -->
-      <p v-if="successMessage" class="text-green-600 font-medium mb-4">
-        {{ successMessage }}
-      </p>
+      
 
-      <!-- NEDOVRŠENO: greška -->
-      <p v-if="uploadError" class="text-red-500 font-medium mb-4">
-        {{ uploadError }}
-      </p>
+      <div v-if="uploadError" class="bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded-lg mb-4">
+  ⚠️ {{ uploadError }}
+</div>
 
       
       <div class="flex gap-3 mt-6">
@@ -196,6 +195,7 @@
 
 <script setup>
 import { ref, watch } from 'vue'
+import { uploadMaterial } from '../services/api'
 
 const showForm = ref(false)
 const successMessage = ref('')
@@ -265,9 +265,37 @@ function validateForm() {
 }
 
 // Klik na "Dodaj materijal" — prvo validira, pa emit
-function handleSubmit() {
+async function handleSubmit() {
   if (!validateForm()) return
-  emit('submit')
+
+  isSubmitting.value = true
+  uploadError.value = ''
+  successMessage.value = ''
+
+  const formData = new FormData()
+  formData.append('title', title.value)
+  formData.append('description', description.value)
+  formData.append('subject_id', subjectId.value)
+  formData.append('file_type', materialType.value)
+  formData.append('file', selectedFile.value)
+
+  const response = await uploadMaterial(formData)
+
+  if (response.ok) {
+    successMessage.value = 'Materijal je uspješno poslan na pregled!'
+    showForm.value = false
+  } else {
+    const data = await response.json()
+    if (response.status === 409) {
+      uploadError.value = 'Materijal sa istim nazivom ili fajlom već postoji.'
+    } else if (response.status === 400) {
+      uploadError.value = data.detail || 'Format fajla nije podržan.'
+    } else {
+      uploadError.value = 'Došlo je do greške. Pokušajte ponovo.'
+    }
+  }
+
+  isSubmitting.value = false
 }
 
 // Watch — kad korisnik promijeni bilo koje polje, ako je validacija već
