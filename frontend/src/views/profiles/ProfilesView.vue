@@ -7,7 +7,7 @@
        {{ error }} </div>
     
     <div v-else-if="profile">
-      <UserProfileCard :profile="profile" />
+      <UserProfileCard :profile="profile" @edit-avatar="showModal = true"/>
       <div class="bg-white rounded-xl shadow p-6 mb-6">
         <h2 class="text-lg font-bold mb-3">O meni</h2>
         <p class="text-gray-600 text-sm">{{ profile.biografija || 'Nije unesena biografija.' }}</p>
