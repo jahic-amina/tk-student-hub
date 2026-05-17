@@ -78,13 +78,14 @@ class UserResponse(SQLModel):
 class MaterialsResponse(SQLModel):
     id: int
     title: str
-    description: Optional[str] = None
     file_type: str
     status: str
     created_at: datetime
     number_of_downloads: int
     subject: Subject
-    user: UserResponse
+    user: UserResponse  
+    average_rating: Optional[float] = None
+    rating_count: Optional[int] = None
     
 class MaterialDetailResponse(SQLModel):
     id: int
