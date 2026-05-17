@@ -67,4 +67,5 @@ def get_material(material_id: int, session: Session = Depends(get_db)):
     if not material:
         raise HTTPException(status_code=404, detail="Materijal nije pronadjen")
     
+    material.comments.sort(key=lambda c: c.created_at, reverse=True) 
     return material
