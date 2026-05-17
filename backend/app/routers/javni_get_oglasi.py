@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session, select, or_
 from typing import List
-
+from datetime import datetime, timezone
 from app.database import get_db
-from app.models.ads_model import Oglas 
+from app.models.ads_model import Oglas, OglasStatus
 
 router = APIRouter(prefix="/oglasi", tags=["Oglasi"])
 
@@ -27,11 +27,22 @@ def get_oglasi(
         
         statement = statement.where(
             or_(
-                Oglas.title.ilike(search_filter),        # Case-insensitive pretraga za naslov
+                Oglas.naziv.ilike(search_filter),        # Case-insensitive pretraga za naslov
                 Oglas.company.ilike(search_filter),      # za kompaniju
-                Oglas.description.ilike(search_filter)   # za opis/tekst oglasa
+                Oglas.opis.ilike(search_filter)   # za opis/tekst oglasa
             )
         )
-    
     oglasi = db.exec(statement).all()
-    return oglasi
+    trenutno_vrijeme = datetime.now(timezone.utc)
+
+    rezultat = []
+    for oglas in oglasi:
+        oglas_data = oglas.model_dump()
+        
+        if oglas.rok and oglas.rok.replace(tzinfo=timezone.utc) < trenutno_vrijeme:
+            oglas_data["status"] = OglasStatus.expired
+
+        rezultat.append(oglas_data)
+        
+    return rezultat
+  
