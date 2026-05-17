@@ -4,7 +4,7 @@ from sqlmodel import Session, select, func
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from app.models.materials import Material, MaterialsResponse, MaterialDetailResponse, Rating
+from app.models.materials import Material, MaterialsResponse, MaterialDetailResponse, Rating, Comment
 from sqlalchemy.orm import selectinload
 
 router = APIRouter(prefix="/materials", tags=["materials"])
@@ -63,8 +63,8 @@ def get_material(material_id: int, session: Session = Depends(get_db)):
         .options(
             selectinload(Material.subject),
             selectinload(Material.user),
-            selectinload(Material.comments),
-            selectinload(Material.ratings)
+            selectinload(Material.comments).selectinload(Comment.user),
+            selectinload(Material.ratings),
         )
     )
     material = session.exec(query).first()
