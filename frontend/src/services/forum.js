@@ -19,9 +19,39 @@ forumApi.interceptors.request.use((config) => {
   return config;
 });
 
+export const getCategories = async () => {
+  const response = await forumApi.get("/forum/categories");
+  return response.data;
+};
 
-export const getTopics = async () => {
-  const response = await forumApi.get("/forum/topics");
+export const getTopicSummaries = async ({ categoryId = null, search = "" } = {}) => {
+  const params = {};
+
+  if (categoryId) {
+    params.category_id = categoryId;
+  }
+
+  if (search && search.trim()) {
+    params.search = search.trim();
+  }
+
+  const response = await forumApi.get("/forum/topics/summary", { params });
+  return response.data;
+};
+
+
+export const getTopics = async ({ categoryId = null, search = "" } = {}) => {
+  const params = {};
+
+  if (categoryId) {
+    params.category_id = categoryId;
+  }
+
+  if (search && search.trim()) {
+    params.search = search.trim();
+  }
+
+  const response = await forumApi.get("/forum/topics", { params });
   return response.data;
 };
 
@@ -57,6 +87,8 @@ export const deleteComment = async (id) => {
 
 
 export default {
+  getCategories,
+  getTopicSummaries,
   getTopics,
   getTopicById,
   incrementTopicView,
