@@ -58,7 +58,7 @@
 
         <!-- Preuzmi dugme -->
         <div class="mb-6">
-            <DownloadButton :material-id="material.id" />
+            <DownloadButton :material-id="material.id" :full-width="true" />
         </div>
 
         <!-- Komentari -->
