@@ -44,3 +44,11 @@ def get_categories_with_topic_count(db: Session = Depends(get_db)):
         })
         
     return output
+
+#Dohvat svih aktivnih tema
+@router.get("/topics", response_model=List[ForumTopic])
+def get_all_topics(db: Session = Depends(get_db)):
+
+    statement = select(ForumTopic).where(ForumTopic.is_deleted == False).order_by(ForumTopic.created_at.desc())
+    topics = db.exec(statement).all()
+    return topics
