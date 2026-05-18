@@ -17,3 +17,5 @@ class User(SQLModel, table=True):
     password_hash: str
     role: UserRole = Field(default=UserRole.member)
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    biografija: Optional[str] = Field(default="")
+    godina_studija: Optional[int] = Field(default=1)

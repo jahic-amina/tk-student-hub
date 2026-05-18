@@ -7,13 +7,13 @@ from app.core.security import get_current_user
 from app.models.user import User
 
 class UserUpdate(BaseModel):
-    ime: Optional[str] = None
+    full_name: Optional[str] = None
     biografija: Optional[str] = None
     godina_studija: Optional[int] = None
 
 class UserResponse(BaseModel):
     id: int
-    ime: Optional[str]
+    full_name: Optional[str]
     biografija: Optional[str]
     godina_studija: Optional[int]
 
@@ -59,7 +59,15 @@ def update_profile_me(
     db.commit()
     db.refresh(current_user)
     
-    return current_user
+    # Unutar funkcije update_profile_me u profiles.py, na samom kraju zamijenite return sa ovim:
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "full_name": current_user.full_name,
+        "ime": current_user.full_name.split(" ")[0] if current_user.full_name else "",
+        "biografija": "Biografija",
+        "godina_studija": 3
+    }
 
 @router.get("/me")
 def get_my_profile(current_user: User = Depends(get_current_user)):
