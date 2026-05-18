@@ -91,14 +91,43 @@
         </div>
 
       </div>
+      <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm text-center">
+        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=128" class="w-24 h-24 rounded-full object-cover mx-auto mb-3 border border-orange-200"/>
+        <h3 class="text-base font-bold text-gray-800">{{ form.first_name }} {{ form.last_name }}</h3>
+        <p class="text-xs text-gray-400 mb-4">{{ form.email }}</p>
+  
+        <button @click="showUploadModal = true" type="button" class="w-full py-2 bg-orange-50 hover:bg-orange-100 text-orange-600 rounded-xl border border-orange-200 font-bold text-xs transition shadow-sm flex justify-center items-center gap-2">
+           <span>📷</span> Uredi profilnu sliku
+        </button>
+      </div>
+
+      <AvatarUploadModal 
+        v-if="showUploadModal" 
+        @close="showUploadModal = false" 
+        @save="handleSaveImage"
+        @remove="handleRemoveImage"
+        :initials="form.first_name.charAt(0) + form.last_name.charAt(0)"
+      />
     </main>
   </div>
 </template>
 
 <script setup>
 import { reactive, ref, onMounted } from 'vue'
+import AvatarUploadModal from '../../components/AvatarUploadModal.vue'
 import axios from 'axios'
+const showUploadModal = ref(false)
+const handleSaveImage = (file) => {
+  console.log('Spremam sliku:', file)
+  // Ovdje će ići API poziv za slanje slike na backend (uploadAvatar)
+  showUploadModal.value = false
+}
 
+const handleRemoveImage = () => {
+  console.log('Brišem sliku...')
+  // Ovdje će ići API poziv za brisanje (removeAvatar)
+  showUploadModal.value = false
+}
 const API_BASE_URL = 'http://127.0.0.1:8000'
 
 const api = axios.create({ baseURL: API_BASE_URL })
@@ -164,7 +193,7 @@ const handleSubmit = async () => {
       throw new Error('Nove lozinke se ne podudaraju.')
     }
 
-    // OVO JE SADA KLJUČNO: Šaljemo sva 3 polja jer ih baza sada posjeduje!
+   
     await api.patch('/profiles/me', {
       full_name: mergedName,
       biografija: form.bio,            
