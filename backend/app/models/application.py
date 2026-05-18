@@ -21,7 +21,7 @@ class Application(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id", index=True)
-    ad_id: int = Field(foreign_key="ads.id", index=True)
+    ad_id: int = Field(foreign_key="oglasi.id", index=True)
 
     cv_path: str
     motivational_letter_path: str
