@@ -34,7 +34,7 @@ router = APIRouter(prefix="/forum", tags=["forum"])
 def forum_placeholder():
     return {"message": "Forum router is working — Team 3 builds here"}
 
-@router.post("/topics/", response_model=ForumTopicRead, status_code=status.HTTP_201_CREATED)
+@router.post("/topics", response_model=ForumTopicRead, status_code=status.HTTP_201_CREATED)
 def create_forum_topic(
     topic_data: ForumTopicCreate,
     db: Session = Depends(get_db),
