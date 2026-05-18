@@ -16,3 +16,20 @@ export async function getCategories() {
   return response.json()
 }
 
+export async function getTopics(categoryId = null, page = 1, size = 5) {
+  let url = `http://127.0.0.1:8000/forum/topics?page=${page}&size=${size}`;
+  
+  if (categoryId !== null) {
+    url += `&category_id=${categoryId}`;
+  }
+
+  const response = await fetch(url, {
+    headers: getHeaders()
+  });
+  
+  if (!response.ok) {
+    throw new Error('Greška pri dohvatanju tema');
+  }
+  
+  return response.json(); // Ovo sada vraća objekat sa { items, total, page, size }
+}
