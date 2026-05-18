@@ -45,6 +45,11 @@ const routes = [
     component: () => import('../views/profiles/ProfilesView.vue'),
     meta: { requiresAuth: true }
   },
+  {
+    path: '/registracija/kompanija',
+    name: 'kompanija-registracija',
+    component: () => import('../views/registracija/KompanijaRegistracijaView.vue')
+  },
 ]
 
 const router = createRouter({
