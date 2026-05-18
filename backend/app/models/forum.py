@@ -97,3 +97,23 @@ class ForumTopicTag(SQLModel, table=True):
         foreign_key="forum_tags.id",
         primary_key=True
     )
+
+class ForumTopicCreate(SQLModel):
+    title: str = Field(index=True, max_length=200)
+    content: str
+    category_id: int
+    tags: Optional[List[int]] = None
+
+class ForumTopicRead(SQLModel):
+    id: int
+    title: str
+    content: str
+    views_count: int
+    is_locked: bool
+    is_deleted: bool
+    created_at: datetime
+    updated_at: Optional[datetime]
+    category_id: int
+    user_id: int
+    tags: Optional[List[ForumTag]] = None
+
