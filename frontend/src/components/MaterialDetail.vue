@@ -34,15 +34,8 @@
                         <span class="text-gray-600">{{ material.average_rating }} / 5.0 ({{ material.rating_count }}
                             ocjena)</span>
             </div>
-            <p class="text-sm text-gray-500 mt-2 flex gap-2 items-center"><svg xmlns="http://www.w3.org/2000/svg"
-                    width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download w-4 h-4"
-                    data-fg-d3bl133="0.8:79.665:/src/app/App.tsx:544:25:21266:32:e:Download::::::yh6"
-                    data-fgid-d3bl133=":r2p:">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="7 10 12 15 17 10"></polyline>
-                    <line x1="12" x2="12" y1="15" y2="3"></line>
-                </svg> {{ material.number_of_downloads }} preuzimanja</p>
+           
+            <p class="text-sm text-gray-500 mt-2">Broj preuzimanja: {{ material.number_of_downloads }}</p>
 
             <!-- Ocijeni -->
             <div class="mt-4">
@@ -57,18 +50,9 @@
         </div>
 
         <!-- Preuzmi dugme -->
-        <button
-            class="w-full bg-black text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition mb-6 flex items-center justify-center gap-2  ">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                class="lucide lucide-download w-4 h-4"
-                data-fg-d3bl133="0.8:79.665:/src/app/App.tsx:544:25:21266:32:e:Download::::::yh6"
-                data-fgid-d3bl133=":r2p:">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" x2="12" y1="15" y2="3"></line>
-            </svg> PREUZMI MATERIJAL
-        </button>
+        <div class="mb-6">
+            <DownloadButton :material-id="material.id" :full-width="true" />
+        </div>
 
         <!-- Komentari -->
         <div>
@@ -90,6 +74,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import DownloadButton from './DownloadButton.vue'
 
 defineProps({
     material: {

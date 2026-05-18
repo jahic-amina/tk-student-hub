@@ -123,11 +123,9 @@
             ]"
 >
       <option value="">Odaberite predmet</option>
-      <!-- TODO: zamijeniti sa GET /subjects kad kolegica to napravi -->
-      <option value="1">Telekomunikacione mreže</option>
-      <option value="2">Telekomunikacijski protokoli</option>
-      <option value="3">Razvoj telekomunikacijske programske podrške </option>
-      <option value="4">Matematika I</option>
+<option v-for="subject in filteredSubjects" :key="subject.id" :value="subject.id">
+  {{ subject.name }}
+</option>
     </select>
   </div>
 
@@ -205,8 +203,8 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
-import { uploadMaterial } from '../services/api'
+import { ref, watch, onMounted, computed } from 'vue'
+import { uploadMaterial, getSubjects } from '../services/api'
 
 const showForm = ref(false)
 const successMessage = ref('')
@@ -229,6 +227,15 @@ const studyYear = ref('')
 const materialType = ref('')
 const subjectId = ref('')
 const selectedFile = ref(null)
+const subjects = ref([])
+const filteredSubjects = computed(() => {
+  if (!studyYear.value) return []
+  return subjects.value.filter(s => s.study_year == studyYear.value)
+})
+
+onMounted(async () => {
+  subjects.value = await getSubjects()
+})
 
 // === Drag & drop state ===
 const isDragging = ref(false)
