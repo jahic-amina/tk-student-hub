@@ -59,3 +59,7 @@ export async function deleteMaterial(id) {
   })
   return response 
 }
+export async function getSubjects() {
+  const res = await fetch('http://127.0.0.1:8000/materials/subjects')
+  return res.json()
+}
