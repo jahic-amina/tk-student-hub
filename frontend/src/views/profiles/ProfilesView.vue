@@ -12,7 +12,10 @@
           <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=128" class="w-24 h-24 rounded-full object-cover mx-auto mb-3 border border-orange-200"/>
           <h3 class="text-base font-bold text-gray-800">{{ form.first_name }} {{ form.last_name }}</h3>
           <p class="text-xs text-gray-400 mb-4">{{ form.email }}</p>
-          <button @click="alertAction('Uređivanje profilne slike')" type="button" class="w-full py-2 bg-gray-50 hover:bg-orange-50 rounded-xl border font-semibold text-xs transition">Promijeni sliku</button>
+  
+          <button @click="navigateToUpload" type="button" class="w-full py-2 bg-orange-50 hover:bg-orange-100 text-orange-600 rounded-xl border border-orange-200 font-bold text-xs transition shadow-sm flex justify-center items-center gap-2">
+            <span>📷</span> Uredi profilnu sliku
+          </button>
         </div>
 
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
