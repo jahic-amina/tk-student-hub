@@ -1,8 +1,8 @@
 <template>
   <div class="py-8 px-4 max-w-4xl mx-auto">
-    <MaterialUploadForm />
+    <MaterialUploadForm @submit="refreshList" />
     <div class="flex gap-6">
-      <MaterialList @open="openMaterial" />
+      <MaterialList :key="listKey" @open="openMaterial" />
       <MaterialDetail v-if="selectedMaterialId" :material="selectedMaterialId" @close="selectedMaterialId = null" />
     </div>
   </div>
@@ -17,6 +17,13 @@ import { getMaterial } from '../../services/api'
 import DeleteMaterialButton from '../../components/DeleteMaterialButton.vue'
 
 const selectedMaterialId = ref(null)
+
+const listKey = ref(0);
+
+function refreshList() {
+  listKey.value += 1;
+
+}
 
 async function openMaterial(id) {
   selectedMaterialId.value = await getMaterial(id)
