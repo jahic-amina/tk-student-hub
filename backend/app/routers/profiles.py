@@ -60,3 +60,16 @@ def update_profile_me(
     db.refresh(current_user)
     
     return current_user
+
+@router.get("/me")
+def get_my_profile(current_user: User = Depends(get_current_user)):
+    """
+    Vraća podatke trenutno ulogovanog korisnika.
+    """
+    # Pošto u auth.py vidimo da model User koristi 'full_name' i 'email':
+    return {
+        "full_name": current_user.full_name,
+        "email": current_user.email,
+        "godina_studija": getattr(current_user, "godina_studija", 3),  # ako postoji u bazi
+        "biografija": getattr(current_user, "biografija", "")         # ako postoji u bazi
+    }
