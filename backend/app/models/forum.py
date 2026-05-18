@@ -97,8 +97,8 @@ class ForumTopicTag(SQLModel, table=True):
     )
 
 class ForumTopicCreate(SQLModel):
-    title: str = Field(index=True, max_length=200)
-    content: str
+    title: str = Field(min_length=3, max_length=200)
+    content: str = Field(min_length=10)
     category_id: int
     tags: Optional[List[int]] = None
 
