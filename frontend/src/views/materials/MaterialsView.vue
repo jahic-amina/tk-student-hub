@@ -14,6 +14,7 @@ import { ref } from 'vue'
 import MaterialList from '../../components/MaterialList.vue'
 import MaterialDetail from '../../components/MaterialDetail.vue'
 import { getMaterial } from '../../services/api'
+import DeleteMaterialButton from '../../components/DeleteMaterialButton.vue'
 
 const selectedMaterialId = ref(null)
 

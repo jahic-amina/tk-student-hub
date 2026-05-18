@@ -46,3 +46,16 @@ export async function getMaterial(id) {
   const response = await fetch(`${BASE_URL}/materials/${id}`)
   return response.json()
 }
+
+
+//amer
+export async function deleteMaterial(id) {
+  const token = localStorage.getItem('token')
+  const response = await fetch(`${BASE_URL}/materials/${id}`, {
+    method: 'DELETE',
+    headers: { 
+      'Authorization': `Bearer ${token}` 
+    }
+  })
+  return response 
+}
