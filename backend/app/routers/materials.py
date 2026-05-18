@@ -67,6 +67,11 @@ def download_material(
         guessed, _ = mimetypes.guess_type(material.file_path)
         media_type = guessed or "application/octet-stream"
 
+    # Povecaj broj preuzimanja
+    material.number_of_downloads += 1
+    db.add(material)
+    db.commit()
+
     #  Vratiti fajl korisniku bez ovaranja u novom prozoru
     return FileResponse(
         path=material.file_path,
