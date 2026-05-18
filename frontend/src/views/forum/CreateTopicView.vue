@@ -42,8 +42,10 @@ const handleTagKeydown = (e) => {
 const validate = () => {
   errors.value = {};
   if (!title.value.trim()) errors.value.title = 'Naslov je obavezan.';
+  else if (title.value.trim().length < 5) errors.value.title = 'Naslov mora imati najmanje 5 karaktera.';
   if (!selectedCategory.value) errors.value.category = 'Odaberite kategoriju.';
   if (!content.value.trim()) errors.value.content = 'Sadržaj je obavezan.';
+  else if (content.value.trim().length < 10) errors.value.content = 'Sadržaj mora imati najmanje 10 karaktera.';
   return Object.keys(errors.value).length === 0;
 };
 
