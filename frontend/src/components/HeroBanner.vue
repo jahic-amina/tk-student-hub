@@ -19,13 +19,6 @@
         </div>
       </div>
 
-      <div class="hidden md:flex shrink-0 items-center justify-end">
-        <img 
-          src="@/assets/hero.svg" 
-          alt="TK Student Hub" 
-          class="h-16 lg:h-20 w-auto drop-shadow-md transform hover:scale-105 transition duration-300" 
-        />
-      </div>
 
     </div>
   </div>
