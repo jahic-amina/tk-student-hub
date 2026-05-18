@@ -180,7 +180,6 @@ def get_materials(session: Session = Depends(get_db)):
             selectinload(Material.subject),
             selectinload(Material.user)
         )
-        .where(Material.status == "approved")
         .group_by(Material.id)
         .order_by(Material.created_at.desc())
     )
@@ -202,7 +201,6 @@ def get_material(material_id: int, session: Session = Depends(get_db)):
     query = (
         select(Material)
         .where(Material.id == material_id)
-        .where(Material.status == "approved")
         .options(
             selectinload(Material.subject),
             selectinload(Material.user),
