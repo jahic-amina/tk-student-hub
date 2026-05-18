@@ -1,45 +1,52 @@
 <template>
   <div class="bg-gray-50 min-h-screen font-sans">
-    <div class="bg-gradient-to-r from-orange-500 to-orange-600 text-white py-12 px-6 relative overflow-hidden shadow-md">
-      <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-xl"></div>
-      <div class="absolute left-10 -bottom-10 w-32 h-32 bg-black/10 rounded-full blur-lg"></div>
-
-      <div class="max-w-6xl mx-auto flex flex-col items-center text-center relative z-10">
-        <div class="bg-white/20 backdrop-blur-sm p-3 rounded-xl mb-4 font-bold text-xl tracking-wider border border-white/20">
-          TK
-        </div>
-        <h1 class="text-4xl font-extrabold tracking-tight mb-2">Aktuelne prilike</h1>
-        <p class="text-orange-100 text-lg">Filtriraj prakse, edukacije i stipendije prema TK oblasti</p>
-      </div>
-    </div>
+    
+    <HeroBanner />
 
     <div class="max-w-6xl mx-auto px-6 py-8">
-      
-      <div class="flex gap-6 border-b border-gray-200 pb-3 mb-6 overflow-x-auto text-sm font-medium">
-        <button v-for="tab in ['Sve', 'Prakse', 'Edukacije', 'Stipendije', 'Aktuelno']" :key="tab"
-                :class="['pb-3 px-1 transition-all', currentTab === tab ? 'border-b-2 border-orange-500 text-orange-600 font-bold' : 'text-gray-500 hover:text-gray-700']"
-                @click="currentTab = tab">
+
+      <div class="flex gap-6 border-b border-gray-200 pb-0 mb-6 overflow-x-auto text-sm font-medium">
+        <button
+          v-for="tab in ['Sve', 'Prakse', 'Edukacije', 'Stipendije', 'Aktuelno']"
+          :key="tab"
+          :class="['pb-3 px-1 transition-all border-b-2', currentTab === tab ? 'border-orange-500 text-orange-600 font-bold' : 'border-transparent text-gray-500 hover:text-gray-700']"
+          @click="currentTab = tab">
           {{ tab }}
         </button>
       </div>
 
       <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-4 items-center justify-between mb-8">
         <div class="flex-1 min-w-[250px]">
-          <input type="text" v-model="searchQuery" placeholder="⌕ Pretraga po nazivu, kompaniji ili oblasti" 
-                 class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-orange-400" />
+          <input
+            type="text"
+            v-model="searchQuery"
+            placeholder="⌕  Pretraga po nazivu, kompaniji ili oblasti..."
+            class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-orange-400"
+          />
         </div>
-        <div class="flex flex-wrap gap-3 text-sm">
+        <div class="flex flex-wrap gap-3 text-sm items-center">
           <button class="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg font-medium text-gray-700 hover:bg-gray-100">Filter</button>
           <button class="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg font-medium text-gray-700 hover:bg-gray-100">Saradnik</button>
-          <select class="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg font-medium text-gray-700 focus:outline-none">
+          <select class="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg font-medium text-gray-700 focus:outline-none cursor-pointer">
             <option>Oblast</option>
+            <option>IT</option>
+            <option>Telekomunikacije</option>
+            <option>Elektronika</option>
           </select>
-          <select class="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg font-medium text-gray-700 focus:outline-none">
+          <select class="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg font-medium text-gray-700 focus:outline-none cursor-pointer">
             <option>Datum</option>
+            <option>Najnovije</option>
+            <option>Uskoro ističe</option>
           </select>
+          
           <div class="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
             <span class="text-gray-700 font-medium">Plaćeno</span>
-            <input type="checkbox" class="accent-orange-500 h-4 w-4 cursor-pointer" />
+            <button
+              @click="placeno = !placeno"
+              :class="['relative inline-flex h-5 w-10 items-center rounded-full transition-colors duration-200 focus:outline-none', placeno ? 'bg-orange-500' : 'bg-gray-300']"
+            >
+              <span :class="['inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200', placeno ? 'translate-x-5' : 'translate-x-0.5']"></span>
+            </button>
           </div>
         </div>
       </div>
@@ -52,37 +59,20 @@
       </div>
 
       <div v-if="loading" class="text-center py-12 text-gray-500 font-medium">
-        Učitavanje oglasa sa backenda...
+        Učitavanje oglasa...
       </div>
 
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div v-for="oglas in filtriraniOglasi" :key="oglas.id" 
-             class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition duration-200">
-          
-          <div>
-            <div class="flex gap-2 mb-4 text-xs font-semibold">
-              <span :class="getTipKlasa(oglas.tip)">{{ oglas.tip }}</span>
-              <span :class="getStatusKlasa(oglas.status)">{{ oglas.status }}</span>
-            </div>
+      <div v-else-if="filtriraniOglasi.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <OglasCard 
+          v-for="oglas in filtriraniOglasi" 
+          :key="oglas.id" 
+          :oglas="oglas" 
+        />
+      </div>
 
-            <h3 class="text-lg font-bold text-gray-900 mb-1 leading-snug">{{ oglas.naslov }}</h3>
-            <p class="text-gray-400 text-sm mb-4 font-medium">{{ oglas.kompanija }}</p>
-
-            <div class="flex flex-wrap gap-x-4 gap-y-1 text-gray-500 text-xs font-medium mb-4">
-              <span>📍 {{ oglas.lokacija }}</span>
-              <span>🕒 {{ oglas.trajanje }}</span>
-              <span v-if="oglas.dodatno">💰 {{ oglas.dodatno }}</span>
-            </div>
-          </div>
-
-          <div class="flex flex-wrap gap-2 mt-auto pt-2">
-            <span v-for="tag in oglas.tagovi" :key="tag" 
-                  class="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-md font-semibold tracking-wide">
-              {{ tag }}
-            </span>
-          </div>
-
-        </div>
+      <div v-else class="text-center py-12 bg-white rounded-xl border border-dashed border-gray-300">
+        <p class="text-gray-500 font-medium text-lg">Nema pronađenih oglasa za traženi pojam.</p>
+        <p class="text-gray-400 text-sm mt-1">Pokušajte sa nekom drugom ključnom riječju.</p>
       </div>
 
     </div>
@@ -90,57 +80,77 @@
 </template>
 
 <script>
+import HeroBanner from '@/components/HeroBanner.vue'
+import OglasCard from '@/components/OglasCard.vue'
+
+import axios from 'axios'
+
 export default {
   name: 'OglasiPage',
+  components: {
+    HeroBanner,
+    OglasCard
+  },
   data() {
     return {
-      oglasi: [],
-      loading: true,
+      loading: false, 
       currentTab: 'Sve',
-      searchQuery: ''
+      searchQuery: '',
+      placeno: false,
+      oglasi: [] 
     }
   },
   computed: {
     filtriraniOglasi() {
       return this.oglasi.filter(oglas => {
-        // Filter po tabovima
-        const mecapTab = this.currentTab === 'Sve' || oglas.tip + 's' === this.currentTab || oglas.tip === this.currentTab.slice(0, -1); // Jednostavna logika za množinu/jedninu
-        
-        // Filter po pretrazi
-        const mecapSearch = oglas.naslov.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-                            oglas.kompanija.toLowerCase().includes(this.searchQuery.toLowerCase());
-        
-        return mecapTab && mecapSearch;
-      });
+        const tabMap = {
+          'Sve': true,
+          'Prakse': oglas.tip === 'Praksa',
+          'Edukacije': oglas.tip === 'Edukacija',
+          'Stipendije': oglas.tip === 'Stipendija',
+          'Aktuelno': oglas.status === 'Aktivan'
+        }
+        const mecapTab = tabMap[this.currentTab] ?? true
+
+        const q = this.searchQuery.toLowerCase()
+        const mecapSearch = !q ||
+          (oglas.naslov && oglas.naslov.toLowerCase().includes(q)) ||
+          (oglas.kompanija && oglas.kompanija.toLowerCase().includes(q)) ||
+          (oglas.opis && oglas.opis.toLowerCase().includes(q)) ||
+          (oglas.tagovi && oglas.tagovi.some(t => t.toLowerCase().includes(q)))
+
+        const mecapPlaceno = !this.placeno || (oglas.dodatno && oglas.dodatno.includes('KM'))
+
+        return mecapTab && mecapSearch && mecapPlaceno
+      })
+    }
+  },
+  methods: {
+    async fetchOglasi() {
+      this.loading = true
+      try {
+        const res = await axios.get('http://127.0.0.1:8000/oglasi/')
+        const data = res.data || []
+
+        this.oglasi = data.map(o => ({
+          id: o.id,
+          naslov: o.naziv || o.naslov || '',
+          kompanija: (o.kompanija && (o.kompanija.name || o.kompanija.naziv)) || o.company || '',
+          opis: o.opis || '',
+          tagovi: o.tagovi || [],
+          tip: o.tip ? (typeof o.tip === 'string' ? (o.tip.charAt(0).toUpperCase() + o.tip.slice(1)) : o.tip) : '',
+          dodatno: o.naknada || o.dodatno || '',
+          status: (o.status === 'active' ? 'Aktivan' : o.status === 'expired' ? 'Istekao' : o.status) || ''
+        }))
+      } catch (err) {
+        console.error('Neuspješan dohvat oglasa', err)
+      } finally {
+        this.loading = false
+      }
     }
   },
   mounted() {
-    this.fetchOglasi();
-  },
-  methods: {
-    fetchOglasi() {
-      // NAPOMENA: Ruta mora biti JAVNA na backendu (bez provjere Bearer tokena)
-      fetch('http://localhost:5000/api/oglasi') // Zamijeni sa tvojom stvarnom backend rutom
-        .then(res => res.json())
-        .then(data => {
-          this.oglasi = data;
-          this.loading = false;
-        })
-        .catch(err => {
-          console.error("Greška pri povlačenju podataka:", err);
-          this.loading = false;
-        });
-    },
-    getTipKlasa(tip) {
-      if (tip === 'Praksa') return 'bg-blue-50 text-blue-600 px-2.5 py-1 rounded-md';
-      if (tip === 'Edukacija') return 'bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-md';
-      return 'bg-amber-50 text-amber-600 px-2.5 py-1 rounded-md'; // Stipendija
-    },
-    getStatusKlasa(status) {
-      if (status === 'Aktivan') return 'bg-green-50 text-green-600 px-2.5 py-1 rounded-md';
-      if (status === 'Uskoro ističe') return 'bg-orange-50 text-orange-600 px-2.5 py-1 rounded-md';
-      return 'bg-red-50 text-red-600 px-2.5 py-1 rounded-md'; // Istekao
-    }
+    this.fetchOglasi()
   }
 }
 </script>
