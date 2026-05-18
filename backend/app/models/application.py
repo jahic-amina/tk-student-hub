@@ -65,6 +65,3 @@ class ApplicationUpdate(SQLModel):
     status: Optional[ApplicationStatus] = None
     admin_feedback: Optional[str] = None
     is_archived: Optional[bool] = None
-
-
-Application.model_rebuild()
