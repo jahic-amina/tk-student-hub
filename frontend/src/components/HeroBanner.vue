@@ -1,28 +1,32 @@
 <template>
-  <div class="relative bg-orange-500 text-white py-14 px-6 shadow-sm overflow-hidden">
-    <div class="absolute inset-0 opacity-20 pointer-events-none">
-      <svg width="100%" height="100%" viewBox="0 0 1200 220" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-        <line x1="200" y1="-20" x2="600" y2="240" stroke="white" stroke-width="1.5"/>
-        <line x1="350" y1="-20" x2="750" y2="240" stroke="white" stroke-width="1.5"/>
-        <line x1="500" y1="-20" x2="100" y2="240" stroke="white" stroke-width="1.5"/>
-        <line x1="700" y1="-20" x2="300" y2="240" stroke="white" stroke-width="1.5"/>
-        <line x1="900" y1="-20" x2="1300" y2="240" stroke="white" stroke-width="1.5"/>
-        <line x1="1050" y1="-20" x2="650" y2="240" stroke="white" stroke-width="1.5"/>
-      </svg>
-    </div>
+  <div class="relative bg-orange-500 text-white py-6 px-6 shadow-sm overflow-hidden">
+    <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none"></div>
 
-    <div class="relative max-w-6xl mx-auto flex flex-col items-center justify-center text-center">
-      <div class="flex flex-col items-center gap-3">
-        <div class="w-16 h-16 border-2 border-white/40 bg-white/10 rounded-2xl flex items-center justify-center font-black text-xl tracking-wider select-none">
+    <div class="relative max-w-6xl mx-auto flex items-center justify-between gap-6">
+      
+      <div class="flex items-center gap-4 text-left">
+        <div class="shrink-0 w-12 h-12 border-2 border-white/40 bg-white/10 rounded-xl flex items-center justify-center font-black text-lg tracking-wider select-none">
           TK
         </div>
-        <h1 class="text-4xl lg:text-5xl font-extrabold tracking-tight mt-1">
-          Aktuelne prilike
-        </h1>
+        
+        <div>
+          <h1 class="text-2xl lg:text-3xl font-extrabold tracking-tight leading-tight">
+            Aktuelne prilike
+          </h1>
+          <p class="text-orange-100/80 text-xs md:text-sm mt-0.5 font-normal tracking-wide max-w-md hidden sm:block">
+            Filtriraj prakse, edukacije i stipendije prema TK oblasti
+          </p>
+        </div>
       </div>
-      <p class="text-orange-100/90 text-base md:text-lg mt-3 font-normal tracking-wide max-w-xl">
-        Filtriraj prakse, edukacije i stipendije prema TK oblasti
-      </p>
+
+      <div class="hidden md:flex shrink-0 items-center justify-end">
+        <img 
+          src="@/assets/hero.svg" 
+          alt="TK Student Hub" 
+          class="h-16 lg:h-20 w-auto drop-shadow-md transform hover:scale-105 transition duration-300" 
+        />
+      </div>
+
     </div>
   </div>
 </template>
