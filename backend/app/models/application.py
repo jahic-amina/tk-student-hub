@@ -35,8 +35,8 @@ class Application(SQLModel, table=True):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-    user: "User" = Relationship(back_populates="applications")
-    ad: "Oglas" = Relationship(back_populates="applications")
+    user: "User" = Relationship()
+    ad: "Oglas" = Relationship()
 
 class ApplicationCreate(SQLModel):
     ad_id: int
