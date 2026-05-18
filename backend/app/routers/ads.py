@@ -3,8 +3,9 @@ from datetime import datetime, date
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlmodel import Session, select
 from pydantic import BaseModel
-from app.models.ads_model import Ad, AdStatus, AdType
+from app.models.ads_model import Ad, AdStatus, AdType, AdCreate, AdUpdate, AdPatch, StatusUpdate
 from app.database import get_session
+from app.dependencies import get_current_user, TokenData
 
 router = APIRouter(prefix="/ads", tags=["Ads"])
 
@@ -77,8 +78,8 @@ def update_ad(
     if not ad or ad.is_deleted:
         raise HTTPException(status_code=404, detail="Ad not found.")
 
-    for field, value in data.model_dump().items():
-        setattr(ad, field, value)
+    for key, value in data.model_dump().items():
+        setattr(ad, key, value)
 
     ad.updated_at = datetime.utcnow()
     session.add(ad)
@@ -99,8 +100,8 @@ def patch_ad(
         raise HTTPException(status_code=404, detail="Ad not found.")
 
     update_data = data.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(ad, field, value)
+    for key, value in update_data.items():
+        setattr(ad, key, value)
 
     if data.status == AdStatus.changes_requested:
         ad.changes_requested_at = datetime.utcnow()
@@ -130,8 +131,12 @@ def update_status(
     ad_id: int,
     data: StatusUpdate,
     session: Session = Depends(get_session),
+    current_user: TokenData = Depends(get_current_user),
 ):
     """Admin endpoint for changing ad status (approve, reject, etc.)."""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Access denied.")
+
     ad = session.get(Ad, ad_id)
     if not ad or ad.is_deleted:
         raise HTTPException(status_code=404, detail="Ad not found.")
