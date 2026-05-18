@@ -117,8 +117,8 @@ export default {
           (oglas.naslov && oglas.naslov.toLowerCase().includes(q)) ||
           (oglas.kompanija && oglas.kompanija.toLowerCase().includes(q)) ||
           (oglas.opis && oglas.opis.toLowerCase().includes(q)) ||
-          (oglas.tagovi && oglas.tagovi.some(t => t.toLowerCase().includes(q)))
-
+          (oglas.tagovi && oglas.tagovi.some(t => t.toLowerCase().includes(q))) ||
+          (Array.isArray(oglas.tagovi) && oglas.tagovi.some(t => t.toLowerCase().includes(q)))
         const mecapPlaceno = !this.placeno || (oglas.dodatno && oglas.dodatno.includes('KM'))
 
         return mecapTab && mecapSearch && mecapPlaceno
@@ -140,7 +140,9 @@ export default {
           tagovi: o.tagovi || [],
           tip: o.tip ? (typeof o.tip === 'string' ? (o.tip.charAt(0).toUpperCase() + o.tip.slice(1)) : o.tip) : '',
           dodatno: o.naknada || o.dodatno || '',
-          status: (o.status === 'active' ? 'Aktivan' : o.status === 'expired' ? 'Istekao' : o.status) || ''
+          status: (o.status === 'active' ? 'Aktivan' : o.status === 'expired' ? 'Istekao' : o.status) || '',
+          lokacija: o.lokacija || 'Nije navedeno', 
+          trajanje: o.trajanje || ''
         }))
       } catch (err) {
         console.error('Neuspješan dohvat oglasa', err)
