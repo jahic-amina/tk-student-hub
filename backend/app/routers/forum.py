@@ -46,23 +46,47 @@ def get_categories_with_topic_count(db: Session = Depends(get_db)):
 
 #Dohvat svih aktivnih tema
 
-@router.get("/topics", response_model=List[Dict[str, Any]])
-def get_all_topics(db: Session = Depends(get_db)):
-   
+@router.get("/topics", response_model=Dict[str, Any]) # Vraćamo rječnik koji sadrži teme i ukupan broj
+def get_all_topics(
+    db: Session = Depends(get_db),
+    category_id: Optional[int] = None,
+    page: int = 1,  # Defaultno prva stranica
+    size: int = 5   # Defaultno 5 tema po stranici
+):
+    # 1. Osnovni upit za teme
     statement = (
         select(ForumTopic, ForumCategory.name.label("category_name"))
         .join(ForumCategory, ForumTopic.category_id == ForumCategory.id)
         .where(ForumTopic.is_deleted == False)
-        .order_by(ForumTopic.created_at.desc())
     )
+    
+    # 2. Osnovni upit za brojanje UKUPNOG broja tema (treba nam da znamo ima li još stranica)
+    count_statement = select(func.count(ForumTopic.id)).where(ForumTopic.is_deleted == False)
+
+    # Ako je poslat category_id, filtriramo oba upita
+    if category_id is not None:
+        statement = statement.where(ForumTopic.category_id == category_id)
+        count_statement = count_statement.where(ForumTopic.category_id == category_id)
+        
+    # Dobijamo ukupan broj filtriranih tema iz baze
+    total_topics = db.exec(count_statement).one()
+
+    # 3. IMPLEMENTACIJA PAGINACIJE (Računamo koliko preskačemo)
+    skip = (page - 1) * size
+    statement = statement.order_by(ForumTopic.created_at.desc()).offset(skip).limit(size)
     
     results = db.exec(statement).all()
     
-    output = []
+    topics_list = []
     for topic, category_name in results:
-    
         topic_dict = topic.model_dump()
         topic_dict["category_name"] = category_name
-        output.append(topic_dict)
+        topics_list.append(topic_dict)
         
-    return output
+    # Vraćamo podatke struktuirano
+    return {
+        "items": topics_list,     
+        "total": total_topics,     
+        "page": page,
+        "size": size
+    }
