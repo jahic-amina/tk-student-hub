@@ -2,7 +2,10 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
-import OglasiPage, OglasCard '../components/OglasiPage.vue', '../components/OglasCard.vue'
+import OglasiPage from '../components/OglasiPage.vue'
+import OglasCard from '../components/OglasCard.vue'
+
+
 
 const routes = [
   {
