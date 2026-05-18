@@ -10,7 +10,6 @@ from app.models.forum import ForumCategory, ForumTopic
 
 router = APIRouter(prefix="/forum", tags=["forum"])
 
-@router.get("/categories", response_model=List[Dict[str, Any]])
 
 #Dohvat kategorija i broja tema za svaku kategoriju
 
