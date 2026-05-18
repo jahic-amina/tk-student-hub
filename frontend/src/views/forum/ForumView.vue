@@ -1,9 +1,10 @@
 <script setup>
 import ForumSidebar from '../../components/ForumSidebar.vue';
 import { ref, onMounted, watch, computed } from 'vue';
-import { getTopics } from '../../services/forum.js'; 
+import { getTopics, getCategories } from '../../services/forum.js'; // Dodan getCategories import
 
 const teme = ref([]);
+const sveKategorije = ref([]); // Dodan niz u koji spremamo kategorije sa bekenda zbog boja
 const isLoading = ref(true);
 const odabraniKategorijaId = ref(null);
 
@@ -13,6 +14,14 @@ const velicinaStranice = 5;
 
 const ukupnoStranica = computed(() => {
   return Math.ceil(ukupnoTema.value / velicinaStranice) || 1;
+});
+
+// Računamo objekat trenutne kategorije (tražimo je u nizu po ID-u) kako bismo dobili ime i boju
+const trenutnaKategorija = computed(() => {
+  if (!odabraniKategorijaId.value) {
+    return { name: 'General (Sve teme)', color: '#64748b' }; // Default siva boja za General
+  }
+  return sveKategorije.value.find(c => c.id === odabraniKategorijaId.value) || { name: 'Kategorija', color: '#ff7a00' };
 });
 
 const ucitajTeme = async () => {
@@ -47,8 +56,14 @@ const ucitajTeme = async () => {
   }
 };
 
-onMounted(() => {
+// Pri podizanju stranice učitavamo i teme i sve dostupne kategorije radi mapiranja boja
+onMounted(async () => {
   ucitajTeme();
+  try {
+    sveKategorije.value = await getCategories();
+  } catch (e) {
+    console.error("Greška pri učitavanju kategorija u ForumView:", e);
+  }
 });
 
 watch(odabraniKategorijaId, () => {
@@ -91,11 +106,18 @@ const filtrirajPoKategoriji = (id) => {
         <div class="flex-1 w-full flex flex-col justify-between min-h-[500px]">
           
           <div>
-            <div v-if="odabraniKategorijaId" class="mb-4 flex items-center justify-between bg-orange-50 border border-orange-100 p-3 rounded-xl">
-              <p class="text-sm text-slate-700">Filtrirano po izabranoj kategoriji</p>
-              <button @click="odabraniKategorijaId = null" class="text-xs font-bold text-slate-400 hover:text-slate-600">
-                Prikaži sve
-              </button>
+            <div class="mb-6 flex">
+              <span 
+                class="px-4 py-1.5 font-extrabold text-sm rounded-full border shadow-sm transition-all duration-300"
+                :style="{ 
+                  backgroundColor: trenutnaKategorija.color + '15', // Dodajemo '15' na kraj hex koda za 8% prozirnosti pozadine (suptilan look)
+                  borderColor: trenutnaKategorija.color, 
+                  textColor: trenutnaKategorija.color,
+                  color: trenutnaKategorija.color
+                }"
+              >
+                {{ trenutnaKategorija.name }}
+              </span>
             </div>
 
             <div v-if="isLoading" class="flex flex-col items-center justify-center py-12">
