@@ -144,7 +144,7 @@ export default {
         this.oglasi = data.map(o => ({
           id: o.id,
           naslov: o.naziv || o.naslov || '',
-          kompanija: (o.kompanija && (o.kompanija.name || o.kompanija.naziv)) || o.company || '',
+          kompanija: (o.kompanija && (o.kompanija.name || o.kompanija.naziv)) || o.company || (o.kompanija_id ? `Kompanija #${o.kompanija_id}` : ''),
           opis: o.opis || '',
           tagovi: o.tagovi || [],
           tip: o.tip ? (typeof o.tip === 'string' ? (o.tip.charAt(0).toUpperCase() + o.tip.slice(1)) : o.tip) : '',
