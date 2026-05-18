@@ -3,9 +3,6 @@ from typing import Optional
 from datetime import datetime
 from app.models.user import User 
 
-from sqlmodel import SQLModel, Field, Relationship
-from typing import Optional
-
 
 class Subject(SQLModel, table=True):
     __tablename__ = "subjects"
@@ -106,3 +103,40 @@ class MaterialDetailResponse(SQLModel):
     comments: list[CommentResponse] = []
     ratings: list[Rating] = []
     
+def get_default_subjects():
+    return [
+        Subject(name="Matematika 1", study_year=1),
+        Subject(name="Fizika 1", study_year=1),
+        Subject(name="Osnovi elektrotehnike 1", study_year=1),
+        Subject(name="Osnovi računarstva", study_year=1),
+        Subject(name="Uvod u energetske sisteme", study_year=1),
+        Subject(name="Matematika 2", study_year=1),
+        Subject(name="Fizika 2", study_year=1),
+        Subject(name="Osnovi elektrotehnike 2", study_year=1),
+        Subject(name="Osnovi programiranja", study_year=1),
+        Subject(name="Tehnologije za podršku tehničkom pisanju", study_year=1),
+        Subject(name="Matematika 3", study_year=2),
+        Subject(name="Signali i sistemi", study_year=2),
+        Subject(name="Osnovi elektronike", study_year=2),
+        Subject(name="Objektno orijentirano programiranje", study_year=2),
+        Subject(name="Analogna integrisana elektronika", study_year=2),
+        Subject(name="Statistička teorija telekomunikacija", study_year=2),
+        Subject(name="Sekvencijalni sklopovi", study_year=2),
+        Subject(name="Modeliranje i analiza podataka", study_year=2),
+        Subject(name="Osnovi telekomunikacija", study_year=3),
+        Subject(name="Teorija informacija i kodovanja", study_year=3),
+        Subject(name="Telekomunikacijski protokoli", study_year=3),
+        Subject(name="Obrada digitalnih signala", study_year=3),
+        Subject(name="Baze podataka", study_year=3),
+        Subject(name="Optičke telekomunikacije", study_year=3),
+        Subject(name="Razvoj telekomunikacijske programske podrške", study_year=3),
+        Subject(name="Telekomunikacione mreže", study_year=3),
+        Subject(name="Radijski telekomunikacijski sistemi", study_year=3),
+        Subject(name="Mobilne telekomunikacije", study_year=4),
+        Subject(name="Mikroprocesorski sistemi u telekomunikacijama", study_year=4),
+        Subject(name="Mjerenja u telekomunikacijama", study_year=4),
+        Subject(name="Razvoj mobilnih aplikacija i servisa", study_year=4),
+        Subject(name="Infrastruktura i servisi u oblaku", study_year=4),
+        Subject(name="Projektovanje telekomunikacionih mreža", study_year=4),
+        Subject(name="Multimedijski sistemi i komunikacije", study_year=4),
+    ]
