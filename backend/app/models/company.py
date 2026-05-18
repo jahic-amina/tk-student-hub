@@ -19,6 +19,7 @@ class Company(SQLModel, table=True):
 	email: str = Field(index=True)
 	phone_number: str = Field(index=True)
 	jib: str = Field(index=True)
+	hashed_password: str  
 	status: CompanyStatus = Field(default=CompanyStatus.pending)
 	created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 	is_deleted: bool = Field(default=False)
@@ -34,6 +35,7 @@ class CompanyCreate(SQLModel):
 	phone_number: str
 	jib: str
 	address: str
+	password: str
 
 
 class CompanyUpdate(SQLModel):
