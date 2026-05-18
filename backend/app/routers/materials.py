@@ -8,7 +8,7 @@ from sqlmodel import Session, select, func
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from app.models.materials import Material, MaterialsResponse, MaterialDetailResponse, Rating, Comment
+from app.models.materials import Material, MaterialsResponse, MaterialDetailResponse, Rating, Comment, Subject
 from sqlalchemy.orm import selectinload
 
 router = APIRouter(prefix="/materials", tags=["materials"])
@@ -195,6 +195,11 @@ def get_materials(session: Session = Depends(get_db)):
         )
         materials.append(response)
     return materials
+
+@router.get("/subjects", response_model=list[Subject])
+def get_subjects(session: Session = Depends(get_db)):
+    subjects = session.exec(select(Subject)).all()
+    return subjects
 
 @router.get("/{material_id}", response_model=MaterialDetailResponse)
 def get_material(material_id: int, session: Session = Depends(get_db)):
