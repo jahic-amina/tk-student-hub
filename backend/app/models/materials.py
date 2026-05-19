@@ -85,7 +85,7 @@ class MaterialsResponse(SQLModel):
     status: str
     created_at: datetime
     number_of_downloads: int
-    subject: Subject
+    subject: Optional[Subject] = None
     user: UserResponse  
     average_rating: Optional[float] = None
     rating_count: Optional[int] = None

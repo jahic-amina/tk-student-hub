@@ -47,6 +47,12 @@ def download_material(
             detail="Materijal sa tim ID-em ne postoji.",
         )
 
+    if material.status == "deleted":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Materijal je uklonjen.",
+        )
+
     # Provjera statusa 
     if material.status != "approved":
         raise HTTPException(
@@ -181,6 +187,7 @@ def get_materials(session: Session = Depends(get_db)):
             func.count(Rating.id).label("rating_count")
         )
         .outerjoin(Rating, Rating.material_id == Material.id)
+        .where(Material.status != "deleted")
         .options(
             selectinload(Material.subject),
             selectinload(Material.user)
@@ -210,7 +217,7 @@ def get_subjects(session: Session = Depends(get_db)):
 def get_material(material_id: int, session: Session = Depends(get_db)):
     query = (
         select(Material)
-        .where(Material.id == material_id)
+        .where(Material.id == material_id, Material.status != "deleted")
         .options(
             selectinload(Material.subject),
             selectinload(Material.user),
@@ -232,13 +239,12 @@ def get_material(material_id: int, session: Session = Depends(get_db)):
 def delete_material(
     id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user) # Vraćena autentifikacija
+    current_user: User = Depends(get_current_user)
 ):
     material = db.query(Material).filter(Material.id == id).first()
     if not material:
         raise HTTPException(status_code=404, detail="Materijal ne postoji.")
 
-    # Provjera: Admin ili autor materijala
     is_admin = getattr(current_user, "role", "") == "admin"
     is_author = material.user_id == current_user.id
 
@@ -248,7 +254,6 @@ def delete_material(
             detail="Nemate dozvolu za brisanje ovog materijala."
         )
 
-    # Soft delete
     material.status = "deleted"
     db.add(material)
     db.commit()
