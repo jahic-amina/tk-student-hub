@@ -81,12 +81,11 @@
 
         <div class="bg-red-50 p-6 rounded-2xl border border-red-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h3 class="text-sm font-bold text-red-800">Deaktivacija i brisanje</h3>
-            <p class="text-xs text-red-500">Privremeno onemogućite ili trajno uklonite svoj račun.</p>
+            <h3 class="text-sm font-bold text-red-800">Deaktivacija računa</h3>
+            <p class="text-xs text-red-500">Privremeno onemogućite svoj račun.</p>
           </div>
           <div class="flex gap-3 text-xs">
             <button @click="alertAction('Deaktivacija računa')" type="button" class="px-4 py-2 bg-white text-red-700 border border-red-200 font-bold rounded-xl hover:bg-red-100 transition">Deaktiviraj nalog</button>
-            <button @click="alertAction('Brisanje računa')" type="button" class="px-4 py-2 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition">Izbriši nalog</button>
           </div>
         </div>
 
