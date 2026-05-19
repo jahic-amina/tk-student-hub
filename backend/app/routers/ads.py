@@ -2,7 +2,7 @@ from typing import Optional, List
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlmodel import Session, select
-from backend.app.models.ad import Ad, AdStatus, AdType, AdCreate, AdUpdate, AdPatch, StatusUpdate
+from app.models.ad import Ad, AdStatus, AdType, AdCreate, AdUpdate, AdPatch, StatusUpdate
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
