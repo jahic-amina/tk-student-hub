@@ -170,6 +170,11 @@ const fetchUserProfile = async () => {
 }
 
 const handleSubmit = async () => {
+  if (!form.first_name.trim() || !form.last_name.trim()) {
+    status.message = 'Ime i prezime su obavezna polja i ne mogu biti prazni.'
+    status.isError = true
+    return // Prekida se dalje izvršavanje
+  }
   if (form.bio.length > 500) return
   
   isLoading.value = true
