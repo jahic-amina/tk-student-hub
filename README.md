@@ -37,6 +37,15 @@ Za detalje o frontend i backend specifičnim uputama pogledajte:
 - `frontend/README.md`
 - `backend/README.md`
 
+## Git Workflow
+
+- Radite na grani `dev` — ne raditi commit direktno na `main`
+- Konvencija za imenovanje grana: `timX/naziv-funkcionalnosti/naziv-featurea`
+  - Primjeri: `tim1/prakse/lista`, `tim2/materijali/upload`, `tim3/forum/novi-post`
+- Commit poruke trebaju biti smislene i opisivati šta je promijenjeno
+- Radite commit često — ne čekajte da sve bude gotovo pa onda jedan veliki commit
+- Pull request prema `main` grani se radi tek na kraju sprinta, nakon pregleda asistentice
+
 ## Timovi i funkcionalnosti
 
 | PRojektni tim | Funkcionalnost | Folder |
