@@ -59,7 +59,16 @@ def get_companies_admin(
 
 @router.post("/", response_model=Company, status_code=status.HTTP_201_CREATED)
 def create_company(data: CompanyCreate, db: Session = Depends(get_db)):
-    company = Company(**data.model_dump())
+    import bcrypt
+    
+    company_data = data.model_dump()
+    password = company_data.pop("password")
+    company_data["hashed_password"] = bcrypt.hashpw(
+        password.encode('utf-8'), 
+        bcrypt.gensalt()
+    ).decode('utf-8')
+    
+    company = Company(**company_data)
     db.add(company)
     db.commit()
     db.refresh(company)
