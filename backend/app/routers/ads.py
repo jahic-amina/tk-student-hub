@@ -3,11 +3,23 @@ from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlmodel import Session, select
 from app.models.ad import Ad, AdStatus, AdType, AdCreate, AdUpdate, AdPatch, StatusUpdate
+from app.models.company import Company
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
 
 router = APIRouter(prefix="/ads", tags=["Ads"])
+
+
+def ensure_can_edit_ad(ad: Ad, current_user: User, session: Session) -> None:
+    if current_user.role == "admin":
+        return
+
+    company = session.get(Company, ad.company_id)
+    if company and company.email == current_user.email:
+        return
+
+    raise HTTPException(status_code=403, detail="Access denied.")
 
 
 @router.get("/", response_model=List[Ad])
@@ -72,11 +84,14 @@ def update_ad(
     ad_id: int,
     data: AdUpdate,
     session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Full update of an ad (all fields must be provided)."""
     ad = session.get(Ad, ad_id)
     if not ad or ad.is_deleted:
         raise HTTPException(status_code=404, detail="Ad not found.")
+
+    ensure_can_edit_ad(ad, current_user, session)
 
     for key, value in data.model_dump().items():
         setattr(ad, key, value)
@@ -93,18 +108,18 @@ def patch_ad(
     ad_id: int,
     data: AdPatch,
     session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Partial update of an ad (only provided fields are changed)."""
     ad = session.get(Ad, ad_id)
     if not ad or ad.is_deleted:
         raise HTTPException(status_code=404, detail="Ad not found.")
 
+    ensure_can_edit_ad(ad, current_user, session)
+
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(ad, key, value)
-
-    if data.status == AdStatus.changes_requested:
-        ad.changes_requested_at = datetime.utcnow()
 
     ad.updated_at = datetime.utcnow()
     session.add(ad)
