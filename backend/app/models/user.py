@@ -1,7 +1,7 @@
 from sqlmodel import SQLModel, Field
 from typing import Optional
 from enum import Enum
-from datetime import datetime
+from datetime import datetime, timezone
 
 class UserRole(str, Enum):
     member = "member"
@@ -16,4 +16,4 @@ class User(SQLModel, table=True):
     full_name: str
     password_hash: str
     role: UserRole = Field(default=UserRole.member)
-    created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    created_at: Optional[datetime] = Field(default_factory=lambda: datetime.now(timezone.utc))
