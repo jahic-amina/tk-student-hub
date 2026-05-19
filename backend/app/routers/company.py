@@ -1,8 +1,9 @@
 from typing import Optional, List
+import re
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session, select
 from app.database import get_db
-from app.models.company import Company, CompanyStatus
+from app.models.company import Company, CompanyCreate, CompanyStatus
 from app.core.security import get_current_user
 from app.models.user import User
 
@@ -30,3 +31,57 @@ def get_companies(
         query = query.where(Company.status != CompanyStatus.pending)
 
     return db.exec(query).all()
+
+
+@router.post("/", response_model=Company, status_code=status.HTTP_201_CREATED)
+def create_company(data: CompanyCreate, db: Session = Depends(get_db)):
+    if len(data.company_name.strip()) < 2:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Company name must be at least 2 characters long.",
+        )
+
+    if len(data.description.strip()) < 10:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Description must be at least 10 characters long.",
+        )
+
+    website_pattern = r"^https://[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+(/.*)?$"
+    if not re.match(website_pattern, data.website_url.strip()):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Website URL must be in format https://something.something.",
+        )
+
+    logo_pattern = r"^https://.+\.(png|jpg|jpeg|webp)(\?.*)?$"
+    if not re.match(logo_pattern, data.logo_url.strip(), flags=re.IGNORECASE):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Logo URL must point to a .png, .jpg, .jpeg or .webp image.",
+        )
+
+    email_pattern = r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"
+    if not re.match(email_pattern, data.email.strip()):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email is not in a valid format.",
+        )
+
+    if not data.jib.isdigit():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="JIB must contain only digits.",
+        )
+
+    if len(data.address.strip()) <= 2:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Address must be longer than 2 characters.",
+        )
+
+    company = Company(**data.model_dump())
+    db.add(company)
+    db.commit()
+    db.refresh(company)
+    return company
