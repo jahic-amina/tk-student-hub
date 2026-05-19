@@ -1,13 +1,8 @@
 import axios from "axios";
 
-
 const forumApi = axios.create({
   baseURL: "http://127.0.0.1:8000",
-  headers: {
-    "Content-Type": "application/json",
-  },
 });
-
 
 forumApi.interceptors.request.use((config) => {
   const token = localStorage.getItem("token") || localStorage.getItem("access_token");
@@ -19,81 +14,62 @@ forumApi.interceptors.request.use((config) => {
   return config;
 });
 
-export const getCategories = async () => {
-  const response = await forumApi.get("/forum/categories");
-  return response.data;
-};
+function handleForumError(error, fallbackMessage) {
+  console.error("Forum API greška:", {
+    message: error.message,
+    status: error.response?.status,
+    data: error.response?.data,
+    url: error.config?.url,
+  });
 
-export const getTopicSummaries = async ({ categoryId = null, search = "" } = {}) => {
-  const params = {};
+  throw new Error(
+    error.response?.data?.detail ||
+      error.message ||
+      fallbackMessage
+  );
+}
 
-  if (categoryId) {
-    params.category_id = categoryId;
+export const getTopics = async ({ search = "" } = {}) => {
+  try {
+    const params = {};
+
+    if (search && search.trim()) {
+      params.search = search.trim();
+    }
+
+    const response = await forumApi.get("/forum/topics", { params });
+
+    if (!Array.isArray(response.data)) {
+      console.error("Neočekivan odgovor za /forum/topics:", response.data);
+      return [];
+    }
+
+    return response.data;
+  } catch (error) {
+    handleForumError(error, "Teme se ne mogu učitati.");
   }
-
-  if (search && search.trim()) {
-    params.search = search.trim();
-  }
-
-  const response = await forumApi.get("/forum/topics/summary", { params });
-  return response.data;
-};
-
-
-export const getTopics = async ({ categoryId = null, search = "" } = {}) => {
-  const params = {};
-
-  if (categoryId) {
-    params.category_id = categoryId;
-  }
-
-  if (search && search.trim()) {
-    params.search = search.trim();
-  }
-
-  const response = await forumApi.get("/forum/topics", { params });
-  return response.data;
 };
 
 export const getTopicById = async (id) => {
-  const response = await forumApi.get(`/forum/topics/${id}`);
-  return response.data;
+  try {
+    const response = await forumApi.get(`/forum/topics/${id}`);
+    return response.data;
+  } catch (error) {
+    handleForumError(error, "Detalji teme se ne mogu učitati.");
+  }
 };
 
 export const incrementTopicView = async (id) => {
-  const response = await forumApi.patch(`/forum/topics/${id}/view`);
-  return response.data;
+  try {
+    const response = await forumApi.patch(`/forum/topics/${id}/view`);
+    return response.data;
+  } catch (error) {
+    handleForumError(error, "Broj pregleda se ne može ažurirati.");
+  }
 };
-
-export const createTopic = async (topicData) => {
-  const response = await forumApi.post("/forum/topics", topicData);
-  return response.data;
-};
-
-export const createComment = async (commentData) => {
-  const response = await forumApi.post("/forum/comments", commentData);
-  return response.data;
-};
-
-export const deleteTopic = async (id) => {
-  const response = await forumApi.delete(`/forum/topics/${id}`);
-  return response.data;
-};
-
-export const deleteComment = async (id) => {
-  const response = await forumApi.delete(`/forum/comments/${id}`);
-  return response.data;
-};
-
 
 export default {
-  getCategories,
-  getTopicSummaries,
   getTopics,
   getTopicById,
   incrementTopicView,
-  createTopic,
-  createComment,
-  deleteTopic,
-  deleteComment,
 };

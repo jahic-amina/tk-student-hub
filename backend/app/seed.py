@@ -95,6 +95,14 @@ def seed_topics_and_comments(session: Session):
         print("Kategorije nisu pronađene. Prvo se moraju dodati kategorije.")
         return
 
+    first_topic_content = (
+    "Ovo je prva testna tema na forumu. Ovdje studenti mogu postavljati pitanja, "
+    "dijeliti iskustva i pomagati jedni drugima. Ova tema namjerno ima duži tekst "
+    "kako bismo mogli testirati da se na glavnoj listi tema prikazuje samo skraćeni "
+    "sažetak od otprilike 150 karaktera, dok se puni tekst prikazuje tek kada korisnik "
+    "otvori detaljan prikaz teme."
+    )
+
     first_topic = session.exec(
         select(ForumTopic).where(ForumTopic.title == "Dobrodošli na TK Student Hub forum")
     ).first()
@@ -102,11 +110,16 @@ def seed_topics_and_comments(session: Session):
     if not first_topic:
         first_topic = ForumTopic(
             title="Dobrodošli na TK Student Hub forum",
-            content="Ovo je prva testna tema na forumu. Ovdje studenti mogu postavljati pitanja, dijeliti iskustva i pomagati jedni drugima.",
+            content=first_topic_content,
             category_id=general_category.id,
             user_id=user.id
         )
 
+        session.add(first_topic)
+        session.commit()
+        session.refresh(first_topic)
+    else:
+        first_topic.content = first_topic_content
         session.add(first_topic)
         session.commit()
         session.refresh(first_topic)
@@ -120,6 +133,14 @@ def seed_topics_and_comments(session: Session):
         session.add(first_comment)
         session.commit()
 
+    second_topic_content = (
+    "Ovdje možemo dijeliti ideje za projekte iz mreža, elektronike, programiranja "
+    "i telekomunikacijskih sistema. Na primjer, studenti mogu predložiti projekte "
+    "iz oblasti računarskih mreža, bežičnih komunikacija, IoT sistema, obrade signala, "
+    "senzorskih mreža ili web aplikacija za telekomunikacijske servise. Cilj teme je "
+    "da svako može pronaći inspiraciju i dobiti komentar od kolega."
+    )
+
     second_topic = session.exec(
         select(ForumTopic).where(ForumTopic.title == "Ideje za projekte iz telekomunikacija")
     ).first()
@@ -127,7 +148,7 @@ def seed_topics_and_comments(session: Session):
     if not second_topic:
         second_topic = ForumTopic(
             title="Ideje za projekte iz telekomunikacija",
-            content="Ovdje možemo dijeliti ideje za projekte iz mreža, elektronike, programiranja i telekomunikacijskih sistema.",
+            content=second_topic_content,
             category_id=projects_category.id,
             user_id=user.id
         )
@@ -135,15 +156,11 @@ def seed_topics_and_comments(session: Session):
         session.add(second_topic)
         session.commit()
         session.refresh(second_topic)
-
-        second_comment = ForumComment(
-            content="Dobra tema, mogli bismo dodati primjere projekata sa Arduinom, STM32 i mrežnim alatima.",
-            topic_id=second_topic.id,
-            user_id=user.id
-        )
-
-        session.add(second_comment)
+    else:
+        second_topic.content = second_topic_content
+        session.add(second_topic)
         session.commit()
+        session.refresh(second_topic)
 
 
 def seed_database():
