@@ -115,3 +115,16 @@ class ForumTopicRead(SQLModel):
     user_id: int
     tags: Optional[List[ForumTag]] = None
 
+class ForumCommentCreate(SQLModel):
+    content: str = Field(min_length=2)
+    topic_id: int
+
+class ForumCommentRead(SQLModel):
+    id: int
+    content: str
+    is_best_answer: bool
+    is_deleted: bool
+    created_at: datetime
+    updated_at: Optional[datetime]
+    topic_id: int
+    user_id: int
