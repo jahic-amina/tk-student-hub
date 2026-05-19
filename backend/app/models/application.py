@@ -1,6 +1,5 @@
 from pydantic import ConfigDict
 from sqlmodel import SQLModel, Field, Relationship
-from typing import Optional
 from enum import Enum
 from datetime import datetime, timezone
 from sqlalchemy import UniqueConstraint
@@ -21,7 +20,7 @@ class Application(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id", index=True)
-    ad_id: int = Field(foreign_key="ads.id", index=True)
+    ad_id: int = Field(foreign_key="oglasi.id", index=True)
 
     cv_path: str
     motivational_letter_path: str
@@ -35,8 +34,8 @@ class Application(SQLModel, table=True):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-    user: "User" = Relationship(back_populates="applications")
-    ad: "Oglas" = Relationship(back_populates="applications")
+    user: "User" = Relationship()
+    ad: "Oglas" = Relationship()
 
 class ApplicationCreate(SQLModel):
     ad_id: int
@@ -65,6 +64,3 @@ class ApplicationUpdate(SQLModel):
     status: Optional[ApplicationStatus] = None
     admin_feedback: Optional[str] = None
     is_archived: Optional[bool] = None
-
-
-Application.model_rebuild()

@@ -1,7 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
-import boto3
-from botocore.exceptions import ClientError
+
+try:
+    import boto3
+    from botocore.exceptions import ClientError
+except ImportError:
+    boto3 = None
+
+    class ClientError(Exception):
+        pass
 
 from app.core.security import get_current_user
 from app.database import get_db

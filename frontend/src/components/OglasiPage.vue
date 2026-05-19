@@ -107,15 +107,36 @@ export default {
     async fetchOglasi() {
       this.loading = true
       try {
-        const res = await axios.get('http://127.0.0.1:8000/oglasi/')
+        const params = {}
+
+        if (this.searchQuery) {
+          params.search = this.searchQuery
+        }
+
+        if (this.currentTab === 'Prakse') {
+          params.tip = 'praksa'
+        } else if (this.currentTab === 'Edukacije') {
+          params.tip = 'edukacija'
+        } else if (this.currentTab === 'Stipendije') {
+          params.tip = 'stipendija'
+        } else if (this.currentTab === 'Aktuelno') {
+          params.status = 'active'
+        }
+
+        const res = await axios.get('http://127.0.0.1:8000/oglasi/', { params })
         const data = res.data || []
 
         this.oglasi = data.map(o => ({
           id: o.id,
           naslov: o.naziv || o.naslov || '',
-          kompanija: (o.kompanija && (o.kompanija.name || o.kompanija.naziv)) || o.company || '',
+          kompanija: (o.kompanija && (o.kompanija.name || o.kompanija.naziv)) || o.company || (o.kompanija_id ? `Kompanija #${o.kompanija_id}` : ''),
           opis: o.opis || '',
           tagovi: o.tagovi || [],
+          tip: o.tip ? (typeof o.tip === 'string' ? (o.tip.charAt(0).toUpperCase() + o.tip.slice(1)) : o.tip) : '',
+          dodatno: o.naknada || o.dodatno || '',
+          status: (o.status === 'active' ? 'Aktivan' : o.status === 'expired' ? 'Istekao' : o.status) || '',
+          lokacija: o.lokacija || 'Nije navedeno',
+          trajanje: o.trajanje || ''
           
           tip: o.tip ? (typeof o.tip === 'string' ? (o.tip.charAt(0).toUpperCase() + o.tip.slice(1)) : o.tip) : 'Prilika',
           
@@ -135,6 +156,15 @@ export default {
       } finally {
         this.loading = false
       }
+    }
+  },
+  watch: {
+    searchQuery() {
+      clearTimeout(this._searchTimer)
+      this._searchTimer = setTimeout(() => this.fetchOglasi(), 400)
+    },
+    currentTab() {
+      this.fetchOglasi()
     }
   },
   mounted() {
