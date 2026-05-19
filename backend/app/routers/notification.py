@@ -2,12 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
 from typing import List
 from app.database import get_db  
-from app.models.obavjestenja import (
+from app.models.notification import (
     Notification,
     NotificationCreate,
     NotificationUpdate
 )
-
 from app.models.user import User, UserRole
 from app.core.security import get_current_user
 
@@ -22,10 +21,11 @@ def create_notification(
     session: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+  
     if current_user.role != UserRole.admin:
         raise HTTPException(status_code=403, detail="Nemate dozvolu za kreiranje obavještenja.")
         
-    db_notification = Notification.model_validate(notification)
+    db_notification = Notification(**notification.model_dump())
     session.add(db_notification)
     session.commit()
     session.refresh(db_notification)
@@ -38,7 +38,6 @@ def get_user_notifications(
     session: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ): 
-    
     if current_user.id != user_id and current_user.role != UserRole.admin:
         raise HTTPException(status_code=403, detail="Nemate dozvolu za pregled tuđih obavještenja.")
 
@@ -74,7 +73,7 @@ def update_notification(
     if not db_notification:
         raise HTTPException(status_code=404, detail="Obavještenje nije pronađeno")
     
-
+    
     if db_notification.user_id != current_user.id and current_user.role != UserRole.admin:
         raise HTTPException(status_code=403, detail="Nemate dozvolu za izmjenu ovog obavještenja.")
     

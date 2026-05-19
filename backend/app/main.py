@@ -6,7 +6,7 @@ from app.database import create_db_and_tables
 from app.routers import auth, forum, prakse, profiles   
 from app.core.security import get_current_user
 from app.models.user import User
-from app.routers.obavjestenja import router as obavjestenja_router
+from app.routers.notification import router as notification_router
 
 create_db_and_tables()
 
@@ -29,7 +29,7 @@ app.include_router(auth.router)
 app.include_router(prakse.router)
 app.include_router(forum.router)
 app.include_router(profiles.router)
-app.include_router(obavjestenja_router)  # Dodajemo ruter za obavještenja
+app.include_router(notification_router)  # Dodajemo ruter za obavještenja
 @app.get("/")
 def root():
     return {"message": f"{settings.APP_NAME} API radi"}
