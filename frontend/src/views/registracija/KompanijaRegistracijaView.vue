@@ -137,6 +137,22 @@
             </div>
           </div>
 
+          <div class="form-row">
+          <div class="form-group full">
+            <label for="password">Lozinka</label>
+            <input
+              id="password"
+              v-model="form.password"
+              type="password"
+              class="field"
+              :class="{ 'field-error': errors.password }"
+              placeholder="Minimalno 8 karaktera"
+              @blur="validateField('password')"
+            />
+            <span v-if="errors.password" class="error-msg">{{ errors.password }}</span>
+          </div>
+        </div>
+
           <div class="form-actions">
             <button class="btn-submit" :disabled="isLoading" @click="handleSubmit">
               <span v-if="isLoading">Slanje...</span>
@@ -171,6 +187,7 @@ const form = reactive({
   email: '',
   phone_number: '',
   logo_url: '',
+  password: '',
 })
 
 const errors = reactive({
@@ -182,6 +199,7 @@ const errors = reactive({
   email: '',
   phone_number: '',
   logo_url: '',
+  password: '',
 })
 
 const isLoading = ref(false)
@@ -189,7 +207,7 @@ const submitStatus = ref(null) // null | 'success' | 'error'
 const serverError = ref('')
 
 const steps = [
-  'Predlazete praksu ili edukaciju.',
+  'Predlažete praksu ili edukaciju.',
   'Administrator odobrava sadržaj prije objave.',
   'Pratite statuse prijedloga i prijave studenata.',
 ]
@@ -219,6 +237,11 @@ const validators = {
     try { new URL(v.trim()); return '' }
     catch { return 'Unesite validan URL loga.' }
   },
+  password: (v) => {
+  if (!v.trim()) return 'Lozinka je obavezna.'
+  if (v.length < 8) return 'Lozinka mora imati najmanje 8 karaktera.'
+  return ''
+  },
 }
 
 const validateField = (field) => {
@@ -235,6 +258,8 @@ const validateAll = () => {
 }
 
 const handleSubmit = async () => {
+  const valid = validateAll()
+  console.log('Errors:', JSON.stringify(errors))
   if (!validateAll()) return
 
   isLoading.value = true
