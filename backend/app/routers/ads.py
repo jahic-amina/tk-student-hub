@@ -103,9 +103,6 @@ def patch_ad(
     for key, value in update_data.items():
         setattr(ad, key, value)
 
-    if data.status == AdStatus.changes_requested:
-        ad.changes_requested_at = datetime.utcnow()
-
     ad.updated_at = datetime.utcnow()
     session.add(ad)
     session.commit()

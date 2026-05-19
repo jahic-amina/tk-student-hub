@@ -133,8 +133,6 @@ class AdPatch(BaseModel):
     spots: Optional[int] = None
     requirements: Optional[str] = None
     benefits: Optional[str] = None
-    status: Optional[AdStatus] = None
-    admin_comment: Optional[str] = None
 
 
 class StatusUpdate(BaseModel):
