@@ -15,52 +15,15 @@
         </button>
       </div>
 
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between mb-6">
-        
-        <div class="flex-1">
-          <input
-            type="text"
-            v-model="searchQuery"
-            placeholder="⌕  Pretraga po nazivu, kompaniji..."
-            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-orange-400"
-          />
-        </div>
-        
-        <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2.5 text-sm items-center">
-          <button class="w-full sm:w-auto px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg font-medium text-gray-700 hover:bg-gray-100 text-center text-xs sm:text-sm">
-            Filter
-          </button>
-          <button class="w-full sm:w-auto px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg font-medium text-gray-700 hover:bg-gray-100 text-center text-xs sm:text-sm">
-            Saradnik
-          </button>
-          
-          <select class="w-full sm:w-auto px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg font-medium text-gray-700 focus:outline-none cursor-pointer text-xs sm:text-sm">
-            <option>Oblast</option>
-            <option>IT</option>
-            <option>Telekomunikacije</option>
-            <option>Elektronika</option>
-          </select>
-          
-          <select class="w-full sm:w-auto px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg font-medium text-gray-700 focus:outline-none cursor-pointer text-xs sm:text-sm">
-            <option>Datum</option>
-            <option>Najnovije</option>
-            <option>Uskoro ističe</option>
-          </select>
-          
-          <div class="col-span-2 sm:col-span-1 flex items-center justify-between sm:justify-start gap-3 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
-            <span class="text-gray-700 font-medium text-xs sm:text-sm">Plaćeno</span>
-            <button
-              @click="placeno = !placeno"
-              :class="['relative inline-flex h-5 w-10 items-center rounded-full transition-colors duration-200 focus:outline-none', placeno ? 'bg-orange-500' : 'bg-gray-300']"
-            >
-              <span :class="['inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200', placeno ? 'translate-x-5' : 'translate-x-0.5']"></span>
-            </button>
-          </div>
-        </div>
-      </div>
+      <OglasFilters 
+        v-model:searchQuery="searchQuery"
+        v-model:placeno="placeno"
+        v-model:selectedOblast="selectedOblast"
+        :oblasti="oblasti"
+      />
 
       <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
-        <h2 class="text-lg sm:text-xl font-bold text-gray-800 text-center sm:text-left">
+        <h2 class="text-base sm:text-lg font-bold text-gray-800 text-center sm:text-left">
           {{ filtriraniOglasi.length }} aktivnih oglasa
         </h2>
         <button class="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-lg transition shadow-sm text-center">
@@ -82,7 +45,7 @@
 
       <div v-else class="text-center py-10 px-4 bg-white rounded-xl border border-dashed border-gray-300">
         <p class="text-gray-500 font-medium text-base sm:text-lg">Nema pronađenih oglasa za traženi pojam.</p>
-        <p class="text-gray-400 text-xs sm:text-sm mt-1">Pokušajte sa nekom drugom ključnom riječi.</p>
+        <p class="text-gray-400 text-xs sm:text-sm mt-1">Pokušajte sa nekom drugom ključnom riječi ili filterom.</p>
       </div>
 
     </div>
@@ -91,14 +54,16 @@
 
 <script>
 import HeroBanner from './HeroBanner.vue'
-import OglasCard from './OglasCard.vue'
+import OglasFilter  from './OglasFilter.vue'
+import OglasCard from './OglasCard.vue' //
 import axios from 'axios'
 
 export default {
   name: 'OglasiPage',
   components: {
     HeroBanner,
-    OglasCard
+    OglasFilter,
+    OglasCard 
   },
   data() {
     return {
@@ -106,7 +71,9 @@ export default {
       currentTab: 'Sve',
       searchQuery: '',
       placeno: false,
-      oglasi: [] 
+      selectedOblast: '', 
+      oglasi: [],
+      oblasti: [] // Dinamički niz za filter oblasti
     }
   },
   computed: {
@@ -130,7 +97,9 @@ export default {
 
         const mecapPlaceno = !this.placeno || (oglas.dodatno && oglas.dodatno.includes('KM'))
 
-        return mecapTab && mecapSearch && mecapPlaceno
+        const mecapOblast = !this.selectedOblast || oglas.oblast === this.selectedOblast
+
+        return mecapTab && mecapSearch && mecapPlaceno && mecapOblast
       })
     }
   },
@@ -147,12 +116,20 @@ export default {
           kompanija: (o.kompanija && (o.kompanija.name || o.kompanija.naziv)) || o.company || '',
           opis: o.opis || '',
           tagovi: o.tagovi || [],
-          tip: o.tip ? (typeof o.tip === 'string' ? (o.tip.charAt(0).toUpperCase() + o.tip.slice(1)) : o.tip) : '',
-          dodatno: o.naknada || o.dodatno || '',
-          status: (o.status === 'active' ? 'Aktivan' : o.status === 'expired' ? 'Istekao' : o.status) || '',
+          
+          tip: o.tip ? (typeof o.tip === 'string' ? (o.tip.charAt(0).toUpperCase() + o.tip.slice(1)) : o.tip) : 'Prilika',
+          
+          status: o.status === 'active' ? 'Aktivan' : o.status === 'expiring' ? 'Uskoro ističe' : o.status || 'Aktivan',
+          
           lokacija: o.lokacija || 'Nije navedeno', 
-          trajanje: o.trajanje || '' 
+          trajanje: o.trajanje || '', 
+          dodatno: o.naknada || o.dodatno || '', 
+          oblast: o.oblast || '' 
         }))
+
+        const sveOblasti = this.oglasi.map(o => o.oblast).filter(o => o !== '')
+        this.oblasti = [...new Set(sveOblasti)]
+
       } catch (err) {
         console.error('Neuspješan dohvat oglasa', err)
       } finally {
@@ -167,7 +144,6 @@ export default {
 </script>
 
 <style scoped>
-/* Sakriva scrollbar za tabove na mobilnom, ali zadržava mogućnost skrolovanja prstom */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
