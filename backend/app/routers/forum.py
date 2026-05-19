@@ -10,7 +10,10 @@ from app.models.forum import (
     ForumTopicCreate,
     ForumTopicRead,
     ForumTag,
-    ForumTopicTag
+    ForumTopicTag,
+    ForumComment,
+    ForumCommentCreate,
+    ForumCommentRead,
 )   
 
 router = APIRouter(prefix="/forum", tags=["forum"])
@@ -74,3 +77,34 @@ def create_forum_topic(
     db.refresh(new_topic)
 
     return new_topic
+
+@router.post("/comments", response_model=ForumCommentRead, status_code=status.HTTP_201_CREATED)
+def create_forum_comment(
+    comment_data: ForumCommentCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    #Provjera da li tema postoji
+    topic = db.get(ForumTopic, comment_data.topic_id)
+    if not topic:
+        raise HTTPException(status_code=404, detail="Tema nije pronađena.")
+
+    #Kreiranje novog komentara
+    new_comment = ForumComment(
+        content=comment_data.content,
+        topic_id=comment_data.topic_id,
+        user_id=current_user.id
+    )
+    db.add(new_comment)
+    db.commit()
+    db.refresh(new_comment)
+
+    return new_comment
+
+@router.get("/topics/{topic_id}/comments", response_model=List[ForumCommentRead])
+def get_comments(
+    topic_id: int,
+    db: Session = Depends(get_db)
+):
+    comments = db.exec(select(ForumComment).where(ForumComment.topic_id == topic_id)).all()
+    return comments
