@@ -57,6 +57,7 @@ import HeroBanner from './HeroBanner.vue'
 import OglasFilter  from './OglasFilter.vue'
 import OglasCard from './OglasCard.vue' //
 import axios from 'axios'
+import Oglas from '../backend/app/models/ads_model.py'
 
 export default {
   name: 'OglasiPage',
@@ -132,20 +133,12 @@ export default {
           kompanija: (o.kompanija && (o.kompanija.name || o.kompanija.naziv)) || o.company || (o.kompanija_id ? `Kompanija #${o.kompanija_id}` : ''),
           opis: o.opis || '',
           tagovi: o.tagovi || [],
-          tip: o.tip ? (typeof o.tip === 'string' ? (o.tip.charAt(0).toUpperCase() + o.tip.slice(1)) : o.tip) : '',
-          dodatno: o.naknada || o.dodatno || '',
-          status: (o.status === 'active' ? 'Aktivan' : o.status === 'expired' ? 'Istekao' : o.status) || '',
-          lokacija: o.lokacija || 'Nije navedeno',
-          trajanje: o.trajanje || ''
-          
           tip: o.tip ? (typeof o.tip === 'string' ? (o.tip.charAt(0).toUpperCase() + o.tip.slice(1)) : o.tip) : 'Prilika',
-          
-          status: o.status === 'active' ? 'Aktivan' : o.status === 'expiring' ? 'Uskoro ističe' : o.status || 'Aktivan',
-          
-          lokacija: o.lokacija || 'Nije navedeno', 
-          trajanje: o.trajanje || '', 
-          dodatno: o.naknada || o.dodatno || '', 
-          oblast: o.oblast || '' 
+          dodatno: o.naknada || o.dodatno || '',
+          status: o.status === 'active' ? 'Aktivan' : o.status === 'expiring' ? 'Uskoro ističe' : o.status === 'expired' ? 'Istekao' : (o.status || 'Aktivan'),
+          lokacija: o.lokacija || 'Nije navedeno',
+          trajanje: o.trajanje || '',
+          oblast: o.oblast || ''
         }))
 
         const sveOblasti = this.oglasi.map(o => o.oblast).filter(o => o !== '')
