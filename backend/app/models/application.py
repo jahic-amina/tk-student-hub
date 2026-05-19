@@ -1,6 +1,5 @@
 from pydantic import ConfigDict
 from sqlmodel import SQLModel, Field, Relationship
-from typing import Optional
 from enum import Enum
 from datetime import datetime, timezone
 from sqlalchemy import UniqueConstraint

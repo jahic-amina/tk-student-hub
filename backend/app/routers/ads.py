@@ -1,7 +1,7 @@
 from typing import Optional, List
 from datetime import datetime, date
 from fastapi import APIRouter, HTTPException, Depends, Query
-from sqlmodel import Session, select
+from sqlmodel import Session, select, or_
 from pydantic import BaseModel
 
 from app.models.ads_model import Oglas, OglasStatus, OglasTip
@@ -71,11 +71,12 @@ def get_oglasi(
     oblast: Optional[str] = Query(default=None),
     lokacija: Optional[str] = Query(default=None),
     kompanija_id: Optional[int] = Query(default=None),
+    search: Optional[str] = Query(default=None, description="Pretraga po nazivu ili opisu oglasa"),
     skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=20, ge=1, le=100),
+    limit: int = Query(default=100, ge=1, le=200),
     session: Session = Depends(get_db),
 ):
-    """Vrati listu oglasa. Podržava filtriranje i paginaciju."""
+    """Vrati listu oglasa. Podržava filtriranje, pretragu i paginaciju."""
     query = select(Oglas).where(Oglas.is_deleted == False)
 
     if tip:
@@ -88,6 +89,14 @@ def get_oglasi(
         query = query.where(Oglas.lokacija == lokacija)
     if kompanija_id:
         query = query.where(Oglas.kompanija_id == kompanija_id)
+    if search:
+        search_filter = f"%{search}%"
+        query = query.where(
+            or_(
+                Oglas.naziv.ilike(search_filter),
+                Oglas.opis.ilike(search_filter),
+            )
+        )
 
     query = query.offset(skip).limit(limit)
     return session.exec(query).all()

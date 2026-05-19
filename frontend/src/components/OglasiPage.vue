@@ -111,34 +111,31 @@ export default {
   },
   computed: {
     filtriraniOglasi() {
-      return this.oglasi.filter(oglas => {
-        const tabMap = {
-          'Sve': true,
-          'Prakse': oglas.tip === 'Praksa',
-          'Edukacije': oglas.tip === 'Edukacija',
-          'Stipendije': oglas.tip === 'Stipendija',
-          'Aktuelno': oglas.status === 'Aktivan'
-        }
-        const mecapTab = tabMap[this.currentTab] ?? true
-
-        const q = this.searchQuery.toLowerCase()
-        const mecapSearch = !q ||
-          (oglas.naslov && oglas.naslov.toLowerCase().includes(q)) ||
-          (oglas.kompanija && oglas.kompanija.toLowerCase().includes(q)) ||
-          (oglas.opis && oglas.opis.toLowerCase().includes(q)) ||
-          (Array.isArray(oglas.tagovi) && oglas.tagovi.some(t => t.toLowerCase().includes(q)))
-
-        const mecapPlaceno = !this.placeno || (oglas.dodatno && oglas.dodatno.includes('KM'))
-
-        return mecapTab && mecapSearch && mecapPlaceno
-      })
+      if (!this.placeno) return this.oglasi
+      return this.oglasi.filter(oglas => oglas.dodatno && oglas.dodatno.includes('KM'))
     }
   },
   methods: {
     async fetchOglasi() {
       this.loading = true
       try {
-        const res = await axios.get('http://127.0.0.1:8000/oglasi/')
+        const params = {}
+
+        if (this.searchQuery) {
+          params.search = this.searchQuery
+        }
+
+        if (this.currentTab === 'Prakse') {
+          params.tip = 'praksa'
+        } else if (this.currentTab === 'Edukacije') {
+          params.tip = 'edukacija'
+        } else if (this.currentTab === 'Stipendije') {
+          params.tip = 'stipendija'
+        } else if (this.currentTab === 'Aktuelno') {
+          params.status = 'active'
+        }
+
+        const res = await axios.get('http://127.0.0.1:8000/oglasi/', { params })
         const data = res.data || []
 
         this.oglasi = data.map(o => ({
@@ -150,14 +147,23 @@ export default {
           tip: o.tip ? (typeof o.tip === 'string' ? (o.tip.charAt(0).toUpperCase() + o.tip.slice(1)) : o.tip) : '',
           dodatno: o.naknada || o.dodatno || '',
           status: (o.status === 'active' ? 'Aktivan' : o.status === 'expired' ? 'Istekao' : o.status) || '',
-          lokacija: o.lokacija || 'Nije navedeno', 
-          trajanje: o.trajanje || '' 
+          lokacija: o.lokacija || 'Nije navedeno',
+          trajanje: o.trajanje || ''
         }))
       } catch (err) {
         console.error('Neuspješan dohvat oglasa', err)
       } finally {
         this.loading = false
       }
+    }
+  },
+  watch: {
+    searchQuery() {
+      clearTimeout(this._searchTimer)
+      this._searchTimer = setTimeout(() => this.fetchOglasi(), 400)
+    },
+    currentTab() {
+      this.fetchOglasi()
     }
   },
   mounted() {
