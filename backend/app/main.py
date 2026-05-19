@@ -30,6 +30,10 @@ app.include_router(prakse.router)
 app.include_router(forum.router)
 app.include_router(profiles.router)
 app.include_router(notification_router)  # Dodajemo ruter za obavještenja
+
+from app.routers.ads import router as ads_router
+app.include_router(ads_router)
+
 @app.get("/")
 def root():
     return {"message": f"{settings.APP_NAME} API radi"}
