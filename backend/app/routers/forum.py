@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select, func
 from typing import Optional, List, Dict, Any
 
 from app.database import get_db
 from app.core.security import get_current_user
-from app.models.user import User
+from app.models.user import User, UserRole
 
 from app.models.forum import ForumCategory, ForumTopic
 
@@ -88,4 +88,38 @@ def get_all_topics(
         "total": total_topics,
         "page": page,
         "size": size
+    }
+
+@router.delete("/topics/{id}", status_code=status.HTTP_200_OK)
+def delete_topic(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Samo admin može brisati teme
+    if current_user.role != UserRole.admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Samo administrator može obrisati temu."
+        )
+
+    # Pronađi temu u bazi
+    topic = db.get(ForumTopic, id)
+
+    if not topic or topic.is_deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tema nije pronađena."
+        )
+
+    # Soft delete - tema nestaje iz svih GET prikaza
+    topic.is_deleted = True
+
+    db.add(topic)
+    db.commit()
+    db.refresh(topic)
+
+    return {
+        "message": "Tema je uspješno obrisana.",
+        "topic_id": id
     }
