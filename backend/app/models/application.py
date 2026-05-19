@@ -3,11 +3,9 @@ from sqlmodel import SQLModel, Field, Relationship
 from enum import Enum
 from datetime import datetime, timezone
 from sqlalchemy import UniqueConstraint
-from typing import Optional, TYPE_CHECKING
-
-if TYPE_CHECKING:
-  from app.models.user import User
-  from app.models.ads_model import Oglas
+from typing import Optional
+from user import User
+from ads_model import Oglas
 
 class ApplicationStatus(str, Enum):
     pending = "pending"
@@ -24,12 +22,12 @@ class Application(SQLModel, table=True):
 
     cv_path: str
     motivational_letter_path: str
-    linkedin: Optional[str] = Field(default=None)
+    linkedin_url: Optional[str] = Field(default=None)
     phone: str
 
-    status: ApplicationStatus = Field(default=ApplicationStatus.pending, index=True)
+    status: ApplicationStatus = Field(default=ApplicationStatus.pending)
     admin_feedback: Optional[str] = Field(default=None)
-    is_archived: bool = Field(default=False, index=True)
+    is_archived: bool = Field(default=False)
 
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -41,7 +39,7 @@ class ApplicationCreate(SQLModel):
     ad_id: int
     cv_path: str
     motivational_letter_path: str
-    linkedin: Optional[str] = None
+    linkedin_url: Optional[str] = None
     phone: str
 
 class ApplicationRead(SQLModel):
@@ -50,10 +48,10 @@ class ApplicationRead(SQLModel):
     ad_id: int
     cv_path: str
     motivational_letter_path: str
-    linkedin: Optional[str]
+    linkedin_url: Optional[str]= None
     phone: str
     status: ApplicationStatus
-    admin_feedback: Optional[str]
+    admin_feedback: Optional[str]= None
     is_archived: bool
     created_at: datetime
     updated_at: datetime
