@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
-
 try:
     import boto3
     from botocore.exceptions import ClientError
@@ -9,7 +8,6 @@ except ImportError:
 
     class ClientError(Exception):
         pass
-
 from app.core.security import get_current_user
 from app.database import get_db
 from app.models.application import Application, ApplicationCreate, ApplicationRead, ApplicationStatus, ApplicationUpdate
@@ -68,7 +66,7 @@ def create_application(
 
     if existing_application:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_409_CONFLICT,
             detail="Već postoji prijava za ovaj oglas.",
         )
 
@@ -88,19 +86,42 @@ def create_application(
 
 
 @router.get("/", response_model=list[ApplicationRead])
-def list_applications(
+def applications(
     status: ApplicationStatus | None = None,
     ad_id: int | None = None,
     include_archived: bool = False,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if current_user.role not in [UserRole.admin, UserRole.saradnik]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Nemaš pristup ovom resursu.",
+        )
     statement = select(Application)
-    if current_user.role != UserRole.admin:
-        statement = statement.where(Application.user_id == current_user.id)
-    if ad_id is not None:
-        statement = statement.where(Application.ad_id == ad_id)
-    if status is not None:
+    if current_user.role == UserRole.saradnik:
+        if ad_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Saradnici moraju specificirati ad_id parametar.",
+            )
+        ad=db.get(Oglas, ad_id)
+        if not ad:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Oglas nije pronađen.",
+            )
+        if ad.kompanija_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Saradnici mogu vidjeti samo prijave za svoje oglase.",
+            )
+    
+        statement = statement.where(Application.ad_id == ad.id)
+    elif current_user.role == UserRole.admin:
+            if ad_id is not None:
+              statement = statement.where(Application.ad_id == ad_id)
+    if  status is not None:
         statement = statement.where(Application.status == status)
     if not include_archived:
         statement = statement.where(Application.is_archived == False)
