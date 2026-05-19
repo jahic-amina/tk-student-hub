@@ -1,8 +1,7 @@
 <script setup>
 import ForumSidebar from '../../components/ForumSidebar.vue';
 import { ref, onMounted, watch, computed } from 'vue';
-import { getTopics, getCategories } from '../../services/forum.js'; // Dodan getCategories import
-
+import { getTopics, getCategories, deleteTopic as deleteTopicApi } from '../../services/forum.js';
 const teme = ref([]);
 const sveKategorije = ref([]); // Dodan niz u koji spremamo kategorije sa bekenda zbog boja
 const isLoading = ref(true);
@@ -22,6 +21,10 @@ const trenutnaKategorija = computed(() => {
     return { name: 'General (Sve teme)', color: '#64748b' }; // Default siva boja za General
   }
   return sveKategorije.value.find(c => c.id === odabraniKategorijaId.value) || { name: 'Kategorija', color: '#ff7a00' };
+});
+
+const isAdmin = computed(() => {
+  return localStorage.getItem('role') === 'admin';
 });
 
 const ucitajTeme = async () => {
@@ -77,6 +80,20 @@ watch(trenutnaStranica, () => {
 
 const filtrirajPoKategoriji = (id) => {
   odabraniKategorijaId.value = id;
+};
+const obrisiTemu = async (temaId) => {
+  const potvrda = confirm('Da li ste sigurni da želite obrisati ovu temu?');
+
+  if (!potvrda) return;
+
+  try {
+    await deleteTopicApi(temaId);
+
+    teme.value = teme.value.filter(tema => tema.id !== temaId);
+    ukupnoTema.value = Math.max(0, ukupnoTema.value - 1);
+  } catch (error) {
+    alert(error.message || 'Brisanje teme nije uspjelo.');
+  }
 };
 </script>
 
@@ -148,9 +165,21 @@ const filtrirajPoKategoriji = (id) => {
                     {{ tema.title }}
                   </h2>
                   
-                  <span class="bg-orange-50 text-[#ff7a00] text-[10px] font-bold uppercase px-2 py-1 rounded">
+                  <div class="flex items-center gap-2">
+                   <span class="bg-orange-50 text-[#ff7a00] text-[10px] font-bold uppercase px-2 py-1 rounded">
                      {{ tema.category_name || tema.category || 'Opšta diskusija' }}
-                  </span>
+                   </span>
+
+                   <button
+                     v-if="isAdmin"
+                     @click.stop="obrisiTemu(tema.id)"
+                     class="w-8 h-8 flex items-center justify-center rounded-full text-red-600 hover:bg-red-50 hover:text-red-800 transition-colors"
+                     title="Obriši temu"
+                     aria-label="Obriši temu"
+                   >
+                      🗑️
+                   </button>
+                 </div>
                 </div>
                 
                 <p class="text-slate-600 mt-3 text-sm leading-relaxed">
