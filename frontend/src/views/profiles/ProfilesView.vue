@@ -184,21 +184,40 @@ const handleSubmit = async () => {
   const mergedName = `${form.first_name.trim()} ${form.last_name.trim()}`
 
   try {
-    if (security.new_password && security.new_password !== security.confirm_password) {
-      throw new Error('Nove lozinke se ne podudaraju.')
-    }
-
-   
+    // 1. Ažuriranje osnovnih podataka (ime, bio, godina)
     await api.patch('/profiles/me', {
       full_name: mergedName,
       biografija: form.bio,            
       godina_studija: form.study_year  
     })
 
+    // 2. Ažuriranje lozinke (samo ako je korisnik pokušao unijeti novu lozinku)
+    if (security.new_password || security.current_password) {
+      // Provjere prije slanja
+      if (!security.current_password) {
+        throw new Error('Morate unijeti trenutnu lozinku da biste je promijenili.')
+      }
+      if (security.new_password !== security.confirm_password) {
+        throw new Error('Nove lozinke se ne podudaraju.')
+      }
+
+      // Slanje zahtjeva na tačnu rutu za lozinku u FastAPI-ju
+      await api.patch('/profiles/me/password', {
+        current_password: security.current_password,
+        new_password: security.new_password
+      })
+
+      // Očisti polja iz forme nakon uspješne izmjene
+      security.current_password = ''
+      security.new_password = ''
+      security.confirm_password = ''
+    }
+
     showToast('Izmjene su uspješno sačuvane!')
     
     // Osvježavamo podatke sa servera da potvrdimo
     await fetchUserProfile()
+    
   } catch (err) {
     status.message = err.response?.data?.detail || err.message || 'Greška prilikom spašavanja.'
     status.isError = true
