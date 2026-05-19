@@ -2,10 +2,12 @@
 import { ref, onMounted } from 'vue';
 import { getTopics } from '../../services/forum';
 import CreateTopicView from './CreateTopicView.vue';
+import TopicDetailView from './TopicDetailView.vue';
 
 const teme = ref([]);
 const isLoading = ref(true);
 const showCreateForm = ref(false);
+const selectedTopic = ref(null);
 
 const loadTopics = async () => {
   isLoading.value = true;
@@ -27,6 +29,14 @@ const onTopicCreated = async () => {
   showCreateForm.value = false;
   await loadTopics();
 };
+
+const openTopic = (tema) => {
+  selectedTopic.value = tema;
+};
+
+const onBack = () => {
+  selectedTopic.value = null;
+};
 </script>
 
 <template>
@@ -34,6 +44,12 @@ const onTopicCreated = async () => {
     v-if="showCreateForm"
     @topic-created="onTopicCreated"
     @cancel="showCreateForm = false"
+  />
+
+  <TopicDetailView
+    v-else-if="selectedTopic"
+    :topic="selectedTopic"
+    @back="onBack"
   />
 
   <div v-else class="min-h-screen bg-gray-50 p-6">
@@ -65,6 +81,7 @@ const onTopicCreated = async () => {
         <div
           v-for="tema in teme"
           :key="tema.id"
+          @click="openTopic(tema)"
           class="p-5 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all cursor-pointer"
         >
           <div class="flex items-center gap-2 mb-1 flex-wrap">
