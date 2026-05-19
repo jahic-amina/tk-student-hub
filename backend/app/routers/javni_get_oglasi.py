@@ -28,7 +28,7 @@ def get_oglasi(
         statement = statement.where(
             or_(
                 Oglas.naziv.ilike(search_filter),        # Case-insensitive pretraga za naslov
-                Oglas.company.ilike(search_filter),      # za kompaniju
+                Oglas.kompanija_id.ilike(search_filter),      # za kompaniju
                 Oglas.opis.ilike(search_filter)   # za opis/tekst oglasa
             )
         )
@@ -39,7 +39,7 @@ def get_oglasi(
     for oglas in oglasi:
         oglas_data = oglas.model_dump()
         
-        if oglas.rok and oglas.rok.replace(tzinfo=timezone.utc) < trenutno_vrijeme:
+        if oglas.rok and oglas.rok < trenutno_vrijeme:
             oglas_data["status"] = OglasStatus.expired
 
         rezultat.append(oglas_data)
