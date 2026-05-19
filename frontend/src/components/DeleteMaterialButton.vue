@@ -1,11 +1,18 @@
 <template>
-  <div class="inline-block">
+  <div class="w-full">
     <button 
       v-if="mozeBrisati" 
       @click.stop="prikaziModal = true"
-      class="flex items-center gap-1 bg-red-100 text-red-500 px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-red-200 transition"
+      class="flex items-center justify-center gap-2 bg-red-100 text-red-500 w-full px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-200 transition shadow-sm border border-red-200/50"
     >
-       Obriši
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2">
+        <path d="M3 6h18"></path>
+        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+        <line x1="10" x2="10" y1="11" y2="17"></line>
+        <line x1="14" x2="14" y1="11" y2="17"></line>
+      </svg>
+      Obriši
     </button>
 
     <div v-if="prikaziModal" @click.stop class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -58,7 +65,21 @@ const mozeBrisati = computed(() => {
   
   if (currentUser.role === 'admin' || currentUser.is_admin === true) return true
   
-  return props.material.user_id === currentUser.id
+  const autorId = props.material.user_id || (props.material.user && props.material.user.id);
+  const ulogovaniId = currentUser.id || currentUser.user_id;
+
+  if (autorId && ulogovaniId && autorId == ulogovaniId) {
+    return true;
+  }
+
+  const trenutnoIme = localStorage.getItem('username');
+  const autorIme = props.material.user?.full_name;
+
+  if (trenutnoIme && autorIme && trenutnoIme.trim().toLowerCase() === autorIme.trim().toLowerCase()) {
+    return true;
+  }
+
+  return false;
 })
 
 async function pokreniBrisanje() {
@@ -66,15 +87,18 @@ async function pokreniBrisanje() {
   try {
     const response = await deleteMaterial(props.material.id)
     
-    if (response.status === 204 || response.ok) {
+    if (response && (response.status === 204 || response.status === 200)) {
       prikaziModal.value = false
       emit('deleted', props.material.id) 
     } else {
       alert("Nemate dozvolu za brisanje ovog materijala.")
     }
   } catch (error) {
-    console.error("Greška pri brisanju:", error)
-    alert("Došlo je do greške prilikom brisanja.")
+    if (error.response && error.response.status === 403) {
+      alert("Nemate dozvolu za brisanje ovog materijala.")
+    } else {
+      alert("Došlo je do greške prilikom brisanja.")
+    }
   } finally {
     loading.value = false
   }

@@ -71,6 +71,7 @@ export default {
       if (response.access_token) {
         localStorage.setItem('token', response.access_token)
         const user = await getMe(response.access_token)
+        localStorage.setItem('user', JSON.stringify(user))
         localStorage.setItem('username', user.full_name)
         window.location.href = '/'
       } else {
