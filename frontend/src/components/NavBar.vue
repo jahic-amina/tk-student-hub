@@ -35,18 +35,40 @@
 <script>
 export default {
   name: 'NavBar',
-  computed: {
-    isLoggedIn() {
-      return !!localStorage.getItem('token')
-    },
-    username() {
-      return localStorage.getItem('username') || 'Profil'
+  data() {
+    return {
+      isLoggedIn: false,
+      username: 'Profil'
     }
   },
+  watch: {
+    // Prati promjene rute. Kada korisnik pređe s Login stranice na Početnu, ponovo provjeri storage.
+    $route() {
+      this.checkAuthStatus()
+    }
+  },
+  mounted() {
+    // Provjeri status odmah pri učitavanju komponente
+    this.checkAuthStatus()
+  },
   methods: {
+    checkAuthStatus() {
+      // Ovdje provjeravamo oba tokena u slučaju da negdje koristiš 'access_token'
+      const token = localStorage.getItem('token') || localStorage.getItem('access_token')
+      this.isLoggedIn = !!token
+      this.username = localStorage.getItem('username') || 'Profil'
+    },
     logout() {
+      // 1. Brišemo podatke iz lokalne memorije
       localStorage.removeItem('token')
+      localStorage.removeItem('access_token') // Čistimo i ovaj za svaki slučaj (iz tvog prethodnog koda)
       localStorage.removeItem('username')
+      
+      // 2. Ručno ažuriramo stanje komponente kako bi Vue odmah uklonio ime iz Navbara
+      this.isLoggedIn = false
+      this.username = 'Profil'
+      
+      // 3. Preusmjeravamo na login
       this.$router.push('/login')
     }
   }
