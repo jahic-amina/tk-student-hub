@@ -180,3 +180,17 @@ def patch_company(company_id: int, data: CompanyUpdate, db: Session = Depends(ge
     db.commit()
     db.refresh(company)
     return company
+
+
+@router.delete("/{company_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_company(company_id: int, db: Session = Depends(get_db)):
+    company = db.get(Company, company_id)
+    if not company or company.is_deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Company not found.",
+        )
+
+    company.is_deleted = True
+    db.add(company)
+    db.commit()
