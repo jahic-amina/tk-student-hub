@@ -3,6 +3,7 @@ from typing import Optional
 from enum import Enum
 from datetime import datetime, timezone
 import re
+import secrets
 from pydantic import field_validator
 
 
@@ -71,6 +72,7 @@ class Company(SQLModel, table=True):
 	email: str = Field(index=True)
 	phone_number: str = Field(index=True)
 	jib: str = Field(index=True)
+	api_key: str = Field(default_factory=lambda: secrets.token_urlsafe(32), index=True)
 	status: CompanyStatus = Field(default=CompanyStatus.pending)
 	created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 	is_deleted: bool = Field(default=False)
@@ -168,3 +170,17 @@ class CompanyUpdate(SQLModel):
 	@classmethod
 	def validate_address(cls, v):
 		return _validate_address(v)
+
+
+class CompanyRead(SQLModel):
+	id: int
+	company_name: str
+	description: str
+	website_url: str
+	logo_url: str
+	email: str
+	phone_number: str
+	jib: str
+	status: CompanyStatus
+	created_at: datetime
+	address: str
