@@ -31,25 +31,28 @@ def get_company_by_api_key(
     return company
 
 @router.get("/", response_model=List[CompanyRead])
-def get_companies(
-    with_deleted: Optional[bool] = Query(default=False),
-    with_pending: Optional[bool] = Query(default=False),
+def get_companies(db: Session = Depends(get_db)):
+    """Get all approved companies - public endpoint"""
+    query = select(Company)
+    query = query.where(Company.status == CompanyStatus.approved)
+    query = query.where(Company.is_deleted == False)
+    return db.exec(query).all()
+
+
+@router.get("/admin", response_model=List[CompanyRead])
+def get_companies_admin(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if (with_deleted is not None or with_pending is not None) and current_user.role != "admin":
+    """Get all companies - admin only"""
+    if current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have permission for this.",
         )
 
     query = select(Company)
-
     query = query.where(Company.status != CompanyStatus.denied)
-    if not with_deleted:
-        query = query.where(Company.is_deleted == False)
-    if not with_pending:
-        query = query.where(Company.status != CompanyStatus.pending)
 
     return db.exec(query).all()
 
