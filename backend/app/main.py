@@ -35,6 +35,9 @@ app.include_router(notification_router)
 from app.routers.ads import router as ads_router
 app.include_router(ads_router)
 
+from app.routers.ads import router as ads_router
+app.include_router(ads_router)
+
 @app.get("/")
 def root():
     return {"message": f"{settings.APP_NAME} API radi"}

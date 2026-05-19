@@ -72,6 +72,7 @@ class Company(SQLModel, table=True):
 	email: str = Field(index=True)
 	phone_number: str = Field(index=True)
 	jib: str = Field(index=True)
+	hashed_password: str  
 	api_key: str = Field(default_factory=lambda: secrets.token_urlsafe(32), index=True)
 	status: CompanyStatus = Field(default=CompanyStatus.pending)
 	created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -88,6 +89,8 @@ class CompanyCreate(SQLModel):
 	phone_number: str
 	jib: str
 	address: str
+	password: str
+
 
 	@field_validator('company_name')
 	@classmethod
@@ -135,6 +138,7 @@ class CompanyUpdate(SQLModel):
 	jib: Optional[str] = None
 	address: Optional[str] = None
 	status: Optional[CompanyStatus] = None
+
 
 	@field_validator('company_name')
 	@classmethod
