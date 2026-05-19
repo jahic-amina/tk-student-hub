@@ -1,11 +1,11 @@
 from typing import Optional, List
-from datetime import datetime, date
+from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlmodel import Session, select
-from pydantic import BaseModel
-from app.models.ads_model import Ad, AdStatus, AdType, AdCreate, AdUpdate, AdPatch, StatusUpdate
-from app.database import get_session
-from app.dependencies import get_current_user, TokenData
+from app.models.ad import Ad, AdStatus, AdType, AdCreate, AdUpdate, AdPatch, StatusUpdate
+from app.database import get_db
+from app.core.security import get_current_user
+from app.models.user import User
 
 router = APIRouter(prefix="/ads", tags=["Ads"])
 
@@ -18,9 +18,9 @@ def get_ads(
     location: Optional[str] = Query(default=None),
     company_id: Optional[int] = Query(default=None),
     limit: int = Query(default=20, ge=1, le=100),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_db),
 ):
-    """Return a list of ads. Supports filtering and pagination."""
+    """Return a list of ads. Supports filtering and results limiting."""
     query = select(Ad).where(Ad.is_deleted == False)
 
     if type:
@@ -41,8 +41,8 @@ def get_ads(
 @router.get("/{ad_id}", response_model=Ad)
 def get_ad(
     ad_id: int,
-    session: Session = Depends(get_session),
-    current_user: TokenData = Depends(get_current_user),
+    session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Return a single ad by ID.
     Admins can see deleted ads, regular users cannot."""
@@ -58,7 +58,7 @@ def get_ad(
 
 
 @router.post("/", response_model=Ad, status_code=201)
-def create_ad(data: AdCreate, session: Session = Depends(get_session)):
+def create_ad(data: AdCreate, session: Session = Depends(get_db)):
     """Create a new ad. Status is automatically set to 'pending'."""
     ad = Ad(**data.model_dump())
     session.add(ad)
@@ -71,7 +71,7 @@ def create_ad(data: AdCreate, session: Session = Depends(get_session)):
 def update_ad(
     ad_id: int,
     data: AdUpdate,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_db),
 ):
     """Full update of an ad (all fields must be provided)."""
     ad = session.get(Ad, ad_id)
@@ -92,7 +92,7 @@ def update_ad(
 def patch_ad(
     ad_id: int,
     data: AdPatch,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_db),
 ):
     """Partial update of an ad (only provided fields are changed)."""
     ad = session.get(Ad, ad_id)
@@ -114,7 +114,7 @@ def patch_ad(
 
 
 @router.delete("/{ad_id}", status_code=204)
-def delete_ad(ad_id: int, session: Session = Depends(get_session)):
+def delete_ad(ad_id: int, session: Session = Depends(get_db)):
     """Soft-delete an ad (sets is_deleted=True, does not remove from database)."""
     ad = session.get(Ad, ad_id)
     if not ad or ad.is_deleted:
@@ -130,8 +130,8 @@ def delete_ad(ad_id: int, session: Session = Depends(get_session)):
 def update_status(
     ad_id: int,
     data: StatusUpdate,
-    session: Session = Depends(get_session),
-    current_user: TokenData = Depends(get_current_user),
+    session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Admin endpoint for changing ad status (approve, reject, etc.)."""
     if current_user.role != "admin":
