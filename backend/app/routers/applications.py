@@ -16,8 +16,8 @@ from fastapi import UploadFile, File
 import os
 from uuid import uuid4
 from typing import Optional
-from app.models.ads_model import Oglas
-from datetime import datetime, timezone
+from app.models.ads_model import Oglas, OglasStatus
+from datetime import date
 
 S3_BUCKET = os.getenv("S3_BUCKET")
 S3_ENDPOINT = os.getenv("S3_ENDPOINT")
@@ -52,7 +52,7 @@ def create_application(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Oglas nije pronađen.",
         )
-    if not ad.status or ad.datum_isteka < datetime.now(timezone.utc):
+    if ad.status != OglasStatus.active or ad.rok < date.today():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Oglas nije aktivan.",
