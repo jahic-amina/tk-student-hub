@@ -27,3 +27,12 @@ export async function getMe(token) {
   })
   return response.json()
 }
+
+export async function registerCompany(data) {
+  const response = await fetch(`${BASE_URL}/companies/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+  return response
+}
