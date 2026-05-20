@@ -75,6 +75,74 @@
           </div>
         </section>
 
+        <section class="mb-6 rounded-2xl bg-white p-6 shadow">
+  <h3 class="mb-4 text-xl font-bold text-gray-900">
+    Moje aktivnosti
+  </h3>
+
+  <div class="grid gap-4 md:grid-cols-3">
+    <div class="rounded-xl border border-gray-200 p-4">
+      <h4 class="font-semibold text-gray-900">Materijali</h4>
+
+      <p
+        v-if="dashboard.activity.materials.length === 0"
+        class="mt-2 text-sm text-gray-500"
+      >
+        Trenutno nema evidentiranih aktivnosti za materijale.
+      </p>
+
+      <ul v-else class="mt-2 space-y-2 text-sm text-gray-600">
+        <li
+          v-for="material in dashboard.activity.materials"
+          :key="material.id"
+        >
+          {{ material.title }}
+        </li>
+      </ul>
+    </div>
+
+    <div class="rounded-xl border border-gray-200 p-4">
+      <h4 class="font-semibold text-gray-900">Prakse i edukacije</h4>
+
+      <p
+        v-if="dashboard.activity.opportunities.length === 0"
+        class="mt-2 text-sm text-gray-500"
+      >
+        Trenutno nema evidentiranih aktivnosti za prakse i edukacije.
+      </p>
+
+      <ul v-else class="mt-2 space-y-2 text-sm text-gray-600">
+        <li
+          v-for="opportunity in dashboard.activity.opportunities"
+          :key="opportunity.id"
+        >
+          {{ opportunity.title }}
+        </li>
+      </ul>
+    </div>
+
+    <div class="rounded-xl border border-gray-200 p-4">
+      <h4 class="font-semibold text-gray-900">Forum</h4>
+
+      <p
+        v-if="dashboard.activity.forum.length === 0"
+        class="mt-2 text-sm text-gray-500"
+      >
+        Trenutno nema evidentiranih forum aktivnosti.
+      </p>
+
+      <ul v-else class="mt-2 space-y-2 text-sm text-gray-600">
+        <li
+          v-for="forumItem in dashboard.activity.forum"
+          :key="forumItem.id"
+        >
+          {{ forumItem.title }}
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+
         <section class="rounded-2xl bg-white p-6 shadow">
           <h3 class="mb-4 text-xl font-bold text-gray-900">
             Relevantni sadržaji
