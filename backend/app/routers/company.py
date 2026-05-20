@@ -4,7 +4,7 @@ from sqlmodel import Session, select
 from app.database import get_db
 from app.models.company import Company, CompanyCreate, CompanyUpdate, CompanyStatus, CompanyRead
 from app.core.security import get_current_user
-from app.models.user import User
+from app.models.user import User, UserRole
 
 router = APIRouter(prefix="/companies", tags=["Companies"])
 
@@ -45,14 +45,13 @@ def get_companies_admin(
     current_user: User = Depends(get_current_user),
 ):
     """Get all companies - admin only"""
-    if current_user.role != "admin":
+    if current_user.role != UserRole.admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have permission for this.",
         )
 
-    query = select(Company)
-    query = query.where(Company.status != CompanyStatus.denied)
+    query = select(Company).where(Company.is_deleted == False)
 
     return db.exec(query).all()
 
@@ -78,11 +77,11 @@ def create_company(data: CompanyCreate, db: Session = Depends(get_db)):
 @router.put("/{company_id}", response_model=CompanyRead)
 def update_company(
     company_id: int,
-    data: CompanyCreate,
+    data: CompanyUpdate,
     company: Company = Depends(get_company_by_api_key),
     db: Session = Depends(get_db),
 ):
-    company_data = data.model_dump()
+    company_data = data.model_dump(exclude_unset=True)
     for key, value in company_data.items():
         setattr(company, key, value)
 
@@ -115,7 +114,7 @@ def delete_company(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if current_user.role != "admin":
+    if current_user.role != UserRole.admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have permission for this.",

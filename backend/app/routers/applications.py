@@ -16,7 +16,7 @@ from fastapi import UploadFile, File
 import os
 from uuid import uuid4
 from typing import Optional
-from app.models.ads_model import Oglas, OglasStatus
+from app.models.ad import Ad, AdStatus
 from datetime import date
 
 S3_BUCKET = os.getenv("S3_BUCKET")
@@ -46,13 +46,13 @@ def create_application(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    ad=db.get(Oglas, payload.ad_id)
+    ad=db.get(Ad, payload.ad_id)
     if not ad:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Oglas nije pronađen.",
         )
-    if ad.status != OglasStatus.active or ad.rok < date.today():
+    if ad.status != AdStatus.active or ad.deadline < date.today():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Oglas nije aktivan.",
@@ -105,13 +105,13 @@ def applications(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Saradnici moraju specificirati ad_id parametar.",
             )
-        ad=db.get(Oglas, ad_id)
+        ad=db.get(Ad, ad_id)
         if not ad:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Oglas nije pronađen.",
             )
-        if ad.kompanija_id != current_user.id:
+        if ad.company_id != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Saradnici mogu vidjeti samo prijave za svoje oglase.",

@@ -4,8 +4,8 @@ from enum import Enum
 from datetime import datetime, timezone
 from sqlalchemy import UniqueConstraint
 from typing import Optional
-from user import User
-from ads_model import Oglas
+from app.models.user import User
+from app.models.ad import Ad
 
 class ApplicationStatus(str, Enum):
     pending = "pending"
@@ -14,11 +14,14 @@ class ApplicationStatus(str, Enum):
 
 class Application(SQLModel, table=True):
     __tablename__ = "applications"
-    __table_args__ = (UniqueConstraint("user_id", "ad_id", name="uq_user_ad"),)
+    __table_args__ = (
+    UniqueConstraint("user_id", "ad_id", name="uq_user_ad"),
+    {"extend_existing": True}
+  )
 
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id", index=True)
-    ad_id: int = Field(foreign_key="oglasi.id", index=True)
+    ad_id: int = Field(foreign_key="ads.id", index=True)
 
     cv_path: str
     motivational_letter_path: str
@@ -33,7 +36,7 @@ class Application(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     user: "User" = Relationship()
-    ad: "Oglas" = Relationship()
+    ad: "Ad" = Relationship()
 
 class ApplicationCreate(SQLModel):
     ad_id: int

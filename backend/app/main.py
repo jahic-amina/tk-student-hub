@@ -1,16 +1,19 @@
+import os  
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer
 from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.database import create_db_and_tables
-from app.routers import auth, forum, prakse, profiles, company
 from app.core.security import get_current_user
-from app.models.user import User
+from app.models.user import User                
 from app.models.saved_opportunities import SavedOpportunity
+from app.routers import auth, forum, prakse, profiles, company, applications
 from app.routers.saved_opportunities import router as saved_opportunities_router
-from app.routers.notification import router as notification_router
+from app.routers.notification import router as notification_router  
 from app.routers.ads import router as ads_router
+from app.routers.javni_get_oglasi import router as public_ads_router  
+
 
 create_db_and_tables()
 
@@ -40,12 +43,10 @@ app.include_router(prakse.router)
 app.include_router(forum.router)
 app.include_router(profiles.router)
 app.include_router(company.router)
-app.include_router(notification_router)
+app.include_router(notification_router)  
 app.include_router(ads_router)
+app.include_router(public_ads_router)  
 app.include_router(saved_opportunities_router) 
-
-from app.routers.ads import router as ads_router
-app.include_router(ads_router)
 
 @app.get("/")
 def root():
