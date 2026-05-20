@@ -10,8 +10,6 @@ from app.database import get_db
 
 router = APIRouter(prefix="/ads", tags=["Ads"])
 
-
-
 @router.get("/", response_model=List[Ad])
 def get_ads(
     type: Optional[AdType] = Query(default=None),
@@ -24,7 +22,6 @@ def get_ads(
     limit: int = Query(default=100, ge=1, le=200),
     session: Session = Depends(get_db),
 ):
-    """Get list of ads. Supports filtering, search, and pagination."""
     query = select(Ad).where(Ad.is_deleted == False)
 
     if type:
@@ -78,7 +75,6 @@ def update_ad(
     data: AdUpdate,
     session: Session = Depends(get_db),
 ):
-    """Full update – PUT (all fields required except those with defaults)."""
     ad = session.get(Ad, ad_id)
     if not ad or ad.is_deleted:
         raise HTTPException(status_code=404, detail="Ad not found.")
@@ -100,7 +96,6 @@ def patch_ad(
     data: AdPatch,
     session: Session = Depends(get_db),
 ):
-    """Partial update – PATCH (only passed fields are changed)."""
     ad = session.get(Ad, ad_id)
     if not ad or ad.is_deleted:
         raise HTTPException(status_code=404, detail="Ad not found.")
@@ -121,7 +116,6 @@ def patch_ad(
 
 @router.delete("/{ad_id}", status_code=204)
 def delete_ad(ad_id: int, session: Session = Depends(get_db)):
-    """Soft-delete an ad (sets is_deleted=True, does not remove from DB)."""
     ad = session.get(Ad, ad_id)
     if not ad or ad.is_deleted:
         raise HTTPException(status_code=404, detail="Ad not found.")
@@ -140,7 +134,6 @@ def update_status(
     session: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Admin endpoint for changing ad status (approve, reject, etc.)."""
     if current_user.role != UserRole.admin:
         raise HTTPException(status_code=403, detail="Permission denied.")
 

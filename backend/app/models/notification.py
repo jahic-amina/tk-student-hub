@@ -11,12 +11,10 @@ class NotificationType(str, Enum):
 
 class Notification(SQLModel, table=True):
     __tablename__ = "notifications" 
-    __table_args__ = {"extend_existing": True} # Dodajemo za svaki slučaj da izbjegnemo duplanje u memoriji
+    __table_args__ = {"extend_existing": True} 
 
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id", index=True)
-    
-    # Prevodi polja na engleski
     text: str
     type: NotificationType
     is_read: bool = Field(default=False)

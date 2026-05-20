@@ -17,7 +17,6 @@ def save_opportunity(
     session: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Provjeravamo da li je oglas već spašen (promijenjeno oglas_id u ad_id)
     statement = select(SavedOpportunity).where(
         SavedOpportunity.user_id == current_user.id,
         SavedOpportunity.ad_id == data.ad_id
@@ -29,7 +28,6 @@ def save_opportunity(
             detail="You have already saved this opportunity."
         )
 
-    # Kreiranje novog zapisa sa ispravnim poljem ad_id
     db_saved = SavedOpportunity(
         user_id=current_user.id,
         ad_id=data.ad_id

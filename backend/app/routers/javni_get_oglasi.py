@@ -12,7 +12,7 @@ router = APIRouter(prefix="/public-ads", tags=["Public Ads"])
 def get_public_ads(
     search: str | None = Query(
         default=None, 
-        description="Pretraga oglasa po naslovu, kompaniji ili opisu"
+        description="Search jobs by title, company, or description"
     ),
     db: Session = Depends(get_db)
 ):

@@ -42,15 +42,15 @@ def _validate_email(v: Optional[str]) -> Optional[str]:
     return v
 
 
-def _validate_jib(v: Optional[str]) -> Optional[str]:
+def _validate_tin(v: Optional[str]) -> Optional[str]:
     if v is not None:
         v_stripped = v.strip()
         
         if not v_stripped.isdigit():
-            raise ValueError('JIB must contain only digits.')
+            raise ValueError('TIN must contain only digits.')
         
         if len(v_stripped) != 13:
-            raise ValueError('JIB must be exactly 13 digits long.')
+            raise ValueError('TIN must be exactly 13 digits long.')
     return v
 
 
@@ -77,7 +77,7 @@ class Company(SQLModel, table=True):
     logo_url: str
     email: str = Field(index=True)
     phone_number: str = Field(index=True)
-    jib: str = Field(index=True)
+    tin: str = Field(index=True)
     hashed_password: str  
     api_key: str = Field(default_factory=lambda: secrets.token_urlsafe(32), index=True)
     status: CompanyStatus = Field(default=CompanyStatus.pending)
@@ -93,7 +93,7 @@ class CompanyCreate(SQLModel):
     logo_url: str
     email: str
     phone_number: str
-    jib: str
+    tin: str
     address: str
     password: str
 
@@ -122,10 +122,10 @@ class CompanyCreate(SQLModel):
     def validate_email(cls, v):
         return _validate_email(v)
 
-    @field_validator('jib')
+    @field_validator('tin')
     @classmethod
-    def validate_jib(cls, v):
-        return _validate_jib(v)
+    def validate_tin(cls, v):
+        return _validate_tin(v)
 
     @field_validator('address')
     @classmethod
@@ -140,7 +140,7 @@ class CompanyUpdate(SQLModel):
     logo_url: Optional[str] = None
     email: Optional[str] = None
     phone_number: Optional[str] = None
-    jib: Optional[str] = None
+    tin: Optional[str] = None
     address: Optional[str] = None
     status: Optional[CompanyStatus] = None
 
@@ -169,15 +169,16 @@ class CompanyUpdate(SQLModel):
     def validate_email(cls, v):
         return _validate_email(v)
 
-    @field_validator('jib')
+    @field_validator('tin')
     @classmethod
-    def validate_jib(cls, v):
-        return _validate_jib(v)
+    def validate_tin(cls, v):
+        return _validate_tin(v)
 
     @field_validator('address')
     @classmethod
     def validate_address(cls, v):
         return _validate_address(v)
+
 
 class CompanyRead(SQLModel):
     id: int
@@ -187,7 +188,7 @@ class CompanyRead(SQLModel):
     logo_url: str
     email: str
     phone_number: str
-    jib: str
+    tin: str
     status: CompanyStatus
     created_at: datetime
     address: str

@@ -14,7 +14,7 @@ def get_company_by_api_key(
     x_api_key: str = Header(..., description="Company API key"),
     db: Session = Depends(get_db),
 ) -> Company:
-    """Validate company API key and return company"""
+    
     company = db.get(Company, company_id)
     if not company or company.is_deleted:
         raise HTTPException(
@@ -32,7 +32,7 @@ def get_company_by_api_key(
 
 @router.get("/", response_model=List[CompanyRead])
 def get_companies(db: Session = Depends(get_db)):
-    """Get all approved companies - public endpoint"""
+
     query = select(Company)
     query = query.where(Company.status == CompanyStatus.approved)
     query = query.where(Company.is_deleted == False)
@@ -44,7 +44,6 @@ def get_companies_admin(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Get all companies - admin only"""
     if current_user.role != UserRole.admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
