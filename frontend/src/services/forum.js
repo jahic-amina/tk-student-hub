@@ -33,3 +33,17 @@ export async function getTopics(categoryId = null, page = 1, size = 5) {
   
   return response.json(); // Ovo sada vraća objekat sa { items, total, page, size }
 }
+
+export async function deleteTopic(topicId) {
+  const response = await fetch(`${BASE_URL}/forum/topics/${topicId}`, {
+    method: 'DELETE',
+    headers: getHeaders()
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null)
+    throw new Error(errorData?.detail || 'Brisanje teme nije uspjelo.')
+  }
+
+  return response.json()
+}
