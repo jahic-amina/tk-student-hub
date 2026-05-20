@@ -1,171 +1,229 @@
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, date
 from fastapi import APIRouter, HTTPException, Depends, Query
-from sqlmodel import Session, select
-from app.models.ad import Ad, AdStatus, AdType, AdCreate, AdUpdate, AdPatch, StatusUpdate
-from app.models.company import Company
-from app.database import get_db
+from sqlmodel import Session, select, or_
+from pydantic import BaseModel
+
+from app.models.ads_model import Oglas, OglasStatus, OglasTip
+from app.models.user import User, UserRole
 from app.core.security import get_current_user
-from app.models.user import User
+from app.database import get_db
 
-router = APIRouter(prefix="/ads", tags=["Ads"])
-
-
-def ensure_can_edit_ad(ad: Ad, current_user: User, session: Session) -> None:
-    if current_user.role == "admin":
-        return
-
-    company = session.get(Company, ad.company_id)
-    if company and company.email == current_user.email:
-        return
-
-    raise HTTPException(status_code=403, detail="Access denied.")
+router = APIRouter(prefix="/oglasi", tags=["Oglasi"])
 
 
-@router.get("/", response_model=List[Ad])
-def get_ads(
-    type: Optional[AdType] = Query(default=None),
-    status: Optional[AdStatus] = Query(default=None),
-    field: Optional[str] = Query(default=None),
-    location: Optional[str] = Query(default=None),
-    company_id: Optional[int] = Query(default=None),
-    limit: int = Query(default=20, ge=1, le=100),
+# Schemas
+
+class OglasCreate(BaseModel):
+    kompanija_id: int
+    naziv: str
+    tip: OglasTip
+    oblast: str
+    lokacija: str
+    opis: str
+    rok: date
+    trajanje: Optional[str] = None
+    naknada: Optional[str] = None
+    broj_mjesta: int = 1
+    placeno: bool = False
+    requirements: Optional[str] = None
+    benefits: Optional[str] = None
+
+
+class OglasUpdate(BaseModel):
+    """Full update – PUT (all fields required except those with defaults)."""
+    naziv: str
+    tip: OglasTip
+    oblast: str
+    lokacija: str
+    opis: str
+    rok: date
+    trajanje: Optional[str] = None
+    naknada: Optional[str] = None
+    broj_mjesta: int = 1
+    placeno: bool = False
+    requirements: Optional[str] = None
+    benefits: Optional[str] = None
+
+
+class OglasPatch(BaseModel):
+    """Partial update – PATCH (all fields optional)."""
+    naziv: Optional[str] = None
+    tip: Optional[OglasTip] = None
+    oblast: Optional[str] = None
+    lokacija: Optional[str] = None
+    opis: Optional[str] = None
+    rok: Optional[date] = None
+    trajanje: Optional[str] = None
+    naknada: Optional[str] = None
+    broj_mjesta: Optional[int] = None
+    placeno: Optional[bool] = None
+    requirements: Optional[str] = None
+    benefits: Optional[str] = None
+
+
+# GET /oglasi  – list (with optional filters)
+
+@router.get("/", response_model=List[Oglas])
+def get_oglasi(
+    tip: Optional[OglasTip] = Query(default=None),
+    status: Optional[OglasStatus] = Query(default=None),
+    oblast: Optional[str] = Query(default=None),
+    lokacija: Optional[str] = Query(default=None),
+    kompanija_id: Optional[int] = Query(default=None),
+    search: Optional[str] = Query(default=None, description="Pretraga po nazivu ili opisu oglasa"),
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=100, ge=1, le=200),
     session: Session = Depends(get_db),
 ):
-    """Return a list of ads. Supports filtering and results limiting."""
-    query = select(Ad).where(Ad.is_deleted == False)
+    """Vrati listu oglasa. Podržava filtriranje, pretragu i paginaciju."""
+    query = select(Oglas).where(Oglas.is_deleted == False)
 
-    if type:
-        query = query.where(Ad.type == type)
+    if tip:
+        query = query.where(Oglas.tip == tip)
     if status:
-        query = query.where(Ad.status == status)
-    if field:
-        query = query.where(Ad.field == field)
-    if location:
-        query = query.where(Ad.location == location)
-    if company_id:
-        query = query.where(Ad.company_id == company_id)
+        query = query.where(Oglas.status == status)
+    if oblast:
+        query = query.where(Oglas.oblast == oblast)
+    if lokacija:
+        query = query.where(Oglas.lokacija == lokacija)
+    if kompanija_id:
+        query = query.where(Oglas.kompanija_id == kompanija_id)
+    if search:
+        search_filter = f"%{search}%"
+        query = query.where(
+            or_(
+                Oglas.naziv.ilike(search_filter),
+                Oglas.opis.ilike(search_filter),
+            )
+        )
 
-    query = query.limit(limit)
+    query = query.offset(skip).limit(limit)
     return session.exec(query).all()
 
 
-@router.get("/{ad_id}", response_model=Ad)
-def get_ad(
-    ad_id: int,
-    session: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    """Return a single ad by ID.
-    Admins can see deleted ads, regular users cannot."""
-    ad = session.get(Ad, ad_id)
+# GET /oglasi/{id}  – single oglas
 
-    if not ad:
-        raise HTTPException(status_code=404, detail="Ad not found.")
-
-    if ad.is_deleted and current_user.role != "admin":
-        raise HTTPException(status_code=404, detail="Ad not found.")
-
-    return ad
+@router.get("/{oglas_id}", response_model=Oglas)
+def get_oglas(oglas_id: int, session: Session = Depends(get_db)):
+    """Vrati jedan oglas po ID-u."""
+    oglas = session.get(Oglas, oglas_id)
+    if not oglas or oglas.is_deleted:
+        raise HTTPException(status_code=404, detail="Oglas nije pronađen.")
+    return oglas
 
 
-@router.post("/", response_model=Ad, status_code=201)
-def create_ad(data: AdCreate, session: Session = Depends(get_db)):
-    """Create a new ad. Status is automatically set to 'pending'."""
-    ad = Ad(**data.model_dump())
-    session.add(ad)
+# POST /oglasi  – create
+
+@router.post("/", response_model=Oglas, status_code=201)
+def create_oglas(data: OglasCreate, session: Session = Depends(get_db)):
+    """Kreiraj novi oglas. Status je automatski 'pending'."""
+    oglas = Oglas(**data.model_dump())
+    session.add(oglas)
     session.commit()
-    session.refresh(ad)
-    return ad
+    session.refresh(oglas)
+    return oglas
 
 
-@router.put("/{ad_id}", response_model=Ad)
-def update_ad(
-    ad_id: int,
-    data: AdUpdate,
+# PUT /oglasi/{id}  – full update
+
+@router.put("/{oglas_id}", response_model=Oglas)
+def update_oglas(
+    oglas_id: int,
+    data: OglasUpdate,
     session: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
-    """Full update of an ad (all fields must be provided)."""
-    ad = session.get(Ad, ad_id)
-    if not ad or ad.is_deleted:
-        raise HTTPException(status_code=404, detail="Ad not found.")
+    """Potpuno ažuriranje oglasa (sva polja moraju biti proslijeđena)."""
+    oglas = session.get(Oglas, oglas_id)
+    if not oglas or oglas.is_deleted:
+        raise HTTPException(status_code=404, detail="Oglas nije pronađen.")
 
-    ensure_can_edit_ad(ad, current_user, session)
+    for field, value in data.model_dump().items():
+        setattr(oglas, field, value)
 
-    for key, value in data.model_dump().items():
-        setattr(ad, key, value)
-
-    ad.updated_at = datetime.utcnow()
-    session.add(ad)
+    oglas.updated_at = datetime.utcnow()
+    session.add(oglas)
     session.commit()
-    session.refresh(ad)
-    return ad
+    session.refresh(oglas)
+    return oglas
 
 
-@router.patch("/{ad_id}", response_model=Ad)
-def patch_ad(
-    ad_id: int,
-    data: AdPatch,
+# PATCH /oglasi/{id}  – partial update
+
+@router.patch("/{oglas_id}", response_model=Oglas)
+def patch_oglas(
+    oglas_id: int,
+    data: OglasPatch,
     session: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
-    """Partial update of an ad (only provided fields are changed)."""
-    ad = session.get(Ad, ad_id)
-    if not ad or ad.is_deleted:
-        raise HTTPException(status_code=404, detail="Ad not found.")
-
-    ensure_can_edit_ad(ad, current_user, session)
+    """Djelimično ažuriranje oglasa (samo proslijeđena polja se mijenjaju)."""
+    oglas = session.get(Oglas, oglas_id)
+    if not oglas or oglas.is_deleted:
+        raise HTTPException(status_code=404, detail="Oglas nije pronađen.")
 
     update_data = data.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(ad, key, value)
+    for field, value in update_data.items():
+        setattr(oglas, field, value)
 
-    ad.updated_at = datetime.utcnow()
-    session.add(ad)
+    # Ako se traže izmjene, zabilježi kada
+    if data.status == OglasStatus.changes_requested:
+        oglas.changes_requested_at = datetime.utcnow()
+
+    oglas.updated_at = datetime.utcnow()
+    session.add(oglas)
     session.commit()
-    session.refresh(ad)
-    return ad
+    session.refresh(oglas)
+    return oglas
 
 
-@router.delete("/{ad_id}", status_code=204)
-def delete_ad(ad_id: int, session: Session = Depends(get_db)):
-    """Soft-delete an ad (sets is_deleted=True, does not remove from database)."""
-    ad = session.get(Ad, ad_id)
-    if not ad or ad.is_deleted:
-        raise HTTPException(status_code=404, detail="Ad not found.")
+# DELETE /oglasi/{id}  – soft delete
 
-    ad.is_deleted = True
-    ad.updated_at = datetime.utcnow()
-    session.add(ad)
+@router.delete("/{oglas_id}", status_code=204)
+def delete_oglas(oglas_id: int, session: Session = Depends(get_db)):
+    """Soft-delete oglasa (postavlja is_deleted=True, ne briše iz baze)."""
+    oglas = session.get(Oglas, oglas_id)
+    if not oglas or oglas.is_deleted:
+        raise HTTPException(status_code=404, detail="Oglas nije pronađen.")
+
+    oglas.is_deleted = True
+    oglas.updated_at = datetime.utcnow()
+    session.add(oglas)
     session.commit()
 
 
-@router.patch("/{ad_id}/status", response_model=Ad)
+# PATCH /oglasi/{id}/status  – admin: change status
+
+class StatusUpdate(BaseModel):
+    status: OglasStatus
+    admin_comment: Optional[str] = None
+    approved_by: Optional[int] = None
+
+
+@router.patch("/{oglas_id}/status", response_model=Oglas)
 def update_status(
-    ad_id: int,
+    oglas_id: int,
     data: StatusUpdate,
     session: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Admin endpoint for changing ad status (approve, reject, etc.)."""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Access denied.")
+    """Admin endpoint za promjenu statusa oglasa (approve, reject, itd.)."""
+    if current_user.role != UserRole.admin:
+        raise HTTPException(status_code=403, detail="Nemate dozvolu za ovu akciju.")
 
-    ad = session.get(Ad, ad_id)
-    if not ad or ad.is_deleted:
-        raise HTTPException(status_code=404, detail="Ad not found.")
+    oglas = session.get(Oglas, oglas_id)
+    if not oglas or oglas.is_deleted:
+        raise HTTPException(status_code=404, detail="Oglas nije pronađen.")
 
-    ad.status = data.status
+    oglas.status = data.status
     if data.admin_comment is not None:
-        ad.admin_comment = data.admin_comment
+        oglas.admin_comment = data.admin_comment
     if data.approved_by is not None:
-        ad.approved_by = data.approved_by
-    if data.status == AdStatus.changes_requested:
-        ad.changes_requested_at = datetime.utcnow()
+        oglas.approved_by = data.approved_by
+    if data.status == OglasStatus.changes_requested:
+        oglas.changes_requested_at = datetime.utcnow()
 
-    ad.updated_at = datetime.utcnow()
-    session.add(ad)
+    oglas.updated_at = datetime.utcnow()
+    session.add(oglas)
     session.commit()
-    session.refresh(ad)
-    return ad
+    session.refresh(oglas)
+    return oglas
