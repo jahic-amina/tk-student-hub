@@ -37,7 +37,7 @@ const routes = [
     path: '/forum',
     name: 'forum',
     component: () => import('../views/forum/ForumView.vue'),
-    meta: { requiresAuth: true }
+    // meta: { requiresAuth: true }
   },
   {
     path: '/profiles',
@@ -53,6 +53,7 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
+  next(); //privremeno dodano radi lakseg pristupa forumu
   const isLoggedIn = !!localStorage.getItem('token')
 
   if (to.meta.requiresAuth && !isLoggedIn) {

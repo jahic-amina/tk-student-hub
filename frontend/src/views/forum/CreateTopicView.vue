@@ -1,205 +1,325 @@
 <script setup>
-import { ref } from 'vue';
-import { createTopic } from '../../services/forum';
+import ForumSidebar from '../../components/ForumSidebar.vue';
+import CreateTopicView from './CreateTopicView.vue';
+import TopicDetailView from './TopicDetailView.vue';
+import { ref, onMounted, watch, computed } from 'vue';
+import { getTopics, getCategories, deleteTopic as deleteTopicApi } from '../../services/forum.js';
 
-const emit = defineEmits(['topic-created', 'cancel']);
+// Reaktivna stanja za teme i kategorije
+const teme = ref([]);
+const sveKategorije = ref([]); 
+const isLoading = ref(true);
+const odabraniKategorijaId = ref(null);
+const trenutnaStranica = ref(1);
+const ukupnoTema = ref(0);
+const velicinaStranice = 5;
 
-const title = ref('');
-const selectedCategory = ref('');
-const tagInput = ref('');
-const tags = ref([]);
-const content = ref('');
-const isSubmitting = ref(false);
-const errors = ref({});
+// Držanje stanja pretrage i formi
+const search = ref("");
+const showCreateForm = ref(false);
+const selectedTopic = ref(null);
 
-const categories = [
-  { id: 1, name: 'Opšta diskusija' },
-  { id: 2, name: 'Pomoć sa predmetima' },
-  { id: 3, name: 'Studijske grupe' },
-  { id: 4, name: 'Praksa i posao' },
-  { id: 5, name: 'Projekti' },
-  { id: 6, name: 'Off-Topic' },
-];
+const ukupnoStranica = computed(() => {
+  return Math.ceil(ukupnoTema.value / velicinaStranice) || 1;
+});
 
-const addTag = () => {
-  const tag = tagInput.value.trim();
-  if (!tag || tags.value.length >= 5 || tags.value.includes(tag)) return;
-  tags.value.push(tag);
-  tagInput.value = '';
-};
-
-const removeTag = (index) => {
-  tags.value.splice(index, 1);
-};
-
-const handleTagKeydown = (e) => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    addTag();
+const trenutnaKategorija = computed(() => {
+  if (!odabraniKategorijaId.value) {
+    return { name: 'General (Sve teme)', color: '#64748b' };
   }
-};
+  return sveKategorije.value.find(c => c.id === odabraniKategorijaId.value) || { name: 'Kategorija', color: '#ff7a00' };
+});
 
-const validate = () => {
-  errors.value = {};
-  if (!title.value.trim()) errors.value.title = 'Naslov je obavezan.';
-  else if (title.value.trim().length < 5) errors.value.title = 'Naslov mora imati najmanje 5 karaktera.';
-  if (!selectedCategory.value) errors.value.category = 'Odaberite kategoriju.';
-  if (!content.value.trim()) errors.value.content = 'Sadržaj je obavezan.';
-  else if (content.value.trim().length < 10) errors.value.content = 'Sadržaj mora imati najmanje 10 karaktera.';
-  return Object.keys(errors.value).length === 0;
-};
+const isAdmin = computed(() => {
+  return localStorage.getItem('role') === 'admin';
+});
 
-const submitTopic = async () => {
-  if (!validate()) return;
-  isSubmitting.value = true;
+const ucitajTeme = async () => {
+  isLoading.value = true;
   try {
-    const newTopic = await createTopic({
-      title: title.value.trim(),
-      content: content.value.trim(),
-      category_id: parseInt(selectedCategory.value),
-      tags: [],
-    });
-    emit('topic-created', newTopic);
+    // API poziv koji podržava i pretragu i paginaciju i kategorije
+    const data = await getTopics({
+      category_id: odabraniKategorijaId.value,
+      page: trenutnaStranica.value,
+      per_page: velicinaStranice,
+      search: search.value
+    }); 
+    
+    if (data && data.items) {
+      teme.value = data.items;      
+      ukupnoTema.value = data.total;  
+    } else if (Array.isArray(data)) {
+      teme.value = data;
+      ukupnoTema.value = data.length;
+    } else {
+      throw new Error("Nema ispravnih podataka.");
+    }
   } catch (error) {
-    errors.value.general = 'Došlo je do greške. Pokušajte ponovo.';
+    console.warn("Backend rute nisu dostupne, učitavam demo podatke...");
+    ukupnoTema.value = 2;
+    teme.value = [
+      { 
+        id: 1, 
+        title: "Dobrodošli na TK Student Hub forum", 
+        content: "Ovo je prva testna tema na forumu. Ovdje studenti mogu postavljati pitanja i dijeliti iskustva.", 
+        views_count: 42, 
+        comments_count: 3,
+        category: { name: "Opšta diskusija" },
+        author: { full_name: "Admin Hub" },
+        created_at: new Date()
+      },
+      { 
+        id: 2, 
+        title: "Ideje za projekte iz telekomunikacija", 
+        content: "Ovdje možemo dijeliti ideje za projekte iz mreža, elektronike i programiranja.", 
+        views_count: 15, 
+        comments_count: 0,
+        category: { name: "Projekti" },
+        author: { full_name: "Zijad Lekić" },
+        created_at: new Date()
+      }
+    ];
   } finally {
-    isSubmitting.value = false;
+    isLoading.value = false;
   }
 };
+
+onMounted(async () => {
+  await ucitajTeme();
+  try {
+    sveKategorije.value = await getCategories();
+  } catch (e) {
+    console.error("Greška pri učitavanju kategorija u ForumView:", e);
+  }
+});
+
+watch(odabraniKategorijaId, () => {
+  trenutnaStranica.value = 1;
+  ucitajTeme();
+});
+
+watch(trenutnaStranica, () => {
+  ucitajTeme();
+});
+
+const filtrirajPoKategoriji = (id) => {
+  showCreateForm.value = false;
+  selectedTopic.value = null;
+  odabraniKategorijaId.value = id;
+};
+
+const applySearch = () => {
+  trenutnaStranica.value = 1;
+  selectedTopic.value = null;
+  ucitajTeme();
+};
+
+const obrisiTemu = async (temaId) => {
+  const potvrda = confirm('Da li ste sigurni da želite obrisati ovu temu?');
+  if (!potvrda) return;
+
+  try {
+    await deleteTopicApi(temaId);
+    teme.value = teme.value.filter(tema => tema.id !== temaId);
+    ukupnoTema.value = Math.max(0, ukupnoTema.value - 1);
+  } catch (error) {
+    alert(error.message || 'Brisanje teme nije uspjelo.');
+  }
+};
+
+const onTopicCreated = async () => {
+  showCreateForm.value = false;
+  await ucitajTeme();
+};
+
+// Pomoćne funkcije integrisane u Tailwind kartice
+function formatDate(dateValue) {
+  if (!dateValue) return "";
+  return new Intl.DateTimeFormat("bs-BA", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  }).format(new Date(dateValue));
+}
+
+function getInitials(name) {
+  if (!name) return "?";
+  return name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+}
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 p-6">
-    <div class="max-w-4xl mx-auto">
-
-      <!-- Header -->
-      <div class="flex items-center justify-between mb-6">
-        <div class="flex items-center gap-3">
-          <span class="text-orange-500 text-xl">💬</span>
-          <div>
-            <h1 class="text-2xl font-bold text-slate-800">Kreiraj novu temu</h1>
-            <p class="text-slate-500 text-sm mt-0.5">Popunite formu ispod da biste kreirali novu temu diskusije</p>
-          </div>
+  <div class="min-h-screen bg-gray-50 text-slate-900 p-6">
+    <div class="max-w-7xl mx-auto">
+      
+      <div class="flex justify-between items-center mb-8 border-b border-gray-200 pb-4">
+        <div>
+          <h1 class="text-3xl font-bold tracking-tight text-slate-800">Studentski Forum</h1>
+          <p class="text-slate-500 mt-1">Postavi pitanje, podijeli ideju ili pomogni kolegama.</p>
         </div>
-        <button
-          @click="$emit('cancel')"
-          class="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 text-slate-600 hover:bg-gray-100 transition-colors text-sm bg-white"
+        <button 
+          @click="showCreateForm = true; selectedTopic = null;"
+          class="bg-[#ff7a00] hover:bg-[#e66e00] text-white font-bold px-6 py-2.5 rounded-lg transition-colors shadow-md text-sm"
         >
-          ← Nazad
+          Nova tema
         </button>
       </div>
 
-      <!-- Forma -->
-      <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-8 space-y-6">
-
-        <!-- Greška -->
-        <div v-if="errors.general" class="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-          {{ errors.general }}
-        </div>
-
-        <!-- Naslov -->
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">
-            Naslov teme <span class="text-red-500">*</span>
-          </label>
-          <input
-            v-model="title"
-            type="text"
-            maxlength="200"
-            placeholder="Npr. Pitanje oko Fourierove transformacije - Signali i sistemi"
-            class="w-full border rounded-lg px-4 py-2.5 text-slate-800 placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 transition-all"
-            :class="errors.title ? 'border-red-400' : 'border-gray-200'"
+      <div class="flex flex-col md:flex-row gap-8 items-start">
+        
+        <div class="w-full md:w-72 flex-shrink-0">
+          <ForumSidebar 
+            :aktivna-kategorija-id="odabraniKategorijaId" 
+            @kategorija-izabrana="filtrirajPoKategoriji" 
           />
-          <p v-if="errors.title" class="text-red-500 text-xs mt-1">{{ errors.title }}</p>
-          <p v-else class="text-slate-400 text-xs mt-1">Budite što precizniji - dobar naslov pomaže drugim studentima da pronađu vašu temu</p>
         </div>
 
-        <!-- Kategorija -->
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">
-            Kategorija <span class="text-red-500">*</span>
-          </label>
-          <select
-            v-model="selectedCategory"
-            class="w-full border rounded-lg px-4 py-2.5 text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 transition-all"
-            :class="errors.category ? 'border-red-400' : 'border-gray-200'"
-          >
-            <option value="" disabled>Izaberite kategoriju</option>
-            <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-              {{ cat.name }}
-            </option>
-          </select>
-          <p v-if="errors.category" class="text-red-500 text-xs mt-1">{{ errors.category }}</p>
-        </div>
-
-        <!-- Tagovi -->
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Tagovi</label>
-          <div class="flex gap-2">
-            <input
-              v-model="tagInput"
-              @keydown="handleTagKeydown"
-              type="text"
-              placeholder="Dodaj tag (pritisni Enter)"
-              :disabled="tags.length >= 5"
-              class="flex-1 border border-gray-200 rounded-lg px-4 py-2.5 text-slate-800 placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 transition-all disabled:opacity-50"
-            />
-            <button
-              @click="addTag"
-              :disabled="tags.length >= 5"
-              class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-lg text-slate-600 transition-colors disabled:opacity-50"
-            >
-              +
-            </button>
-          </div>
-          <div v-if="tags.length > 0" class="flex flex-wrap gap-2 mt-2">
-            <span
-              v-for="(tag, index) in tags"
-              :key="index"
-              class="flex items-center gap-1.5 bg-orange-50 text-orange-600 border border-orange-200 px-3 py-1 rounded-full text-sm"
-            >
-              {{ tag }}
-              <button @click="removeTag(index)" class="hover:text-orange-800 transition-colors">×</button>
-            </span>
-          </div>
-          <p class="text-slate-400 text-xs mt-1">Dodajte tagove da bi vaša tema bila lakše pronađena (maksimalno 5 tagova)</p>
-        </div>
-
-        <!-- Sadržaj -->
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">
-            Sadržaj teme <span class="text-red-500">*</span>
-          </label>
-          <textarea
-            v-model="content"
-            rows="8"
-            placeholder="Opišite vaše pitanje ili temu diskusije..."
-            class="w-full border rounded-lg px-4 py-2.5 text-slate-800 placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 transition-all resize-y"
-            :class="errors.content ? 'border-red-400' : 'border-gray-200'"
+        <div class="flex-1 w-full">
+          
+          <CreateTopicView
+            v-if="showCreateForm"
+            @topic-created="onTopicCreated"
+            @cancel="showCreateForm = false"
           />
-          <p v-if="errors.content" class="text-red-500 text-xs mt-1">{{ errors.content }}</p>
-          <p v-else class="text-slate-400 text-xs mt-1">Koristite markdown za formatiranje teksta. Budite detaljni i jasni.</p>
-        </div>
 
-        <!-- Dugmad -->
-        <div class="flex items-center justify-between pt-4 border-t border-gray-100">
-          <button
-            @click="$emit('cancel')"
-            class="px-6 py-2.5 rounded-lg border border-gray-200 text-slate-600 hover:bg-gray-50 transition-colors"
-          >
-            Otkaži
-          </button>
-          <button
-            @click="submitTopic"
-            :disabled="isSubmitting"
-            class="flex items-center gap-2 px-6 py-2.5 bg-orange-500 hover:bg-orange-400 text-white font-medium rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            <span v-if="isSubmitting" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
-            <span>{{ isSubmitting ? 'Objavljivanje...' : '✓ Objavi temu' }}</span>
-          </button>
+          <TopicDetailView
+            v-else-if="selectedTopic"
+            :topic="selectedTopic"
+            @back="selectedTopic = null; ucitajTeme();"
+          />
+
+          <div v-else class="flex flex-col justify-between min-h-[500px]">
+            <div>
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <span 
+                  class="px-4 py-1.5 font-extrabold text-xs rounded-full border shadow-sm transition-all duration-300"
+                  :style="{ 
+                    backgroundColor: trenutnaKategorija.color + '15', 
+                    borderColor: trenutnaKategorija.color, 
+                    color: trenutnaKategorija.color
+                  }"
+                >
+                  {{ trenutnaKategorija.name }}
+                </span>
+
+                <div class="flex gap-2 w-full sm:w-80">
+                  <input
+                    v-model="search"
+                    type="text"
+                    placeholder="Pretraži teme na forumu..."
+                    @keyup.enter="applySearch"
+                    class="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white"
+                  />
+                  <button @click="applySearch" class="bg-slate-800 text-white text-xs px-4 rounded-lg font-bold hover:bg-slate-700 transition-colors">
+                    Traži
+                  </button>
+                </div>
+              </div>
+
+              <div v-if="isLoading" class="flex flex-col items-center justify-center py-12">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff7a00] mb-4"></div>
+                <p class="text-slate-500 italic text-sm">Učitavanje tema...</p>
+              </div>
+
+              <div v-else-if="teme.length === 0" class="text-center py-12 bg-white rounded-xl border border-gray-200 p-8 shadow-sm">
+                <p class="text-slate-500 text-sm mb-4">
+                   Trenutno nema tema u ovoj kategoriji. Započni temu!
+                </p>
+                <button
+                   @click="showCreateForm = true"
+                   class="bg-[#ff7a00] hover:bg-[#e66e00] text-white font-bold px-6 py-2 rounded-lg text-xs transition-colors shadow-md"
+                >
+                   Započni temu
+                </button>
+              </div>
+
+              <div v-else class="space-y-4">
+                <div 
+                  v-for="tema in teme" 
+                  :key="tema.id" 
+                  @click="selectedTopic = tema"
+                  class="p-5 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                >
+                  <div class="flex justify-between items-start">
+                    <h2 class="text-lg font-bold text-slate-800 group-hover:text-[#ff7a00] transition-colors line-clamp-1">
+                      {{ tema.title }}
+                    </h2>
+                    
+                    <div class="flex items-center gap-2 flex-shrink-0 ml-4">
+                     <span class="bg-orange-50 text-[#ff7a00] text-[9px] font-extrabold uppercase px-2 py-0.5 rounded tracking-wider">
+                       {{ tema.category?.name || tema.category || 'Opšta diskusija' }}
+                     </span>
+
+                     <button
+                       v-if="isAdmin"
+                       @click.stop="obrisiTemu(tema.id)"
+                       class="w-7 h-7 flex items-center justify-center rounded-full text-red-600 hover:bg-red-50 hover:text-red-800 transition-colors text-xs"
+                       title="Obriši temu"
+                     >
+                        🗑️
+                     </button>
+                   </div>
+                  </div>
+                  
+                  <p class="text-slate-500 mt-2 text-xs leading-relaxed line-clamp-2">
+                    {{ tema.content }}
+                  </p>
+                  
+                  <div class="flex items-center justify-between mt-5 pt-3 border-t border-gray-100 text-[11px] text-slate-400">
+                    <div class="flex items-center gap-1.5">
+                      <span class="w-5 h-5 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-[9px]">
+                        {{ getInitials(tema.author?.full_name) }}
+                      </span>
+                      <span class="text-slate-600 font-medium">{{ tema.author?.full_name || 'Korisnik' }}</span>
+                      <span>•</span>
+                      <span>{{ formatDate(tema.created_at) }}</span>
+                    </div>
+
+                    <div class="flex items-center space-x-3 font-semibold">
+                      <span>👁️ {{ tema.views_count || 0 }} pregleda</span>
+                      <span class="text-[#ff7a00]">💬 {{ tema.comments_count || 0 }} odgovora</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="teme.length > 0 && !isLoading" class="mt-8 flex items-center justify-between border-t border-gray-200 pt-4 pb-4">
+              <p class="text-xs text-slate-500">
+                Prikazano <span class="font-medium">{{ teme.length }}</span> tema od ukupno <span class="font-medium">{{ ukupnoTema }}</span>
+              </p>
+              
+              <div class="flex items-center space-x-2">
+                <button 
+                  @click="trenutnaStranica--" 
+                  :disabled="trenutnaStranica === 1"
+                  class="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-xs font-medium text-slate-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                >
+                  ← Prethodna
+                </button>
+
+                <span class="text-xs font-semibold text-slate-700 px-2">
+                  Stranica {{ trenutnaStranica }} od {{ ukupnoStranica }}
+                </span>
+
+                <button 
+                  @click="trenutnaStranica++" 
+                  :disabled="trenutnaStranica === ukupnoStranica"
+                  class="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-xs font-medium text-slate-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                >
+                  Sljedeća →
+                </button>
+              </div>
+            </div>
+
+          </div>
         </div>
 
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Sav CSS je prebačen u Tailwind klase, uklonjen stari neiskorišteni CSS kod */
+</style>
