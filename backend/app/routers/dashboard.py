@@ -13,7 +13,7 @@ def get_dashboard(
     current_user: User = Depends(get_current_user),
 ):
     """
-    PRIVREMENO!!!
+    ______Moguće izmjene________
     Vraća personalizovane podatke za dashboard trenutno prijavljenog korisnika.
 
     Dashboard uključuje:
