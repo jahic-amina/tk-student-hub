@@ -1,4 +1,5 @@
 # Python
+.venv/
 venv/
 __pycache__/
 *.pyc
@@ -24,3 +25,5 @@ frontend/.vite/
 
 # Superpowers internal docs
 docs/superpowers/
+
+uploads/

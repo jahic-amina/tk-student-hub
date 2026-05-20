@@ -1,0 +1,64 @@
+from pydantic import ConfigDict
+from sqlmodel import SQLModel, Field, Relationship
+from enum import Enum
+from datetime import datetime, timezone
+from sqlalchemy import UniqueConstraint
+from typing import Optional
+from user import User
+from ads_model import Oglas
+
+class ApplicationStatus(str, Enum):
+    pending = "pending"
+    accepted = "accepted"
+    rejected = "rejected"
+
+class Application(SQLModel, table=True):
+    __tablename__ = "applications"
+    __table_args__ = (UniqueConstraint("user_id", "ad_id", name="uq_user_ad"),)
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="users.id", index=True)
+    ad_id: int = Field(foreign_key="oglasi.id", index=True)
+
+    cv_path: str
+    motivational_letter_path: str
+    linkedin_url: Optional[str] = Field(default=None)
+    phone: str
+
+    status: ApplicationStatus = Field(default=ApplicationStatus.pending)
+    admin_feedback: Optional[str] = Field(default=None)
+    is_archived: bool = Field(default=False)
+
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    user: "User" = Relationship()
+    ad: "Oglas" = Relationship()
+
+class ApplicationCreate(SQLModel):
+    ad_id: int
+    cv_path: str
+    motivational_letter_path: str
+    linkedin_url: Optional[str] = None
+    phone: str
+
+class ApplicationRead(SQLModel):
+    id: int
+    user_id: int
+    ad_id: int
+    cv_path: str
+    motivational_letter_path: str
+    linkedin_url: Optional[str]= None
+    phone: str
+    status: ApplicationStatus
+    admin_feedback: Optional[str]= None
+    is_archived: bool
+    created_at: datetime
+    updated_at: datetime
+    model_config=ConfigDict(from_attributes=True)
+    
+
+class ApplicationUpdate(SQLModel):
+    status: Optional[ApplicationStatus] = None
+    admin_feedback: Optional[str] = None
+    is_archived: Optional[bool] = None
