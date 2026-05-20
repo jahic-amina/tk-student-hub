@@ -125,8 +125,16 @@ const filtrirajPoKategoriji = (id) => {
               <p class="text-slate-500 italic">Učitavanje tema...</p>
             </div>
 
-            <div v-else-if="teme.length === 0" class="text-center py-12 bg-white rounded-xl border border-gray-200 p-6">
-              <p class="text-slate-400 italic">Nema objavljenih tema u ovoj kategoriji.</p>
+            <div v-else-if="teme.length === 0" class="text-center py-12 bg-white rounded-xl border border-gray-200 p-8">
+              <p class="text-slate-500 text-base mb-4">
+                 Trenutno nema tema u ovoj kategoriji. Započni temu!
+              </p>
+
+              <button
+                 class="bg-[#ff7a00] hover:bg-[#e66e00] text-white font-bold px-6 py-2.5 rounded-lg transition-colors shadow-md"
+              >
+                 Započni temu
+              </button>
             </div>
 
             <div v-else class="space-y-4">
