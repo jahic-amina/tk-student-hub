@@ -210,8 +210,11 @@ function getInitials(name) {
                    Trenutno nema tema u ovoj kategoriji. Započni temu!
                 </p>
                 <router-link
-                   to="/forum/nova-tema"
-                   class="bg-[#ff7a00] hover:bg-[#e66e00] text-white font-bold px-6 py-2 rounded-lg text-xs transition-colors shadow-md inline-block text-center"
+                   :to="{ 
+                     name: 'create-topic', 
+                     query: odabraniKategorijaId ? { categoryId: odabraniKategorijaId } : {} 
+                  }"
+                  class="bg-[#ff7a00] hover:bg-[#e66e00] text-white font-bold px-6 py-2 rounded-lg text-xs transition-colors shadow-md inline-block text-center"
                 >
                    Započni temu
                 </router-link>
