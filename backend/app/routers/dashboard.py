@@ -12,6 +12,23 @@ def get_dashboard(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """
+    PRIVREMENO!!!
+    Vraća personalizovane podatke za dashboard trenutno prijavljenog korisnika.
+
+    Dashboard uključuje:
+    - osnovne informacije o korisniku,
+    - sažetak aktivnosti,
+    - liste aktivnosti korisnika,
+    - relevantne sekcije platforme.
+    """
+
+    user_activity = {
+        "materials": [],
+        "opportunities": [],
+        "forum": [],
+    }
+
     return {
         "student": {
             "id": current_user.id,
@@ -19,14 +36,16 @@ def get_dashboard(
             "full_name": current_user.full_name,
             "role": current_user.role,
             "created_at": current_user.created_at,
-            "profilna_slika_url": current_user.profilna_slika_url,
-            "biografija": current_user.biografija,
+            "profilna_slika_url": getattr(current_user, "profilna_slika_url", None),
+            "biografija": getattr(current_user, "biografija", None),
+            "godina_studija": getattr(current_user, "godina_studija", None),
         },
         "summary": {
-            "materials_count": 0,
-            "opportunities_count": 0,
-            "forum_activity_count": 0,
+            "materials_count": len(user_activity["materials"]),
+            "opportunities_count": len(user_activity["opportunities"]),
+            "forum_activity_count": len(user_activity["forum"]),
         },
+        "activity": user_activity,
         "relevant_content": [
             {
                 "title": "Prakse i edukacije",
