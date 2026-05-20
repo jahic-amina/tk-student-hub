@@ -5,6 +5,8 @@ __pycache__/
 *.pyc
 *.pyo
 .env
+backend/.env
+backend/.venv/
 
 # Database
 *.db
@@ -23,3 +25,5 @@ frontend/.vite/
 
 # Superpowers internal docs
 docs/superpowers/
+
+uploads/

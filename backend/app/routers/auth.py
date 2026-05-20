@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlmodel import Session
+from sqlmodel import Session, select
 from pydantic import BaseModel, EmailStr
 from app.database import get_db
 from app.models.user import User, UserRole
@@ -23,7 +23,7 @@ class TokenResponse(BaseModel):
 
 @router.post("/register", response_model=TokenResponse)
 def register(data: RegisterRequest, db: Session = Depends(get_db)):
-    existing = db.query(User).filter(User.email == data.email).first()
+    existing = db.exec(select(User).where(User.email == data.email)).first()
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
     
@@ -42,7 +42,7 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=TokenResponse)
 def login(data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == data.username).first()
+    user = db.exec(select(User).where(User.email == data.username)).first()
     if not user or not verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
