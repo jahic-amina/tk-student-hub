@@ -1,6 +1,5 @@
 <script setup>
 import ForumSidebar from '../../components/ForumSidebar.vue';
-import CreateTopicView from './CreateTopicView.vue';
 import TopicDetailView from './TopicDetailView.vue';
 import { ref, onMounted, watch, computed } from 'vue';
 import { getTopics, getCategories, deleteTopic as deleteTopicApi } from '../../services/forum.js';
@@ -14,9 +13,8 @@ const trenutnaStranica = ref(1);
 const ukupnoTema = ref(0);
 const velicinaStranice = 5;
 
-// Držanje stanja pretrage i formi
+// Držanje stanja pretrage i detalja
 const search = ref("");
-const showCreateForm = ref(false);
 const selectedTopic = ref(null);
 
 const ukupnoStranica = computed(() => {
@@ -37,7 +35,6 @@ const isAdmin = computed(() => {
 const ucitajTeme = async () => {
   isLoading.value = true;
   try {
-    // API poziv koji podržava i pretragu i paginaciju i kategorije
     const data = await getTopics({
       category_id: odabraniKategorijaId.value,
       page: trenutnaStranica.value,
@@ -103,7 +100,6 @@ watch(trenutnaStranica, () => {
 });
 
 const filtrirajPoKategoriji = (id) => {
-  showCreateForm.value = false;
   selectedTopic.value = null;
   odabraniKategorijaId.value = id;
 };
@@ -127,12 +123,6 @@ const obrisiTemu = async (temaId) => {
   }
 };
 
-const onTopicCreated = async () => {
-  showCreateForm.value = false;
-  await ucitajTeme();
-};
-
-// Pomoćne funkcije integrisane u Tailwind kartice
 function formatDate(dateValue) {
   if (!dateValue) return "";
   return new Intl.DateTimeFormat("bs-BA", {
@@ -157,12 +147,12 @@ function getInitials(name) {
           <h1 class="text-3xl font-bold tracking-tight text-slate-800">Studentski Forum</h1>
           <p class="text-slate-500 mt-1">Postavi pitanje, podijeli ideju ili pomogni kolegama.</p>
         </div>
-        <button 
-          @click="showCreateForm = true; selectedTopic = null;"
-          class="bg-[#ff7a00] hover:bg-[#e66e00] text-white font-bold px-6 py-2.5 rounded-lg transition-colors shadow-md text-sm"
+        <router-link 
+          to="/forum/nova-tema"
+          class="bg-[#ff7a00] hover:bg-[#e66e00] text-white font-bold px-6 py-2.5 rounded-lg transition-colors shadow-md text-sm text-center"
         >
           Nova tema
-        </button>
+        </router-link>
       </div>
 
       <div class="flex flex-col md:flex-row gap-8 items-start">
@@ -176,14 +166,8 @@ function getInitials(name) {
 
         <div class="flex-1 w-full">
           
-          <CreateTopicView
-            v-if="showCreateForm"
-            @topic-created="onTopicCreated"
-            @cancel="showCreateForm = false"
-          />
-
           <TopicDetailView
-            v-else-if="selectedTopic"
+            v-if="selectedTopic"
             :topic="selectedTopic"
             @back="selectedTopic = null; ucitajTeme();"
           />
@@ -225,12 +209,12 @@ function getInitials(name) {
                 <p class="text-slate-500 text-sm mb-4">
                    Trenutno nema tema u ovoj kategoriji. Započni temu!
                 </p>
-                <button
-                   @click="showCreateForm = true"
-                   class="bg-[#ff7a00] hover:bg-[#e66e00] text-white font-bold px-6 py-2 rounded-lg text-xs transition-colors shadow-md"
+                <router-link
+                   to="/forum/nova-tema"
+                   class="bg-[#ff7a00] hover:bg-[#e66e00] text-white font-bold px-6 py-2 rounded-lg text-xs transition-colors shadow-md inline-block text-center"
                 >
                    Započni temu
-                </button>
+                </router-link>
               </div>
 
               <div v-else class="space-y-4">
@@ -321,5 +305,4 @@ function getInitials(name) {
 </template>
 
 <style scoped>
-/* Sav CSS je prebačen u Tailwind klase, uklonjen stari neiskorišteni CSS kod */
 </style>
