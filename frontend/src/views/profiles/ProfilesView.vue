@@ -12,7 +12,6 @@
           <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=128" class="w-24 h-24 rounded-full object-cover mx-auto mb-3 border border-orange-200"/>
           <h3 class="text-base font-bold text-gray-800">{{ form.first_name }} {{ form.last_name }}</h3>
           <p class="text-xs text-gray-400 mb-4">{{ form.email }}</p>
-  
           <button @click="showUploadModal = true" type="button" class="w-full py-2 bg-orange-50 hover:bg-orange-100 text-orange-600 rounded-xl border border-orange-200 font-bold text-xs transition shadow-sm flex justify-center items-center gap-2">
             <span>📷</span> Uredi profilnu sliku
           </button>
@@ -21,9 +20,7 @@
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div class="px-4 py-2.5 bg-gray-50 border-b text-xs font-bold text-gray-400 uppercase tracking-wider">Aktivnost</div>
           <nav class="divide-y divide-gray-50">
-            <a href="#" class="block px-4 py-2.5 hover:bg-orange-50 hover:text-orange-500 transition font-medium">Historija</a>
-            <a href="#" class="block px-4 py-2.5 hover:bg-orange-50 hover:text-orange-500 transition font-medium">Sačuvano</a>
-            <a href="#" class="block px-4 py-2.5 hover:bg-orange-50 hover:text-orange-500 transition font-medium">Javni Profil</a>
+            <a v-for="link in ['Historija', 'Sačuvano', 'Javni Profil']" :key="link" href="#" class="block px-4 py-2.5 hover:bg-orange-50 hover:text-orange-500 transition font-medium">{{ link }}</a>
           </nav>
         </div>
       </div>
@@ -84,11 +81,8 @@
             <h3 class="text-sm font-bold text-red-800">Deaktivacija računa</h3>
             <p class="text-xs text-red-500">Privremeno onemogućite svoj račun.</p>
           </div>
-          <div class="flex gap-3 text-xs">
-            <button @click="alertAction('Deaktivacija računa')" type="button" class="px-4 py-2 bg-white text-red-700 border border-red-200 font-bold rounded-xl hover:bg-red-100 transition">Deaktiviraj nalog</button>
-          </div>
+          <button @click="alertAction('Deaktivacija računa')" type="button" class="px-4 py-2 bg-white text-red-700 border border-red-200 font-bold rounded-xl hover:bg-red-100 transition text-xs">Deaktiviraj nalog</button>
         </div>
-
       </div>
 
       <AvatarUploadModal 
@@ -106,122 +100,84 @@
 import { reactive, ref, onMounted } from 'vue'
 import AvatarUploadModal from '../../components/AvatarUploadModal.vue'
 import axios from 'axios'
-const showUploadModal = ref(false)
-const handleSaveImage = (file) => {
-  console.log('Spremam sliku:', file)
-  // Ovdje će ići API poziv za slanje slike na backend (uploadAvatar)
-  showUploadModal.value = false
-}
 
-const handleRemoveImage = () => {
-  console.log('Brišem sliku...')
-  // Ovdje će ići API poziv za brisanje (removeAvatar)
-  showUploadModal.value = false
-}
-const API_BASE_URL = 'http://127.0.0.1:8000'
-
-const api = axios.create({ baseURL: API_BASE_URL })
+// --- API Postavke ---
+const api = axios.create({ baseURL: 'http://127.0.0.1:8000' })
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('token') || localStorage.getItem('access_token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
+  if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
+// --- Stanje komponente ---
+const showUploadModal = ref(false)
+const isLoading = ref(false)
+const toast = reactive({ show: false, message: '' })
+const status = reactive({ message: '', isError: false })
 const form = reactive({ first_name: '', last_name: '', email: '', study_year: 1, bio: '' })
 const security = reactive({ current_password: '', new_password: '', confirm_password: '' })
-const isLoading = ref(false)
-const status = reactive({ message: '', isError: false })
-const toast = reactive({ show: false, message: '' })
 
+// --- Pomoćne funkcije ---
 const showToast = (msg) => {
-  toast.message = msg; toast.show = true
-  setTimeout(() => { toast.show = false }, 3000)
+  Object.assign(toast, { show: true, message: msg })
+  setTimeout(() => toast.show = false, 3000)
 }
 const alertAction = (action) => alert(`${action} će biti uskoro dostupno!`)
 
+const handleSaveImage = (file) => { console.log('Spremam sliku:', file); showUploadModal.value = false }
+const handleRemoveImage = () => { console.log('Brišem sliku...'); showUploadModal.value = false }
+
+// --- API Logika ---
 const fetchUserProfile = async () => {
-  status.message = ''
-  status.isError = false
+  Object.assign(status, { message: '', isError: false })
   try {
     const { data } = await api.get('/profiles/me')
     if (data) {
-      // 1. Čupamo ime i prezime iz full_name
-      const fullName = data.full_name || ''
-      const nameParts = fullName.trim().split(' ')
-      form.first_name = nameParts[0] || ''
-      form.last_name = nameParts.slice(1).join(' ') || ''
-      
-      // 2. Mapiramo ostale podatke
-      form.email = data.email || ''
-      
-      // Dodali smo "|| data.biografija" kao plan B, ako je backend vraća na bosanskom
-      form.study_year = data.study_year || data.godina_studija || 1
-      form.bio = data.bio || data.biografija || ''
+      const [first, ...rest] = (data.full_name || '').trim().split(' ')
+      Object.assign(form, {
+        first_name: first || '',
+        last_name: rest.join(' '),
+        email: data.email || '',
+        study_year: data.study_year || data.godina_studija || 1,
+        bio: data.bio || data.biografija || ''
+      })
     }
   } catch (err) {
-    console.error('Greška pri učitavanju profila:', err)
-    if (err.response?.status === 401) {
-      status.message = 'Sesija je istekla. Molimo vas da se ponovo prijavite.'
-      status.isError = true
-    }
+    if (err.response?.status === 401) Object.assign(status, { message: 'Sesija je istekla.', isError: true })
   }
 }
 
 const handleSubmit = async () => {
-  if (!form.first_name.trim() || !form.last_name.trim()) {
-    status.message = 'Ime i prezime su obavezna polja i ne mogu biti prazni.'
-    status.isError = true
-    return // Prekida se dalje izvršavanje
-  }
-  if (form.bio.length > 500) return
+  const { first_name, last_name, bio, study_year } = form
+  
+  if (!first_name.trim() || !last_name.trim()) return Object.assign(status, { message: 'Ime i prezime su obavezni.', isError: true })
+  if (bio.length > 500) return
   
   isLoading.value = true
-  status.message = ''
-  status.isError = false
-  
-  const mergedName = `${form.first_name.trim()} ${form.last_name.trim()}`
+  Object.assign(status, { message: '', isError: false })
 
   try {
-    // 1. Ažuriranje osnovnih podataka (ime, bio, godina)
-    await api.patch('/profiles/me', {
-      full_name: mergedName,
-      biografija: form.bio,            
-      godina_studija: form.study_year  
+    // 1. Ažuriranje profila
+    await api.patch('/profiles/me', { 
+      full_name: `${first_name.trim()} ${last_name.trim()}`, 
+      biografija: bio, 
+      godina_studija: study_year 
     })
 
-    // 2. Ažuriranje lozinke (samo ako je korisnik pokušao unijeti novu lozinku)
-    if (security.new_password || security.current_password) {
-      // Provjere prije slanja
-      if (!security.current_password) {
-        throw new Error('Morate unijeti trenutnu lozinku da biste je promijenili.')
-      }
-      if (security.new_password !== security.confirm_password) {
-        throw new Error('Nove lozinke se ne podudaraju.')
-      }
-
-      // Slanje zahtjeva na tačnu rutu za lozinku u FastAPI-ju
-      await api.patch('/profiles/me/password', {
-        current_password: security.current_password,
-        new_password: security.new_password
-      })
-
-      // Očisti polja iz forme nakon uspješne izmjene
-      security.current_password = ''
-      security.new_password = ''
-      security.confirm_password = ''
+    // 2. Ažuriranje lozinke
+    const { current_password, new_password, confirm_password } = security
+    if (current_password || new_password) {
+      if (!current_password) throw new Error('Unesite trenutnu lozinku.')
+      if (new_password !== confirm_password) throw new Error('Nove lozinke se ne podudaraju.')
+      
+      await api.patch('/profiles/me/password', { current_password, new_password })
+      Object.assign(security, { current_password: '', new_password: '', confirm_password: '' })
     }
 
-    showToast('Izmjene su uspješno sačuvane!')
-    
-    // Osvježavamo podatke sa servera da potvrdimo
+    showToast('Izmjene uspješno sačuvane!')
     await fetchUserProfile()
-    
   } catch (err) {
-    status.message = err.response?.data?.detail || err.message || 'Greška prilikom spašavanja.'
-    status.isError = true
-    console.error('Detalji greške:', err)
+    Object.assign(status, { message: err.response?.data?.detail || err.message || 'Greška prilikom spašavanja.', isError: true })
   } finally {
     isLoading.value = false
   }
