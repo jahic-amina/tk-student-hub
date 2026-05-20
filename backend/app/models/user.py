@@ -19,3 +19,4 @@ class User(SQLModel, table=True):
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
     profilna_slika_url: Optional[str] = Field(default=None)
     biografija: Optional[str] = Field(default=None)
+    godina_studija: Optional[str] = Field(default=None)
