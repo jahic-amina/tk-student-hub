@@ -33,12 +33,26 @@ const routes = [
     component: () => import('../views/materials/MaterialsView.vue'),
     meta: { requiresAuth: true }
   },
+  
+
   {
     path: '/forum',
     name: 'forum',
     component: () => import('../views/forum/ForumView.vue'),
-    meta: { requiresAuth: true }
   },
+  {
+    path: '/forum/nova-tema',
+    name: 'create-topic',
+    component: () => import('../views/forum/CreateTopicView.vue'),
+  },
+  {
+    path: '/forum/tema/:id', // :id omogućava dinamičko prosljeđivanje ID-ja teme
+    name: 'topic-detail',
+    component: () => import('../views/forum/TopicDetailView.vue'),
+    props: true // Dozvoljava da ID rute uđe direktno kao prop u komponentu
+  },
+  // =========================================================
+
   {
     path: '/profiles',
     name: 'profiles',
