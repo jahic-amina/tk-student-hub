@@ -58,7 +58,7 @@
             <img :src="profile?.profilna_slika_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=128'" class="w-24 h-24 rounded-full object-cover mx-auto mb-3 border border-orange-200"/>
             <h3 class="text-base font-bold text-gray-800">{{ form.first_name }} {{ form.last_name }}</h3>
             <p class="text-xs text-gray-400 mb-4">{{ form.email }}</p>
-            <button @click="showModal = true" type="button" class="w-full py-2 bg-orange-50 hover:bg-orange-100 text-orange-600 rounded-xl border border-orange-200 font-bold text-xs transition shadow-sm flex justify-center items-center gap-2">
+            <button @click="showModal = true" type="button" class="w-full py-2 bg-orange-55 hover:bg-orange-100 text-orange-600 rounded-xl border border-orange-200 font-bold text-xs transition shadow-sm flex justify-center items-center gap-2">
               <span>📷</span> Uredi profilnu sliku
             </button>
           </div>
@@ -238,7 +238,7 @@ const handleSubmit = async () => {
     }
 
     showToast('Izmjene uspješno sačuvane!')
-    isEditing.value = false 
+    // Uklonjeno: isEditing.value = false (kako bi korisnik ostao na formi)
     await fetchProfileData() 
   } catch (err) {
     Object.assign(status, { message: err.response?.data?.detail || err.message || 'Greška prilikom spašavanja.', isError: true })
