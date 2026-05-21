@@ -11,6 +11,7 @@
       <router-link to="/mentoring" class="text-gray-600 hover:text-primary font-medium transition">Materijali</router-link>
       <router-link to="/forum" class="text-gray-600 hover:text-primary font-medium transition">Forum</router-link>
       <router-link to="/profiles" class="text-gray-600 hover:text-primary font-medium transition">Profili</router-link>
+      <router-link to="/dashboard" class="text-gray-600 hover:text-primary font-medium transition">Dashboard</router-link>
         </div>
 
       <div class="flex items-center gap-4">
