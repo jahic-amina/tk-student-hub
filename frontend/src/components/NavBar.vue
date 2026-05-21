@@ -45,9 +45,12 @@ export default {
   },
   methods: {
     logout() {
+      // 1. Brišemo podatke iz memorije
       localStorage.removeItem('token')
       localStorage.removeItem('username')
-      this.$router.push('/login')
+      
+      // 2. Preusmjeravamo i forsiramo osvježavanje aplikacije
+      window.location.href = '/login' 
     }
   }
 }
