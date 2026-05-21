@@ -19,16 +19,18 @@ def save_opportunity(
 ):
     statement = select(SavedOpportunity).where(
         SavedOpportunity.user_id == current_user.id,
-        SavedOpportunity.oglas_id == data.oglas_id
+        SavedOpportunity.ad_id == data.ad_id
     )
     already_saved = session.exec(statement).first()
     if already_saved:
-        raise HTTPException(status_code=400, detail="You have already saved this opportunity.")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="You have already saved this opportunity."
+        )
 
-    
     db_saved = SavedOpportunity(
         user_id=current_user.id,
-        oglas_id=data.oglas_id
+        ad_id=data.ad_id
     )
     
     session.add(db_saved)
@@ -54,10 +56,16 @@ def get_saved_opportunity(
 ):
     db_saved = session.get(SavedOpportunity, saved_id)
     if not db_saved:
-        raise HTTPException(status_code=404, detail="Saved opportunity not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Saved opportunity not found."
+        )
     
     if db_saved.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to view this saved opportunity.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="Not authorized to view this saved opportunity."
+        )
         
     return db_saved
 
@@ -70,10 +78,16 @@ def remove_saved_opportunity(
 ):
     db_saved = session.get(SavedOpportunity, saved_id)
     if not db_saved:
-        raise HTTPException(status_code=404, detail="Saved opportunity not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Saved opportunity not found."
+        )
     
     if db_saved.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this saved opportunity.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="Not authorized to delete this saved opportunity."
+        )
     
     session.delete(db_saved)
     session.commit()

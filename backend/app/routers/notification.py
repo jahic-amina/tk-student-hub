@@ -11,8 +11,8 @@ from app.models.user import User, UserRole
 from app.core.security import get_current_user
 
 router = APIRouter(
-    prefix="/obavjestenja",
-    tags=["Obavještenja"]
+    prefix="/notifications",
+    tags=["Notifications"]
 )
 
 @router.post("/", response_model=Notification, status_code=status.HTTP_201_CREATED)
@@ -21,9 +21,11 @@ def create_notification(
     session: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-  
     if current_user.role != UserRole.admin:
-        raise HTTPException(status_code=403, detail="Nemate dozvolu za kreiranje obavještenja.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="You do not have permission to create notifications."
+        )
         
     db_notification = Notification(**notification.model_dump())
     session.add(db_notification)
@@ -39,7 +41,10 @@ def get_user_notifications(
     current_user: User = Depends(get_current_user)
 ): 
     if current_user.id != user_id and current_user.role != UserRole.admin:
-        raise HTTPException(status_code=403, detail="Nemate dozvolu za pregled tuđih obavještenja.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="You do not have permission to view other users' notifications."
+        )
 
     statement = select(Notification).where(Notification.user_id == user_id)
     notifications = session.exec(statement).all()
@@ -54,10 +59,16 @@ def get_notification(
 ):
     db_notification = session.get(Notification, notification_id)
     if not db_notification:
-        raise HTTPException(status_code=404, detail="Obavještenje nije pronađeno")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Notification not found."
+        )
     
     if db_notification.user_id != current_user.id and current_user.role != UserRole.admin:
-        raise HTTPException(status_code=403, detail="Nemate dozvolu za pregled ovog obavještenja.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="You do not have permission to view this notification."
+        )
         
     return db_notification
 
@@ -71,11 +82,16 @@ def update_notification(
 ):
     db_notification = session.get(Notification, notification_id)
     if not db_notification:
-        raise HTTPException(status_code=404, detail="Obavještenje nije pronađeno")
-    
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Notification not found."
+        )
     
     if db_notification.user_id != current_user.id and current_user.role != UserRole.admin:
-        raise HTTPException(status_code=403, detail="Nemate dozvolu za izmjenu ovog obavještenja.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="You do not have permission to update this notification."
+        )
     
     obj_data = notification_data.model_dump(exclude_unset=True)
     
@@ -96,10 +112,16 @@ def delete_notification(
 ):
     db_notification = session.get(Notification, notification_id)
     if not db_notification:
-        raise HTTPException(status_code=404, detail="Obavještenje nije pronađeno")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Notification not found."
+        )
     
     if db_notification.user_id != current_user.id and current_user.role != UserRole.admin:
-        raise HTTPException(status_code=403, detail="Nemate dozvolu za brisanje ovog obavještenja.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="You do not have permission to delete this notification."
+        )
     
     session.delete(db_notification)
     session.commit()

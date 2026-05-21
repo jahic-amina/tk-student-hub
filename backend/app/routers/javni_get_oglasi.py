@@ -3,15 +3,16 @@ from sqlmodel import Session, select, or_
 from typing import List
 from datetime import datetime, timezone
 from app.database import get_db
-from app.models.ads_model import Oglas, OglasStatus
+from app.models.ad import Ad, AdStatus
+from app.models.company import Company
 
-router = APIRouter(prefix="/oglasi", tags=["Oglasi"])
+router = APIRouter(prefix="/public-ads", tags=["Public Ads"])
 
-@router.get("/", response_model=List[Oglas])
-def get_oglasi(
+@router.get("/", response_model=List[Ad])
+def get_public_ads(
     search: str | None = Query(
         default=None, 
-        description="Pretraga oglasa po naslovu, kompaniji ili opisu"
+        description="Search jobs by title, company, or description"
     ),
     db: Session = Depends(get_db)
 ):
@@ -20,29 +21,30 @@ def get_oglasi(
     Podržava opcionu pretragu preko ?search= parametra.
     NEMA Security/Auth dependencija, što ga čini javno dostupnim.
     """
-    statement = select(Oglas)
+    statement = select(Ad).join(Company, Ad.company_id == Company.id).where(Ad.status == AdStatus.active, Ad.is_deleted == False)
     
     if search:
         search_filter = f"%{search}%"
         
         statement = statement.where(
             or_(
-                Oglas.naziv.ilike(search_filter),        # Case-insensitive pretraga za naslov
-                Oglas.company.ilike(search_filter),      # za kompaniju
-                Oglas.opis.ilike(search_filter)   # za opis/tekst oglasa
+                Ad.title.ilike(search_filter),        
+                Company.company_name.ilike(search_filter),      
+                Ad.description.ilike(search_filter)   
             )
         )
-    oglasi = db.exec(statement).all()
-    trenutno_vrijeme = datetime.now(timezone.utc)
+    ads = db.exec(statement).all()
+    
 
     rezultat = []
-    for oglas in oglasi:
-        oglas_data = oglas.model_dump()
+    for ad in ads:
+        ad_data = ad.model_dump()
         
-        if oglas.rok and oglas.rok.replace(tzinfo=timezone.utc) < trenutno_vrijeme:
-            oglas_data["status"] = OglasStatus.expired
+        
+        if ad.deadline and ad.deadline < datetime.now(timezone.utc).date():
+            ad_data["status"] = AdStatus.expired
 
-        rezultat.append(oglas_data)
+        rezultat.append(ad_data)
         
     return rezultat
   

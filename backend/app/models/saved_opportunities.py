@@ -5,10 +5,10 @@ import sqlalchemy as sa
 
 class SavedOpportunity(SQLModel, table=True):
     __tablename__ = "saved_opportunities" 
-
+    
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id", index=True)
-    oglas_id: int = Field(foreign_key="oglasi.id", index=True)
+    ad_id: int = Field(foreign_key="ads.id", index=True)
     
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
@@ -16,9 +16,9 @@ class SavedOpportunity(SQLModel, table=True):
     )
 
     __table_args__ = (
-        UniqueConstraint("user_id", "oglas_id", name="unique_user_opportunity"),
+        UniqueConstraint("user_id", "ad_id", name="unique_user_opportunity"),
+        {"extend_existing": True} 
     )
-
-
 class SavedOpportunityCreate(SQLModel):
-    oglas_id: int
+
+    ad_id: int
