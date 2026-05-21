@@ -11,6 +11,7 @@
       <router-link to="/mentoring" class="text-gray-600 hover:text-primary font-medium transition">Materijali</router-link>
       <router-link to="/forum" class="text-gray-600 hover:text-primary font-medium transition">Forum</router-link>
       <router-link to="/profiles" class="text-gray-600 hover:text-primary font-medium transition">Profili</router-link>
+      <router-link to="/dashboard" class="text-gray-600 hover:text-primary font-medium transition">Dashboard</router-link>
         </div>
 
       <div class="flex items-center gap-4">
@@ -35,22 +36,36 @@
 <script>
 export default {
   name: 'NavBar',
-  computed: {
-    isLoggedIn() {
-      return !!localStorage.getItem('token')
-    },
-    username() {
-      return localStorage.getItem('username') || 'Profil'
+  data() {
+    return {
+      token: localStorage.getItem('token'),
+      username: localStorage.getItem('username') || 'Profil'
     }
   },
+  computed: {
+    isLoggedIn() {
+      return !!this.token
+    }
+  },
+  mounted() {
+    window.addEventListener('user-login', this.updateUser)
+  },
+  beforeUnmount() {
+    window.removeEventListener('user-login', this.updateUser)
+  },
   methods: {
+    updateUser() {
+      this.token = localStorage.getItem('token')
+      this.username = localStorage.getItem('username') || 'Profil'
+    },
     logout() {
-      // 1. Brišemo podatke iz memorije
       localStorage.removeItem('token')
       localStorage.removeItem('username')
-      
-      // 2. Preusmjeravamo i forsiramo osvježavanje aplikacije
-      window.location.href = '/login' 
+
+      this.token = null
+      this.username = 'Profil'
+
+      this.$router.push('/login')
     }
   }
 }
