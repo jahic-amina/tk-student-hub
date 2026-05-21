@@ -3,6 +3,7 @@ venv/
 .venv/
 backend/venv/
 backend/.venv/
+backend/uploads/
 __pycache__/
 *.pyc
 *.pyo
