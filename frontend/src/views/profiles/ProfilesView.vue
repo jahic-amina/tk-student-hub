@@ -9,7 +9,7 @@
       </div>
       
       <div v-else-if="profile">
-        <UserProfileCard :profile="profile" @edit-avatar="showModal = true" @edit-profile="isEditing = true"/>
+        <UserProfileCard :profile="profile" @edit-avatar="showModal = true" />
         
         <div class="flex justify-end mt-4 mb-6">
           <button @click="isEditing = true" class="px-5 py-2 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 transition text-sm shadow-md">
@@ -58,7 +58,7 @@
             <img :src="profile?.profilna_slika_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=128'" class="w-24 h-24 rounded-full object-cover mx-auto mb-3 border border-orange-200"/>
             <h3 class="text-base font-bold text-gray-800">{{ form.first_name }} {{ form.last_name }}</h3>
             <p class="text-xs text-gray-400 mb-4">{{ form.email }}</p>
-            <button @click="showModal = true" type="button" class="w-full py-2 bg-orange-50 hover:bg-orange-100 text-orange-600 rounded-xl border border-orange-200 font-bold text-xs transition shadow-sm flex justify-center items-center gap-2">
+            <button @click="showModal = true" type="button" class="w-full py-2 bg-orange-55 hover:bg-orange-100 text-orange-600 rounded-xl border border-orange-200 font-bold text-xs transition shadow-sm flex justify-center items-center gap-2">
               <span>📷</span> Uredi profilnu sliku
             </button>
           </div>
@@ -163,9 +163,7 @@ api.interceptors.request.use(config => {
 
 const token = localStorage.getItem('token') || localStorage.getItem('access_token')
 
-
-const isEditing = ref(false) // Kontroliše koji dizajn se prikazuje
-
+const isEditing = ref(false) 
 
 const profile = ref(null)
 const loading = ref(false)
@@ -192,7 +190,7 @@ const fetchProfileData = async () => {
   
   try {
     const data = await getMyProfile(token)
-    profile.value = data // Punjenje za prikaz profila
+    profile.value = data 
     
     if (data) {
       const [first, ...rest] = (data.full_name || '').trim().split(' ')
@@ -224,14 +222,12 @@ const handleSubmit = async () => {
   Object.assign(status, { message: '', isError: false })
 
   try {
-  // Ažuriranje profila
     await api.patch('/profiles/me', { 
       full_name: `${first_name.trim()} ${last_name.trim()}`, 
       biografija: bio, 
       godina_studija: study_year 
     })
 
-    // Ažuriranje lozinke
     const { current_password, new_password, confirm_password } = security
     if (current_password || new_password) {
       if (!current_password) throw new Error('Unesite trenutnu lozinku.')
@@ -242,8 +238,8 @@ const handleSubmit = async () => {
     }
 
     showToast('Izmjene uspješno sačuvane!')
-    isEditing.value = false // Vrati na pogled profila
-    await fetchProfileData() // Povuci svježe podatke da se odmah prikažu
+    // Uklonjeno: isEditing.value = false (kako bi korisnik ostao na formi)
+    await fetchProfileData() 
   } catch (err) {
     Object.assign(status, { message: err.response?.data?.detail || err.message || 'Greška prilikom spašavanja.', isError: true })
   } finally {
@@ -280,5 +276,4 @@ async function onRemove() {
     Object.assign(status, { message: 'Greska pri uklanjanju slike.', isError: true })
   }
 }
-
-</script> 
+</script>
