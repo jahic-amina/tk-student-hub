@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 import os                                    
 from app.core.config import settings
 from app.database import create_db_and_tables
-from app.routers import auth, forum, prakse, profiles   
+from app.routers import auth, forum, prakse, profiles, dashboard   
 from app.core.security import get_current_user
 from app.models.user import User
 
@@ -34,6 +34,7 @@ app.include_router(auth.router)
 app.include_router(prakse.router)
 app.include_router(forum.router)
 app.include_router(profiles.router)
+app.include_router(dashboard.router)
 
 @app.get("/")
 def root():

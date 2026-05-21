@@ -72,7 +72,7 @@ export default {
         localStorage.setItem('token', response.access_token)
         const user = await getMe(response.access_token)
         localStorage.setItem('username', user.full_name)
-        window.location.href = '/'
+        this.$router.push('/dashboard')
       } else {
         this.error = 'Pogrešan email ili lozinka.'
       }
