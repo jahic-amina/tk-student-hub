@@ -3,7 +3,7 @@ import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import OglasiPage from '../components/OglasiPage.vue'
-import OglasCard from '../components/OglasCard.vue'
+import OglasDetailView from '../views/OglasDetailView.vue'
 
 
 
@@ -30,6 +30,11 @@ const routes = [
     name: 'Oglasi',
     component: OglasiPage
   }, 
+  {
+    path: '/prakse-i-edukacije/:id',
+    name: 'oglas-detail',
+    component: OglasDetailView
+  },
   {
     path: '/materials',
     name: 'materials',

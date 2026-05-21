@@ -56,8 +56,41 @@
 import HeroBanner from './HeroBanner.vue'
 import OglasFilters  from './OglasFilter.vue'
 import OglasCard from './OglasCard.vue' //
-import axios from 'axios'
-//import Ad from '../backend/app/models/ads_model.py'
+import { getApprovedCompanies, getPublicAds } from '../services/api.js'
+
+const TAB_TO_TYPE = {
+  Prakse: 'internship',
+  Edukacije: 'education',
+  Stipendije: 'scholarship'
+}
+
+function formatTip(type) {
+  const map = {
+    internship: 'Praksa',
+    education: 'Edukacija',
+    scholarship: 'Stipendija'
+  }
+
+  return map[type] || 'Prilika'
+}
+
+function formatStatus(status) {
+  const map = {
+    active: 'Aktivan',
+    pending: 'Na čekanju',
+    expired: 'Istekao',
+    rejected: 'Odbijen',
+    changes_requested: 'Potrebne izmjene'
+  }
+
+  return map[status] || 'Aktivan'
+}
+
+function formatCompensation(value, currency) {
+  if (value === null || value === undefined) return ''
+
+  return `${value} ${currency || 'BAM'}`
+}
 
 export default {
   name: 'OglasiPage',
@@ -74,7 +107,8 @@ export default {
       placeno: false,
       selectedOblast: '', 
       oglasi: [],
-      oblasti: [] // Dinamički niz za filter oblasti
+      oblasti: [],
+      errorMessage: ''
     }
   },
   computed: {
@@ -82,10 +116,10 @@ export default {
       return this.oglasi.filter(oglas => {
         const tabMap = {
           'Sve': true,
-          'Prakse': oglas.tip === 'Praksa',
-          'Edukacije': oglas.tip === 'Edukacija',
-          'Stipendije': oglas.tip === 'Stipendija',
-          'Aktuelno': oglas.status === 'Aktivan'
+          'Prakse': oglas.typeKey === 'internship',
+          'Edukacije': oglas.typeKey === 'education',
+          'Stipendije': oglas.typeKey === 'scholarship',
+          'Aktuelno': oglas.statusKey === 'active'
         }
         const mecapTab = tabMap[this.currentTab] ?? true
 
@@ -96,7 +130,7 @@ export default {
           (oglas.opis && oglas.opis.toLowerCase().includes(q)) ||
           (Array.isArray(oglas.tagovi) && oglas.tagovi.some(t => t.toLowerCase().includes(q)))
 
-        const mecapPlaceno = !this.placeno || (oglas.dodatno && oglas.dodatno.includes('KM'))
+        const mecapPlaceno = !this.placeno || Boolean(oglas.dodatno)
 
         const mecapOblast = !this.selectedOblast || oglas.oblast === this.selectedOblast
 
@@ -107,57 +141,62 @@ export default {
   methods: {
     async fetchOglasi() {
       this.loading = true
+      this.errorMessage = ''
       try {
-        const params = {}
+        const [ads, companies] = await Promise.all([
+          getPublicAds(),
+          getApprovedCompanies()
+        ])
 
-        if (this.searchQuery) {
-          params.search = this.searchQuery
+        const companiesById = new Map(
+          (companies || []).map(company => [company.id, company.company_name])
+        )
+
+        this.oglasi = (ads || []).map(ad => {
+          const companyName = companiesById.get(ad.company_id) || `Kompanija #${ad.company_id}`
+          const additionalInfo = formatCompensation(ad.compensation, ad.currency)
+
+          return {
+            id: ad.id,
+            naslov: ad.title || '',
+            kompanija: companyName,
+            opis: ad.description || '',
+            tagovi: [ad.field, ad.location].filter(Boolean),
+            tip: formatTip(ad.type),
+            dodatno: additionalInfo,
+            status: formatStatus(ad.status),
+            statusKey: ad.status,
+            typeKey: ad.type,
+            lokacija: ad.location || 'Nije navedeno',
+            trajanje: ad.duration_months ? `${ad.duration_months} mjeseci` : '',
+            oblast: ad.field || ''
+          }
+        })
+
+        if (this.currentTab !== 'Sve') {
+          const wantedType = TAB_TO_TYPE[this.currentTab]
+          this.oglasi = this.oglasi.filter(oglas => {
+            if (this.currentTab === 'Aktuelno') return oglas.statusKey === 'active'
+            return oglas.typeKey === wantedType
+          })
         }
 
-        if (this.currentTab === 'Prakse') {
-          params.tip = 'praksa'
-        } else if (this.currentTab === 'Edukacije') {
-          params.tip = 'edukacija'
-        } else if (this.currentTab === 'Stipendije') {
-          params.tip = 'stipendija'
-        } else if (this.currentTab === 'Aktuelno') {
-          params.status = 'active'
-        }
-
-        const res = await axios.get('http://127.0.0.1:8000/ads/', { params })
-        const data = res.data || []
-
-        this.oglasi = data.map(o => ({
-          id: o.id,
-          naslov: o.naziv || o.naslov || '',
-          kompanija: (o.kompanija && (o.kompanija.name || o.kompanija.naziv)) || o.company || (o.kompanija_id ? `Kompanija #${o.kompanija_id}` : ''),
-          opis: o.opis || '',
-          tagovi: o.tagovi || [],
-          tip: o.tip ? (typeof o.tip === 'string' ? (o.tip.charAt(0).toUpperCase() + o.tip.slice(1)) : o.tip) : 'Prilika',
-          dodatno: o.naknada || o.dodatno || '',
-          status: o.status === 'active' ? 'Aktivan' : o.status === 'expiring' ? 'Uskoro ističe' : o.status === 'expired' ? 'Istekao' : (o.status || 'Aktivan'),
-          lokacija: o.lokacija || 'Nije navedeno',
-          trajanje: o.trajanje || '',
-          oblast: o.oblast || ''
-        }))
-
-        const sveOblasti = this.oglasi.map(o => o.oblast).filter(o => o !== '')
+        const sveOblasti = this.oglasi.map(o => o.oblast).filter(Boolean)
         this.oblasti = [...new Set(sveOblasti)]
 
       } catch (err) {
         console.error('Neuspješan dohvat oglasa', err)
+        this.errorMessage = 'Ne mogu učitati oglase sa backend-a. Provjeri da li je API pokrenut na 127.0.0.1:8000.'
       } finally {
         this.loading = false
       }
     }
   },
   watch: {
-    searchQuery() {
-      clearTimeout(this._searchTimer)
-      this._searchTimer = setTimeout(() => this.fetchOglasi(), 400)
-    },
     currentTab() {
-      this.fetchOglasi()
+      if (!this.oglasi.length) {
+        this.fetchOglasi()
+      }
     }
   },
   mounted() {

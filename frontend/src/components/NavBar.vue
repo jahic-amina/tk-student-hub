@@ -22,9 +22,14 @@
         </template>
         <template v-else>
           <router-link to="/login" class="text-gray-600 hover:text-primary font-medium">Prijava</router-link>
-          <router-link to="/register" class="bg-primary text-white px-4 py-1.5 rounded-lg hover:bg-primary/90 transition">
-            Registracija
-          </router-link>
+          <div class="flex items-center gap-2">
+            <router-link to="/registracija/kompanija" class="border border-primary text-primary px-4 py-1.5 rounded-lg hover:bg-primary hover:text-white transition">
+              Registracija kompanija
+            </router-link>
+            <router-link to="/register" class="bg-primary text-white px-4 py-1.5 rounded-lg hover:bg-primary/90 transition">
+              Registracija
+            </router-link>
+          </div>
         </template>
       </div>
 

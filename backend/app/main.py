@@ -13,9 +13,14 @@ from app.routers.saved_opportunities import router as saved_opportunities_router
 from app.routers.notification import router as notification_router  
 from app.routers.ads import router as ads_router
 from app.routers.javni_get_oglasi import router as public_ads_router  
+from app.database import engine, Session
+from app.seed import ensure_admin_user
 
 
 create_db_and_tables()
+
+with Session(engine) as session:
+    ensure_admin_user(session)
 
 security = HTTPBearer()
 

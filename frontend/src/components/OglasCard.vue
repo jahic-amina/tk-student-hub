@@ -6,8 +6,13 @@
         <span :class="getStatusKlasa(oglas.status)">{{ oglas.status }}</span>
       </div>
       
-      <h3 class="text-sm sm:text-base font-bold text-gray-900 mb-1 leading-snug line-clamp-2 hover:text-orange-500 cursor-pointer transition-colors">
-        {{ oglas.naslov }}
+      <h3 class="text-sm sm:text-base font-bold text-gray-900 mb-1 leading-snug line-clamp-2">
+        <router-link
+          :to="{ name: 'oglas-detail', params: { id: oglas.id } }"
+          class="hover:text-orange-500 transition-colors cursor-pointer"
+        >
+          {{ oglas.naslov }}
+        </router-link>
       </h3>
       
       <p class="text-gray-400 text-xs sm:text-sm mb-3 font-medium">{{ oglas.kompanija }}</p>

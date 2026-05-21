@@ -59,6 +59,7 @@ def get_companies_admin(
 def create_company(data: CompanyCreate, db: Session = Depends(get_db)):
     import bcrypt
     
+    print(data)
     company_data = data.model_dump()
     password = company_data.pop("password")
     company_data["hashed_password"] = bcrypt.hashpw(
