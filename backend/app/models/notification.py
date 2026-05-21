@@ -1,34 +1,35 @@
 from sqlmodel import SQLModel, Field
 from typing import Optional
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import Enum
 import sqlalchemy as sa
 
 class NotificationType(str, Enum):
-    NOVA_PRILIKA = "nova_prilika"
-    PROMJENA_STATUSA = "promjena_statusa"
-    ROK_ISTICE = "rok_istice"
+    NEW_OPPORTUNITY = "new_opportunity"
+    STATUS_CHANGE = "status_change"
+    DEADLINE_EXPIRING = "deadline_expiring"
 
 class Notification(SQLModel, table=True):
     __tablename__ = "notifications" 
+    __table_args__ = {"extend_existing": True} 
 
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id", index=True)
-    tekst: str
-    tip: NotificationType
-    procitano: bool = Field(default=False)
+    text: str
+    type: NotificationType
+    is_read: bool = Field(default=False)
     
-    kreirano: datetime = Field(
+    created_at: datetime = Field(
         sa_column_kwargs={"server_default": sa.text("CURRENT_TIMESTAMP")}
     )
 
 class NotificationCreate(SQLModel):
     user_id: int
-    tekst: str
-    tip: NotificationType
-    procitano: bool = False
+    text: str
+    type: NotificationType
+    is_read: bool = False
 
 class NotificationUpdate(SQLModel):
-    tekst: Optional[str] = None
-    tip: Optional[NotificationType] = None
-    procitano: Optional[bool] = None
+    text: Optional[str] = None
+    type: Optional[NotificationType] = None
+    is_read: Optional[bool] = None

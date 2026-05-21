@@ -16,7 +16,7 @@ from fastapi import UploadFile, File
 import os
 from uuid import uuid4
 from typing import Optional
-from app.models.ads_model import Oglas, OglasStatus
+from app.models.ad import Ad, AdStatus
 from datetime import date
 
 S3_BUCKET = os.getenv("S3_BUCKET")
@@ -36,7 +36,7 @@ def require_admin(current_user: User) -> None:
     if current_user.role != UserRole.admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Samo admin može da radi ovu akciju.",
+            detail="Only admins can perform this action.",
         )
 
 
@@ -46,16 +46,16 @@ def create_application(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    ad=db.get(Oglas, payload.ad_id)
+    ad=db.get(Ad, payload.ad_id)
     if not ad:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Oglas nije pronađen.",
+            detail="Ad not found.",
         )
-    if ad.status != OglasStatus.active or ad.rok < date.today():
+    if ad.status != AdStatus.active or ad.deadline < date.today():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Oglas nije aktivan.",
+            detail="Ad is not active.",
         )
     existing_application = db.exec(
         select(Application).where(
@@ -67,7 +67,7 @@ def create_application(
     if existing_application:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Već postoji prijava za ovaj oglas.",
+            detail="An application for this ad already exists.",
         )
 
     application = Application(
@@ -75,7 +75,7 @@ def create_application(
         ad_id=payload.ad_id,
         motivational_letter_path=payload.motivational_letter_path,
         cv_path=payload.cv_path,
-        linkedin=payload.linkedin,
+        linkedin_url=payload.linkedin_url,
         phone=payload.phone,
     )
 
@@ -96,25 +96,25 @@ def applications(
     if current_user.role not in [UserRole.admin, UserRole.saradnik]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Nemaš pristup ovom resursu.",
+            detail="You do not have access to this resource.",
         )
     statement = select(Application)
     if current_user.role == UserRole.saradnik:
         if ad_id is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Saradnici moraju specificirati ad_id parametar.",
+                detail="Contributors must specify the ad_id parameter.",
             )
-        ad=db.get(Oglas, ad_id)
+        ad=db.get(Ad, ad_id)
         if not ad:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Oglas nije pronađen.",
+                detail="Ad not found.",
             )
-        if ad.kompanija_id != current_user.id:
+        if ad.company_id != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Saradnici mogu vidjeti samo prijave za svoje oglase.",
+                detail="Contributors can only view applications for their own ads.",
             )
     
         statement = statement.where(Application.ad_id == ad.id)
@@ -139,13 +139,13 @@ def get_application(
     if not application:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Prijava nije pronađena.",
+            detail="Application not found.",
         )
 
     if current_user.role != UserRole.admin and application.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Nemaš pristup ovoj prijavi.",
+            detail="You do not have access to this application.",
         )
 
     return application
@@ -164,7 +164,7 @@ def update_application(
     if not application:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Prijava nije pronađena.",
+            detail="Application not found.",
         )
 
     updates = payload.model_dump(exclude_unset=True)
@@ -249,7 +249,7 @@ def delete_application(
     if not application:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Prijava nije pronađena.",
+            detail="Application not found.",
         )
 
     application.is_archived = True
