@@ -54,16 +54,16 @@
 
 <script>
 import HeroBanner from './HeroBanner.vue'
-import OglasFilter  from './OglasFilter.vue'
+import OglasFilters  from './OglasFilter.vue'
 import OglasCard from './OglasCard.vue' //
 import axios from 'axios'
-import Oglas from '../backend/app/models/ads_model.py'
+//import Ad from '../backend/app/models/ads_model.py'
 
 export default {
   name: 'OglasiPage',
   components: {
     HeroBanner,
-    OglasFilter,
+    OglasFilters,
     OglasCard 
   },
   data() {
@@ -124,7 +124,7 @@ export default {
           params.status = 'active'
         }
 
-        const res = await axios.get('http://127.0.0.1:8000/oglasi/', { params })
+        const res = await axios.get('http://127.0.0.1:8000/ads/', { params })
         const data = res.data || []
 
         this.oglasi = data.map(o => ({
