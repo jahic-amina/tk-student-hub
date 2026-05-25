@@ -16,6 +16,7 @@
     </div>
 
     <div v-else class="flex flex-col gap-4">
+        <p v-if ="activities.length === 0" class="text-gray-400 text-sm">Nema nedavne aktivnosti</p>
       <div
         v-for="activity in activities"
         :key="activity.id"
