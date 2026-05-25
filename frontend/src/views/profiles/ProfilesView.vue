@@ -9,14 +9,8 @@
       </div>
       
       <div v-else-if="profile">
-        <UserProfileCard :profile="profile" @edit-avatar="showModal = true" />
+        <UserProfileCard :profile="profile" @edit-avatar="showModal = true" @edit-profile="isEditing = true"/>
         
-        <div class="flex justify-end mt-4 mb-6">
-          <button @click="isEditing = true" class="px-5 py-2 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 transition text-sm shadow-md">
-            Uredi profil
-          </button>
-        </div>
-
         <div class="bg-white rounded-xl shadow p-6 mb-6">
           <h2 class="text-lg font-bold mb-3">O meni</h2>
           <p class="text-gray-600 text-sm">{{ profile.biografija || 'Nije unesena biografija.' }}</p>
