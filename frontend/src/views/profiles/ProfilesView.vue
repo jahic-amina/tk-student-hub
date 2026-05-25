@@ -154,10 +154,45 @@ import UserProfileCard from '../../components/UserProfileCard.vue'
 import AvatarUploadModal from '../../components/AvatarUploadModal.vue'
 import { getMyProfile, uploadAvatar, removeAvatar } from '../../services/api.js'
 import ActivityFeed from '../../components/ActivityFeed.vue'
-import { useActivityFeed } from '../../services/api.js'
+import { getMyActivity } from '../../services/api.js'
 
 const {activities, loading: activityLoading, hasMore, showingAll, loadMore} = useActivityFeed(token)
 const showingAll = ref(false)
+
+const activities = ref([])
+const activityLoading = ref(false)
+const hasMore = ref(false)
+const showingAll = ref(false)
+
+function getToken() {
+  return localStorage.getItem('token') || localStorage.getItem('access_token')
+}
+
+async function loadPreview() {
+  activityLoading.value = true
+  try {
+    const data = await getMyActivity(getToken(), 3, 0)
+    activities.value = data.items
+    hasMore.value = data.has_more
+  } catch (error) {
+    console.error('Greška pri dohvatanju aktivnosti:', error)
+  } finally {
+    activityLoading.value = false
+  }
+}
+
+async function loadAll() {
+  activityLoading.value = true
+  try {
+    const data = await getMyActivity(getToken(), 20, 0)
+    activities.value = data.items
+    hasMore.value = data.has_more
+  } catch (error) {
+    console.error('Greška pri dohvatanju aktivnosti:', error)
+  } finally {
+    activityLoading.value = false
+  }
+}
 
 async function handleShowAll() {
   await loadAll()
