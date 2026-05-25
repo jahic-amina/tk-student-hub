@@ -54,3 +54,10 @@ export async function removeAvatar(token) {
   })
   return response.json()
 }
+
+export async function getMyActivity(token, limit = 3, offset = 0) {
+  const response = await fetch(`${BASE_URL}/api/users/me/activity?limit=${limit}&offset=${offset}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  return response.json()
+}
