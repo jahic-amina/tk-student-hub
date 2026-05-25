@@ -153,6 +153,16 @@ import axios from 'axios'
 import UserProfileCard from '../../components/UserProfileCard.vue'
 import AvatarUploadModal from '../../components/AvatarUploadModal.vue'
 import { getMyProfile, uploadAvatar, removeAvatar } from '../../services/api.js'
+import ActivityFeed from '../../components/ActivityFeed.vue'
+import { useActivityFeed } from '../../services/api.js'
+
+const {activities, loading: activityLoading, hasMore, showingAll, loadMore} = useActivityFeed(token)
+const showingAll = ref(false)
+
+async function handleShowAll() {
+  await loadAll()
+  showingAll.value = true
+}
 
 
 const api = axios.create({ baseURL: 'http://127.0.0.1:8000' })
@@ -211,7 +221,10 @@ const fetchProfileData = async () => {
   }
 }
 
-onMounted(fetchProfileData)
+onMounted(() => {
+  fetchProfileData()
+  loadPreview()
+})
 
 const handleSubmit = async () => {
   const { first_name, last_name, bio, study_year } = form
