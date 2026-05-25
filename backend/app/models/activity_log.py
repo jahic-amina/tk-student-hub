@@ -1,22 +1,22 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum as SAEnum, Index
-from sqlalchemy.orm import relationship
+from sqlmodel import SQLModel, Field, Relationship
+from typing import Optional, TYPE_CHECKING
 from datetime import datetime
-from app.database import Base
 from app.enums.activity import ActivityType
+import sqlalchemy as sa
 
-class ActivityLog(Base):
+if TYPE_CHECKING:
+    from app.models.user import User
+
+class ActivityLog(SQLModel, table=True):
     __tablename__ = "activity_logs"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    activity_type = Column(SAEnum(ActivityType), nullable=False)
-    title = Column(String, nullable=False)
-    subtitle = Column(String, nullable=True)
-    entity_id = Column(Integer, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-
-    user = relationship("User", back_populates="activity_logs")
-
-    __table_args__ = (
-        Index("ix_activity_logs_user_created", "user_id", "created_at"),
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="users.id", nullable=False)
+    activity_type: ActivityType = Field(
+        sa_column=sa.Column(sa.Enum(ActivityType), nullable=False)
     )
+    title: str
+    subtitle: Optional[str] = None
+    entity_id: Optional[int] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    user: Optional["User"] = Relationship(back_populates="activity_logs")
