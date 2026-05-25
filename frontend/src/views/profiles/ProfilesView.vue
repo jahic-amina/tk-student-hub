@@ -24,7 +24,14 @@
 
           <div class="bg-white rounded-xl shadow p-6">
             <h2 class="text-lg font-bold mb-4">Nedavna aktivnost</h2>
-            <p class="text-gray-400 text-sm">Nema nedavne aktivnosti.</p>
+            <ActivityFeed :activities="activities" :loading="activityLoading" />
+            <button 
+              v-if="hasMore && !showingAll"
+              @click = "handleShowAll"
+              class="mt-4 text-sm text-orange-500 hover:text-orange-600 flex items-center gap-1"
+            >
+              Prikaži sve v
+            </button>
           </div>
         </div>
         
