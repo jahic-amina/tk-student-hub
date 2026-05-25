@@ -26,3 +26,19 @@ def get_my_activity(
         total=total,
         has_more=offset + limit < total
     )
+
+@router.post("/activity/test-data")
+def create_test_activities(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    from datetime import datetime, timedelta
+    from app.services.activity_log_service import log_activity
+
+    log_activity(db, current_user.id, ActivityType.MATERIAL_POSTED, "React Hooks - Kompletan vodič", "Frontend Development", 1)
+    log_activity(db, current_user.id, ActivityType.FORUM_COMMENT, "Kako optimizovati React aplikaciju?", "Diskusija · 5 odgovora", 2)
+    log_activity(db, current_user.id, ActivityType.INTERNSHIP_COMPLETED, "Frontend Development Internship", "Tech Corp · 3 meseca", 3)
+    log_activity(db, current_user.id, ActivityType.MATERIAL_UPLOADED, "TypeScript Best Practices", "Backend Development · PDF", 4)
+    log_activity(db, current_user.id, ActivityType.FORUM_ANSWER, "State management u velikim projektima", "Označeno kao korisno", 5)
+
+    return {"message": "Testne aktivnosti uspješno dodane!"}
