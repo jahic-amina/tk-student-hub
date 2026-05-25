@@ -173,3 +173,28 @@ def delete_avatar(
     db.refresh(current_user)
     
     return {"message": "Profilna slika obrisana."}
+
+from fastapi import Query
+from sqlalchemy.orm import Session
+from app.models.activity_log import ActivityLog
+from app.models.activity_log import ActivityListResponse, ActivityResponse
+
+router = APIRouter(prefix="/api/users/me", tags=["activity"])
+def get_my_activity(
+        limit: int = Query(default=3, le=20),
+        offset: int = Query(default=0),
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    query = db.query(ActivityLog).filter(
+        ActivityLog.user_id == current_user.id
+    ).order_by(ActivityLog.created_at.desc())
+
+    total = query.count()
+    items = query.offset(offset).limit(limit).all()
+
+    return ActivityListResponse(
+        items = items,
+        total = total,
+        has_more = offset + limit < total
+    )
