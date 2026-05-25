@@ -41,3 +41,75 @@
     </div>
   </div>
 </template>
+
+<script setup>
+import { DocumentTextIcon, ChatBubbleLeftIcon, CheckCircleIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline'
+
+const props = defineProps({
+  activities: {
+    type: Array,
+    default: () => []
+  },
+  loading: {
+    type: Boolean,
+    default: false
+  }
+})
+
+function iconComponent(type) {
+  const map = {
+    material_posted: DocumentTextIcon,
+    material_uploaded: ArrowUpTrayIcon,
+    forum_comment: ChatBubbleLeftIcon,
+    forum_answer: ChatBubbleLeftIcon,
+    internship_completed: CheckCircleIcon
+  }
+  return map[type] || DocumentTextIcon
+}
+
+function iconBg(type) {
+  const map = {
+    material_posted: 'bg-blue-100',
+    material_uploaded: 'bg-purple-100',
+    forum_comment: 'bg-green-100',
+    forum_answer: 'bg-green-100',
+    internship_completed: 'bg-orange-100'
+  }
+  return map[type] || 'bg-gray-100'
+}
+
+function iconColor(type) {
+  const map = {
+    material_posted: 'text-blue-600',
+    material_uploaded: 'text-purple-600',
+    forum_comment: 'text-green-600',
+    forum_answer: 'text-green-600',
+    internship_completed: 'text-orange-500'
+  }
+  return map[type] || 'text-gray-500'
+}
+
+function typeLabel(type) {
+  const map = {
+    material_posted: { text: 'Postavio novi materijal', color: 'text-blue-500' },
+    material_uploaded: { text: 'Uploadovao materijal', color: 'text-purple-500' },
+    forum_comment: { text: 'Komentarisao na forumu', color: 'text-green-500' },
+    forum_answer: { text: 'Odgovorio na pitanje', color: 'text-green-500' },
+    internship_completed: { text: 'Završio praksu', color: 'text-orange-500' }
+  }
+  return map[type] || { text: 'Aktivnost', color: 'text-gray-500' }
+}
+
+function formatRelativeTime(dateStr) {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffMs = now - date
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMins / 60)
+  const diffDays = Math.floor(diffHours / 24)
+
+  if (diffMins < 60) return `Pre ${diffMins} minuta`
+  if (diffHours < 24) return `Pre ${diffHours} sata`
+  return `Pre ${diffDays} dana`
+}
+</script>
