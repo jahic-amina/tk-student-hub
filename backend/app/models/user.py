@@ -1,4 +1,4 @@
-from sqlmodel import SQLModel, Field, relationship
+from sqlmodel import SQLModel, Field, Relationship
 from typing import Optional
 from enum import Enum
 from datetime import datetime
@@ -20,4 +20,4 @@ class User(SQLModel, table=True):
     profilna_slika_url: Optional[str] = Field(default=None)
     biografija: Optional[str] = Field(default=None)
     godina_studija: Optional[str] = Field(default=None)
-    activity_logs = relationship("ActivityLog", back_populates="user")
+    activity_logs: list["ActivityLog"] = Relationship(back_populates="user")
