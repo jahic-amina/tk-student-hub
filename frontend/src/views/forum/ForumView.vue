@@ -1,8 +1,8 @@
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue';
-import ForumSidebar from './components/ForumSidebar.vue';
-import ForumTopicCard from './components/ForumTopicCard.vue'; // Nova komponenta
-import ForumPagination from './components/ForumPagination.vue'; // Nova komponenta
+import ForumSidebar from '../../components/ForumSidebar.vue';
+import ForumTopicCard from '../../components/ForumTopicCard.vue'; // Nova komponenta
+import ForumPagination from '../../components/ForumPagination.vue'; // Nova komponenta
 import { getTopics, getCategories, deleteTopic as deleteTopicApi } from '../../services/forum.js';
 
 const teme = ref([]);
@@ -40,7 +40,6 @@ const ucitajTeme = async () => {
     }
   } catch (error) {
     console.warn("Učitavam demo podatke...");
-    // ... tvoj demo fallback ostaje isti ...
     teme.value = [{ id: 1, title: "Dobrodošli na TK Student Hub forum", content: "...", views_count: 42, comments_count: 3, category: { name: "Opšta diskusija" }, author: { full_name: "Admin Hub" }, created_at: new Date() }];
     ukupnoTema.value = 1;
   } finally {
@@ -118,7 +117,7 @@ const obrisiTemu = async (temaId) => {
               </div>
 
               <div v-else class="space-y-4">
-                <TopicCard 
+                <ForumTopicCard 
                   v-for="tema in teme" 
                   :key="tema.id" 
                   :tema="tema" 

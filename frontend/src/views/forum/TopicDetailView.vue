@@ -1,9 +1,9 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import ForumTopicMainCard from './components/ForumTopicMainCard.vue';
-import ForumTopicCommentsList from './components/ForumTopicCommentsList.vue';
-import ForumTopicCommentForm from './components/ForumTopicCommentForm.vue';
+import ForumTopicMainCard from '../../components/ForumTopicMainCard.vue';
+import ForumTopicCommentsList from '../../components/ForumTopicCommentsList.vue';
+import ForumTopicCommentForm from '../../components/ForumTopicCommentForm.vue';
 import { getTopicById, createComment, incrementTopicView } from '../../services/forum';
 
 const props = defineProps({
@@ -59,7 +59,7 @@ const handleNewComment = async ({ content, clearForm }) => {
     });
     
     successMessage.value = 'Odgovor uspješno objavljen!';
-    clearForm(); // Čistimo tekstualno polje unutar dječije komponente
+    clearForm(); 
     await loadTopicAndComments(); 
   } catch (error) {
     commentError.value = 'Došlo je do greške. Pokušajte ponovo.';
@@ -86,11 +86,11 @@ const handleNewComment = async ({ content, clearForm }) => {
 
       <template v-else-if="fullTopicData">
         
-        <TopicMainCard :topic="fullTopicData" />
+        <ForumTopicMainCard :topic="fullTopicData" />
 
-        <TopicCommentsList :comments="sortedComments" />
+        <ForumTopicCommentsList :comments="sortedComments" />
 
-        <TopicCommentForm 
+        <ForumTopicCommentForm 
           :is-submitting="isSubmitting"
           :comment-error="commentError"
           :success-message="successMessage"

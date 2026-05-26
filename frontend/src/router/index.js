@@ -39,17 +39,20 @@ const routes = [
     path: '/forum',
     name: 'forum',
     component: () => import('../views/forum/ForumView.vue'),
+    meta: { requiresAuth: true },
   },
   {
     path: '/forum/nova-tema',
     name: 'create-topic',
     component: () => import('../views/forum/CreateTopicView.vue'),
+    meta: { requiresAuth: true }
   },
   {
     path: '/forum/tema/:id', 
     name: 'topic-detail',
     component: () => import('../views/forum/TopicDetailView.vue'),
-    props: true 
+    props: true,
+    meta: { requiresAuth: true }
   },
   // =========================================================
 

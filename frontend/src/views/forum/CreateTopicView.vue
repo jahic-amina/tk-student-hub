@@ -2,14 +2,14 @@
 import { ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router'; 
 import { createTopic, getCategories } from '../../services/forum';
-import ForumTopicTagManager from './components/ForumTopicTagManager.vue'; // Nova komponenta
+import ForumTopicTagManager from '../../components/ForumTopicTagManager.vue'; // Nova komponenta
 
 const router = useRouter(); 
 const route = useRoute(); 
 
 const title = ref('');
 const selectedCategory = ref('');
-const tags = ref([]); // Ovaj niz se sada puni direktno kroz v-model iz komponente
+const tags = ref([]); 
 const content = ref('');
 const isSubmitting = ref(false);
 const errors = ref({});
@@ -51,6 +51,8 @@ const goBack = () => {
 const submitTopic = async () => {
   if (!validate()) return;
   isSubmitting.value = true;
+  errors.value.general = ''; // Čistimo staru grešku
+  
   try {
     await createTopic({
       title: title.value.trim(),
@@ -60,7 +62,20 @@ const submitTopic = async () => {
     });
     router.push('/forum');
   } catch (error) {
-    errors.value.general = 'Došlo je do greške. Pokušajte ponovo.';
+    console.error("Kompletna greška sa backenda:", error);
+    
+    // Ako naš servis ili axios vrati specifičnu poruku sa servera
+    if (error.response && error.response.data && error.response.data.detail) {
+      if (typeof error.response.data.detail === 'string') {
+        errors.value.general = error.response.data.detail;
+      } else if (Array.isArray(error.response.data.detail)) {
+        // Prikazuje greške oko validacije polja (npr. FastAPI Pydantic greške)
+        errors.value.general = error.response.data.detail.map(d => `${d.loc.join('.')}: ${d.msg}`).join(', ');
+      }
+    } else {
+      // Fallback ako nemamo jasan odgovor
+      errors.value.general = error.message || 'Došlo je do serverske greške. Provjerite terminal backenda.';
+    }
   } finally {
     isSubmitting.value = false;
   }
@@ -126,7 +141,7 @@ const submitTopic = async () => {
           <p v-if="errors.category" class="text-red-500 text-xs mt-1">{{ errors.category }}</p>
         </div>
 
-        <TopicTagManager v-model="tags" />
+        <ForumTopicTagManager v-model="tags" />
 
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-1">
