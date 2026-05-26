@@ -95,36 +95,3 @@ class ForumTopicTag(SQLModel, table=True):
         foreign_key="forum_tags.id",
         primary_key=True
     )
-
-class ForumTopicCreate(SQLModel):
-    title: str = Field(min_length=3, max_length=200)
-    content: str = Field(min_length=10)
-    category_id: int
-    tags: Optional[List[int]] = None
-
-class ForumTopicRead(SQLModel):
-    id: int
-    title: str
-    content: str
-    views_count: int
-    is_locked: bool
-    is_deleted: bool
-    created_at: datetime
-    updated_at: Optional[datetime]
-    category_id: int
-    user_id: int
-    tags: Optional[List[ForumTag]] = None
-
-class ForumCommentCreate(SQLModel):
-    content: str = Field(min_length=2)
-    topic_id: int
-
-class ForumCommentRead(SQLModel):
-    id: int
-    content: str
-    is_best_answer: bool
-    is_deleted: bool
-    created_at: datetime
-    updated_at: Optional[datetime]
-    topic_id: int
-    user_id: int
