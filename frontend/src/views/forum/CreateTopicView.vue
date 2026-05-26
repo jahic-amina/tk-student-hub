@@ -1,9 +1,9 @@
 <script setup>
 import { ref } from 'vue';
-import { useRouter } from 'vue-router'; // 🚀 Uvozimo ruter za navigaciju
+import { useRouter } from 'vue-router'; 
 import { createTopic } from '../../services/forum';
 
-const router = useRouter(); // 🚀 Inicijalizacija rutera
+const router = useRouter(); 
 
 const title = ref('');
 const selectedCategory = ref('');
@@ -50,7 +50,7 @@ const validate = () => {
   return Object.keys(errors.value).length === 0;
 };
 
-// 🚀 Funkcija za povratak na forum
+
 const goBack = () => {
   router.push('/forum');
 };
@@ -59,7 +59,7 @@ const submitTopic = async () => {
   if (!validate()) return;
   isSubmitting.value = true;
   try {
-    // 🚀 Sada šaljemo stvarne tagove iz niza (tags.value), a ne prazan niz []
+    
     await createTopic({
       title: title.value.trim(),
       content: content.value.trim(),
@@ -67,7 +67,7 @@ const submitTopic = async () => {
       tags: tags.value, 
     });
     
-    // 🚀 Nakon uspješne objave, ruter nas vraća na listu tema
+    
     router.push('/forum');
   } catch (error) {
     errors.value.general = 'Došlo je do greške. Pokušajte ponovo.';

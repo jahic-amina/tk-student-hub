@@ -25,7 +25,7 @@ const sortedComments = computed(() => {
 const loadTopicAndComments = async () => {
   isLoading.value = true;
   try {
-    // Inkrementacija pregleda na backendu i povlačenje svježih podataka s komentarima
+    
     await incrementTopicView(props.topic.id);
     fullTopicData.value = await getTopicById(props.topic.id);
   } catch (error) {
@@ -61,7 +61,7 @@ const submitComment = async () => {
     });
     newComment.value = '';
     successMessage.value = 'Odgovor uspješno objavljen!';
-    await loadTopicAndComments(); // Osvježava listu komentara nakon slanja
+    await loadTopicAndComments(); 
   } catch (error) {
     commentError.value = 'Došlo je do greške. Pokušajte ponovo.';
   } finally {

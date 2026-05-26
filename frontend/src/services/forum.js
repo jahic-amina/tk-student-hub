@@ -20,7 +20,7 @@ export async function getCategories() {
 
 
 export async function getTopics({ category_id = null, search = "", page = 1, per_page = 5 } = {}) {
-  // Pravimo dinamičke query parametre za URL
+  
   let queryParams = new URLSearchParams({
     page: page.toString(),
     per_page: per_page.toString()
@@ -39,7 +39,7 @@ export async function getTopics({ category_id = null, search = "", page = 1, per
   })
 
   if (!response.ok) throw new Error('Greška pri dohvatanju tema')
-  return response.json() // Vraća objekat: { items: [...], total: X, page: Y, per_page: Z }
+  return response.json() 
 }
 
 

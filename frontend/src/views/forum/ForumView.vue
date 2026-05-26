@@ -4,7 +4,7 @@ import TopicDetailView from './TopicDetailView.vue';
 import { ref, onMounted, watch, computed } from 'vue';
 import { getTopics, getCategories, deleteTopic as deleteTopicApi } from '../../services/forum.js';
 
-// Reaktivna stanja za teme i kategorije
+
 const teme = ref([]);
 const sveKategorije = ref([]); 
 const isLoading = ref(true);
@@ -13,7 +13,7 @@ const trenutnaStranica = ref(1);
 const ukupnoTema = ref(0);
 const velicinaStranice = 5;
 
-// Držanje stanja pretrage i detalja
+
 const search = ref("");
 const selectedTopic = ref(null);
 

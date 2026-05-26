@@ -1,3 +1,5 @@
+"""
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select, func
 from typing import Optional, List, Dict, Any
@@ -19,9 +21,7 @@ from app.models.forum import (
 router = APIRouter(prefix="/forum", tags=["forum"])
 
 
-# ==========================================
-# POMOĆNE FUNKCIJE ZA STRUKTURIRANJE PODATAKA
-# ==========================================
+
 
 def make_summary(text: str, max_length: int = 150) -> str:
     clean_text = " ".join((text or "").split())
@@ -392,3 +392,4 @@ def get_comments(topic_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Tema nije pronađena.")
         
     return get_topic_comments(db, topic_id)
+"""

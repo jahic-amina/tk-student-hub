@@ -46,10 +46,10 @@ const routes = [
     component: () => import('../views/forum/CreateTopicView.vue'),
   },
   {
-    path: '/forum/tema/:id', // :id omogućava dinamičko prosljeđivanje ID-ja teme
+    path: '/forum/tema/:id', 
     name: 'topic-detail',
     component: () => import('../views/forum/TopicDetailView.vue'),
-    props: true // Dozvoljava da ID rute uđe direktno kao prop u komponentu
+    props: true 
   },
   // =========================================================
 
