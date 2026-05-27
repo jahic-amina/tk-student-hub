@@ -273,7 +273,7 @@ def get_subjects(session: Session = Depends(get_db)):
 def get_material(material_id: int, session: Session = Depends(get_db)):
     query = (
         select(Material)
-        .where(Material.id == material_id, Material.status == "approved")
+        .where(Material.id == material_id)
         .options(
             selectinload(Material.subject),
             selectinload(Material.user),
