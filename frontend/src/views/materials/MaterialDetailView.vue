@@ -10,6 +10,8 @@
             <span>NAZAD</span>
         </button>
 
+        <SuccessMessage :message="successMessage" :title="successTitle" :icon="successIcon"
+            @close="() => { successMessage = ''; goBack() }" />
 
         <div v-if="loading" class="text-gray-400">Učitavanje...</div>
 
@@ -94,6 +96,7 @@ import { useRoute, useRouter } from 'vue-router'
 import DownloadButton from '../../components/DownloadButton.vue'
 import { getMaterial } from '../../services/api'
 import { approveMaterial, rejectMaterial } from '../../services/api'
+import SuccessMessage from '../../components/SuccessMessage.vue'
 
 defineProps({
     pending: Boolean
@@ -106,6 +109,9 @@ const loading = ref(true)
 const hoverRating = ref(0)
 const selectedRating = ref(0)
 const isAdmin = localStorage.getItem('role') === 'admin'
+const successMessage = ref('')
+const successTitle = ref('')
+const successIcon = ref('')
 
 onMounted(async () => {
     material.value = await getMaterial(route.params.id)
@@ -115,7 +121,9 @@ onMounted(async () => {
 async function handleApprove() {
     try {
         await approveMaterial(material.value.id)
-        goBack()
+        successMessage.value = 'Materijal odobren!'
+        successTitle.value = 'Uspjeh!'
+        successIcon.value = '✅'
     } catch (error) {
         console.error('Greška prilikom odobravanja materijala:', error)
     }
@@ -124,7 +132,9 @@ async function handleApprove() {
 async function handleReject() {
     try {
         await rejectMaterial(material.value.id)
-        goBack()
+        successMessage.value = 'Materijal odbijen!'
+        successTitle.value = 'Odbijeno'
+        successIcon.value = '❌'
     } catch (error) {
         console.error('Greška prilikom odbijanja materijala:', error)
     }
