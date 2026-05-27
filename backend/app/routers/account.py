@@ -40,12 +40,8 @@ def deactivate_account(
     
     db.add(current_user)
     db.commit()
-    
-    # c) Invalidacija sesije:
-    # S obzirom na to da smo u Koraku 1 podesili da 'get_current_user' automatski 
-    # odbija sve 'inactive' korisnike, trenutni JWT token ovog korisnika ovog trenutka 
-    # postaje nevažeći (invalidiran) za bilo koju drugu akciju u aplikaciji.
-    
+    db.refresh(current_user)
+
     return {"detail": "Nalog je uspješno deaktiviran. Sve aktivne sesije su prekinute."}
 
 
@@ -82,5 +78,6 @@ def reactivate_account(
     
     db.add(user)
     db.commit()
+    db.refresh(user)
     
     return {"detail": "Nalog je uspješno reaktiviran. Sada se možete ponovo prijaviti."}
