@@ -252,6 +252,18 @@ def approve_material(material_id: int, session: Session = Depends(get_db), curre
     session.commit()
     return {"message": "Materijal odobren."}
 
+@router.patch("/{material_id}/reject")
+def reject_material(material_id: int, session: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Samo admin može odbiti materijal.")
+    material = session.get(Material, material_id)
+    if not material:
+        raise HTTPException(status_code=404, detail="Materijal nije pronađen.")
+    material.status = "rejected"
+    session.add(material)
+    session.commit()
+    return {"message": "Materijal odbijen."}
+
 @router.get("/subjects", response_model=list[Subject])
 def get_subjects(session: Session = Depends(get_db)):
     subjects = session.exec(select(Subject)).all()
