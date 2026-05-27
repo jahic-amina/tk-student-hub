@@ -1,7 +1,7 @@
 <template>
     <div class="max-w-2xl mx-auto py-8 px-4">
         <!-- Nazad dugme -->
-        <button @click="$router.back()"
+        <button @click="goBack()"
             class="inline-flex items-center gap-2 bg-primary text-white font-semibold px-5 py-2.5 rounded-lg shadow-sm hover:bg-primary/90 active:scale-[0.98] transition mb-6">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor" stroke-width="2">
@@ -80,11 +80,12 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import DownloadButton from '../../components/DownloadButton.vue'
 import { getMaterial } from '../../services/api'
 
 const route = useRoute()
+const router = useRouter()
 const material = ref(null)
 const loading = ref(true)
 const hoverRating = ref(0)
@@ -94,6 +95,10 @@ onMounted(async () => {
     material.value = await getMaterial(route.params.id)
     loading.value = false
 })
+
+function goBack() {
+    router.back();
+}
 
 function formatDate(dateStr) {
     if (!dateStr) return 'N/A'
