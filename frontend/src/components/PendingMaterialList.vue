@@ -1,5 +1,7 @@
 <template>
-    <div class="flex-1">
+    <div class="flex-1 py-8 px-6">
+        <h1 class="text-2xl font-bold uppercase mb-1">Odobri materijal</h1>
+        <p class="text-sm text-gray-500 mb-6">Materijali na čekanju</p>
         <div v-if="loading" class="text-center py-10 text-gray-400">Učitavanje...</div>
 
         <div v-else-if="materials.length === 0" class="text-center py-10 text-gray-400">
