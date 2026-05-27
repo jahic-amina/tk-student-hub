@@ -60,8 +60,14 @@
             <div class="mb-6">
                 <DownloadButton :material-id="material.id" :full-width="true" />
             </div>
-
-            <!-- Komentari -->
+            <div v-if="isAdmin && material.status === 'pending'" class="flex gap-4 mb-6">
+                <button @click="handleApprove" class="bg-green-100 text-green-600 px-6 py-3 rounded hover:bg-green-200">
+                    ✓ Odobri
+                </button>
+                <button @click="handleReject" class="bg-red-100 text-red-500 px-6 py-3 rounded hover:bg-red-200">
+                    ✕ Odbij
+                </button>
+            </div> <!-- Komentari -->
             <div>
                 <h3 class="font-semibold mb-4">Komentari ({{ material.comments?.length ?? 0 }})</h3>
                 <div class="flex flex-col gap-4">
@@ -83,6 +89,11 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DownloadButton from '../../components/DownloadButton.vue'
 import { getMaterial } from '../../services/api'
+import { approveMaterial, rejectMaterial } from '../../services/api'
+
+defineProps({
+    pending: Boolean
+})
 
 const route = useRoute()
 const router = useRouter()
@@ -90,11 +101,30 @@ const material = ref(null)
 const loading = ref(true)
 const hoverRating = ref(0)
 const selectedRating = ref(0)
+const isAdmin = localStorage.getItem('role') === 'admin'
 
 onMounted(async () => {
     material.value = await getMaterial(route.params.id)
     loading.value = false
 })
+
+async function handleApprove() {
+    try {
+        await approveMaterial(material.value.id)
+        goBack()
+    } catch (error) {
+        console.error('Greška prilikom odobravanja materijala:', error)
+    }
+}
+
+async function handleReject() {
+    try {
+        await rejectMaterial(material.value.id)
+        goBack()
+    } catch (error) {
+        console.error('Greška prilikom odbijanja materijala:', error)
+    }
+}
 
 function goBack() {
     if (window.history.length > 1) {
