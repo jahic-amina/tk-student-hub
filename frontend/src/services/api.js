@@ -70,3 +70,21 @@ export async function getPendingMaterials() {
   });
   return response.json();
 }
+
+export async function approveMaterial(id) {
+  const token = localStorage.getItem("token");
+  const response = await fetch(`${BASE_URL}/materials/${id}/approve`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.json();
+}
+
+export async function rejectMaterial(id) {
+  const token = localStorage.getItem("token");
+  const response = await fetch(`${BASE_URL}/materials/${id}/reject`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.json();
+}
