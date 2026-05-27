@@ -187,7 +187,7 @@ def get_materials(session: Session = Depends(get_db)):
             func.count(Rating.id).label("rating_count")
         )
         .outerjoin(Rating, Rating.material_id == Material.id)
-        .where(Material.status != "deleted")
+        .where(Material.status == "approved")
         .options(
             selectinload(Material.subject),
             selectinload(Material.user)
@@ -249,7 +249,7 @@ def get_subjects(session: Session = Depends(get_db)):
 def get_material(material_id: int, session: Session = Depends(get_db)):
     query = (
         select(Material)
-        .where(Material.id == material_id, Material.status != "deleted")
+        .where(Material.id == material_id, Material.status == "approved")
         .options(
             selectinload(Material.subject),
             selectinload(Material.user),
