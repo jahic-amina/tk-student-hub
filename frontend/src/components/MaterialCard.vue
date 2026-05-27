@@ -37,11 +37,11 @@
             <div class="flex flex-col gap-2 w-full items-stretch" @click.stop>
                 <template v-if="pending">
                     <button @click="$emit('approve', material.id)"
-                        class="flex items-center justify-center gap-1 bg-green-100 text-green-600 px-3 py-2 rounded text-sm hover:bg-green-200 w-full">
+                        class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2">
                         ✓ Odobri
                     </button>
                     <button @click="$emit('reject', material.id)"
-                        class="flex items-center justify-center gap-1 bg-red-100 text-red-500 px-3 py-2 rounded text-sm hover:bg-red-200 w-full">
+                        class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2">
                         ✕ Odbij
                     </button>
                 </template>

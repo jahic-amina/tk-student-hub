@@ -60,14 +60,18 @@
             <div class="mb-6">
                 <DownloadButton :material-id="material.id" :full-width="true" />
             </div>
-            <div v-if="isAdmin && material.status === 'pending'" class="flex gap-4 mb-6">
-                <button @click="handleApprove" class="bg-green-100 text-green-600 px-6 py-3 rounded hover:bg-green-200">
-                    ✓ Odobri
+            <div v-if="isAdmin && material.status === 'pending'" class="flex w-full gap-4 mb-6">
+                <button @click="handleApprove"
+                    class="flex-1 justify-center py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 font-medium">
+                    <span>✓</span> Odobri
                 </button>
-                <button @click="handleReject" class="bg-red-100 text-red-500 px-6 py-3 rounded hover:bg-red-200">
-                    ✕ Odbij
+
+                <button @click="handleReject"
+                    class="flex-1 justify-center py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2 font-medium">
+                    <span>✕</span> Odbij
                 </button>
-            </div> <!-- Komentari -->
+            </div>
+            <!-- Komentari -->
             <div>
                 <h3 class="font-semibold mb-4">Komentari ({{ material.comments?.length ?? 0 }})</h3>
                 <div class="flex flex-col gap-4">
