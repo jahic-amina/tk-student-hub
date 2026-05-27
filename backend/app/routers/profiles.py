@@ -173,3 +173,37 @@ def delete_avatar(
     db.refresh(current_user)
     
     return {"message": "Profilna slika obrisana."}
+
+# 6. Deaktivacija profila
+@router.post("/me/deactivate", status_code=status.HTTP_200_OK)
+def deactivate_profile(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.status == "inactive":
+        raise HTTPException(status_code=400, detail="Nalog je već deaktiviran.")
+    
+    current_user.status = "inactive"
+    current_user.deactivated_at = datetime.now(timezone.utc)
+    
+    db.add(current_user)
+    db.commit()
+    
+    return {"message": "Nalog je uspješno deaktiviran."}
+
+# 7. Reaktivacija profila
+@router.post("/me/reactivate", status_code=status.HTTP_200_OK)
+def reactivate_profile(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.status == "active":
+        raise HTTPException(status_code=400, detail="Nalog je već aktivan.")
+    
+    current_user.status = "active"
+    current_user.deactivated_at = None
+    
+    db.add(current_user)
+    db.commit()
+    
+    return {"message": "Nalog je uspješno reaktiviran."}
