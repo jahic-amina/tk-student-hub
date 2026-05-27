@@ -13,7 +13,6 @@
     <div class="flex gap-6">
       <MaterialList v-if="activeTab === 'pregled'" :key="listKey" @open="openMaterial" />
       <PendingMaterialList v-if="activeTab === 'odobravanje' && isAdmin" :key="listKey" @open="openMaterial" />
-      <MaterialDetail v-if="selectedMaterialId" :material="selectedMaterialId" @close="selectedMaterialId = null" />
     </div>
   </div>
 </template>
@@ -22,13 +21,13 @@
 import MaterialUploadForm from '../../components/MaterialUploadForm.vue'
 import { ref } from 'vue'
 import MaterialList from '../../components/MaterialList.vue'
-import MaterialDetail from '../../components/MaterialDetail.vue'
-import { getMaterial } from '../../services/api'
 import PendingMaterialList from '../../components/PendingMaterialList.vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const activeTab = ref('pregled')
 const isAdmin = localStorage.getItem('role') === 'admin'
-const selectedMaterialId = ref(null)
 
 const listKey = ref(0);
 
@@ -38,6 +37,6 @@ function refreshList() {
 }
 
 async function openMaterial(id) {
-  selectedMaterialId.value = await getMaterial(id)
+  router.push(`/materials/${id}`)
 }
 </script>
