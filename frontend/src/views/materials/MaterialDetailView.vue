@@ -97,7 +97,11 @@ onMounted(async () => {
 })
 
 function goBack() {
-    router.back();
+    if (window.history.length > 1) {
+        router.back();
+    } else {
+        router.push('/materials');
+    }
 }
 
 function formatDate(dateStr) {
