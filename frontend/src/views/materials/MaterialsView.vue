@@ -45,5 +45,6 @@ function refreshList() {
 }
 
 async function openMaterial(id) {
+  router.push({ path: `/materials/${id}` })
 }
 </script>
