@@ -238,7 +238,7 @@ const handleSubmit = async () => {
     }
 
     showToast('Izmjene uspješno sačuvane!')
-    // Uklonjeno: isEditing.value = false (kako bi korisnik ostao na formi)
+
     await fetchProfileData() 
   } catch (err) {
     Object.assign(status, { message: err.response?.data?.detail || err.message || 'Greška prilikom spašavanja.', isError: true })
