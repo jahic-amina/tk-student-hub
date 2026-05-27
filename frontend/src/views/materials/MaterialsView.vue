@@ -19,17 +19,25 @@
 
 <script setup>
 import MaterialUploadForm from '../../components/MaterialUploadForm.vue'
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 import MaterialList from '../../components/MaterialList.vue'
 import PendingMaterialList from '../../components/PendingMaterialList.vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-const activeTab = ref('pregled')
+const activeTab = ref(router.currentRoute.value.path.includes('pending') ? 'odobravanje' : 'pregled')
 const isAdmin = localStorage.getItem('role') === 'admin'
 
 const listKey = ref(0);
+
+watch(activeTab, (newTab) => {
+  if (newTab === 'odobravanje') {
+    router.push('/materials/pending');
+  } else {
+    router.push('/materials');
+  }
+})
 
 function refreshList() {
   listKey.value += 1;
@@ -37,6 +45,5 @@ function refreshList() {
 }
 
 async function openMaterial(id) {
-  router.push(`/materials/${id}`)
 }
 </script>
