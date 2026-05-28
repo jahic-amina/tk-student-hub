@@ -8,7 +8,7 @@ from sqlmodel import Session, select, func
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from app.models.materials import Material, MaterialsResponse, MaterialDetailResponse, Rating, Comment, Subject,CommentResponse
+from app.models.materials import Material, MaterialsResponse, MaterialDetailResponse, Rating, Comment, Subject,CommentResponse,CommentCreate
 from sqlalchemy.orm import selectinload
 
 router = APIRouter(prefix="/materials", tags=["materials"])
@@ -274,3 +274,36 @@ def get_comments(material_id: int, session: Session = Depends(get_db)):
     )
     comments = session.exec(query).all()
     return comments
+
+# Zaštićeni endpoint za dodavanje komentara
+@router.post("/{material_id}/comments", response_model=CommentResponse, status_code=201)
+def create_comment(
+    material_id: int,
+    comment_data: CommentCreate,
+    session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    material = session.get(Material, material_id)
+    if not material or material.status == "deleted":
+        raise HTTPException(status_code=404, detail="Materijal nije pronađen.")
+
+    sadrzaj = comment_data.content.strip()
+    if not sadrzaj:
+        raise HTTPException(status_code=400, detail="Komentar ne može biti prazan.")
+    if len(sadrzaj) > 500:
+        raise HTTPException(status_code=400, detail="Komentar ne može biti duži od 500 karaktera.")
+
+    novi_komentar = Comment(
+        content=sadrzaj,
+        material_id=material_id,
+        user_id=current_user.id
+    )
+    session.add(novi_komentar)
+    session.commit()
+    session.refresh(novi_komentar)
+
+
+    session.refresh(novi_komentar)
+    novi_komentar.user = current_user
+
+    return novi_komentar
