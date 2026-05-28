@@ -55,19 +55,7 @@
         </div>
 
         <!-- Komentari -->
-        <div>
-            <h3 class="font-semibold mb-4">Komentari ({{ material.comments?.length ?? 0 }})</h3>
-            <div v-if="loading" class="text-gray-400 text-sm">Učitavanje...</div>
-            <div v-else class="flex flex-col gap-4">
-                <div v-for="comment in material.comments" :key="comment.id" class="border rounded-lg p-3">
-                    <div class="flex justify-between text-sm text-gray-500 mb-1">
-                        <span class="font-medium text-gray-700">{{ comment.user.full_name }}</span>
-                        <span>{{ formatDate(comment.created_at) }}</span>
-                    </div>
-                    <p class="text-sm text-gray-600">{{ comment.content }}</p>
-                </div>
-            </div>
-        </div>
+        <CommentList :material-id="material.id" />
 
     </div>
 </template>
@@ -75,6 +63,7 @@
 <script setup>
 import { ref } from 'vue'
 import DownloadButton from './DownloadButton.vue'
+import CommentList from './CommentList.vue'
 
 defineProps({
     material: {
