@@ -39,7 +39,7 @@
 
             <!-- Ocijeni -->
             <div class="mt-4">
-                <p class="text-sm text-gray-500 mb-1">Ocijenite ovaj materijal:</p>
+                <p class="text-sm text-gray-500 mb-1">{{ selectedRating > 0 ? 'Vaša ocjena:' : 'Ocijenite ovaj materijal:' }}</p>
                 <div class="flex gap-1">
                     <span v-for="star in 5" :key="star" class="text-2xl cursor-pointer transition"
                         :class="[
@@ -80,7 +80,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed,  onMounted  } from 'vue'
 import DownloadButton from './DownloadButton.vue'
 
 const BASE_URL = 'http://127.0.0.1:8000'
@@ -97,17 +97,39 @@ defineEmits(['close', 'rated'])
 const hoverRating = ref(0)
 const selectedRating = ref(0)
 const loading = ref(false)
+
 //-----------------------------------------------------------------------------------
 //Ocjenjivanje materijala - Marinela
 
+// Lokalne kopije prosjecne ocjene i broja ocjena - osvjezavaju se nakon ocjenjivanja
 const localAvgRating = ref(props.material.average_rating)
 const localRatingCount = ref(props.material.rating_count)
 
+// Moja ocjena - postavlja se kad se kartica otvori
+const myRating = ref(0)
+
+// Poruke uspjeha i greske
 const ratingMessage = ref('')
 const ratingError = ref('')
 
+// Provjera da li je korisnik prijavljen
 const isLoggedIn = computed(() => !!localStorage.getItem('token'))
 
+// Kad se kartica otvori, provjeri da li je korisnik ocijenio ovaj materijal
+onMounted(async () => {
+    if (isLoggedIn.value) {
+        const response = await fetch(`${BASE_URL}/materials/${props.material.id}`)
+        const data = await response.json()
+        const user = JSON.parse(localStorage.getItem('user') || '{}')
+        const myRatingObj = data.ratings?.find(r => r.user_id === user.id)
+        if (myRatingObj) {
+            myRating.value = myRatingObj.rating
+            selectedRating.value = myRatingObj.rating
+        }
+    }
+})
+
+// Slanje ocjene na backend
 async function submitRating(star) {
     if (!isLoggedIn.value) return
     selectedRating.value = star
@@ -136,6 +158,8 @@ async function submitRating(star) {
 
         ratingMessage.value = 'Hvala na ocjeni! ⭐'
         ratingError.value = ''
+
+         // Osvjezi prosjecnu ocjenu i broj ocjena bez reloada
         const updated = await fetch(`${BASE_URL}/materials/${props.material.id}`)
         const data = await updated.json()
         localAvgRating.value = data.average_rating
