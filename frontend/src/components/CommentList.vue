@@ -2,6 +2,11 @@
     <div>
         <h3 class="font-semibold mb-4">Komentari</h3>
 
+        <!-- Forma za dodavanje -->
+        <CommentForm :material-id="materialId" @komentar-dodan="dodajKomentar" class="mb-6" />
+
+        <hr class="mb-4" />
+
         <!-- Učitavanje -->
         <div v-if="loading" class="text-gray-400 text-sm">Učitavanje komentara...</div>
 
@@ -27,6 +32,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import CommentCard from './CommentCard.vue'
+import CommentForm from './CommentForm.vue'
 import { getComments } from '../services/api.js'
 
 const props = defineProps({
@@ -51,4 +57,8 @@ onMounted(async () => {
         loading.value = false
     }
 })
+
+function dodajKomentar(noviKomentar) {
+    komentari.value.unshift(noviKomentar)
+}
 </script>
