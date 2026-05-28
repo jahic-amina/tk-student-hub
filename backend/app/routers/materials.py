@@ -307,3 +307,26 @@ def create_comment(
     novi_komentar.user = current_user
 
     return novi_komentar
+
+
+# Zaštićeni endpoint za brisanje komentara
+@router.delete("/{material_id}/comments/{comment_id}", status_code=204)
+def delete_comment(
+    material_id: int,
+    comment_id: int,
+    session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    komentar = session.get(Comment, comment_id)
+    if not komentar or komentar.material_id != material_id:
+        raise HTTPException(status_code=404, detail="Komentar nije pronađen.")
+
+    is_admin = getattr(current_user, "role", "") == "admin"
+    is_autor = komentar.user_id == current_user.id
+
+    if not is_admin and not is_autor:
+        raise HTTPException(status_code=403, detail="Nemate dozvolu za brisanje ovog komentara.")
+
+    session.delete(komentar)
+    session.commit()
+    return None
