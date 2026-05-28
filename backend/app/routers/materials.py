@@ -8,7 +8,7 @@ from sqlmodel import Session, select, func
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from app.models.materials import Material, MaterialsResponse, MaterialDetailResponse, Rating, Comment, Subject
+from app.models.materials import Material, MaterialsResponse, MaterialDetailResponse, Rating, Comment, Subject,CommentResponse,CommentCreate
 from sqlalchemy.orm import selectinload
 
 router = APIRouter(prefix="/materials", tags=["materials"])
@@ -291,4 +291,76 @@ def delete_material(
     material.status = "deleted"
     db.add(material)
     db.commit()
+    return None
+
+# endpoint za dohvatanje komentara materijala
+@router.get("/{material_id}/comments", response_model=list[CommentResponse])
+def get_comments(material_id: int, session: Session = Depends(get_db)):
+    material = session.get(Material, material_id)
+    if not material or material.status == "deleted":
+        raise HTTPException(status_code=404, detail="Materijal nije pronađen.")
+    
+    query = (
+        select(Comment)
+        .where(Comment.material_id == material_id)
+        .options(selectinload(Comment.user))
+        .order_by(Comment.created_at.desc())
+    )
+    comments = session.exec(query).all()
+    return comments
+
+# Zaštićeni endpoint za dodavanje komentara
+@router.post("/{material_id}/comments", response_model=CommentResponse, status_code=201)
+def create_comment(
+    material_id: int,
+    comment_data: CommentCreate,
+    session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    material = session.get(Material, material_id)
+    if not material or material.status == "deleted":
+        raise HTTPException(status_code=404, detail="Materijal nije pronađen.")
+
+    sadrzaj = comment_data.content.strip()
+    if not sadrzaj:
+        raise HTTPException(status_code=400, detail="Komentar ne može biti prazan.")
+    if len(sadrzaj) > 500:
+        raise HTTPException(status_code=400, detail="Komentar ne može biti duži od 500 karaktera.")
+
+    novi_komentar = Comment(
+        content=sadrzaj,
+        material_id=material_id,
+        user_id=current_user.id
+    )
+    session.add(novi_komentar)
+    session.commit()
+    session.refresh(novi_komentar)
+
+
+    session.refresh(novi_komentar)
+    novi_komentar.user = current_user
+
+    return novi_komentar
+
+
+# Zaštićeni endpoint za brisanje komentara
+@router.delete("/{material_id}/comments/{comment_id}", status_code=204)
+def delete_comment(
+    material_id: int,
+    comment_id: int,
+    session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    komentar = session.get(Comment, comment_id)
+    if not komentar or komentar.material_id != material_id:
+        raise HTTPException(status_code=404, detail="Komentar nije pronađen.")
+
+    is_admin = getattr(current_user, "role", "") == "admin"
+    is_autor = komentar.user_id == current_user.id
+
+    if not is_admin and not is_autor:
+        raise HTTPException(status_code=403, detail="Nemate dozvolu za brisanje ovog komentara.")
+
+    session.delete(komentar)
+    session.commit()
     return None

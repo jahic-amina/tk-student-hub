@@ -59,8 +59,42 @@ export async function deleteMaterial(id) {
   return response;
 }
 export async function getSubjects() {
-  const res = await fetch("http://127.0.0.1:8000/materials/subjects");
+  const res = await fetch(`${BASE_URL}/materials/subjects`);
   return res.json();
+}
+
+export async function getComments(materialId) {
+  const response = await fetch(`${BASE_URL}/materials/${materialId}/comments`)
+  return response.json()
+}
+
+export async function postComment(materialId, content) {
+  const token = localStorage.getItem('token')
+  const response = await fetch(`${BASE_URL}/materials/${materialId}/comments`, {
+      method: 'POST',
+      headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ content, material_id: materialId })
+  })
+  if (!response.ok) {
+      throw new Error('Greška pri slanju komentara.')
+  }
+  return response.json()
+}
+
+export async function deleteComment(materialId, commentId) {
+  const token = localStorage.getItem('token')
+  const response = await fetch(`${BASE_URL}/materials/${materialId}/comments/${commentId}`, {
+      method: 'DELETE',
+      headers: {
+          'Authorization': `Bearer ${token}`
+      }
+  })
+  if (!response.ok) {
+      throw new Error('Greška pri brisanju komentara.')
+  }
 }
 
 export async function getPendingMaterials() {
