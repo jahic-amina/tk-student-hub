@@ -8,7 +8,7 @@ from sqlmodel import Session, select, func
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from app.models.materials import Material, MaterialsResponse, MaterialDetailResponse, Rating, Comment, Subject
+from app.models.materials import Material, MaterialsResponse, MaterialDetailResponse, Rating, Comment, Subject,  RatingCreate
 from sqlalchemy.orm import selectinload
 
 router = APIRouter(prefix="/materials", tags=["materials"])
@@ -257,3 +257,34 @@ def delete_material(
     db.add(material)
     db.commit()
     return None
+
+"""RATING MATERIAL ENDPOINT"""
+@router.post("/{id}/rate", status_code=201)
+def rate_material(
+    id: int,
+    rating_data: RatingCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    material = db.exec(select(Material).where(Material.id == id)).first()
+    if not material:
+        raise HTTPException(status_code=404, detail="Materijal nije pronađen.")
+
+    existing = db.exec(
+        select(Rating).where(
+            Rating.material_id == id,
+            Rating.user_id == current_user.id
+        )
+    ).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="Već ste ocijenili ovaj materijal.")
+
+    new_rating = Rating(
+        rating=rating_data.rating,
+        material_id=id,
+        user_id=current_user.id
+    )
+    db.add(new_rating)
+    db.commit()
+    db.refresh(new_rating)
+    return new_rating
