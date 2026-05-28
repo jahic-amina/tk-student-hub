@@ -8,7 +8,7 @@ from sqlmodel import Session, select, func
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from app.models.materials import Material, MaterialsResponse, MaterialDetailResponse, Rating, Comment, Subject
+from app.models.materials import Material, MaterialsResponse, MaterialDetailResponse, Rating, Comment, Subject,CommentResponse
 from sqlalchemy.orm import selectinload
 
 router = APIRouter(prefix="/materials", tags=["materials"])
@@ -258,3 +258,19 @@ def delete_material(
     db.add(material)
     db.commit()
     return None
+
+# endpoint za dohvatanje komentara materijala
+@router.get("/{material_id}/comments", response_model=list[CommentResponse])
+def get_comments(material_id: int, session: Session = Depends(get_db)):
+    material = session.get(Material, material_id)
+    if not material or material.status == "deleted":
+        raise HTTPException(status_code=404, detail="Materijal nije pronađen.")
+    
+    query = (
+        select(Comment)
+        .where(Comment.material_id == material_id)
+        .options(selectinload(Comment.user))
+        .order_by(Comment.created_at.desc())
+    )
+    comments = session.exec(query).all()
+    return comments
