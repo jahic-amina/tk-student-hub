@@ -94,13 +94,8 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DownloadButton from '../../components/DownloadButton.vue'
-import { getMaterial } from '../../services/api'
-import { approveMaterial, rejectMaterial } from '../../services/api'
+import { getMaterial, approveMaterial, rejectMaterial } from '../../services/api'
 import SuccessMessage from '../../components/SuccessMessage.vue'
-
-defineProps({
-    pending: Boolean
-})
 
 const route = useRoute()
 const router = useRouter()
