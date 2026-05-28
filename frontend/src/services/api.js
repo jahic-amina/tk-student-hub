@@ -63,3 +63,8 @@ export async function getSubjects() {
   const res = await fetch('http://127.0.0.1:8000/materials/subjects')
   return res.json()
 }
+
+export async function getComments(materialId) {
+  const response = await fetch(`${BASE_URL}/materials/${materialId}/comments`)
+  return response.json()
+}
