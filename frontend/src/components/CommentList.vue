@@ -1,11 +1,6 @@
 <template>
     <div>
-        <h3 class="font-semibold mb-4">Komentari</h3>
-
-        <!-- Forma za dodavanje -->
-        <CommentForm :material-id="materialId" @komentar-dodan="dodajKomentar" class="mb-6" />
-
-        <hr class="mb-4" />
+        <h3 class="font-semibold mb-4">Komentari ({{ komentari.length }})</h3>
 
         <!-- Učitavanje -->
         <div v-if="loading" class="text-gray-400 text-sm">Učitavanje komentara...</div>
@@ -14,19 +9,24 @@
         <div v-else-if="greska" class="text-red-400 text-sm">Greška pri učitavanju komentara.</div>
 
         <!-- Nema komentara -->
-        <div v-else-if="komentari.length === 0" class="text-gray-400 text-sm italic">
+        <div v-else-if="komentari.length === 0" class="text-gray-400 text-sm italic mb-4">
             Još uvijek nema komentara. Budite prvi koji će ostaviti komentar.
         </div>
 
         <!-- Lista komentara -->
-        <div v-else class="flex flex-col gap-3">
-          <CommentCard
-            v-for="komentar in komentari"
-            :key="komentar.id"
-            :comment="komentar"
-            @obrisan="ukloniKomentar"
+        <div v-else class="flex flex-col gap-3 mb-6">
+            <CommentCard
+                v-for="komentar in komentari"
+                :key="komentar.id"
+                :comment="komentar"
+                @obrisan="ukloniKomentar"
             />
         </div>
+
+        <hr class="mb-4" />
+
+        <!-- Forma za dodavanje -->
+        <CommentForm :material-id="materialId" @komentar-dodan="dodajKomentar" />
     </div>
 </template>
 
