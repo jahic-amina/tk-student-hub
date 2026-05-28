@@ -73,6 +73,7 @@ export default {
         const user = await getMe(response.access_token)
         localStorage.setItem('user', JSON.stringify(user))
         localStorage.setItem('username', user.full_name)
+        localStorage.setItem('role', user.role)
         window.location.href = '/'
       } else {
         this.error = 'Pogrešan email ili lozinka.'

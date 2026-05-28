@@ -4,8 +4,7 @@
     <button
       type="button"
       @click="handleDownload"
-      :disabled="!isLoggedIn || isDownloading"
-      :title="isLoggedIn ? 'Preuzmi materijal' : 'Prijavi se da bi preuzeo materijal'"
+      :disabled="isDownloading"
       :class="['inline-flex items-center gap-2 bg-primary text-white font-semibold px-5 py-2.5 rounded-lg shadow-sm hover:bg-primary/90 active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary', fullWidth ? 'w-full justify-center' : '']"
     >
       <!-- SVG ikona strelica (download) -->
@@ -16,14 +15,6 @@
       </svg>
       <span>{{ isDownloading ? 'Preuzimanje...' : 'PREUZMI' }}</span>
     </button>
-
-    <!-- Poruka kada korisnik nije prijavljen -->
-    <p v-if="!isLoggedIn" class="text-sm text-gray-500 mt-2">
-      <router-link to="/login" class="text-primary font-medium hover:underline">
-        Prijavi se
-      </router-link>
-      da bi mogao preuzeti materijal.
-    </p>
 
     <!-- Poruka o gresci -->
     <p v-if="errorMessage" class="text-sm text-red-600 mt-2">
@@ -38,7 +29,7 @@ const BASE_URL = 'http://127.0.0.1:8000'
 export default {
   name: 'DownloadButton',
 
-  // Prop koji komponenta prima izvana (od roditeljske komponente). // Kolega ce u svom view-u napisati: <DownloadButton :material-id="material.id" />
+  // Prop koji komponenta prima izvana (od roditeljske komponente). 
  props: {
     materialId: {
       type: [Number, String],
@@ -57,33 +48,22 @@ export default {
     }
   },
 
-  computed: {
-    // Acceptance criterion #4: dugme dostupno samo prijavljenim
-    isLoggedIn() {
-      return !!localStorage.getItem('token')
-    },
-  },
-
   methods: {
     async handleDownload() {
       this.errorMessage = null
       this.isDownloading = true
 
       try {
-        const token = localStorage.getItem('token')
-
-        //Fetch sa Bearer tokenom u headeru
+        //Fetch bez autentifikacije - download je javan
         const response = await fetch(
           `${BASE_URL}/materials/${this.materialId}/download`,
-          { headers: { 'Authorization': 'Bearer ' + token } }
         )
 
         //Provjera HTTP statusa
         if (!response.ok) {
-          if (response.status === 401) throw new Error('Morate biti prijavljeni za preuzimanje.')
-          if (response.status === 403) throw new Error('Materijal nije aktivan i ne moze se preuzeti.')
-          if (response.status === 404) throw new Error('Materijal ili fajl nije pronadjen.')
-          throw new Error('Greska prilikom preuzimanja.')
+          if (response.status === 403) throw new Error('Materijal nije aktivan i ne može se preuzeti.')
+          if (response.status === 404) throw new Error('Materijal ili fajl nije pronađen.')
+          throw new Error('Greška prilikom preuzimanja.')
         }
 
         //Izvlacenje originalnog imena fajla iz Content-Disposition headera
@@ -112,7 +92,7 @@ export default {
         //Oslobodi memoriju
         window.URL.revokeObjectURL(url)
       } catch (err) {
-        this.errorMessage = err.message || 'Greska prilikom preuzimanja.'
+        this.errorMessage = err.message || 'Greška prilikom preuzimanja.'
       } finally {
         this.isDownloading = false
       }
