@@ -19,7 +19,8 @@ defineProps({
 function relativnoVrijeme(dateStr) {
     if (!dateStr) return 'N/A'
     const sada = new Date()
-    const datum = new Date(dateStr)
+    const utcStr = dateStr.endsWith('Z') ? dateStr : dateStr + 'Z'
+    const datum = new Date(utcStr)
     const razlikaMs = sada - datum
     const razlikaSek = Math.floor(razlikaMs / 1000)
     const razlikaMin = Math.floor(razlikaSek / 60)
