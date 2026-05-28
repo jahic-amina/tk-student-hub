@@ -3,7 +3,7 @@
     <MaterialUploadForm @submit="refreshList" />
     <div class="flex gap-6">
       <MaterialList :key="listKey" @open="openMaterial" />
-      <MaterialDetail v-if="selectedMaterialId" :material="selectedMaterialId" @close="selectedMaterialId = null" />
+      <MaterialDetail v-if="selectedMaterialId" :material="selectedMaterialId" @close="selectedMaterialId = null" @rated="refreshMaterial" />
     </div>
   </div>
 </template>
@@ -28,4 +28,10 @@ function refreshList() {
 async function openMaterial(id) {
   selectedMaterialId.value = await getMaterial(id)
 }
+//-------------------------------------------------
+// Osvježavanje ocjene nakon ocjenjivanja - Marinela
+async function refreshMaterial(id) {
+    selectedMaterialId.value = await getMaterial(id)
+}
+//-------------------------------------------------
 </script>

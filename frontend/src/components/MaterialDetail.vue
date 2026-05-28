@@ -31,7 +31,7 @@
             <div class="flex items-center gap-2">
                 <span v-for="star in 5" :key="star" class="text-yellow-400 text-2xl">
                     {{ star <= Math.round(material.average_rating) ? '★' : '☆' }} </span>
-                        <span class="text-gray-600">{{ material.average_rating }} / 5.0 ({{ material.rating_count }}
+                        <span class="text-gray-600">{{ localAvgRating }} / 5.0 ({{ localRatingCount }}
                             ocjena)</span>
             </div>
            
@@ -92,13 +92,16 @@ const props = defineProps({
     }
 })
 
-defineEmits(['close'])
+defineEmits(['close', 'rated'])
 
 const hoverRating = ref(0)
 const selectedRating = ref(0)
 const loading = ref(false)
 //-----------------------------------------------------------------------------------
 //Ocjenjivanje materijala - Marinela
+
+const localAvgRating = ref(props.material.average_rating)
+const localRatingCount = ref(props.material.rating_count)
 
 const ratingMessage = ref('')
 const ratingError = ref('')
@@ -132,6 +135,11 @@ async function submitRating(star) {
         }
 
         ratingMessage.value = 'Hvala na ocjeni! ⭐'
+        ratingError.value = ''
+        const updated = await fetch(`${BASE_URL}/materials/${props.material.id}`)
+        const data = await updated.json()
+        localAvgRating.value = data.average_rating
+        localRatingCount.value = data.rating_count
     } catch (err) {
         ratingError.value = 'Greška prilikom ocjenjivanja.'
     }
