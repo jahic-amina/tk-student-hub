@@ -2,6 +2,7 @@
   <div>
     
   <button
+  v-if="!showForm"
   @click="handleDodajKlik"
   class="bg-primary text-white px-6 py-3 rounded-lg font-semibold
          hover:bg-orange-600 hover:shadow-md transition-all duration-200"
@@ -61,7 +62,7 @@
     <textarea
       v-model="description"
       rows="3"
-      placeholder="Napisite detaljan opis materijala..."
+      placeholder="Napišite detaljan opis materijala..."
      :class="[
               'w-full border rounded-lg px-3 py-2 focus:outline-none',
               errors.description ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-gray-50 focus:border-primary focus:bg-white'

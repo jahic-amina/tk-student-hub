@@ -37,7 +37,6 @@ DONWLOAD MATERIAL ENDPOINT
 def download_material(
     id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     # Pronaci materijal u bazi po ID-u
     material = db.query(Material).filter(Material.id == id).first()
@@ -57,14 +56,14 @@ def download_material(
     if material.status != "approved":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Materijal nije odobren i ne moze se preuzeti.",
+            detail="Materijal nije odobren i ne može se preuzeti.",
         )
 
     # Provjera da fajl fizicki postoji na disku
     if not os.path.exists(material.file_path):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Fajl nije pronadjen na serveru.",
+            detail="Fajl nije pronađen na serveru.",
         )
 
     # Odrediti MIME tip — tip iz baze
