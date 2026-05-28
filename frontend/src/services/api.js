@@ -84,3 +84,16 @@ export async function postComment(materialId, content) {
   }
   return response.json()
 }
+
+export async function deleteComment(materialId, commentId) {
+  const token = localStorage.getItem('token')
+  const response = await fetch(`${BASE_URL}/materials/${materialId}/comments/${commentId}`, {
+      method: 'DELETE',
+      headers: {
+          'Authorization': `Bearer ${token}`
+      }
+  })
+  if (!response.ok) {
+      throw new Error('Greška pri brisanju komentara.')
+  }
+}

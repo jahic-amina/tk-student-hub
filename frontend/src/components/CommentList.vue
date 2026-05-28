@@ -20,10 +20,11 @@
 
         <!-- Lista komentara -->
         <div v-else class="flex flex-col gap-3">
-            <CommentCard
-                v-for="komentar in komentari"
-                :key="komentar.id"
-                :comment="komentar"
+          <CommentCard
+            v-for="komentar in komentari"
+            :key="komentar.id"
+            :comment="komentar"
+            @obrisan="ukloniKomentar"
             />
         </div>
     </div>
@@ -60,5 +61,9 @@ onMounted(async () => {
 
 function dodajKomentar(noviKomentar) {
     komentari.value.unshift(noviKomentar)
+}
+
+function ukloniKomentar(id) {
+    komentari.value = komentari.value.filter(k => k.id !== id)
 }
 </script>

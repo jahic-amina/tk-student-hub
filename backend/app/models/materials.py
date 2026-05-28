@@ -75,6 +75,8 @@ class UserResponse(SQLModel):
     
 class CommentResponse(SQLModel):
     id: int
+    user_id: int
+    material_id: int
     content: str
     created_at: datetime
     user: UserResponse
