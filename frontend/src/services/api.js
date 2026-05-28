@@ -68,3 +68,19 @@ export async function getComments(materialId) {
   const response = await fetch(`${BASE_URL}/materials/${materialId}/comments`)
   return response.json()
 }
+
+export async function postComment(materialId, content) {
+  const token = localStorage.getItem('token')
+  const response = await fetch(`${BASE_URL}/materials/${materialId}/comments`, {
+      method: 'POST',
+      headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ content, material_id: materialId })
+  })
+  if (!response.ok) {
+      throw new Error('Greška pri slanju komentara.')
+  }
+  return response.json()
+}
