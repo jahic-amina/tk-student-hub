@@ -28,6 +28,37 @@ router = APIRouter(prefix="/materials", tags=["materials"])
 #
 # -------------------------------------------------------
 
+
+def get_materials_by_status(session: Session, status: str):
+    query = (
+        select(
+            Material,
+            func.avg(Rating.rating).label("average_rating"),
+            func.count(Rating.id).label("rating_count")
+        )
+        .outerjoin(Rating, Rating.material_id == Material.id)
+        .where(Material.status == status)
+        .options(
+            selectinload(Material.subject),
+            selectinload(Material.user)
+        )
+        .group_by(Material.id)
+        .order_by(Material.created_at.desc())
+    )
+    results = session.exec(query).all()
+    materials = []
+    for material, avg, count in results:
+        response = MaterialsResponse(
+            **material.model_dump(),
+            subject=material.subject,
+            user=material.user,
+            average_rating=round(avg, 1) if avg is not None else None,
+            rating_count=count
+        )
+        materials.append(response)
+    return materials
+
+
 """ 
 
 DONWLOAD MATERIAL ENDPOINT
@@ -180,65 +211,13 @@ def upload_material(
 
 @router.get("/", response_model=list[MaterialsResponse])
 def get_materials(session: Session = Depends(get_db)):
-    query = (
-        select(
-            Material,
-            func.avg(Rating.rating).label("average_rating"),
-            func.count(Rating.id).label("rating_count")
-        )
-        .outerjoin(Rating, Rating.material_id == Material.id)
-        .where(Material.status == "approved")
-        .options(
-            selectinload(Material.subject),
-            selectinload(Material.user)
-        )
-        .group_by(Material.id)
-        .order_by(Material.created_at.desc())
-    )
-    results = session.exec(query).all()
-    materials = []
-    for material, avg, count in results:
-        response = MaterialsResponse(
-            **material.model_dump(),
-            subject=material.subject,
-            user=material.user,
-            average_rating=round(avg, 1) if avg is not None else None,
-            rating_count=count
-        )
-        materials.append(response)
-    return materials
+    return get_materials_by_status(session, "approved")
 
 @router.get("/pending", response_model=list[MaterialsResponse])
 def get_pending_materials(session: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Samo admin može pristupiti ovom endpointu.")
-    query = (
-        select(
-            Material,
-            func.avg(Rating.rating).label("average_rating"),
-            func.count(Rating.id).label("rating_count")
-        )
-        .outerjoin(Rating, Rating.material_id == Material.id)
-        .options(
-            selectinload(Material.subject),
-            selectinload(Material.user)
-        )
-        .where(Material.status == "pending")
-        .group_by(Material.id)
-        .order_by(Material.created_at.desc())
-    )
-    results = session.exec(query).all()
-    materials = []
-    for material, avg, count in results:
-        response = MaterialsResponse(
-            **material.model_dump(),
-            subject=material.subject,
-            user=material.user,
-            average_rating=round(avg, 1) if avg is not None else None,
-            rating_count=count
-        )
-        materials.append(response)
-    return materials
+    return get_materials_by_status(session, "pending")
 
 @router.patch("/{material_id}/approve")
 def approve_material(material_id: int, session: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
