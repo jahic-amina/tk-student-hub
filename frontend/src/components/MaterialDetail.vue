@@ -42,12 +42,19 @@
                 <p class="text-sm text-gray-500 mb-1">Ocijenite ovaj materijal:</p>
                 <div class="flex gap-1">
                     <span v-for="star in 5" :key="star" class="text-2xl cursor-pointer transition"
-                        :class="star <= hoverRating || star <= selectedRating ? 'text-yellow-400' : 'text-gray-300'"
-                        @mouseover="hoverRating = star" @mouseleave="hoverRating = 0"
-                        @click="selectedRating = star">★</span>
-                </div>
-            </div>
-        </div>
+                        :class="[
+                star <= hoverRating || star <= selectedRating ? 'text-yellow-400' : 'text-gray-300',
+                isLoggedIn ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
+            ]"
+            @mouseover="isLoggedIn && (hoverRating = star)" 
+            @mouseleave="hoverRating = 0"
+            @click="submitRating(star)">★</span>
+    </div>
+    <p v-if="ratingMessage" class="text-sm text-green-600 mt-2">{{ ratingMessage }}</p>
+    <p v-if="ratingError" class="text-sm text-red-600 mt-2">{{ ratingError }}</p>
+    <p v-if="!isLoggedIn" class="text-sm text-gray-400 mt-2">Prijavite se da biste ocijenili materijal.</p>
+    </div>
+</div>
 
         <!-- Preuzmi dugme -->
         <div class="mb-6">
@@ -73,10 +80,12 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import DownloadButton from './DownloadButton.vue'
 
-defineProps({
+const BASE_URL = 'http://127.0.0.1:8000'
+
+const props = defineProps({
     material: {
         type: Object,
         required: true
@@ -88,7 +97,46 @@ defineEmits(['close'])
 const hoverRating = ref(0)
 const selectedRating = ref(0)
 const loading = ref(false)
+//-----------------------------------------------------------------------------------
+//Ocjenjivanje materijala - Marinela
 
+const ratingMessage = ref('')
+const ratingError = ref('')
+
+const isLoggedIn = computed(() => !!localStorage.getItem('token'))
+
+async function submitRating(star) {
+    if (!isLoggedIn.value) return
+    selectedRating.value = star
+    ratingMessage.value = ''
+    ratingError.value = ''
+
+ try {
+        const token = localStorage.getItem('token')
+        const response = await fetch(`${BASE_URL}/materials/${props.material.id}/rate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ rating: star, material_id: props.material.id })
+        })
+
+        if (response.status === 409) {
+            ratingError.value = 'Već ste ocijenili ovaj materijal.'
+            return
+        }
+        if (!response.ok) {
+            ratingError.value = 'Greška prilikom ocjenjivanja.'
+            return
+        }
+
+        ratingMessage.value = 'Hvala na ocjeni! ⭐'
+    } catch (err) {
+        ratingError.value = 'Greška prilikom ocjenjivanja.'
+    }
+}
+//----------------------------------------------------------------------------------
 function formatDate(dateStr) {
     const date = new Date(dateStr)
     return date.toLocaleDateString('bs-BA')
