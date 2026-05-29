@@ -1,4 +1,8 @@
 <template>
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row gap-6">
+    
+    <MaterialFilter @change="handleFilterChange" />
+
     <div class="flex-1 py-8 px-6">
         <h1 class="text-2xl font-bold uppercase mb-1">Pregled materijala</h1>
         <p class="text-sm text-gray-500 mb-6">Dostupni materijal</p>
@@ -15,22 +19,36 @@
             />
         </div>
     </div>
+    </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import MaterialCard from './MaterialCard.vue'
 import { getMaterials } from '../services/api'
+import MaterialFilter from './MaterialFilter.vue'
+//import { getMaterials } from '../services/api'
 
 defineEmits(['open', 'deleted'])
 
 const materials = ref([])
 const loading = ref(true)
 
-onMounted(async () => {
-    materials.value = await getMaterials()
+async function loadMaterials(filters = {}) {
+    loading.value = true
+    materials.value = await getMaterials(filters)
     loading.value = false
-})
+}
+
+//onMounted(async () => {
+    //materials.value = await getMaterials()
+  //  loading.value = false
+//})
+onMounted(() => { loadMaterials() })
+
+function handleFilterChange(newFilters) {
+    loadMaterials(newFilters)
+}
 
 function handleDelete(deletedMaterialId) {
     materials.value = materials.value.filter(m => m.id !== deletedMaterialId)
