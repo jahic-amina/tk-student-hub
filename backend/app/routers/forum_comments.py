@@ -16,6 +16,10 @@ class ForumCommentCreate(BaseModel):
     content: str = Field(min_length=2)
     topic_id: int
 
+class VoteInput(BaseModel):
+    value: int = Field(..., description="1 za like, -1 za dislike")
+
+    
 # Pomocne funkcije za komentare
 def get_comment_votes_count(db: Session, comment_id: int) -> int:
     result = db.exec(select(func.coalesce(func.sum(ForumCommentVote.value), 0)).where(ForumCommentVote.comment_id == comment_id)).one()
@@ -78,3 +82,85 @@ def get_comments(topic_id: int, db: Session = Depends(get_db)):
     if not topic or topic.is_deleted:
         raise HTTPException(status_code=404, detail="Tema nije pronađena.")
     return get_topic_comments(db, topic_id)
+
+@router.patch("/{comment_id}/best-answer", status_code=status.HTTP_200_OK)
+def toggle_best_answer(
+    comment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    comment = db.get(ForumComment, comment_id)
+    if not comment or comment.is_deleted:
+        raise HTTPException(status_code=404, detail="Komentar nije pronađen.")
+
+    topic = db.get(ForumTopic, comment.topic_id)
+    if not topic or topic.is_deleted:
+        raise HTTPException(status_code=404, detail="Tema nije pronađena.")
+
+    if topic.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Samo autor teme može označiti najbolji odgovor.")
+
+    if comment.is_best_answer:
+        comment.is_best_answer = False
+    else:
+        existing_best = db.exec(
+            select(ForumComment).where(
+                ForumComment.topic_id == comment.topic_id,
+                ForumComment.is_best_answer == True,
+                ForumComment.is_deleted == False
+            )
+        ).first()
+        if existing_best:
+            existing_best.is_best_answer = False
+            db.add(existing_best)
+        comment.is_best_answer = True
+
+    db.add(comment)
+    db.commit()
+    db.refresh(comment)
+    return {"id": comment.id, "is_best_answer": comment.is_best_answer}
+
+
+@router.post("/{comment_id}/vote", status_code=status.HTTP_200_OK)
+def vote_on_comment(
+    comment_id: int,
+    vote_data: VoteInput,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if vote_data.value not in (1, -1):
+        raise HTTPException(status_code=400, detail="Vrijednost glasa mora biti 1 ili -1.")
+
+    comment = db.get(ForumComment, comment_id)
+    if not comment or comment.is_deleted:
+        raise HTTPException(status_code=404, detail="Komentar nije pronađen.")
+
+    existing_vote = db.exec(
+        select(ForumCommentVote).where(
+            ForumCommentVote.comment_id == comment_id,
+            ForumCommentVote.user_id == current_user.id
+        )
+    ).first()
+
+    if existing_vote:
+        if existing_vote.value == vote_data.value:
+            db.delete(existing_vote)
+            db.commit()
+            user_vote = 0
+        else:
+            existing_vote.value = vote_data.value
+            db.add(existing_vote)
+            db.commit()
+            user_vote = vote_data.value
+    else:
+        new_vote = ForumCommentVote(
+            comment_id=comment_id,
+            user_id=current_user.id,
+            value=vote_data.value
+        )
+        db.add(new_vote)
+        db.commit()
+        user_vote = vote_data.value
+
+    total_votes = get_comment_votes_count(db, comment_id)
+    return {"comment_id": comment_id, "votes_count": total_votes, "user_vote": user_vote}
