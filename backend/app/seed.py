@@ -1,159 +1,292 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from sqlmodel import Session, select
 
 from app.core.security import hash_password
 from app.database import create_db_and_tables, engine
-from app.models.ad import Ad, AdStatus, AdType
-from app.models.company import Company, CompanyStatus
 from app.models.user import User, UserRole
+from app.models.company import Company, CompanyStatus
+from app.models.ad import Ad, AdStatus, AdType
+from app.models.application import Application, ApplicationStatus
+from app.models.notification import Notification, NotificationType
+from app.models.ad_bookmark import AdBookmark
+
+
+def _build_users() -> list[User]:
+    """Create 10 test users."""
+    users_data = [
+        {"email": "admin@test.local", "full_name": "Admin User", "role": UserRole.admin},
+        {"email": "member1@test.local", "full_name": "Member One", "role": UserRole.member},
+        {"email": "member2@test.local", "full_name": "Member Two", "role": UserRole.member},
+        {"email": "member3@test.local", "full_name": "Member Three", "role": UserRole.member},
+        {"email": "member4@test.local", "full_name": "Member Four", "role": UserRole.member},
+        {"email": "member5@test.local", "full_name": "Member Five", "role": UserRole.member},
+        {"email": "member6@test.local", "full_name": "Member Six", "role": UserRole.member},
+        {"email": "member7@test.local", "full_name": "Member Seven", "role": UserRole.member},
+        {"email": "member8@test.local", "full_name": "Member Eight", "role": UserRole.member},
+        {"email": "member9@test.local", "full_name": "Member Nine", "role": UserRole.member},
+    ]
+
+    return [
+        User(
+            email=data["email"],
+            full_name=data["full_name"],
+            password_hash=hash_password("password123"),
+            role=data["role"],
+        )
+        for data in users_data
+    ]
 
 
 def _build_companies() -> list[Company]:
+    """Create 10 test companies."""
     companies_data = [
         {
-            "company_name": "Telekom Demo 1 d.o.o.",
-            "description": "Kompanija za test podatke i demo oglase za studente.",
-            "website_url": "https://demo1.example.com",
-            "logo_url": "https://placehold.co/200x200/demo-1.png",
-            "email": "demo1@company.test",
-            "phone_number": "+38761100001",
-            "jib": "1234567890001",
-            "address": "Adresa 1, Sarajevo",
+            "company_name": "Tech Solutions d.o.o.",
+            "description": "Leading IT solutions provider.",
+            "website_url": "https://techsolutions.ba",
+            "logo_path": "logos/tech1.png",
+            "email": "hr@techsolutions.ba",
+            "phone_number": "+38761111111",
+            "tin": "1111111111111",
+            "address": "Sarajevo, Zmaja od Bosne 1",
         },
         {
-            "company_name": "Telekom Demo 2 d.o.o.",
-            "description": "Kompanija za test podatke i demo oglase za studente.",
-            "website_url": "https://demo2.example.com",
-            "logo_url": "https://placehold.co/200x200/demo-2.png",
-            "email": "demo2@company.test",
-            "phone_number": "+38761100002",
-            "jib": "1234567890002",
-            "address": "Adresa 2, Sarajevo",
+            "company_name": "Digital Innovations d.o.o.",
+            "description": "Digital transformation experts.",
+            "website_url": "https://digitalinnovations.ba",
+            "logo_path": "logos/digital1.png",
+            "email": "careers@digitalinnovations.ba",
+            "phone_number": "+38761111112",
+            "tin": "1111111111112",
+            "address": "Sarajevo, Obala Kulina Bana 2",
         },
         {
-            "company_name": "Telekom Demo 3 d.o.o.",
-            "description": "Kompanija za test podatke i demo oglase za studente.",
-            "website_url": "https://demo3.example.com",
-            "logo_url": "https://placehold.co/200x200/demo-3.png",
-            "email": "demo3@company.test",
-            "phone_number": "+38761100003",
-            "jib": "1234567890003",
-            "address": "Adresa 3, Mostar",
+            "company_name": "Cloud Systems d.o.o.",
+            "description": "Cloud infrastructure and services.",
+            "website_url": "https://cloudsystems.ba",
+            "logo_path": "logos/cloud1.png",
+            "email": "jobs@cloudsystems.ba",
+            "phone_number": "+38761111113",
+            "tin": "1111111111113",
+            "address": "Zenica, Cara Dusana 3",
         },
         {
-            "company_name": "Telekom Demo 4 d.o.o.",
-            "description": "Kompanija za test podatke i demo oglase za studente.",
-            "website_url": "https://demo4.example.com",
-            "logo_url": "https://placehold.co/200x200/demo-4.png",
-            "email": "demo4@company.test",
-            "phone_number": "+38761100004",
-            "jib": "1234567890004",
-            "address": "Adresa 4, Tuzla",
+            "company_name": "Mobile First d.o.o.",
+            "description": "Mobile app development company.",
+            "website_url": "https://mobilefirst.ba",
+            "logo_path": "logos/mobile1.png",
+            "email": "recruitment@mobilefirst.ba",
+            "phone_number": "+38761111114",
+            "tin": "1111111111114",
+            "address": "Tuzla, Kulina Bana 4",
         },
         {
-            "company_name": "Telekom Demo 5 d.o.o.",
-            "description": "Kompanija za test podatke i demo oglase za studente.",
-            "website_url": "https://demo5.example.com",
-            "logo_url": "https://placehold.co/200x200/demo-5.png",
-            "email": "demo5@company.test",
-            "phone_number": "+38761100005",
-            "jib": "1234567890005",
-            "address": "Adresa 5, Zenica",
+            "company_name": "Data Analytics Pro d.o.o.",
+            "description": "Business intelligence and analytics.",
+            "website_url": "https://dataanalyticspro.ba",
+            "logo_path": "logos/data1.png",
+            "email": "hr@dataanalyticspro.ba",
+            "phone_number": "+38761111115",
+            "tin": "1111111111115",
+            "address": "Mostar, Aleksa Santic 5",
         },
         {
-            "company_name": "Telekom Demo 6 d.o.o.",
-            "description": "Kompanija za test podatke i demo oglase za studente.",
-            "website_url": "https://demo6.example.com",
-            "logo_url": "https://placehold.co/200x200/demo-6.png",
-            "email": "demo6@company.test",
-            "phone_number": "+38761100006",
-            "jib": "1234567890006",
-            "address": "Adresa 6, Bihać",
+            "company_name": "Security First d.o.o.",
+            "description": "Cybersecurity and penetration testing.",
+            "website_url": "https://securityfirst.ba",
+            "logo_path": "logos/security1.png",
+            "email": "careers@securityfirst.ba",
+            "phone_number": "+38761111116",
+            "tin": "1111111111116",
+            "address": "Banja Luka, Drinska 6",
         },
         {
-            "company_name": "Telekom Demo 7 d.o.o.",
-            "description": "Kompanija za test podatke i demo oglase za studente.",
-            "website_url": "https://demo7.example.com",
-            "logo_url": "https://placehold.co/200x200/demo-7.png",
-            "email": "demo7@company.test",
-            "phone_number": "+38761100007",
-            "jib": "1234567890007",
-            "address": "Adresa 7, Banja Luka",
+            "company_name": "DevOps Masters d.o.o.",
+            "description": "Infrastructure automation and CI/CD.",
+            "website_url": "https://devopsmasters.ba",
+            "logo_path": "logos/devops1.png",
+            "email": "jobs@devopsmasters.ba",
+            "phone_number": "+38761111117",
+            "tin": "1111111111117",
+            "address": "Doboj, Baba Radisa 7",
         },
         {
-            "company_name": "Telekom Demo 8 d.o.o.",
-            "description": "Kompanija za test podatke i demo oglase za studente.",
-            "website_url": "https://demo8.example.com",
-            "logo_url": "https://placehold.co/200x200/demo-8.png",
-            "email": "demo8@company.test",
-            "phone_number": "+38761100008",
-            "jib": "1234567890008",
-            "address": "Adresa 8, Doboj",
+            "company_name": "UI/UX Studio d.o.o.",
+            "description": "User experience and interface design.",
+            "website_url": "https://uiuxstudio.ba",
+            "logo_path": "logos/uiux1.png",
+            "email": "hello@uiuxstudio.ba",
+            "phone_number": "+38761111118",
+            "tin": "1111111111118",
+            "address": "Bijeljina, Cara Aleksandra 8",
         },
         {
-            "company_name": "Telekom Demo 9 d.o.o.",
-            "description": "Kompanija za test podatke i demo oglase za studente.",
-            "website_url": "https://demo9.example.com",
-            "logo_url": "https://placehold.co/200x200/demo-9.png",
-            "email": "demo9@company.test",
-            "phone_number": "+38761100009",
-            "jib": "1234567890010",
-            "address": "Adresa 9, Prijedor",
+            "company_name": "Backend Specialists d.o.o.",
+            "description": "Enterprise backend development.",
+            "website_url": "https://backendspecialists.ba",
+            "logo_path": "logos/backend1.png",
+            "email": "recruitment@backendspecialists.ba",
+            "phone_number": "+38761111119",
+            "tin": "1111111111119",
+            "address": "Trebinje, Nemanjina 9",
         },
         {
-            "company_name": "Telekom Demo 10 d.o.o.",
-            "description": "Kompanija za test podatke i demo oglase za studente.",
-            "website_url": "https://demo10.example.com",
-            "logo_url": "https://placehold.co/200x200/demo-10.png",
-            "email": "demo10@company.test",
-            "phone_number": "+38761100010",
-            "jib": "1234567890011",
-            "address": "Adresa 10, Trebinje",
+            "company_name": "QA Automation d.o.o.",
+            "description": "Software testing and quality assurance.",
+            "website_url": "https://qaautomation.ba",
+            "logo_path": "logos/qa1.png",
+            "email": "careers@qaautomation.ba",
+            "phone_number": "+38761111120",
+            "tin": "1111111111120",
+            "address": "Bihac, Zivka Dakica 10",
         },
     ]
 
     return [
         Company(
-            **company_data,
-            hashed_password=hash_password("Demo12345!"),
+            **data,
+            hashed_password=hash_password("company123"),
             status=CompanyStatus.approved,
         )
-        for company_data in companies_data
+        for data in companies_data
     ]
 
 
-def _build_prakse_ads(companies: list[Company]) -> list[Ad]:
+def _build_ads(companies: list[Company], users: list[User]) -> list[Ad]:
+    """Create 10 test ads."""
     ad_templates = [
-        ("Praksa u mrežnom planiranju", "Telekomunikacije", "Sarajevo", 2, 250.0),
-        ("Praksa u podršci korisnicima", "Customer Support", "Zenica", 3, 300.0),
-        ("Praksa u razvoju web aplikacija", "Web razvoj", "Doboj", 4, 350.0),
-        ("Praksa u analizi podataka", "Data analytics", "Sarajevo", 2, 400.0),
-        ("Praksa u testiranju softvera", "QA / Testing", "Mostar", 3, 280.0),
-        ("Praksa u administraciji sistema", "System Administration", "Banja Luka", 2, 320.0),
-        ("Praksa u mrežnoj sigurnosti", "Cyber security", "Tuzla", 4, 450.0),
-        ("Praksa u mobilnim aplikacijama", "Mobile development", "Bihać", 3, 380.0),
-        ("Praksa u DevOps alatima", "DevOps", "Prijedor", 2, 420.0),
-        ("Praksa u poslovnoj analizi", "Business analysis", "Trebinje", 3, 360.0),
+        {
+            "title": "Junior Web Developer",
+            "type": AdType.internship,
+            "field": "Web Development",
+            "location": "Sarajevo",
+            "description": "Exciting opportunity to learn and grow as a web developer.",
+            "deadline": 30,
+            "duration_months": 3,
+            "compensation": 300.0,
+            "spots": 2,
+        },
+        {
+            "title": "Backend Developer Internship",
+            "type": AdType.internship,
+            "field": "Backend Development",
+            "location": "Zenica",
+            "description": "Build scalable backend systems with Python and Django.",
+            "deadline": 35,
+            "duration_months": 4,
+            "compensation": 350.0,
+            "spots": 1,
+        },
+        {
+            "title": "QA Engineer",
+            "type": AdType.internship,
+            "field": "Quality Assurance",
+            "location": "Tuzla",
+            "description": "Test and ensure software quality and reliability.",
+            "deadline": 40,
+            "duration_months": 3,
+            "compensation": 280.0,
+            "spots": 3,
+        },
+        {
+            "title": "Data Analytics Internship",
+            "type": AdType.internship,
+            "field": "Data Analytics",
+            "location": "Mostar",
+            "description": "Analyze business data and generate insights.",
+            "deadline": 25,
+            "duration_months": 2,
+            "compensation": 400.0,
+            "spots": 1,
+        },
+        {
+            "title": "Cybersecurity Specialist",
+            "type": AdType.internship,
+            "field": "Cybersecurity",
+            "location": "Banja Luka",
+            "description": "Learn cybersecurity best practices and protocols.",
+            "deadline": 45,
+            "duration_months": 6,
+            "compensation": 450.0,
+            "spots": 2,
+        },
+        {
+            "title": "DevOps Engineer Intern",
+            "type": AdType.internship,
+            "field": "DevOps",
+            "location": "Doboj",
+            "description": "Work on CI/CD pipelines and infrastructure automation.",
+            "deadline": 32,
+            "duration_months": 4,
+            "compensation": 420.0,
+            "spots": 1,
+        },
+        {
+            "title": "UI/UX Designer",
+            "type": AdType.internship,
+            "field": "Design",
+            "location": "Bijeljina",
+            "description": "Create beautiful and user-friendly interfaces.",
+            "deadline": 28,
+            "duration_months": 3,
+            "compensation": 330.0,
+            "spots": 2,
+        },
+        {
+            "title": "Mobile App Developer",
+            "type": AdType.internship,
+            "field": "Mobile Development",
+            "location": "Trebinje",
+            "description": "Develop iOS and Android applications.",
+            "deadline": 38,
+            "duration_months": 5,
+            "compensation": 380.0,
+            "spots": 1,
+        },
+        {
+            "title": "Full Stack Developer",
+            "type": AdType.internship,
+            "field": "Full Stack",
+            "location": "Bihac",
+            "description": "Work on both frontend and backend systems.",
+            "deadline": 42,
+            "duration_months": 4,
+            "compensation": 370.0,
+            "spots": 2,
+        },
+        {
+            "title": "Software Engineer Apprenticeship",
+            "type": AdType.internship,
+            "field": "Software Engineering",
+            "location": "Sarajevo",
+            "description": "Comprehensive software engineering training program.",
+            "deadline": 50,
+            "duration_months": 6,
+            "compensation": 400.0,
+            "spots": 3,
+        },
     ]
 
-    ads: list[Ad] = []
-    for index, (title, field, location, duration_months, compensation) in enumerate(ad_templates):
+    ads = []
+    for index, template in enumerate(ad_templates):
         ads.append(
             Ad(
                 company_id=companies[index].id,
-                title=title,
-                type=AdType.internship,
-                field=field,
-                location=location,
-                description=f"Demo praksa broj {index + 1} za testiranje frontend liste i filtera.",
-                deadline=date.today() + timedelta(days=30 + index),
-                duration_months=duration_months,
-                compensation=compensation,
+                approved_by=users[0].id,  # Admin approves
+                title=template["title"],
+                type=template["type"],
+                field=template["field"],
+                location=template["location"],
+                description=template["description"],
+                deadline=date.today() + timedelta(days=template["deadline"]),
+                duration_months=template["duration_months"],
+                compensation=template["compensation"],
                 currency="BAM",
-                spots=1 + (index % 3),
-                requirements="Osnovno poznavanje rada na računaru i želja za učenjem.",
-                benefits="Mentorstvo, praktičan rad i sertifikat po završetku.",
+                spots=template["spots"],
+                requirements="Strong motivation and willingness to learn.",
+                benefits="Mentorship, practical experience, and certificate.",
+                admin_comment="Approved for posting.",
                 status=AdStatus.active,
             )
         )
@@ -161,62 +294,158 @@ def _build_prakse_ads(companies: list[Company]) -> list[Ad]:
     return ads
 
 
-def seed_prakse_demo_data(session: Session) -> dict[str, int]:
-    existing_company = session.exec(
-        select(Company).where(Company.email == "demo1@company.test")
-    ).first()
-    if existing_company:
-        companies_count = len(session.exec(select(Company)).all())
-        ads_count = len(session.exec(select(Ad)).all())
-        return {"companies": companies_count, "ads": ads_count, "created": 0}
+def _build_applications(users: list[User], ads: list[Ad]) -> list[Application]:
+    """Create 10 test applications."""
+    applications = []
+    statuses = [ApplicationStatus.pending, ApplicationStatus.accepted, ApplicationStatus.rejected]
+
+    for index in range(10):
+        applications.append(
+            Application(
+                user_id=users[(index + 1) % len(users)].id,  # Skip admin
+                ad_id=ads[index].id,
+                cv_path=f"uploads/applications/cv_{index}.pdf",
+                motivational_letter_path=f"uploads/applications/letter_{index}.pdf",
+                linkedin_url=f"https://linkedin.com/in/user{index}" if index % 2 == 0 else None,
+                phone=f"+38761{100000 + index:06d}",
+                status=statuses[index % len(statuses)],
+                admin_feedback="Good application!" if index % 3 == 0 else None,
+                is_archived=False,
+            )
+        )
+
+    return applications
+
+
+def _build_notifications(users: list[User]) -> list[Notification]:
+    """Create 10 test notifications."""
+    notification_types = [
+        NotificationType.NEW_OPPORTUNITY,
+        NotificationType.STATUS_CHANGE,
+        NotificationType.DEADLINE_EXPIRING,
+    ]
+    messages = [
+        "New job opportunity matching your profile!",
+        "Your application status has been updated.",
+        "Application deadline is expiring soon!",
+        "New internship posted in your field.",
+        "Your profile has been reviewed.",
+        "Congratulations! You've been shortlisted.",
+        "Thank you for applying.",
+        "New networking event available.",
+        "Your CV has been downloaded.",
+        "Mentor assignment confirmation.",
+    ]
+
+    notifications = []
+    for index in range(10):
+        notifications.append(
+            Notification(
+                user_id=users[(index + 1) % len(users)].id,  # Skip admin
+                text=messages[index],
+                type=notification_types[index % len(notification_types)],
+                is_read=index % 2 == 0,
+            )
+        )
+
+    return notifications
+
+
+def _build_bookmarks(users: list[User], ads: list[Ad]) -> list[AdBookmark]:
+    """Create 10 test bookmarks."""
+    bookmarks = []
+    for index in range(10):
+        bookmarks.append(
+            AdBookmark(
+                user_id=users[(index + 1) % len(users)].id,  # Skip admin
+                ad_id=ads[index].id,
+            )
+        )
+
+    return bookmarks
+
+
+def seed_demo_data(session: Session) -> dict[str, int]:
+    """Seed database with demo data."""
+    # Check if data already exists
+    existing_user = session.exec(select(User).where(User.email == "admin@test.local")).first()
+    if existing_user:
+        user_count = len(session.exec(select(User)).all())
+        company_count = len(session.exec(select(Company)).all())
+        ad_count = len(session.exec(select(Ad)).all())
+        app_count = len(session.exec(select(Application)).all())
+        notif_count = len(session.exec(select(Notification)).all())
+        bookmark_count = len(session.exec(select(AdBookmark)).all())
+        return {
+            "users": user_count,
+            "companies": company_count,
+            "ads": ad_count,
+            "applications": app_count,
+            "notifications": notif_count,
+            "bookmarks": bookmark_count,
+            "created": 0,
+        }
+
+    # Create entities
+    users = _build_users()
+    session.add_all(users)
+    session.commit()
+    for user in users:
+        session.refresh(user)
 
     companies = _build_companies()
     session.add_all(companies)
     session.commit()
-
     for company in companies:
         session.refresh(company)
 
-    ads = _build_prakse_ads(companies)
+    ads = _build_ads(companies, users)
     session.add_all(ads)
     session.commit()
+    for ad in ads:
+        session.refresh(ad)
 
-    return {"companies": len(companies), "ads": len(ads), "created": len(companies) + len(ads)}
-
-
-def seed_demo_data(session: Session) -> dict[str, int]:
-    return seed_prakse_demo_data(session)
-
-
-def ensure_admin_user(session: Session) -> dict[str, bool]:
-    admin_email = "elnur@tkstudenthub.local"
-    existing_admin = session.exec(
-        select(User).where(User.email == admin_email)
-    ).first()
-
-    if existing_admin:
-        return {"created": False}
-
-    admin = User(
-        email=admin_email,
-        full_name="Elnur",
-        password_hash=hash_password("elnur1234"),
-        role=UserRole.admin,
-    )
-    session.add(admin)
+    applications = _build_applications(users, ads)
+    session.add_all(applications)
     session.commit()
 
-    return {"created": True}
+    notifications = _build_notifications(users)
+    session.add_all(notifications)
+    session.commit()
+
+    bookmarks = _build_bookmarks(users, ads)
+    session.add_all(bookmarks)
+    session.commit()
+
+    total = len(users) + len(companies) + len(ads) + len(applications) + len(notifications) + len(bookmarks)
+
+    return {
+        "users": len(users),
+        "companies": len(companies),
+        "ads": len(ads),
+        "applications": len(applications),
+        "notifications": len(notifications),
+        "bookmarks": len(bookmarks),
+        "created": total,
+    }
 
 
 def main() -> None:
+    """Main seed function."""
     create_db_and_tables()
 
     with Session(engine) as session:
-        result = seed_prakse_demo_data(session)
+        result = seed_demo_data(session)
 
     print(
-        f"Seed zavrsen: {result['companies']} kompanija, {result['ads']} praksi, ukupno {result['created']} novih redova."
+        f"Seed zavrsen:\n"
+        f"  - {result['users']} korisnika\n"
+        f"  - {result['companies']} kompanija\n"
+        f"  - {result['ads']} oglasa\n"
+        f"  - {result['applications']} aplikacija\n"
+        f"  - {result['notifications']} notifikacija\n"
+        f"  - {result['bookmarks']} bookmarkova\n"
+        f"  - ukupno {result['created']} novih redova"
     )
 
 
