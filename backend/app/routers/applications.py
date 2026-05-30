@@ -1,43 +1,63 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Optional, List
+from datetime import date
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
+from fastapi.params import File
 from sqlmodel import Session, select
-try:
-    import boto3
-    from botocore.exceptions import ClientError
-except ImportError:
-    boto3 = None
-
-    class ClientError(Exception):
-        pass
+from app.models.application import Application, ApplicationCreate, ApplicationRead, ApplicationStatus, ApplicationUpdate
+from app.models.ad import Ad, AdStatus
+from app.models.user import User, UserRole
 from app.core.security import get_current_user
 from app.database import get_db
-from app.models.application import Application, ApplicationCreate, ApplicationRead, ApplicationStatus, ApplicationUpdate
-from app.models.user import User, UserRole
-from fastapi import UploadFile, File
 import os
 from uuid import uuid4
-from typing import Optional
-from app.models.ad import Ad, AdStatus
-from datetime import date
 
-S3_BUCKET = os.getenv("S3_BUCKET")
-S3_ENDPOINT = os.getenv("S3_ENDPOINT")
-S3_REGION = os.getenv("S3_REGION")
-S3_ACCESS_KEY = os.getenv("S3_ACCESS_KEY")
-S3_SECRET_KEY = os.getenv("S3_SECRET_KEY")
-
-LOCAL_UPLOAD_DIR = os.path.join(os.getcwd(), "uploads")
+LOCAL_UPLOAD_DIR = os.path.join(os.getcwd(), "uploads", "applications")
 os.makedirs(LOCAL_UPLOAD_DIR, exist_ok=True)
 
+ALLOWED_FILE_EXTENSIONS = {"pdf"}
 
-router = APIRouter(prefix="/applications", tags=["applications"])
+router = APIRouter(prefix="/applications", tags=["Applications"])
 
 
-def require_admin(current_user: User) -> None:
-    if current_user.role != UserRole.admin:
+@router.get("/", response_model=List[ApplicationRead])
+def applications(
+    app_status: Optional[ApplicationStatus] = None,
+    ad_id: Optional[int] = None,
+    include_archived: bool = False,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role not in [UserRole.admin, UserRole.saradnik]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admins can perform this action.",
+            detail="You do not have access to this resource.",
         )
+    
+    statement = select(Application)
+    
+    if current_user.role == UserRole.saradnik:
+        if ad_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Contributors must specify the ad_id parameter.",
+            )
+        ad = db.get(Ad, ad_id)
+        if not ad:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Ad not found.",
+            )
+        statement = statement.where(Application.ad_id == ad.id)
+    elif current_user.role == UserRole.admin:
+        if ad_id is not None:
+            statement = statement.where(Application.ad_id == ad_id)
+    
+    if app_status is not None:
+        statement = statement.where(Application.status == app_status)
+    if not include_archived:
+        statement = statement.where(Application.is_archived == False)
+
+    return db.exec(statement).all()
 
 
 @router.post("/", response_model=ApplicationRead, status_code=status.HTTP_201_CREATED)
@@ -46,7 +66,7 @@ def create_application(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    ad=db.get(Ad, payload.ad_id)
+    ad = db.get(Ad, payload.ad_id)
     if not ad:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -85,50 +105,6 @@ def create_application(
     return application
 
 
-@router.get("/", response_model=list[ApplicationRead])
-def applications(
-    status: ApplicationStatus | None = None,
-    ad_id: int | None = None,
-    include_archived: bool = False,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    if current_user.role not in [UserRole.admin, UserRole.saradnik]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have access to this resource.",
-        )
-    statement = select(Application)
-    if current_user.role == UserRole.saradnik:
-        if ad_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Contributors must specify the ad_id parameter.",
-            )
-        ad=db.get(Ad, ad_id)
-        if not ad:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Ad not found.",
-            )
-        if ad.company_id != current_user.id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Contributors can only view applications for their own ads.",
-            )
-    
-        statement = statement.where(Application.ad_id == ad.id)
-    elif current_user.role == UserRole.admin:
-            if ad_id is not None:
-              statement = statement.where(Application.ad_id == ad_id)
-    if  status is not None:
-        statement = statement.where(Application.status == status)
-    if not include_archived:
-        statement = statement.where(Application.is_archived == False)
-
-    return db.exec(statement).all()
-
-
 @router.get("/{application_id}", response_model=ApplicationRead)
 def get_application(
     application_id: int,
@@ -158,7 +134,11 @@ def update_application(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    require_admin(current_user)
+    if current_user.role != UserRole.admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins can perform this action.",
+        )
 
     application = db.get(Application, application_id)
     if not application:
@@ -177,65 +157,26 @@ def update_application(
     return application
 
 
-@router.post("/presign", status_code=status.HTTP_200_OK)
-def get_presigned_upload(
-    filename: str,
-    content_type: Optional[str] = None,
-    current_user: User = Depends(get_current_user),
-):
-    safe_filename="".join(c for c in filename if c.isalnum() or c in (' ', '.', '_')).rstrip()
-    key = f"applications/{current_user.id}/{uuid4().hex}_{safe_filename}"
-
-    
-    try:
-        import boto3
-
-        if not S3_BUCKET:
-            raise RuntimeError("S3 not configured")
-
-        s3_client = boto3.client(
-            "s3",
-            endpoint_url=S3_ENDPOINT or None,
-            region_name=S3_REGION or None,
-            aws_access_key_id=S3_ACCESS_KEY or None,
-            aws_secret_access_key=S3_SECRET_KEY or None,
-        )
-
-        params = {"Bucket": S3_BUCKET, "Key": key}
-        if content_type:
-            params["ContentType"] = content_type
-
-        url = s3_client.generate_presigned_url(
-            "put_object", Params=params, ExpiresIn=300
-        )
-        return {"upload_url": url, "method": "PUT", "key": key}
-    except Exception:
-        
-        return {
-            "upload_url": "/applications/upload-cv",
-            "method": "POST",
-            "field_name": "file",
-            "key": key,
-        }
-
-
 @router.post("/upload-cv")
 def upload_cv_local(
     file: UploadFile = File(...),
-    key: Optional[str] = None,
     current_user: User = Depends(get_current_user),
 ):
-    if key:
-        filename = os.path.basename(key)
-    else:
-        filename = f"{uuid4().hex}_{file.filename}" 
+    # Validacija datoteke
+    if file.content_type not in ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]:
+        raise HTTPException(status_code=400, detail="File must be PDF, DOC or DOCX.")
+    
+    # Spremi fajl sa UUID imenom
+    file_ext = file.filename.split(".")[-1].lower()
+    filename = f"{uuid4().hex}.{file_ext}"
+    cv_path = f"uploads/applications/{filename}"
     dest = os.path.join(LOCAL_UPLOAD_DIR, filename)
+    
     with open(dest, "wb") as f:
         content = file.file.read()
         f.write(content)
 
-    # Return path that can be stored in DB
-    return {"path": f"uploads/{filename}", "key": key}
+    return {"path": cv_path}
 
 
 @router.delete("/{application_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -244,7 +185,12 @@ def delete_application(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    require_admin(current_user)
+    if current_user.role != UserRole.admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins can perform this action.",
+        )
+    
     application = db.get(Application, application_id)
     if not application:
         raise HTTPException(
@@ -254,5 +200,4 @@ def delete_application(
 
     application.is_archived = True
     db.add(application)
-    db.commit()
-    return 
+    db.commit() 

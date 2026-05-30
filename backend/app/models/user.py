@@ -5,7 +5,6 @@ from datetime import datetime, timezone
 
 class UserRole(str, Enum):
     member = "member"
-    mentor = "mentor"
     admin = "admin"
 
 class User(SQLModel, table=True):

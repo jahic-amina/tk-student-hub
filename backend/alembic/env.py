@@ -16,7 +16,7 @@ import app.models.ad  # noqa: F401
 import app.models.company  # noqa: F401
 import app.models.application  # noqa: F401
 import app.models.notification  # noqa: F401
-import app.models.saved_opportunities  # noqa: F401
+import app.models.ad_bookmark  # noqa: F401
 
 config = context.config
 

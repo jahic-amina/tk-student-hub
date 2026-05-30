@@ -7,20 +7,15 @@ from app.core.config import settings
 from app.database import create_db_and_tables
 from app.core.security import get_current_user
 from app.models.user import User                
-from app.models.saved_opportunities import SavedOpportunity
-from app.routers import auth, forum, prakse, profiles, company, applications
-from app.routers.saved_opportunities import router as saved_opportunities_router
+from app.routers import auth, applications
+from app.routers.ad_bookmark import router as ad_bookmark_router
 from app.routers.notification import router as notification_router  
-from app.routers.ads import router as ads_router
-from app.routers.javni_get_oglasi import router as public_ads_router  
+from app.routers.ad import router as ads_router 
 from app.database import engine, Session
-from app.seed import ensure_admin_user
+from app.routers import company
 
 
 create_db_and_tables()
-
-with Session(engine) as session:
-    ensure_admin_user(session)
 
 security = HTTPBearer()
 
@@ -44,14 +39,10 @@ app.mount("/uploads", StaticFiles(directory=LOCAL_UPLOAD_DIR), name="uploads")
 
 app.include_router(auth.router)
 app.include_router(applications.router)
-app.include_router(prakse.router)
-app.include_router(forum.router)
-app.include_router(profiles.router)
 app.include_router(company.router)
 app.include_router(notification_router)  
 app.include_router(ads_router)
-app.include_router(public_ads_router)  
-app.include_router(saved_opportunities_router) 
+app.include_router(ad_bookmark_router) 
 
 @app.get("/")
 def root():
