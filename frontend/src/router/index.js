@@ -2,9 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
-import OglasiPage from '../components/OglasiPage.vue'
-import OglasDetailView from '../views/OglasDetailView.vue'
-
+import AdsView from '../views/ads/AdsView.vue'
+import AdView from '../views/ads/AdView.vue'
 
 
 const routes = [
@@ -26,37 +25,19 @@ const routes = [
     meta: { guestOnly: true }
   },
   {
-    path: '/prakse-i-edukacije',
-    name: 'Oglasi',
-    component: OglasiPage
+    path: '/ads',
+    name: 'ads',
+    component: AdsView
   }, 
   {
-    path: '/prakse-i-edukacije/:id',
-    name: 'oglas-detail',
-    component: OglasDetailView
-  },
-  {
-    path: '/materials',
-    name: 'materials',
-    component: () => import('../views/materials/MaterialsView.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/forum',
-    name: 'forum',
-    component: () => import('../views/forum/ForumView.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/profiles',
-    name: 'profiles',
-    component: () => import('../views/profiles/ProfilesView.vue'),
-    meta: { requiresAuth: true }
+    path: '/ads/:id',
+    name: 'ad-detail',
+    component: AdView
   },
   {
     path: '/registracija/kompanija',
     name: 'kompanija-registracija',
-    component: () => import('../views/registracija/KompanijaRegistracijaView.vue')
+    component: () => import('../views/company/CompanyRegisterView.vue')
   },
 ]
 

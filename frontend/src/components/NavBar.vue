@@ -7,10 +7,10 @@
       </router-link>
 
       <div class="flex gap-6">
-      <router-link to="/prakse-i-edukacije" class="text-gray-600 hover:text-primary font-medium transition">Prakse i edukacije</router-link>
-      <router-link to="/mentoring" class="text-gray-600 hover:text-primary font-medium transition">Materijali</router-link>
-      <router-link to="/forum" class="text-gray-600 hover:text-primary font-medium transition">Forum</router-link>
-      <router-link to="/profiles" class="text-gray-600 hover:text-primary font-medium transition">Profili</router-link>
+      <router-link to="/ads" class="text-gray-600 hover:text-primary font-medium transition">Prakse i edukacije</router-link>
+      <span class="text-gray-400 font-medium cursor-not-allowed">Materijali</span>
+      <span class="text-gray-400 font-medium cursor-not-allowed">Forum</span>
+      <span class="text-gray-400 font-medium cursor-not-allowed">Profili</span>
         </div>
 
       <div class="flex items-center gap-4">
