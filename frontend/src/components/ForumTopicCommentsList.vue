@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { voteOnComment, toggleBestAnswer } from '../services/forum';
 
 const props = defineProps({
@@ -9,9 +9,23 @@ const props = defineProps({
 
 const emit = defineEmits(['refresh']);
 
-const currentUserId = computed(() => {
-  const id = localStorage.getItem('user_id');
-  return id ? parseInt(id) : null;
+const currentUserId = ref(null);
+
+onMounted(async () => {
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    if (token) {
+      const res = await fetch('http://127.0.0.1:8000/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        currentUserId.value = data.id;
+      }
+    }
+  } catch (e) {
+    console.warn('Nije moguće dohvatiti korisnika.');
+  }
 });
 
 const isTopicAuthor = computed(() => {
@@ -124,18 +138,20 @@ function getInitials(name) {
               <span>{{ formatDate(comment.created_at) }}</span>
             </div>
             <div class="flex items-center gap-2">
-              <span v-if="comment.is_best_answer" class="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-bold border border-yellow-200">
-                ✓ Najbolji odgovor
-              </span>
               <button
-                v-if="isTopicAuthor"
-                @click="handleBestAnswer(comment)"
-                class="text-[10px] px-2 py-0.5 rounded-full font-semibold border transition-all"
-                :class="comment.is_best_answer
-                  ? 'bg-yellow-50 text-yellow-600 border-yellow-200 hover:bg-red-50 hover:text-red-500 hover:border-red-200'
-                  : 'bg-white text-slate-400 border-gray-200 hover:bg-yellow-50 hover:text-yellow-600 hover:border-yellow-200'"
-              >{{ comment.is_best_answer ? '✓ Označen' : '☆ Označi' }}</button>
-            </div>
+              v-if="isTopicAuthor"
+              @click="handleBestAnswer(comment)"
+              class="w-7 h-7 flex items-center justify-center rounded-full transition-all"
+              :class="comment.is_best_answer
+              ? 'text-yellow-400 hover:text-red-400'
+              : 'text-slate-300 hover:text-yellow-400'"
+              :title="comment.is_best_answer ? 'Ukloni najbolji odgovor' : 'Označi kao najbolji odgovor'"
+              >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd" />
+              </svg>
+            </button>
+          </div> 
           </div>
           <p class="text-slate-700 leading-relaxed text-sm whitespace-pre-line">{{ comment.content }}</p>
         </div>
