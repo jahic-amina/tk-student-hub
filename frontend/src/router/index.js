@@ -4,6 +4,9 @@ import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import AdsView from '../views/ads/AdsView.vue'
 import AdView from '../views/ads/AdView.vue'
+import CompanyRegisterView from '../views/company/CompanyRegisterView.vue'
+import CompanyLoginView from '../views/company/CompanyLoginView.vue'
+import AdminCompanyApprovalView from '../views/company/AdminCompanyApprovalView.vue'
 
 
 const routes = [
@@ -35,9 +38,21 @@ const routes = [
     component: AdView
   },
   {
-    path: '/registracija/kompanija',
-    name: 'kompanija-registracija',
-    component: () => import('../views/company/CompanyRegisterView.vue')
+    path: '/company/register',
+    name: 'company-register',
+    component: CompanyRegisterView
+  },
+  {
+    path: '/company/login',
+    name: 'company-login',
+    component: CompanyLoginView,
+    meta: { guestOnly: true }
+  },
+  {
+    path: '/admin/companies',
+    name: 'admin-companies',
+    component: AdminCompanyApprovalView,
+    meta: { requiresAuth: true }
   },
 ]
 
