@@ -22,6 +22,8 @@ const sortedComments = computed(() => {
   return fullTopicData.value?.comments || [];
 });
 
+const topicAuthorId = computed(() => fullTopicData.value?.author?.id || null);
+
 const loadTopicAndComments = async () => {
   isLoading.value = true;
   try {
@@ -88,7 +90,7 @@ const handleNewComment = async ({ content, clearForm }) => {
         
         <ForumTopicMainCard :topic="fullTopicData" />
 
-        <ForumTopicCommentsList :comments="sortedComments" />
+        <ForumTopicCommentsList :comments="sortedComments" :topic-author-id="topicAuthorId" @refresh="loadTopicAndComments" />
 
         <ForumTopicCommentForm 
           :is-submitting="isSubmitting"
