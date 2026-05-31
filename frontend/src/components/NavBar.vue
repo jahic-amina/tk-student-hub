@@ -14,7 +14,7 @@
         </div>
 
       <div class="flex items-center gap-4">
-        <template v-if="isLoggedIn">
+        <template v-if="isUserLoggedIn">
           <div v-if="isAdmin" class="relative group">
             <button class="text-gray-600 hover:text-primary font-medium transition flex items-center gap-1">
               Admin
@@ -27,7 +27,13 @@
             </div>
           </div>
           <router-link to="/profiles" class="text-gray-600 hover:text-primary font-medium">{{ username }}</router-link>
-          <button @click="logout" class="border border-primary text-primary px-4 py-1.5 rounded-lg hover:bg-primary hover:text-white transition">
+          <button @click="logoutUser" class="border border-primary text-primary px-4 py-1.5 rounded-lg hover:bg-primary hover:text-white transition">
+            Odjava
+          </button>
+        </template>
+        <template v-else-if="isCompanyLoggedIn">
+          <span class="text-gray-600 font-medium">{{ companyName }}</span>
+          <button @click="logoutCompany" class="border border-primary text-primary px-4 py-1.5 rounded-lg hover:bg-primary hover:text-white transition">
             Odjava
           </button>
         </template>
@@ -58,21 +64,32 @@
 export default {
   name: 'NavBar',
   computed: {
-    isLoggedIn() {
+    isUserLoggedIn() {
       return !!localStorage.getItem('token')
+    },
+    isCompanyLoggedIn() {
+      return !!localStorage.getItem('company_token')
     },
     username() {
       return localStorage.getItem('username') || 'Profil'
+    },
+    companyName() {
+      return localStorage.getItem('company_name') || 'Kompanija'
     },
     isAdmin() {
       return localStorage.getItem('role') === 'admin'
     }
   },
   methods: {
-    logout() {
+    logoutUser() {
       localStorage.removeItem('token')
       localStorage.removeItem('username')
       localStorage.removeItem('role')
+      window.location.href = '/'
+    },
+    logoutCompany() {
+      localStorage.removeItem('company_token')
+      localStorage.removeItem('company_name')
       window.location.href = '/'
     }
   }
