@@ -105,7 +105,7 @@
                 <input
                   ref="letterInput"
                   type="file"
-                  accept=".pdf,.doc,.docx"
+                  accept=".pdf"
                   @change="handleLetterChange"
                   class="hidden"
                   required
