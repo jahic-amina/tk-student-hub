@@ -217,7 +217,7 @@ export default {
           'rejected',
           this.feedback || null,
           this.token,
-          true
+          this.isCompany
         )
         this.$emit('updated', this.application.id, 'rejected')
         this.showRejectForm = false
