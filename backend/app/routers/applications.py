@@ -2,11 +2,12 @@ from typing import Optional, List
 from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from fastapi.params import File
-from sqlmodel import Session, select
+from sqlmodel import Session, select, and_
 from app.models.application import Application, ApplicationCreate, ApplicationRead, ApplicationStatus, ApplicationUpdate
 from app.models.ad import Ad, AdStatus
 from app.models.user import User, UserRole
-from app.core.security import get_current_user
+from app.models.company import Company
+from app.core.security import get_current_user, get_current_company
 from app.database import get_db
 import os
 from uuid import uuid4
@@ -27,7 +28,7 @@ def applications(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if current_user.role not in [UserRole.admin, UserRole.saradnik]:
+    if current_user.role != UserRole.admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have access to this resource.",
@@ -35,22 +36,8 @@ def applications(
     
     statement = select(Application)
     
-    if current_user.role == UserRole.saradnik:
-        if ad_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Contributors must specify the ad_id parameter.",
-            )
-        ad = db.get(Ad, ad_id)
-        if not ad:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Ad not found.",
-            )
-        statement = statement.where(Application.ad_id == ad.id)
-    elif current_user.role == UserRole.admin:
-        if ad_id is not None:
-            statement = statement.where(Application.ad_id == ad_id)
+    if ad_id is not None:
+        statement = statement.where(Application.ad_id == ad_id)
     
     if app_status is not None:
         statement = statement.where(Application.status == app_status)
@@ -60,7 +47,39 @@ def applications(
     return db.exec(statement).all()
 
 
-@router.post("/", response_model=ApplicationRead, status_code=status.HTTP_201_CREATED)
+@router.get("/company/by-ad/{ad_id}", response_model=List[ApplicationRead])
+def get_company_applications(
+    ad_id: int,
+    db: Session = Depends(get_db),
+    current_company: Company = Depends(get_current_company),
+):
+    """Get applications for a specific ad that belongs to the current company."""
+    ad = db.get(Ad, ad_id)
+    if not ad:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ad not found.",
+        )
+    
+    # Check if this ad belongs to the current company
+    if ad.company_id != current_company.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to applications for this ad.",
+        )
+    
+    # Get applications for this ad
+    statement = select(Application).where(
+        and_(
+            Application.ad_id == ad_id,
+            Application.is_archived == False
+        )
+    )
+    
+    return db.exec(statement).all()
+
+
+
 def create_application(
     payload: ApplicationCreate,
     db: Session = Depends(get_db),
@@ -177,6 +196,37 @@ def upload_cv_local(
         f.write(content)
 
     return {"path": cv_path}
+
+
+@router.patch("/company/{application_id}", response_model=ApplicationRead)
+def update_application_company(
+    application_id: int,
+    payload: ApplicationUpdate,
+    db: Session = Depends(get_db),
+    current_company: Company = Depends(get_current_company),
+):
+    application = db.get(Application, application_id)
+    if not application:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found.",
+        )
+
+    ad = db.get(Ad, application.ad_id)
+    if not ad or ad.company_id != current_company.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to alter this application.",
+        )
+
+    updates = payload.model_dump(exclude_unset=True)
+    for field_name, field_value in updates.items():
+        setattr(application, field_name, field_value)
+
+    db.add(application)
+    db.commit()
+    db.refresh(application)
+    return application
 
 
 @router.delete("/{application_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -26,7 +26,7 @@
               </router-link>
             </div>
           </div>
-          <router-link to="/profiles" class="text-gray-600 hover:text-primary font-medium">{{ username }}</router-link>
+          <span class="text-gray-600 font-medium">{{ username }}</span>
           <button @click="logoutUser" class="border border-primary text-primary px-4 py-1.5 rounded-lg hover:bg-primary hover:text-white transition">
             Odjava
           </button>

@@ -9,10 +9,15 @@ async function parseResponse(response) {
 }
 
 function authHeaders(token) {
-  return {
-    'Authorization': `Bearer ${token}`,
+  const headers = {
     'Content-Type': 'application/json'
   }
+
+  if (token && token !== 'null' && token !== 'undefined') {
+    headers.Authorization = `Bearer ${token}`
+  }
+
+  return headers
 }
 
 // --- Auth ---
@@ -148,5 +153,63 @@ export async function getCompanyById(id) {
  
 export async function getAdsByCompany(companyId) {
   const response = await fetch(`${BASE_URL}/ads/?company_id=${companyId}`)
+  return parseResponse(response)
+}
+
+// --- Applications ---
+
+export async function uploadFile(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const response = await fetch(`${BASE_URL}/applications/upload-cv`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('token')}`
+    },
+    body: formData
+  })
+  return parseResponse(response)
+}
+
+export async function createApplication(applicationData, token) {
+  const response = await fetch(`${BASE_URL}/applications/`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(applicationData)
+  })
+  return parseResponse(response)
+}
+
+export async function getApplicationsByAd(adId, token, isCompany = false) {
+  const endpoint = isCompany
+    ? `${BASE_URL}/applications/company/by-ad/${adId}`
+    : `${BASE_URL}/applications/?ad_id=${adId}`
+
+  if (!token || token === 'null' || token === 'undefined') {
+    return []
+  }
+
+  const response = await fetch(endpoint, {
+    headers: authHeaders(token)
+  })
+  return parseResponse(response)
+}
+
+export async function updateApplicationStatus(applicationId, status, feedback, token, isCompany) {
+  const endpoint = isCompany 
+    ? `${BASE_URL}/applications/company/${applicationId}`
+    : `${BASE_URL}/applications/${applicationId}`
+  
+  const body = { status }
+  if (feedback !== undefined && feedback !== null) {
+    body.admin_feedback = feedback
+  }
+
+  const response = await fetch(endpoint, {
+    method: 'PATCH',
+    headers: authHeaders(token),
+    body: JSON.stringify(body)
+  })
   return parseResponse(response)
 }
