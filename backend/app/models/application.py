@@ -72,7 +72,6 @@ class ApplicationRead(SQLModel):
     is_archived: bool
     created_at: datetime
     updated_at: datetime
-    user: Optional["User"] = None
 
 
 class ApplicationUpdate(SQLModel):
