@@ -164,3 +164,21 @@ def vote_on_comment(
 
     total_votes = get_comment_votes_count(db, comment_id)
     return {"comment_id": comment_id, "votes_count": total_votes, "user_vote": user_vote}
+
+@router.delete("/{comment_id}", status_code=status.HTTP_200_OK)
+def delete_comment(
+    comment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    comment = db.get(ForumComment, comment_id)
+    if not comment or comment.is_deleted:
+        raise HTTPException(status_code=404, detail="Komentar nije pronađen.")
+    
+    if comment.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Možete obrisati samo vlastiti komentar.")
+    
+    comment.is_deleted = True
+    db.add(comment)
+    db.commit()
+    return {"message": "Komentar je uspješno obrisan.", "comment_id": comment_id}

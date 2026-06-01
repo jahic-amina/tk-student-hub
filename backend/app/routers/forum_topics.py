@@ -160,12 +160,14 @@ def increment_topic_view(topic_id: int, db: Session = Depends(get_db)):
 
 @router.delete("/{id}", status_code=status.HTTP_200_OK)
 def delete_topic(id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if current_user.role != UserRole.admin:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Samo administrator može obrisati temu.")
     topic = db.get(ForumTopic, id)
     if not topic or topic.is_deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tema nije pronađena.")
+    
+    if current_user.role != UserRole.admin and topic.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Možete obrisati samo vlastitu temu.")
+    
     topic.is_deleted = True
     db.add(topic)
     db.commit()
-    return {"message": "Tema je uspešno obrisana.", "topic_id": id}
+    return {"message": "Tema je uspješno obrisana.", "topic_id": id}
