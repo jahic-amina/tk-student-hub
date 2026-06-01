@@ -1,5 +1,25 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { deleteTopic } from '../services/forum';
+
+const router = useRouter();
+const currentUserId = ref(null);
+
+onMounted(async () => {
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    if (token) {
+      const res = await fetch('http://127.0.0.1:8000/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        currentUserId.value = data.id;
+      }
+    }
+  } catch (e) {}
+});
 
 const props = defineProps({
   topic: { type: Object, required: true }
@@ -47,6 +67,16 @@ async function copyToClipboard() {
   }
 }
 
+async function handleDeleteTopic() {
+  if (!confirm('Da li ste sigurni da želite obrisati ovu temu?')) return;
+  try {
+    await deleteTopic(props.topic.id);
+    router.push('/forum');
+  } catch (e) {
+    alert('Greška pri brisanju teme.');
+  }
+}
+
 </script>
 
 <template>
@@ -75,7 +105,14 @@ async function copyToClipboard() {
         >
           🔗 Dijeli
         </button>
-      </div>
+        <button
+        v-if="currentUserId === topic.author?.id"
+        @click="handleDeleteTopic"
+        class="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors font-medium px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50"
+        >
+        🗑️ Obriši temu
+      </button>
+    </div>
 
       <div v-if="showShareBox" class="p-3 bg-slate-50 rounded-lg border border-gray-200 flex flex-col gap-2">
         <p class="text-xs text-slate-500 font-medium">Link teme:</p>

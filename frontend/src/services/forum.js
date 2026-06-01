@@ -97,19 +97,6 @@ export async function createComment(commentData) {
   return handleResponse(response, 'Slanje komentara nije uspjelo.');
 }
 
-export default {
-  getCategories,
-  getTopics,
-  getTopicById,
-  incrementTopicView,
-  deleteTopic,
-  createTopic,
-  createComment,
-  voteOnComment,
-  toggleBestAnswer,
-  getPopularTags
-};
-
 export async function voteOnComment(commentId, value) {
   const response = await fetch(`${BASE_URL}/forum/comments/${commentId}/vote`, {
     method: 'POST',
@@ -133,3 +120,25 @@ export async function getPopularTags() {
   });
   return handleResponse(response, 'Greška pri dohvatanju tagova.');
 }
+
+export async function deleteComment(commentId) {
+  const response = await fetch(`${BASE_URL}/forum/comments/${commentId}`, {
+    method: 'DELETE',
+    headers: getHeaders()
+  });
+  return handleResponse(response, 'Brisanje komentara nije uspjelo.');
+}
+
+export default {
+  getCategories,
+  getTopics,
+  getTopicById,
+  incrementTopicView,
+  deleteTopic,
+  createTopic,
+  createComment,
+  voteOnComment,
+  toggleBestAnswer,
+  getPopularTags,
+  deleteComment
+};
