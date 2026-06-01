@@ -129,6 +129,20 @@ export async function deleteComment(commentId) {
   return handleResponse(response, 'Brisanje komentara nije uspjelo.');
 }
 
+export async function reportTopic(topicId, reason) {
+  const response = await fetch(`${BASE_URL}/forum/topics/${topicId}/report`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ reason })
+  });
+  return handleResponse(response, 'Prijavljivanje nije uspjelo.');
+}
+
+export async function getActiveAnnouncements() {
+  const response = await fetch(`${BASE_URL}/admin/announcements/active`, { headers: getHeaders() });
+  return handleResponse(response, 'Greška pri učitavanju obavještenja.');
+}
+
 export default {
   getCategories,
   getTopics,
@@ -140,5 +154,7 @@ export default {
   voteOnComment,
   toggleBestAnswer,
   getPopularTags,
-  deleteComment
+  deleteComment,
+  reportTopic,
+  getActiveAnnouncements
 };
