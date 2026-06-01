@@ -31,7 +31,6 @@
       >
         <option value="">Uloga</option>
         <option value="member">Student</option>
-        <option value="mentor">Mentor</option>
         <option value="admin">Administrator</option>
       </select>
 
