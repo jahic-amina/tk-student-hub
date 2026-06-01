@@ -169,7 +169,7 @@
           </div>
 
           <div v-else class="space-y-4">
-            <ApplicationCard v-for="app in applications" :key="app.id" :application="app" @status-updated="fetchApplications"/>
+            <ApplicationCard v-for="app in applications" :key="app.id" :application="app" :companyToken="companyToken" @applications-updated="fetchApplications"/>
           </div>
         </section>
 
@@ -224,7 +224,8 @@ export default {
       userRole: null,
       applications: [],
       loadingApplications: false,
-      applicationsError: ''
+      applicationsError: '',
+      companyToken: localStorage.getItem('company_token')
     }
   },
   computed: {
