@@ -159,6 +159,7 @@ export default {
           id: ad.id,
           title: ad.title,
           company: ad.company_name || `Kompanija #${ad.company_id}`,
+          company_id: ad.company_id,
           description: ad.description,
           tags: [ad.field, ad.location].filter(Boolean),
           typeLabel: formatType(ad.type),

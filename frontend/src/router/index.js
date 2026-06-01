@@ -7,7 +7,7 @@ import AdView from '../views/ads/AdView.vue'
 import CompanyRegisterView from '../views/company/CompanyRegisterView.vue'
 import CompanyLoginView from '../views/company/CompanyLoginView.vue'
 import AdminCompanyApprovalView from '../views/company/AdminCompanyApprovalView.vue'
-
+import CompanyView from '../views/company/CompanyView.vue'
 
 const routes = [
   {
@@ -31,11 +31,16 @@ const routes = [
     path: '/ads',
     name: 'ads',
     component: AdsView
-  }, 
+  },
   {
     path: '/ads/:id',
     name: 'ad-detail',
     component: AdView
+  },
+  {
+    path: '/companies/:id',
+    name: 'company',
+    component: CompanyView
   },
   {
     path: '/company/register',

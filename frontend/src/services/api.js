@@ -140,3 +140,13 @@ export async function restoreCompany(companyId, token) {
   })
   return parseResponse(response)
 }
+
+export async function getCompanyById(id) {
+  const response = await fetch(`${BASE_URL}/companies/${id}`)
+  return parseResponse(response)
+}
+ 
+export async function getAdsByCompany(companyId) {
+  const response = await fetch(`${BASE_URL}/ads/?company_id=${companyId}`)
+  return parseResponse(response)
+}

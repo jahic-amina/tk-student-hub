@@ -42,6 +42,14 @@ def get_companies_admin(
     return db.exec(query).all()
 
 
+@router.get("/{company_id}", response_model=CompanyRead)
+def get_company_by_id(company_id: int, db: Session = Depends(get_db)):
+    company = db.get(Company, company_id)
+    if not company or company.is_deleted or company.status != CompanyStatus.approved:
+        raise HTTPException(status_code=404, detail="Company not found.")
+    return company
+
+
 @router.post("/", response_model=CompanyRead, status_code=status.HTTP_201_CREATED)
 def create_company(
     company_name: str = Form(...),
