@@ -243,11 +243,11 @@ export default {
     },
 
     isValidFile(file) {
-      const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
-      const validExtensions = ['pdf', 'doc', 'docx']
+      const validTypes = ['application/pdf']
+      const validExtensions = ['pdf']
       const ext = file.name.split('.').pop().toLowerCase()
-      return validTypes.includes(file.type) && validExtensions.includes(ext) && file.size <= 10 * 1024 * 1024
-    },
+      return validTypes.includes(file.type) && validExtensions.includes(ext) && file.size <= 5 * 1024 * 1024
+    }
 
     async uploadFile(file) {
       try {
