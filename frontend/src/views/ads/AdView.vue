@@ -169,7 +169,7 @@
           </div>
 
           <div v-else class="space-y-4">
-            <ApplicationCard v-for="app in applications" :key="app.id" :application="app" :token="companyToken" @applications-updated="fetchApplications"/>
+            <ApplicationCard v-for="app in applications" :key="app.id" :application="app" :token="isCompanyLoggedIn ? companyToken : localStorage.getItem('token')" :is-company="isCompanyLoggedIn" @updated="fetchApplications" />
           </div>
         </section>
 
