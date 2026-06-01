@@ -2,7 +2,7 @@ from typing import Optional, List
 from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from fastapi.params import File
-from sqlmodel import Session, select, and_
+from sqlmodel import Session, select
 from app.models.application import Application, ApplicationCreate, ApplicationRead, ApplicationStatus, ApplicationUpdate
 from app.models.ad import Ad, AdStatus
 from app.models.user import User, UserRole
