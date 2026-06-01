@@ -159,6 +159,12 @@ function getInitials(name) {
               <strong class="text-slate-600">{{ comment.author?.full_name || 'Kolega' }}</strong>
               <span>•</span>
               <span>{{ formatDate(comment.created_at) }}</span>
+              <span 
+                v-if="comment.is_best_answer"
+                class="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-bold border border-yellow-200"
+              >
+                ✓ Najbolji odgovor
+              </span>
             </div>
             <div class="flex flex-col items-center gap-1">
               <button
