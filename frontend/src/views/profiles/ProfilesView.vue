@@ -156,8 +156,6 @@ import { getMyProfile, uploadAvatar, removeAvatar } from '../../services/api.js'
 import ActivityFeed from '../../components/ActivityFeed.vue'
 import { getMyActivity } from '../../services/api.js'
 
-const {activities, loading: activityLoading, hasMore, showingAll, loadMore} = useActivityFeed(token)
-const showingAll = ref(false)
 
 const activities = ref([])
 const activityLoading = ref(false)
