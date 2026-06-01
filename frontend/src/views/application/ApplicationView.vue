@@ -68,9 +68,9 @@
                   required
                 />
                 <div v-if="!form.cvFile" class="text-gray-600">
+                <div v-if="!form.cvFile" class="text-gray-600">
                   <p class="font-medium">Klikni da odabereš fajl ili povuci i pusti ovdje</p>
-                  <p class="text-xs text-gray-500 mt-1">PDF, DOC ili DOCX (max 10MB)</p>
-                </div>
+                  <p class="text-xs text-gray-500 mt-1">PDF (max 5MB)</p>
                 <div v-else class="text-green-600">
                   <p class="font-medium">✓ {{ form.cvFile.name }}</p>
                   <button
