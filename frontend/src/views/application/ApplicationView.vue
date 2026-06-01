@@ -238,7 +238,7 @@ export default {
       if (file && this.isValidFile(file)) {
         this.form.letterFile = file
       } else {
-        this.error = 'Molim odaberi PDF, DOC ili DOCX datoteku.'
+        this.error = 'Molim odaberi PDF datoteku.'
       }
     },
 
