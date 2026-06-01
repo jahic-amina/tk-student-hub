@@ -54,3 +54,14 @@ export async function removeAvatar(token) {
   })
   return response.json()
 }
+export async function getAllUsers(token, { search = '', role = '', is_active = '' } = {}) {
+  const params = new URLSearchParams()
+  if (search) params.append('search', search)
+  if (role) params.append('role', role)
+  if (is_active !== '') params.append('is_active', is_active)
+
+  const response = await fetch(`${BASE_URL}/admin/users?${params.toString()}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  return response.json()
+}

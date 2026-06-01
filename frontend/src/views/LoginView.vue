@@ -72,6 +72,7 @@ export default {
         localStorage.setItem('token', response.access_token)
         const user = await getMe(response.access_token)
         localStorage.setItem('username', user.full_name)
+        localStorage.setItem('role', user.role)
         window.dispatchEvent(new Event('user-login'))
         this.$router.push('/dashboard')
       } else {
