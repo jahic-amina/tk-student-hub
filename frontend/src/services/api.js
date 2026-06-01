@@ -159,13 +159,18 @@ export async function getAdsByCompany(companyId) {
 // --- Applications ---
 
 export async function uploadFile(file) {
+  const token = localStorage.getItem('token')
+  if (!token || token === 'null' || token === 'undefined') {
+    throw new Error('Not authenticated')
+  }
+
   const formData = new FormData()
   formData.append('file', file)
 
   const response = await fetch(`${BASE_URL}/applications/upload-cv`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${localStorage.getItem('token')}`
+      Authorization: `Bearer ${token}`
     },
     body: formData
   })
