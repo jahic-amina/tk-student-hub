@@ -118,3 +118,61 @@
     </div>
   </div>
 </template>
+<script>
+import { getAllUsers } from '../../services/api.js'
+
+export default {
+  name: 'AdminKorisniciView',
+
+  data() {
+    return {
+      users: [],         
+      total: 0,          
+      loading: false,     
+      error: null,        
+      searchQuery: '',    
+      selectedRole: '',   
+      selectedStatus: '' 
+    }
+  },
+
+  mounted() {
+    this.fetchUsers()
+  },
+
+  methods: {
+    async fetchUsers() {
+      this.loading = true
+      this.error = null
+
+      const token = localStorage.getItem('token')
+
+      const filters = {
+        search: this.searchQuery,
+        role: this.selectedRole,
+        is_active: this.selectedStatus
+      }
+
+      const data = await getAllUsers(token, filters)
+
+      if (data && data.users) {
+        this.users = data.users
+        this.total = data.total
+      } else {
+        this.error = 'Doslo je do greske pri dohvatu korisnika.'
+      }
+
+      this.loading = false
+    },
+
+    roleLabel(role) {
+      const labels = {
+        member: 'Student',
+        mentor: 'Mentor',
+        admin: 'Administrator'
+      }
+      return labels[role] || role
+    }
+  }
+}
+</script>
