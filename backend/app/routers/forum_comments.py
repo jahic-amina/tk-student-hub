@@ -15,6 +15,7 @@ router = APIRouter(prefix="/forum/comments", tags=["Forum Comments"])
 class ForumCommentCreate(BaseModel):
     content: str = Field(min_length=2)
     topic_id: int
+    is_admin_notice: Optional[bool] = False
 
 class VoteInput(BaseModel):
     value: int = Field(..., description="1 za like, -1 za dislike")
@@ -82,7 +83,11 @@ def create_forum_comment(
     if not topic or topic.is_deleted:
         raise HTTPException(status_code=404, detail="Tema nije pronađena.")
 
-    new_comment = ForumComment(content=comment_data.content, topic_id=comment_data.topic_id, user_id=current_user.id)
+    is_admin_notice = getattr(comment_data, 'is_admin_notice', False)
+    if is_admin_notice and getattr(current_user, 'role', 'member') != 'admin':
+        is_admin_notice = False
+
+    new_comment = ForumComment(content=comment_data.content, topic_id=comment_data.topic_id, user_id=current_user.id, is_admin_notice=is_admin_notice)
     db.add(new_comment)
     db.commit()
     db.refresh(new_comment)
