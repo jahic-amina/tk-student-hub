@@ -198,7 +198,7 @@ export default {
       this.loading = true
       this.accepting = true
       try {
-        await updateApplicationStatus(this.application.id, 'accepted', null, this.token, true)
+        await updateApplicationStatus(this.application.id, 'accepted', null, this.token, this.isCompany)
         this.$emit('updated', this.application.id, 'accepted')
       } catch (err) {
         console.error('Failed to accept application:', err)
