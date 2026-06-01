@@ -38,6 +38,8 @@ import { getSubjects } from '../services/api'
 
 const emit = defineEmits(['change'])
 const subjects = ref([])
+
+// Ključevi (lijevo) MORAJU odgovarati vrijednostima u bazi (kolona file_type)
 const typesMap = {
   'skripta': 'Skripte',
   'biljeske': 'Bilješke',
@@ -45,8 +47,22 @@ const typesMap = {
   'ispiti': 'Ispiti'
 }
 
-const filters = reactive({ years: [], types: [], subject_id: null })
+const filters = reactive({ 
+  years: [], 
+  types: [], 
+  subject_id: null 
+})
 
-onMounted(async () => { subjects.value = await getSubjects() })
-function update() { emit('change', { ...filters }) }
+onMounted(async () => { 
+  try {
+    subjects.value = await getSubjects() 
+  } catch (e) {
+    console.error("Greška pri učitavanju predmeta:", e)
+  }
+})
+
+function update() { 
+  // Šaljemo kopiju roditelju
+  emit('change', JSON.parse(JSON.stringify(filters))) 
+}
 </script>

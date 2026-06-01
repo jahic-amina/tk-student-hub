@@ -27,8 +27,6 @@ import { ref, onMounted } from 'vue'
 import MaterialCard from './MaterialCard.vue'
 import { getMaterials } from '../services/api'
 import MaterialFilter from './MaterialFilter.vue'
-//import { getMaterials } from '../services/api'
-
 defineEmits(['open', 'deleted'])
 
 const materials = ref([])
@@ -46,10 +44,10 @@ async function loadMaterials(filters = {}) {
 //})
 onMounted(() => { loadMaterials() })
 
-function handleFilterChange(newFilters) {
-    loadMaterials(newFilters)
+async function handleFilterChange(newFilters) {
+    console.log("Filteri primljeni od djeteta:", newFilters); // PROVJERI OVO U KONZOLI
+    await loadMaterials(newFilters);
 }
-
 function handleDelete(deletedMaterialId) {
     materials.value = materials.value.filter(m => m.id !== deletedMaterialId)
 }

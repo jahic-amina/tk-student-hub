@@ -2,7 +2,7 @@ import os
 import mimetypes
 import shutil
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status, Query
 from fastapi.responses import FileResponse
 from sqlmodel import Session, select, func
 from app.database import get_db
@@ -10,6 +10,7 @@ from app.core.security import get_current_user
 from app.models.user import User
 from app.models.materials import Material, MaterialsResponse, MaterialDetailResponse, Rating, Comment, Subject,CommentResponse,CommentCreate
 from sqlalchemy.orm import selectinload
+from typing import List, Optional
 
 router = APIRouter(prefix="/materials", tags=["materials"])
 
@@ -29,7 +30,14 @@ router = APIRouter(prefix="/materials", tags=["materials"])
 # -------------------------------------------------------
 
 
-def get_materials_by_status(session: Session, status: str):
+def get_materials_by_status(
+        session: Session, 
+        status: str,
+        years: Optional[List[int]] = None,
+        types: Optional[List[str]] = None,
+        subject_id: Optional[int] = None
+):
+
     query = (
         select(
             Material,
@@ -38,7 +46,21 @@ def get_materials_by_status(session: Session, status: str):
         )
         .outerjoin(Rating, Rating.material_id == Material.id)
         .where(Material.status == status)
-        .options(
+    )
+    # --- NOVI FILTERI ---
+    if years:
+        # Moramo uraditi join sa Subject tabelom jer je tamo study_year
+        query = query.join(Subject, Material.subject_id == Subject.id).where(Subject.study_year.in_(years))
+    
+    if types:
+        query = query.where(Material.file_type.in_(types))
+        
+    if subject_id:
+        query = query.where(Material.subject_id == subject_id)
+    # --------------------
+
+    query = (
+        query.options(
             selectinload(Material.subject),
             selectinload(Material.user)
         )
@@ -209,8 +231,20 @@ def upload_material(
 # -------------------------------------------------------
 
 @router.get("/", response_model=list[MaterialsResponse])
-def get_materials(session: Session = Depends(get_db)):
-    return get_materials_by_status(session, "approved")
+def get_materials(
+    session: Session = Depends(get_db),
+    years: Optional[list[int]] = Query(None), # Prima ?years=1&years=2
+    types: Optional[list[str]] = Query(None), # Prima ?types=skripta
+    subject_id: Optional[int] = Query(None)
+):
+    # Prosleđujemo filtere u pomoćnu funkciju
+    return get_materials_by_status(
+        session, 
+        "approved", 
+        years=years, 
+        types=types, 
+        subject_id=subject_id
+    )
 
 @router.get("/pending", response_model=list[MaterialsResponse])
 def get_pending_materials(session: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
