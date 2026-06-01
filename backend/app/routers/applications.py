@@ -50,6 +50,8 @@ def applications(
 @router.get("/company/by-ad/{ad_id}", response_model=List[ApplicationRead])
 def get_company_applications(
     ad_id: int,
+    limit: int = 100,
+    offset: int = 0,
     db: Session = Depends(get_db),
     current_company: Company = Depends(get_current_company),
 ):
@@ -69,17 +71,36 @@ def get_company_applications(
         )
     
     # Get applications for this ad
-    statement = select(Application).where(
-        and_(
+    statement = (select(Application).where(
             Application.ad_id == ad_id,
             Application.is_archived == False
         )
+        .limit(limit)
+        .offset(offset)
     )
     
     return db.exec(statement).all()
 
+@router.get("/company/all", response_model=List[ApplicationRead])
+def get_all_company_applications(
+    app_status: Optional[ApplicationStatus] = None,
+    db: Session = Depends(get_db),
+    current_company: Company = Depends(get_current_company),
+):
+    """Get all applications for ads that belong to the current company, with optional status filtering."""
 
+    statement = select(Application).join(Ad, Application.ad_id == Ad.id).where(
+        Ad.company_id == current_company.id,
+        Application.is_archived == False
+    )
+    
+    if app_status is not None:
+        statement = statement.where(Application.status == app_status)
 
+    return db.exec(statement).all(
+)
+
+@router.post("/", response_model=ApplicationRead, status_code=status.HTTP_201_CREATED)  
 def create_application(
     payload: ApplicationCreate,
     db: Session = Depends(get_db),
