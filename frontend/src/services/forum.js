@@ -97,6 +97,38 @@ export async function createComment(commentData) {
   return handleResponse(response, 'Slanje komentara nije uspjelo.');
 }
 
+export async function voteOnComment(commentId, value) {
+  const response = await fetch(`${BASE_URL}/forum/comments/${commentId}/vote`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ value })
+  });
+  return handleResponse(response, 'Glasanje nije uspjelo.');
+}
+
+export async function toggleBestAnswer(commentId) {
+  const response = await fetch(`${BASE_URL}/forum/comments/${commentId}/best-answer`, {
+    method: 'PATCH',
+    headers: getHeaders()
+  });
+  return handleResponse(response, 'Označavanje najboljeg odgovora nije uspjelo.');
+}
+
+export async function getPopularTags() {
+  const response = await fetch(`${BASE_URL}/forum/tags`, {
+    headers: getHeaders()
+  });
+  return handleResponse(response, 'Greška pri dohvatanju tagova.');
+}
+
+export async function deleteComment(commentId) {
+  const response = await fetch(`${BASE_URL}/forum/comments/${commentId}`, {
+    method: 'DELETE',
+    headers: getHeaders()
+  });
+  return handleResponse(response, 'Brisanje komentara nije uspjelo.');
+}
+
 export default {
   getCategories,
   getTopics,
@@ -104,5 +136,9 @@ export default {
   incrementTopicView,
   deleteTopic,
   createTopic,
-  createComment
+  createComment,
+  voteOnComment,
+  toggleBestAnswer,
+  getPopularTags,
+  deleteComment
 };

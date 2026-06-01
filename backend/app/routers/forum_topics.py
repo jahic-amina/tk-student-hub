@@ -43,7 +43,7 @@ def get_topic_tags(db: Session, topic_id: int) -> list[str]:
             tag_names.append(tag.name)
     return tag_names
 
-# Ove funkcije ce implementirati ko radi komentare i trebace nam
+# Ove funkcije ce implementirati ko radi komentare
 from app.routers.forum_comments import get_comments_count, has_best_answer, get_topic_comments, get_topic_votes_count
 
 def build_topic_list_item(db: Session, topic: ForumTopic) -> dict:
@@ -94,6 +94,7 @@ def get_all_topics(
     topics_list = [build_topic_list_item(db, topic) for topic in topics]
     return {"items": topics_list, "total": total_topics, "page": page, "per_page": per_page}
 
+
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def create_forum_topic(
     topic_data: ForumTopicCreate,
@@ -129,6 +130,7 @@ def create_forum_topic(
 
     return build_topic_list_item(db, new_topic)
 
+
 @router.get("/{topic_id}")
 def get_topic_details(topic_id: int, db: Session = Depends(get_db)):
     topic = db.get(ForumTopic, topic_id)
@@ -147,6 +149,7 @@ def get_topic_details(topic_id: int, db: Session = Depends(get_db)):
         "stats": {"comments_count": comments_count, "answers_count": comments_count, "views_count": topic.views_count, "votes_count": votes_count, "has_best_answer": any(comment["is_best_answer"] for comment in comments)}
     }
 
+
 @router.patch("/{topic_id}/view")
 def increment_topic_view(topic_id: int, db: Session = Depends(get_db)):
     topic = db.get(ForumTopic, topic_id)
@@ -158,14 +161,17 @@ def increment_topic_view(topic_id: int, db: Session = Depends(get_db)):
     db.refresh(topic)
     return {"id": topic.id, "views_count": topic.views_count}
 
+
 @router.delete("/{id}", status_code=status.HTTP_200_OK)
 def delete_topic(id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if current_user.role != UserRole.admin:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Samo administrator može obrisati temu.")
     topic = db.get(ForumTopic, id)
     if not topic or topic.is_deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tema nije pronađena.")
+    
+    if current_user.role != UserRole.admin and topic.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Možete obrisati samo vlastitu temu.")
+    
     topic.is_deleted = True
     db.add(topic)
     db.commit()
-    return {"message": "Tema je uspešno obrisana.", "topic_id": id}
+    return {"message": "Tema je uspješno obrisana.", "topic_id": id}
