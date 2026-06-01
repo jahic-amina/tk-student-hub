@@ -25,6 +25,14 @@ def get_comment_votes_count(db: Session, comment_id: int) -> int:
     result = db.exec(select(func.coalesce(func.sum(ForumCommentVote.value), 0)).where(ForumCommentVote.comment_id == comment_id)).one()
     return int(result or 0)
 
+def get_comment_likes_count(db: Session, comment_id: int) -> int:
+    result = db.exec(select(func.count(ForumCommentVote.id)).where(ForumCommentVote.comment_id == comment_id, ForumCommentVote.value == 1)).one()
+    return int(result or 0)
+
+def get_comment_dislikes_count(db: Session, comment_id: int) -> int:
+    result = db.exec(select(func.count(ForumCommentVote.id)).where(ForumCommentVote.comment_id == comment_id, ForumCommentVote.value == -1)).one()
+    return int(result or 0)
+
 def get_comments_count(db: Session, topic_id: int) -> int:
     result = db.exec(select(func.count(ForumComment.id)).where(ForumComment.topic_id == topic_id, ForumComment.is_deleted == False)).one()
     return int(result or 0)
@@ -48,9 +56,14 @@ def get_topic_comments(db: Session, topic_id: int) -> list[dict]:
     comment_items = []
     for comment in comments:
         votes_count = get_comment_votes_count(db, comment.id)
+        likes_count = get_comment_likes_count(db, comment.id)
+        dislikes_count = get_comment_dislikes_count(db, comment.id)
         comment_items.append({
             "id": comment.id, "content": comment.content, "is_best_answer": comment.is_best_answer,
-            "created_at": comment.created_at, "updated_at": comment.updated_at, "votes_count": votes_count,
+            "created_at": comment.created_at, "updated_at": comment.updated_at, 
+            "votes_count": votes_count,
+            "likes_count": likes_count,
+            "dislikes_count": dislikes_count,
             "author": get_author_data(db, comment.user_id),
         })
     comment_items.sort(key=lambda item: (not item["is_best_answer"], -item["votes_count"], item["created_at"]))

@@ -4,7 +4,7 @@ import { voteOnComment, toggleBestAnswer, deleteComment } from '../services/foru
 
 const props = defineProps({
   comments: { type: Array, required: true },
-  topicAuthorId: { type: Number, default: null }, // ← dodaj ovaj prop
+  topicAuthorId: { type: Number, default: null },
 });
 
 const emit = defineEmits(['refresh']);
@@ -39,9 +39,24 @@ function getUserVote(comment) {
   return comment.user_vote || 0;
 }
 
-function getVotesCount(comment) {
-  const diff = (localVotes.value[comment.id] || 0) - (comment.user_vote || 0);
-  return (comment.votes_count || 0) + diff;
+function getLikesCount(comment) {
+  const currentVote = localVotes.value[comment.id];
+  if (currentVote === undefined) return comment.likes_count || 0;
+  const previousVote = comment.user_vote || 0;
+  let count = comment.likes_count || 0;
+  if (previousVote === 1 && currentVote !== 1) count--;
+  if (previousVote !== 1 && currentVote === 1) count++;
+  return Math.max(0, count);
+}
+
+function getDislikesCount(comment) {
+  const currentVote = localVotes.value[comment.id];
+  if (currentVote === undefined) return comment.dislikes_count || 0;
+  const previousVote = comment.user_vote || 0;
+  let count = comment.dislikes_count || 0;
+  if (previousVote === -1 && currentVote !== -1) count--;
+  if (previousVote !== -1 && currentVote === -1) count++;
+  return Math.max(0, count);
 }
 
 async function handleVote(comment, value) {
@@ -92,7 +107,6 @@ function getInitials(name) {
   if (!name) return "?";
   return name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
 }
-
 </script>
 
 <template>
@@ -109,31 +123,30 @@ function getInitials(name) {
         :class="comment.is_best_answer ? 'border-yellow-300 bg-yellow-50/30' : 'border-gray-200 shadow-sm'"
       >
         <!-- Voting lijevo -->
-        <div class="flex flex-col items-center gap-1 flex-shrink-0 pt-1">
+        <div class="flex flex-col items-center gap-0.5 flex-shrink-0 pt-1">
           <button
             @click="handleVote(comment, 1)"
-            class="w-8 h-8 flex items-center justify-center rounded-lg transition-all"
+            class="w-7 h-7 flex items-center justify-center rounded-lg transition-all"
             :class="getUserVote(comment) === 1 ? 'text-orange-500' : 'text-slate-300 hover:text-orange-400 hover:bg-orange-50'"
             title="Upvote"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
               <path d="M7.493 18.75c-.425 0-.82-.236-.975-.632A7.48 7.48 0 0 1 6 15.375c0-1.75.599-3.358 1.602-4.634.151-.192.373-.309.6-.397.473-.183.89-.514 1.212-.924a9.042 9.042 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V3a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H14.23c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23h-.777ZM2.331 10.727a11.969 11.969 0 0 0-.831 4.398 12 12 0 0 0 .52 3.507C2.28 19.482 3.105 20.25 4.105 20.25H4.5c.395 0 .786-.04 1.167-.114.098-.018.192-.074.252-.15.06-.076.088-.174.088-.274V9.75a.75.75 0 0 0-.75-.75h-.765c-.782 0-1.5.432-1.961 1.077-.107.148-.197.306-.27.47Z" />
             </svg>
           </button>
-          <span
-            class="text-xs font-bold tabular-nums"
-            :class="getVotesCount(comment) > 0 ? 'text-orange-500' : getVotesCount(comment) < 0 ? 'text-slate-500' : 'text-slate-400'"
-          >{{ getVotesCount(comment) }}</span>
+          <span class="text-xs font-bold tabular-nums text-orange-500">{{ getLikesCount(comment) }}</span>
+
           <button
             @click="handleVote(comment, -1)"
-            class="w-8 h-8 flex items-center justify-center rounded-lg transition-all"
+            class="w-7 h-7 flex items-center justify-center rounded-lg transition-all"
             :class="getUserVote(comment) === -1 ? 'text-slate-600' : 'text-slate-300 hover:text-slate-500 hover:bg-slate-50'"
             title="Downvote"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 rotate-180">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 rotate-180">
               <path d="M7.493 18.75c-.425 0-.82-.236-.975-.632A7.48 7.48 0 0 1 6 15.375c0-1.75.599-3.358 1.602-4.634.151-.192.373-.309.6-.397.473-.183.89-.514 1.212-.924a9.042 9.042 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V3a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H14.23c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23h-.777ZM2.331 10.727a11.969 11.969 0 0 0-.831 4.398 12 12 0 0 0 .52 3.507C2.28 19.482 3.105 20.25 4.105 20.25H4.5c.395 0 .786-.04 1.167-.114.098-.018.192-.074.252-.15.06-.076.088-.174.088-.274V9.75a.75.75 0 0 0-.75-.75h-.765c-.782 0-1.5.432-1.961 1.077-.107.148-.197.306-.27.47Z" />
             </svg>
           </button>
+          <span class="text-xs font-bold tabular-nums text-slate-400">{{ getDislikesCount(comment) }}</span>
         </div>
 
         <!-- Sadrzaj desno -->
@@ -148,7 +161,6 @@ function getInitials(name) {
               <span>{{ formatDate(comment.created_at) }}</span>
             </div>
             <div class="flex flex-col items-center gap-1">
-              <!-- Best answer zvjezdica - samo autor teme -->
               <button
                 v-if="isTopicAuthor"
                 @click="handleBestAnswer(comment)"
@@ -160,7 +172,6 @@ function getInitials(name) {
                   <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd" />
                 </svg>
               </button>
-              <!-- Brisanje komentara - samo autor komentara -->
               <button
                 v-if="currentUserId === comment.author?.id"
                 @click="handleDeleteComment(comment)"
