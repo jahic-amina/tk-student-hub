@@ -12,7 +12,10 @@
       <router-link to="/forum" class="text-gray-600 hover:text-primary font-medium transition">Forum</router-link>
       <router-link to="/profiles" class="text-gray-600 hover:text-primary font-medium transition">Profili</router-link>
       <router-link to="/dashboard" class="text-gray-600 hover:text-primary font-medium transition">Dashboard</router-link>
-        </div>
+       <router-link v-if="isAdmin" to="/admin"
+    class="text-orange-500 hover:text-orange-600 font-medium transition"
+    > Admin</router-link>    
+    </div>
 
       <div class="flex items-center gap-4">
         <template v-if="isLoggedIn">
