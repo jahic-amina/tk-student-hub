@@ -7,8 +7,8 @@ from datetime import datetime
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User, UserRole
-from app.models.forum import ForumCategory, ForumTopic, ForumTag, ForumTopicTag
-from app.routers.forum_categories import get_category_data # Uvozimo pomoćnu funkciju
+from app.models.forum import ForumCategory, ForumTopic, ForumTag, ForumTopicTag, TopicReport
+from app.routers.forum_categories import get_category_data 
 
 router = APIRouter(prefix="/forum/topics", tags=["Forum Topics"])
 
@@ -19,6 +19,9 @@ class ForumTopicCreate(BaseModel):
     content: str = Field(min_length=10)
     category_id: int
     tags: Optional[List[Any]] = None
+
+class ReportCreate(BaseModel):
+    reason: str
 
 # Pomocne funkcije
 
@@ -175,3 +178,11 @@ def delete_topic(id: int, db: Session = Depends(get_db), current_user: User = De
     db.add(topic)
     db.commit()
     return {"message": "Tema je uspješno obrisana.", "topic_id": id}
+
+
+@router.post("/{topic_id}/report")
+def report_topic(topic_id: int, report_data: ReportCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    report = TopicReport(topic_id=topic_id, user_id=current_user.id, reason=report_data.reason)
+    db.add(report)
+    db.commit()
+    return {"success": True}
