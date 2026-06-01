@@ -97,8 +97,8 @@ def get_all_company_applications(
     if app_status is not None:
         statement = statement.where(Application.status == app_status)
 
-    return db.exec(statement).all(
-)
+    return db.exec(statement).all()
+
 
 
 
@@ -225,6 +225,11 @@ def upload_cv_local(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
 ):
+    MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
+    content = file.file.read()
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="File size exceeds 5 MB limit.")    
+    
     # Validacija datoteke
     if file.content_type not in ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]:
         raise HTTPException(status_code=400, detail="File must be PDF, DOC or DOCX.")
