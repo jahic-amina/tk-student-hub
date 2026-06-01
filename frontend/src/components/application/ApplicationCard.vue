@@ -131,6 +131,10 @@ export default {
     token: {
       type: String,
       required: true
+    },
+    isCompany: {
+      type: Boolean,
+      default: true
     }
   },
   emits: ['updated'],
