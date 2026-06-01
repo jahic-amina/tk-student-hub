@@ -100,6 +100,8 @@ def get_all_company_applications(
     return db.exec(statement).all(
 )
 
+
+
 @router.post("/", response_model=ApplicationRead, status_code=status.HTTP_201_CREATED)  
 def create_application(
     payload: ApplicationCreate,
@@ -159,6 +161,27 @@ def get_application(
         )
 
     if current_user.role != UserRole.admin and application.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to this application.",
+        )
+
+    return application
+
+@router.get("/company/application/{application_id}", response_model=ApplicationRead)
+def get_company_application(
+    application_id: int,
+    db: Session=Depends(get_db),
+    current_company: Company=Depends(get_current_company),                              
+    ):
+    application = db.get(Application, application_id)
+    if not application:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found.",
+        )
+    ad = db.get(Ad, application.ad_id)
+    if not ad or ad.company_id != current_company.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have access to this application.",
