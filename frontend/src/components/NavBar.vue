@@ -39,12 +39,16 @@ export default {
   data() {
     return {
       token: localStorage.getItem('token'),
-      username: localStorage.getItem('username') || 'Profil'
+      username: localStorage.getItem('username') || 'Profil',
+      role: localStorage.getItem('role') || ''
     }
   },
   computed: {
     isLoggedIn() {
       return !!this.token
+    },
+    isAdmin() {
+      return this.role === 'admin'
     }
   },
   mounted() {
@@ -57,14 +61,15 @@ export default {
     updateUser() {
       this.token = localStorage.getItem('token')
       this.username = localStorage.getItem('username') || 'Profil'
+      this.role = localStorage.getItem('role') || ''
     },
     logout() {
       localStorage.removeItem('token')
       localStorage.removeItem('username')
-
+      localStorage.removeItem('role')
       this.token = null
       this.username = 'Profil'
-
+      this.role = ''
       this.$router.push('/login')
     }
   }
