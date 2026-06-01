@@ -116,6 +116,23 @@
               </div>
             </div>
 
+            <div class="mb-4">
+              <div class="flex flex-col gap-1">
+                <label for="logo" class="text-sm font-semibold text-gray-700">Logo kompanije</label>
+                <input
+                  id="logo"
+                  type="file"
+                  accept=".png,.jpg,.jpeg,.webp"
+                  :class="inputClass(errors.logo)"
+                  @change="handleLogoChange"
+                />
+                <span v-if="logoPreview" class="mt-2">
+                  <img :src="logoPreview" alt="Logo preview" class="h-16 w-16 object-contain rounded-lg border border-gray-200" />
+                </span>
+                <span v-if="errors.logo" class="text-xs text-red-500">{{ errors.logo }}</span>
+              </div>
+            </div>
+
             <div class="mb-6">
               <div class="flex flex-col gap-1">
                 <label for="password" class="text-sm font-semibold text-gray-700">Lozinka</label>
@@ -162,6 +179,8 @@
 import { reactive, ref } from 'vue'
 import { registerCompany } from '../../services/api.js'
 
+const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp']
+
 const form = reactive({
   company_name: '',
   tin: '',
@@ -181,9 +200,12 @@ const errors = reactive({
   description: '',
   email: '',
   phone_number: '',
+  logo: '',
   password: '',
 })
 
+const logoFile = ref(null)
+const logoPreview = ref(null)
 const isLoading = ref(false)
 const submitStatus = ref(null)
 const serverError = ref('')
@@ -198,6 +220,22 @@ const inputClass = (error) =>
   `w-full px-4 py-2.5 bg-gray-50 border rounded-lg text-sm focus:outline-none focus:border-orange-400 ${
     error ? 'border-red-400' : 'border-gray-200'
   }`
+
+const handleLogoChange = (e) => {
+  const file = e.target.files[0]
+  if (!file) return
+
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    errors.logo = 'Logo mora biti PNG, JPG, JPEG ili WebP.'
+    logoFile.value = null
+    logoPreview.value = null
+    return
+  }
+
+  errors.logo = ''
+  logoFile.value = file
+  logoPreview.value = URL.createObjectURL(file)
+}
 
 const validators = {
   company_name: (v) => v.trim() ? '' : 'Naziv kompanije je obavezan.',
@@ -233,11 +271,15 @@ const validateField = (field) => {
 const handleSubmit = async () => {
   Object.keys(validators).forEach(field => validateField(field))
 
+  if (!logoFile.value) {
+    errors.logo = 'Logo je obavezan.'
+  }
+
   if (Object.values(errors).some(e => e !== '')) return
 
   isLoading.value = true
   try {
-    await registerCompany({ ...form })
+    await registerCompany({ ...form }, logoFile.value)
     submitStatus.value = 'success'
   } catch (err) {
     submitStatus.value = 'error'

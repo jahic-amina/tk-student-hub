@@ -1,9 +1,9 @@
 <template>
   <div class="min-h-screen flex items-center justify-center">
     <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
-      
-  <h1 class="text-2xl font-bold text-primary mb-2">Prijava</h1>
-  <p class="text-gray-500 mb-6">Dobrodošli nazad!</p>
+
+      <h1 class="text-2xl font-bold text-primary mb-2">Prijava kompanije</h1>
+      <p class="text-gray-500 mb-6">Dobrodošli nazad!</p>
 
       <div v-if="error" class="bg-red-50 text-red-600 px-4 py-3 rounded-lg mb-4 text-sm">
         {{ error }}
@@ -11,11 +11,11 @@
 
       <div class="flex flex-col gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Email ili broj telefona</label>
           <input
-            v-model="email"
-            type="email"
-            placeholder="tvoj@email.com"
+            v-model="identifier"
+            type="text"
+            placeholder="info@kompanija.ba"
             class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary"
           />
         </div>
@@ -33,15 +33,15 @@
         <button
           @click="handleLogin"
           :disabled="loading"
-    class="bg-primary text-white py-2 rounded-lg hover:bg-primary/90 transition font-medium disabled:opacity-50"
+          class="bg-primary text-white py-2 rounded-lg hover:bg-primary/90 transition font-medium disabled:opacity-50"
         >
           {{ loading ? 'Prijava...' : 'Prijavi se' }}
         </button>
       </div>
 
       <p class="text-center text-sm text-gray-500 mt-6">
-        Nemaš račun?
-        <router-link to="/register" class="text-primary font-medium hover:underline">Registruj se</router-link>
+        Nemate račun?
+        <router-link to="/company/register" class="text-primary font-medium hover:underline">Registrujte kompaniju</router-link>
       </p>
 
     </div>
@@ -49,13 +49,13 @@
 </template>
 
 <script>
-import { loginUser, getMe } from '../services/api'
+import { loginCompany } from '../../services/api'
 
 export default {
-  name: 'LoginView',
+  name: 'CompanyLoginView',
   data() {
     return {
-      email: '',
+      identifier: '',
       password: '',
       loading: false,
       error: null
@@ -66,19 +66,21 @@ export default {
       this.loading = true
       this.error = null
 
-      const response = await loginUser(this.email, this.password)
+      try {
+        const response = await loginCompany(this.identifier, this.password)
 
-      if (response.access_token) {
-        localStorage.setItem('token', response.access_token)
-        const user = await getMe(response.access_token)
-        localStorage.setItem('username', user.full_name)
-        localStorage.setItem('role', user.role)
-        window.location.href = '/'
-      } else {
-        this.error = 'Pogrešan email ili lozinka.'
+        if (response.access_token) {
+          localStorage.setItem('company_token', response.access_token)
+          localStorage.setItem('company_name', response.company_name)
+          window.location.href = '/'
+        } else {
+          this.error = 'Pogrešan email ili lozinka.'
+        }
+      } catch (err) {
+        this.error = 'Došlo je do greške. Pokušajte ponovo.'
+      } finally {
+        this.loading = false
       }
-
-      this.loading = false
     }
   }
 }

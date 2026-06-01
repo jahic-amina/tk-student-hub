@@ -61,11 +61,18 @@ export async function getMe(token) {
 
 // --- Companies ---
 
-export async function registerCompany(data) {
+export async function registerCompany(data, logoFile) {
+  const formData = new FormData()
+
+  Object.entries(data).forEach(([key, value]) => {
+    formData.append(key, value)
+  })
+
+  formData.append('logo', logoFile)
+
   const response = await fetch(`${BASE_URL}/companies/`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
+    body: formData
   })
   return parseResponse(response)
 }
@@ -74,8 +81,8 @@ export async function uploadCompanyLogo(companyId, file, token) {
   const formData = new FormData()
   formData.append('logo', file)
 
-  const response = await fetch(`${BASE_URL}/companies/${companyId}/logo`, {
-    method: 'POST',
+  const response = await fetch(`${BASE_URL}/companies/${companyId}/upload-logo`, {
+    method: 'PATCH',
     headers: { 'Authorization': `Bearer ${token}` },
     body: formData
   })
@@ -84,6 +91,22 @@ export async function uploadCompanyLogo(companyId, file, token) {
 
 export async function getApprovedCompanies() {
   const response = await fetch(`${BASE_URL}/companies/`)
+  return parseResponse(response)
+}
+
+export async function getAdminCompanies(token) {
+  const response = await fetch(`${BASE_URL}/companies/admin`, {
+    headers: authHeaders(token)
+  })
+  return parseResponse(response)
+}
+
+export async function updateCompanyStatus(companyId, status, token) {
+  const response = await fetch(`${BASE_URL}/companies/${companyId}/status`, {
+    method: 'PATCH',
+    headers: authHeaders(token),
+    body: JSON.stringify(status)
+  })
   return parseResponse(response)
 }
 
@@ -96,5 +119,24 @@ export async function getAds() {
 
 export async function getAdById(id) {
   const response = await fetch(`${BASE_URL}/ads/${id}`)
+  return parseResponse(response)
+}
+
+export async function deleteCompany(companyId, token) {
+  const response = await fetch(`${BASE_URL}/companies/${companyId}`, {
+    method: 'DELETE',
+    headers: authHeaders(token)
+  })
+  if (!response.ok) {
+    const message = await response.text()
+    throw new Error(message || `Request failed with status ${response.status}`)
+  }
+}
+
+export async function restoreCompany(companyId, token) {
+  const response = await fetch(`${BASE_URL}/companies/${companyId}/restore`, {
+    method: 'PATCH',
+    headers: authHeaders(token)
+  })
   return parseResponse(response)
 }

@@ -129,6 +129,7 @@ class CompanyRead(SQLModel):
     tin: str
     status: CompanyStatus
     created_at: datetime
+    is_deleted: bool
     address: str
 
 
