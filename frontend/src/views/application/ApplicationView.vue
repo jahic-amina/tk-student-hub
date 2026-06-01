@@ -62,7 +62,7 @@
                 <input
                   ref="cvInput"
                   type="file"
-                  accept=".pdf,.doc,.docx"
+                  accept=".pdf"
                   @change="handleCvChange"
                   class="hidden"
                   required
