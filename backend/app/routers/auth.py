@@ -22,6 +22,7 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str
     company_name: str = None
+    company_id: int = None
 
 
 # --- User endpoints ---
@@ -68,4 +69,4 @@ def company_login(data: OAuth2PasswordRequestForm = Depends(), db: Session = Dep
         raise HTTPException(status_code=403, detail="Company account is not approved yet.")
 
     token = create_access_token({"sub": str(company.id)})
-    return {"access_token": token, "token_type": "bearer", "company_name": company.company_name}
+    return {"access_token": token, "token_type": "bearer", "company_name": company.company_name, "company_id": company.id}

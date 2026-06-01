@@ -27,7 +27,9 @@
           </h1>
 
           <p class="text-base sm:text-lg text-gray-600 font-medium mb-6">
-            {{ ad.company }}
+            <router-link :to="`/companies/${ad.company_id}`" class="hover:text-orange-500 transition-colors">
+              {{ ad.company }}
+            </router-link>
           </p>
 
           <div class="grid sm:grid-cols-3 gap-3 mb-8">
@@ -188,6 +190,7 @@ export default {
         id: found.id,
         title: found.title,
         company: companiesById.get(found.company_id) || `Kompanija #${found.company_id}`,
+        company_id: found.company_id,
         description: found.description,
         tags: [found.field, found.location].filter(Boolean),
         typeLabel: formatType(found.type),

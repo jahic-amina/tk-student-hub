@@ -15,7 +15,11 @@
         </router-link>
       </h3>
 
-      <p class="text-gray-400 text-xs sm:text-sm mb-3 font-medium">{{ ad.company }}</p>
+      <p class="text-gray-400 text-xs sm:text-sm mb-3 font-medium">
+        <router-link :to="`/companies/${ad.company_id}`" class="hover:text-orange-500 transition-colors">
+          {{ ad.company }}
+        </router-link>
+      </p>
 
       <div class="flex flex-wrap gap-x-3 gap-y-1.5 text-gray-500 text-[11px] sm:text-xs font-medium mb-4">
         <span class="whitespace-nowrap">📍 {{ ad.location }}</span>

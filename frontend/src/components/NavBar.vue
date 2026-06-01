@@ -32,7 +32,7 @@
           </button>
         </template>
         <template v-else-if="isCompanyLoggedIn">
-          <span class="text-gray-600 font-medium">{{ companyName }}</span>
+          <router-link :to="`/companies/${companyId}`" class="text-gray-600 hover:text-primary font-medium">{{ companyName }}</router-link>
           <button @click="logoutCompany" class="border border-primary text-primary px-4 py-1.5 rounded-lg hover:bg-primary hover:text-white transition">
             Odjava
           </button>
@@ -76,6 +76,9 @@ export default {
     companyName() {
       return localStorage.getItem('company_name') || 'Kompanija'
     },
+    companyId() {
+      return localStorage.getItem('company_id')
+    },
     isAdmin() {
       return localStorage.getItem('role') === 'admin'
     }
@@ -90,6 +93,7 @@ export default {
     logoutCompany() {
       localStorage.removeItem('company_token')
       localStorage.removeItem('company_name')
+      localStorage.removeItem('company_id')
       window.location.href = '/'
     }
   }

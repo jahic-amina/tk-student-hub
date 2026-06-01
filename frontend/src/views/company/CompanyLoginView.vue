@@ -72,6 +72,7 @@ export default {
         if (response.access_token) {
           localStorage.setItem('company_token', response.access_token)
           localStorage.setItem('company_name', response.company_name)
+          localStorage.setItem('company_id', response.company_id)
           window.location.href = '/'
         } else {
           this.error = 'Pogrešan email ili lozinka.'
