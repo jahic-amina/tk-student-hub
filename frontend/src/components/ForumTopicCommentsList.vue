@@ -111,7 +111,7 @@ function getInitials(name) {
 
 <template>
   <div class="mb-6">
-    <h2 class="text-lg font-semibold text-slate-700 mb-4">
+    <h2 class="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-4">
       {{ comments.length }} {{ comments.length === 1 ? 'Odgovor' : 'Odgovora' }}
     </h2>
 
@@ -119,15 +119,14 @@ function getInitials(name) {
       <div
         v-for="comment in comments"
         :key="comment.id"
-        class="bg-white rounded-xl border p-5 flex gap-4 transition-all"
-        :class="comment.is_best_answer ? 'border-yellow-300 bg-yellow-50/30' : 'border-gray-200 shadow-sm'"
+        class="bg-white dark:bg-slate-800 rounded-xl border p-5 flex gap-4 transition-all"
+        :class="comment.is_best_answer ? 'border-yellow-300 dark:border-yellow-600 bg-yellow-50/30 dark:bg-yellow-950/20' : 'border-gray-200 dark:border-slate-700 shadow-sm'"
       >
-        <!-- Voting lijevo -->
         <div class="flex flex-col items-center gap-0.5 flex-shrink-0 pt-1">
           <button
             @click="handleVote(comment, 1)"
             class="w-7 h-7 flex items-center justify-center rounded-lg transition-all"
-            :class="getUserVote(comment) === 1 ? 'text-orange-500' : 'text-slate-300 hover:text-orange-400 hover:bg-orange-50'"
+            :class="getUserVote(comment) === 1 ? 'text-orange-500' : 'text-slate-300 dark:text-slate-600 hover:text-orange-400 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-slate-700'"
             title="Upvote"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
@@ -139,29 +138,28 @@ function getInitials(name) {
           <button
             @click="handleVote(comment, -1)"
             class="w-7 h-7 flex items-center justify-center rounded-lg transition-all"
-            :class="getUserVote(comment) === -1 ? 'text-slate-600' : 'text-slate-300 hover:text-slate-500 hover:bg-slate-50'"
+            :class="getUserVote(comment) === -1 ? 'text-slate-600 dark:text-slate-400' : 'text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'"
             title="Downvote"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 rotate-180">
               <path d="M7.493 18.75c-.425 0-.82-.236-.975-.632A7.48 7.48 0 0 1 6 15.375c0-1.75.599-3.358 1.602-4.634.151-.192.373-.309.6-.397.473-.183.89-.514 1.212-.924a9.042 9.042 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V3a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H14.23c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23h-.777ZM2.331 10.727a11.969 11.969 0 0 0-.831 4.398 12 12 0 0 0 .52 3.507C2.28 19.482 3.105 20.25 4.105 20.25H4.5c.395 0 .786-.04 1.167-.114.098-.018.192-.074.252-.15.06-.076.088-.174.088-.274V9.75a.75.75 0 0 0-.75-.75h-.765c-.782 0-1.5.432-1.961 1.077-.107.148-.197.306-.27.47Z" />
             </svg>
           </button>
-          <span class="text-xs font-bold tabular-nums text-slate-400">{{ getDislikesCount(comment) }}</span>
+          <span class="text-xs font-bold tabular-nums text-slate-400 dark:text-slate-500">{{ getDislikesCount(comment) }}</span>
         </div>
 
-        <!-- Sadrzaj desno -->
         <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between mb-2">
-            <div class="flex items-center gap-2 text-xs text-slate-400">
-              <span class="w-5 h-5 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-[8px]">
+            <div class="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
+              <span class="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold text-[8px]">
                 {{ getInitials(comment.author?.full_name) }}
               </span>
-              <strong class="text-slate-600">{{ comment.author?.full_name || 'Kolega' }}</strong>
+              <strong class="text-slate-600 dark:text-slate-300">{{ comment.author?.full_name || 'Kolega' }}</strong>
               <span>•</span>
               <span>{{ formatDate(comment.created_at) }}</span>
               <span 
                 v-if="comment.is_best_answer"
-                class="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-bold border border-yellow-200"
+                class="text-[10px] bg-yellow-100 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-400 px-2 py-0.5 rounded-full font-bold border border-yellow-200 dark:border-yellow-900"
               >
                 ✓ Najbolji odgovor
               </span>
@@ -171,7 +169,7 @@ function getInitials(name) {
                 v-if="isTopicAuthor"
                 @click="handleBestAnswer(comment)"
                 class="w-7 h-7 flex items-center justify-center rounded-full transition-all"
-                :class="comment.is_best_answer ? 'text-yellow-400 hover:text-red-400' : 'text-slate-300 hover:text-yellow-400'"
+                :class="comment.is_best_answer ? 'text-yellow-400 hover:text-red-400' : 'text-slate-300 dark:text-slate-600 hover:text-yellow-400 dark:hover:text-yellow-500'"
                 :title="comment.is_best_answer ? 'Ukloni najbolji odgovor' : 'Označi kao najbolji odgovor'"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
@@ -181,7 +179,7 @@ function getInitials(name) {
               <button
                 v-if="currentUserId === comment.author?.id"
                 @click="handleDeleteComment(comment)"
-                class="w-7 h-7 flex items-center justify-center rounded-full transition-all text-slate-300 hover:text-red-400 hover:bg-red-50"
+                class="w-7 h-7 flex items-center justify-center rounded-full transition-all text-slate-300 dark:text-slate-600 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"
                 title="Obriši komentar"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
@@ -190,12 +188,12 @@ function getInitials(name) {
               </button>
             </div>
           </div>
-          <p class="text-slate-700 leading-relaxed text-sm whitespace-pre-line">{{ comment.content }}</p>
+          <p class="text-slate-700 dark:text-slate-300 leading-relaxed text-sm whitespace-pre-line">{{ comment.content }}</p>
         </div>
 
       </div>
 
-      <div v-if="comments.length === 0" class="text-center py-8 text-slate-400 bg-white rounded-xl border border-gray-200 shadow-sm">
+      <div v-if="comments.length === 0" class="text-center py-8 text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm">
         Još nema odgovora. Budite prvi!
       </div>
     </div>

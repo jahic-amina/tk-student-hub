@@ -69,13 +69,13 @@ const obrisiTemu = async (temaId) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 text-slate-900 p-6">
+  <div class="min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-6 transition-colors duration-200">
     <div class="max-w-7xl mx-auto">
       
-      <div class="flex justify-between items-center mb-8 border-b border-gray-200 pb-4">
+      <div class="flex justify-between items-center mb-8 border-b border-gray-200 dark:border-slate-800 pb-4">
         <div>
-          <h1 class="text-3xl font-bold tracking-tight text-slate-800">Studentski Forum</h1>
-          <p class="text-slate-500 mt-1">Postavi pitanje, podijeli ideju ili pomogni kolegama.</p>
+          <h1 class="text-3xl font-bold tracking-tight text-slate-800 dark:text-white">Studentski Forum</h1>
+          <p class="text-slate-500 dark:text-slate-400 mt-1">Postavi pitanje, podijeli ideju ili pomogni kolegama.</p>
         </div>
         <router-link to="/forum/nova-tema" class="bg-[#ff7a00] hover:bg-[#e66e00] text-white font-bold px-6 py-2.5 rounded-lg transition-colors shadow-md text-sm">
           Nova tema
@@ -91,25 +91,25 @@ const obrisiTemu = async (temaId) => {
           <div class="flex flex-col justify-between min-h-[500px]">
             <div>
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <span class="px-4 py-1.5 font-extrabold text-xs rounded-full border shadow-sm transition-all duration-300"
+                <span class="px-4 py-1.5 font-extrabold text-xs rounded-full border dark:border-slate-700 shadow-sm transition-all duration-300"
                   :style="{ backgroundColor: trenutnaKategorija.color + '15', borderColor: trenutnaKategorija.color, color: trenutnaKategorija.color }">
                   {{ trenutnaKategorija.name }}
                 </span>
 
                 <div class="flex gap-2 w-full sm:w-80">
                   <input v-model="search" type="text" placeholder="Pretraži teme..." @keyup.enter="applySearch"
-                    class="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white" />
-                  <button @click="applySearch" class="bg-slate-800 text-white text-xs px-4 rounded-lg font-bold hover:bg-slate-700">Traži</button>
+                    class="w-full border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200" />
+                  <button @click="applySearch" class="bg-slate-800 dark:bg-slate-700 text-white text-xs px-4 rounded-lg font-bold hover:bg-slate-700 dark:hover:bg-slate-600">Traži</button>
                 </div>
               </div>
 
               <div v-if="isLoading" class="flex flex-col items-center justify-center py-12">
                 <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff7a00] mb-4"></div>
-                <p class="text-slate-500 italic text-sm">Učitavanje tema...</p>
+                <p class="text-slate-500 dark:text-slate-400 italic text-sm">Učitavanje tema...</p>
               </div>
 
-              <div v-else-if="teme.length === 0" class="text-center py-12 bg-white rounded-xl border border-gray-200 p-8 shadow-sm">
-                <p class="text-slate-500 text-sm mb-4">Trenutno nema tema u ovoj kategoriji. Započni temu!</p>
+              <div v-else-if="teme.length === 0" class="text-center py-12 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-8 shadow-sm">
+                <p class="text-slate-500 dark:text-slate-400 text-sm mb-4">Trenutno nema tema u ovoj kategoriji. Započni temu!</p>
                 <router-link :to="{ name: 'create-topic', query: odabraniKategorijaId ? { categoryId: odabraniKategorijaId } : {} }"
                   class="bg-[#ff7a00] hover:bg-[#e66e00] text-white font-bold px-6 py-2 rounded-lg text-xs shadow-md">
                   Započni temu
@@ -122,7 +122,7 @@ const obrisiTemu = async (temaId) => {
                   :key="tema.id" 
                   :tema="tema" 
                   :is-admin="isAdmin"
-                  @obrisi="obrisiTemu"
+                  @obrisi="(id) => obrisiTemu(id)"
                 />
               </div>
             </div>

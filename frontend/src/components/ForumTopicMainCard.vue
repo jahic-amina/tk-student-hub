@@ -80,50 +80,49 @@ async function handleDeleteTopic() {
 </script>
 
 <template>
-  <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-6">
-    <h1 class="text-2xl font-bold text-slate-900 mb-4">{{ topic.title }}</h1>
+  <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm p-6 mb-6 transition-colors duration-200">
+    <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4">{{ topic.title }}</h1>
     
-    <div class="flex items-center gap-2 text-xs text-slate-500 mb-4 bg-slate-50 p-2 rounded-lg w-fit">
+    <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-4 bg-slate-50 dark:bg-slate-700 p-2 rounded-lg w-fit">
       <span class="w-6 h-6 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold text-[10px]">
         {{ getInitials(topic.author?.full_name) }}
       </span>
-      <span class="font-semibold text-slate-700">{{ topic.author?.full_name || 'Student' }}</span>
+      <span class="font-semibold text-slate-700 dark:text-slate-200">{{ topic.author?.full_name || 'Student' }}</span>
       <span>•</span>
       <span>{{ formatDate(topic.created_at) }}</span>
       <span>•</span>
       <span>👁️ {{ topic.views_count || 0 }} pregleda</span>
     </div>
 
-    <p class="text-slate-700 leading-relaxed whitespace-pre-line">{{ topic.content }}</p>
+    <p class="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">{{ topic.content }}</p>
 
-    <!-- Share sekcija -->
-    <div class="mt-4 pt-4 border-t border-gray-100 flex flex-col gap-2">
+    <div class="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700 flex flex-col gap-2">
       <div class="flex items-center gap-2">
         <button
           @click="toggleShare"
-          class="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 transition-colors font-medium px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50"
+          class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors font-medium px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 bg-transparent"
         >
           🔗 Dijeli
         </button>
         <button
-        v-if="currentUserId === topic.author?.id"
-        @click="handleDeleteTopic"
-        class="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors font-medium px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50"
+          v-if="currentUserId === topic.author?.id"
+          @click="handleDeleteTopic"
+          class="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors font-medium px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/20 bg-transparent"
         >
-        🗑️ Obriši temu
-      </button>
-    </div>
+          🗑️ Obriši temu
+        </button>
+      </div>
 
-      <div v-if="showShareBox" class="p-3 bg-slate-50 rounded-lg border border-gray-200 flex flex-col gap-2">
-        <p class="text-xs text-slate-500 font-medium">Link teme:</p>
-        <div v-if="copySuccess" class="text-xs text-green-600 font-semibold bg-green-50 border border-green-200 px-3 py-2 rounded-lg">
+      <div v-if="showShareBox" class="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-gray-200 dark:border-slate-700 flex flex-col gap-2">
+        <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Link teme:</p>
+        <div v-if="copySuccess" class="text-xs text-green-600 dark:text-green-400 font-semibold bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 px-3 py-2 rounded-lg">
           ✓ URL has successfully been copied to clipboard.
         </div>
         <div class="flex gap-2">
           <input
             :value="shareUrl"
             readonly
-            class="flex-1 text-xs bg-white border border-gray-200 rounded-lg px-3 py-2 text-slate-600 focus:outline-none cursor-text"
+            class="flex-1 text-xs bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-600 dark:text-slate-300 focus:outline-none cursor-text"
             @click="($event.target).select()"
           />
           <button
@@ -134,7 +133,7 @@ async function handleDeleteTopic() {
           </button>
           <button
             @click="showShareBox = false"
-            class="px-3 py-2 bg-white hover:bg-gray-100 text-slate-500 text-xs font-medium rounded-lg border border-gray-200 transition-colors"
+            class="px-3 py-2 bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 text-xs font-medium rounded-lg border border-gray-200 dark:border-slate-700 transition-colors"
           >
             Cancel
           </button>

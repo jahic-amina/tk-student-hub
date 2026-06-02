@@ -72,12 +72,12 @@ const handleNewComment = async ({ content, clearForm }) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 p-6">
+  <div class="min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-6 transition-colors duration-200">
     <div class="max-w-4xl mx-auto">
 
       <button
         @click="router.push('/forum')"
-        class="flex items-center gap-2 text-slate-500 hover:text-slate-700 mb-6 text-sm transition-colors font-semibold bg-transparent border-none cursor-pointer"
+        class="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 mb-6 text-sm transition-colors font-semibold bg-transparent border-none cursor-pointer"
       >
         ← Nazad na listu
       </button>

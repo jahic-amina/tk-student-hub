@@ -64,16 +64,13 @@ const submitTopic = async () => {
   } catch (error) {
     console.error("Kompletna greška sa backenda:", error);
     
-    // Ako naš servis ili axios vrati specifičnu poruku sa servera
     if (error.response && error.response.data && error.response.data.detail) {
       if (typeof error.response.data.detail === 'string') {
         errors.value.general = error.response.data.detail;
       } else if (Array.isArray(error.response.data.detail)) {
-        // Prikazuje greške oko validacije polja (npr. FastAPI Pydantic greške)
         errors.value.general = error.response.data.detail.map(d => `${d.loc.join('.')}: ${d.msg}`).join(', ');
       }
     } else {
-      // Fallback ako nemamo jasan odgovor
       errors.value.general = error.message || 'Došlo je do serverske greške. Provjerite terminal backenda.';
     }
   } finally {
@@ -83,33 +80,33 @@ const submitTopic = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 p-6">
+  <div class="min-h-screen bg-gray-50 dark:bg-slate-900 p-6 transition-colors duration-200">
     <div class="max-w-4xl mx-auto">
 
       <div class="flex items-center justify-between mb-6">
         <div class="flex items-center gap-3">
           <span class="text-orange-500 text-xl">💬</span>
           <div>
-            <h1 class="text-2xl font-bold text-slate-800">Kreiraj novu temu</h1>
-            <p class="text-slate-500 text-sm mt-0.5">Popunite formu ispod da biste kreirali novu temu diskusije</p>
+            <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">Kreiraj novu temu</h1>
+            <p class="text-slate-500 dark:text-slate-400 text-sm mt-0.5">Popunite formu ispod da biste kreirali novu temu diskusije</p>
           </div>
         </div>
         <button
           @click="goBack"
-          class="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 text-slate-600 hover:bg-gray-100 transition-colors text-sm bg-white"
+          class="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors text-sm bg-white dark:bg-slate-800 shadow-sm"
         >
           ← Nazad
         </button>
       </div>
 
-      <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-8 space-y-6">
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm p-8 space-y-6">
 
-        <div v-if="errors.general" class="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+        <div v-if="errors.general" class="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
           {{ errors.general }}
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
             Naslov teme <span class="text-red-500">*</span>
           </label>
           <input
@@ -117,21 +114,21 @@ const submitTopic = async () => {
             type="text"
             maxlength="200"
             placeholder="Npr. Pitanje oko Fourierove transformacije - Signali i sistemi"
-            class="w-full border rounded-lg px-4 py-2.5 text-slate-800 placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 transition-all"
-            :class="errors.title ? 'border-red-400' : 'border-gray-200'"
+            class="w-full border rounded-lg px-4 py-2.5 text-slate-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 transition-all"
+            :class="errors.title ? 'border-red-400' : 'border-gray-200 dark:border-slate-600'"
           />
           <p v-if="errors.title" class="text-red-500 text-xs mt-1">{{ errors.title }}</p>
-          <p v-else class="text-slate-400 text-xs mt-1">Budite što precizniji - dobar naslov pomaže drugim studentima da pronađu vašu temu</p>
+          <p v-else class="text-slate-400 dark:text-slate-500 text-xs mt-1">Budite što precizniji - dobar naslov pomaže drugim studentima da pronađu vašu temu</p>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
             Kategorija <span class="text-red-500">*</span>
           </label>
           <select
             v-model="selectedCategory"
-            class="w-full border rounded-lg px-4 py-2.5 text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 transition-all"
-            :class="errors.category ? 'border-red-400' : 'border-gray-200'"
+            class="w-full border rounded-lg px-4 py-2.5 text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 transition-all"
+            :class="errors.category ? 'border-red-400' : 'border-gray-200 dark:border-slate-600'"
           >
             <option value="" disabled>Izaberite kategoriju</option>
             <option v-for="cat in categories" :key="cat.id" :value="cat.id">
@@ -144,24 +141,24 @@ const submitTopic = async () => {
         <ForumTopicTagManager v-model="tags" />
 
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
             Sadržaj teme <span class="text-red-500">*</span>
           </label>
           <textarea
             v-model="content"
             rows="8"
             placeholder="Opišite vaše pitanje ili temu diskusije..."
-            class="w-full border rounded-lg px-4 py-2.5 text-slate-800 placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 transition-all resize-y"
-            :class="errors.content ? 'border-red-400' : 'border-gray-200'"
+            class="w-full border rounded-lg px-4 py-2.5 text-slate-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 transition-all resize-y"
+            :class="errors.content ? 'border-red-400' : 'border-gray-200 dark:border-slate-600'"
           />
           <p v-if="errors.content" class="text-red-500 text-xs mt-1">{{ errors.content }}</p>
-          <p v-else class="text-slate-400 text-xs mt-1">Koristite markdown za formatiranje teksta. Budite detaljni i jasni.</p>
+          <p v-else class="text-slate-400 dark:text-slate-500 text-xs mt-1">Koristite markdown za formatiranje teksta. Budite detaljni i jasni.</p>
         </div>
 
-        <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+        <div class="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-slate-700">
           <button
             @click="goBack"
-            class="px-6 py-2.5 rounded-lg border border-gray-200 text-slate-600 hover:bg-gray-50 transition-colors"
+            class="px-6 py-2.5 rounded-lg border border-gray-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
           >
             Otkaži
           </button>
