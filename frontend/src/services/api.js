@@ -65,3 +65,39 @@ export async function getAllUsers(token, { search = '', role = '', is_active = '
   })
   return response.json()
 }
+
+// Aktivacija korisnika
+export async function activateUser(token, userId) {
+  const response = await fetch(`${BASE_URL}/admin/users/${userId}/activate`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error('Greška pri aktivaciji korisnika');
+  }
+
+  return await response.json();
+}
+
+// Deaktivacija korisnika
+export async function deactivateUser(token, userId, reason = "") {
+  const response = await fetch(`${BASE_URL}/admin/users/${userId}/deactivate`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    // Šaljemo razlog u body-ju, kako backend (DeactivateUserRequest model) očekuje
+    body: JSON.stringify({ reason: reason }) 
+  });
+
+  if (!response.ok) {
+    throw new Error('Greška pri deaktivaciji korisnika');
+  }
+
+  return await response.json();
+}

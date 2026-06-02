@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlmodel import Session, select
 from typing import Optional
 from pydantic import BaseModel
@@ -14,6 +14,7 @@ class UserAdminResponse(BaseModel):
     email: str
     role: UserRole
     is_active: bool
+    status: str
 
     class Config:
         from_attributes = True
@@ -69,12 +70,13 @@ def deactivate_user(
     current_user: User = Depends(require_admin)
 ):
     # 1. Pronađi korisnika u bazi preko ID-ja
-    user = db.get(User, id)
+    user = db.exec(select(User).where(User.id == id)).first()
     if not user:
         raise HTTPException(status_code=404, detail="Korisnik nije pronađen")
     
     # 2. Postavi status na False (deaktiviran)
     user.is_active = False
+    user.status = "inactive"
     
     # 3. Spasi izmjene u bazu
     db.add(user)
@@ -91,16 +93,20 @@ def activate_user(
     current_user: User = Depends(require_admin)
 ):
     # 1. Pronađi korisnika u bazi preko ID-ja
-    user = db.get(User, id)
+    user = db.exec(select(User).where(User.id == id)).first()
     if not user:
         raise HTTPException(status_code=404, detail="Korisnik nije pronađen")
     
     # 2. Postavi status na True (aktiviran)
     user.is_active = True
+    user.status = "active"
     
     # 3. Spasi izmjene u bazu
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    print(f"\n[ADMIN AKCIJA] Korisnik {user.email} je upravo aktiviran. Baza sada kaže -> is_active: {user.is_active}, status: {user.status}\n")
+
     
     return {"message": f"Korisnik {user.full_name} je uspješno aktiviran."}

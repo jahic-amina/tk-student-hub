@@ -86,14 +86,16 @@
               {{ user.email }}
             </td>
             <td class="px-6 py-4">
-              <span
-                :class="user.is_active
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-gray-100 text-gray-500'"
-                class="px-3 py-1 rounded-full text-xs font-medium"
+              <button
+                @click="toggleUserStatus(user)"
+                :class="(user.is_active && user.status !== 'inactive')
+                  ? 'bg-green-100 text-green-700 hover:bg-green-200 cursor-pointer'
+                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200 cursor-pointer'"
+                class="px-3 py-1 rounded-full text-xs font-medium transition-colors"
+                title="Klikni za promjenu statusa"
               >
-                {{ user.is_active ? 'Aktivan' : 'Deaktiviran' }}
-              </span>
+                {{ (user.is_active && user.status !== 'inactive') ? 'Aktivan' : 'Deaktiviran' }}
+              </button>
             </td>
             <td class="px-6 py-4 text-sm text-gray-700">
               {{ roleLabel(user.role) }}
@@ -117,8 +119,10 @@
     </div>
   </div>
 </template>
+
+
 <script>
-import { getAllUsers } from '../../services/api.js'
+import { getAllUsers, activateUser, deactivateUser } from '../../services/api.js'
 
 export default {
   name: 'AdminKorisniciView',
@@ -143,7 +147,6 @@ export default {
     async fetchUsers() {
       this.loading = true
       this.error = null
-
       const token = localStorage.getItem('token')
 
       const filters = {
@@ -158,11 +161,44 @@ export default {
         this.users = data.users
         this.total = data.total
       } else {
-        this.error = 'Doslo je do greske pri dohvatu korisnika.'
+        this.error = 'Došlo je do greške pri dohvatu korisnika.'
       }
 
       this.loading = false
-    },
+    }, // <-- Ovaj zarez je jako bitan!
+
+    async toggleUserStatus(user) {
+      const token = localStorage.getItem('token');
+      
+      // Pamtimo staro stanje
+      const oldIsActive = user.is_active;
+      const oldStatus = user.status;
+
+      // Provjeravamo da li je stvarno aktivan
+      const isCurrentlyActive = oldIsActive && oldStatus !== 'inactive';
+
+      // 1. Optimistic UI update
+      if (isCurrentlyActive) {
+        user.is_active = false;
+      } else {
+        user.is_active = true;
+        user.status = 'active'; 
+      }
+
+      try {
+        if (isCurrentlyActive) {
+          await deactivateUser(token, user.id, "Deaktivacija od strane administratora");
+        } else {
+          await activateUser(token, user.id);
+        }
+      } catch (error) {
+        // 2. Rollback u slučaju greške
+        user.is_active = oldIsActive;
+        user.status = oldStatus;
+        alert("Došlo je do greške prilikom promjene statusa.");
+        console.error(error);
+      }
+    }, // <-- I ovaj zarez je jako bitan!
 
     roleLabel(role) {
       const labels = {
