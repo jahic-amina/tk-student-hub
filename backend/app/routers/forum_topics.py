@@ -186,3 +186,71 @@ def report_topic(topic_id: int, report_data: ReportCreate, db: Session = Depends
     db.add(report)
     db.commit()
     return {"success": True}
+
+
+@router.get("/reports/active", response_model=List[Dict[str, Any]])
+def get_active_reports(
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    """Vraća sve aktivne prijave (pending) sa detaljima o temi i korisniku koji je prijavio."""
+    #Sigurnosna provjera: samo admin smije vidjeti prijave
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="Nemate ovlaštenje za pristup administratorskim prijavama."
+        )
+    
+    #Izvlačimo sve prijave koje čekaju na rješavanje
+    statement = select(TopicReport).where(TopicReport.status == "pending").order_by(TopicReport.created_at.desc())
+    reports = db.exec(statement).all()
+    
+    output = []
+    for report in reports:
+        #Pronalazimo temu na koju se prijava odnosi
+        topic = db.get(ForumTopic, report.topic_id)
+        if not topic or topic.is_deleted:
+            # Ako je tema u međuvremenu već trajno obrisana, preskačemo je
+            continue
+            
+        #Pronalazimo korisnika koji je poslao prijavu
+        reporter = db.get(User, report.user_id)
+        reporter_name = reporter.full_name if reporter else "Nepoznat korisnik"
+        
+        output.append({
+            "report_id": report.id,
+            "reason": report.reason,
+            "created_at": report.created_at,
+            "status": report.status,
+            "reporter_name": reporter_name,
+            "topic": build_topic_list_item(db, topic) 
+        })
+        
+    return output
+
+
+@router.patch("/reports/{report_id}/action", status_code=status.HTTP_200_OK)
+def handle_report_action(
+    report_id: int, 
+    action: str,
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    """Omogućava adminu da odbaci prijavu ili označi da je problem riješen."""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Nemate ovlaštenje.")
+        
+    report = db.get(TopicReport, report_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Prijava nije pronađena.")
+        
+    if action == "dismiss":
+        report.status = "dismissed"
+    elif action == "resolve":
+        report.status = "resolved"
+    else:
+        raise HTTPException(status_code=400, detail="Nevalidna akcija. Dozvoljeno: 'dismiss' ili 'resolve'.")
+        
+    db.add(report)
+    db.commit()
+    return {"success": True, "new_status": report.status}
