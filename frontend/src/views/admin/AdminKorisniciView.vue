@@ -100,6 +100,14 @@
             <td class="px-6 py-4 text-sm text-gray-700">
               {{ roleLabel(user.role) }}
             </td>
+            <td class="px-6 py-4 text-right text-sm">
+              <button 
+                @click="openDeleteModal(user)" 
+                class="text-red-600 hover:text-red-800 font-semibold cursor-pointer transition-colors"
+              >
+                OBRIŠI
+              </button>
+            </td>
           </tr>
 
           <tr v-if="users.length === 0">
@@ -117,6 +125,50 @@
       </div>
 
     </div>
+
+    <div v-if="isDeleteModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 overflow-y-auto px-4">
+      <div class="bg-white rounded-xl p-6 max-w-md w-full shadow-xl border border-gray-100">
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">Trajno brisanje korisnika</h3>
+        
+        <p class="text-sm text-gray-500 mb-4">
+          Da li ste sigurni da želite trajno obrisati korisnika 
+          <strong class="text-gray-800">{{ userToDelete?.full_name }}</strong> ({{ userToDelete?.email }})? 
+          Ova akcija je nepovratna.
+        </p>
+        
+        <p class="text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
+          Upišite riječ <span class="text-red-600 font-bold">OBRIŠI</span> za potvrdu:
+        </p>
+        
+        <input 
+          v-model="deleteConfirmationInput"
+          type="text" 
+          placeholder="OBRIŠI" 
+          class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-500/30 mb-5"
+        />
+        
+        <div class="flex justify-end gap-3">
+          <button 
+            @click="closeDeleteModal" 
+            class="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
+          >
+            Odustani
+          </button>
+          <button 
+            @click="confirmDeleteUser" 
+            :disabled="deleteConfirmationInput !== 'OBRIŠI'"
+            :class="deleteConfirmationInput === 'OBRIŠI' 
+              ? 'bg-red-600 hover:bg-red-700 text-white cursor-pointer shadow-sm shadow-red-500/20' 
+              : 'bg-gray-200 text-gray-400 cursor-not-allowed'"
+            class="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+          >
+            Potvrdi brisanje
+          </button>
+        </div>
+      </div>
+    </div>
+
+    
   </div>
 </template>
 
