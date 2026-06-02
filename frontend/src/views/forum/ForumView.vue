@@ -1,8 +1,9 @@
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue';
 import ForumSidebar from '../../components/ForumSidebar.vue';
-import ForumTopicCard from '../../components/ForumTopicCard.vue'; // Nova komponenta
-import ForumPagination from '../../components/ForumPagination.vue'; // Nova komponenta
+import ForumTopicCard from '../../components/ForumTopicCard.vue';
+import ForumPagination from '../../components/ForumPagination.vue';
+import ForumSearchDropdown from '../../components/ForumSearchDropdown.vue'; // Uvezeno
 import { getTopics, getCategories, deleteTopic as deleteTopicApi } from '../../services/forum.js';
 
 const teme = ref([]);
@@ -56,7 +57,13 @@ watch(odabraniKategorijaId, () => { trenutnaStranica.value = 1; ucitajTeme(); })
 watch(trenutnaStranica, () => ucitajTeme());
 
 const filtrirajPoKategoriji = (id) => odabraniKategorijaId.value = id;
-const applySearch = () => { trenutnaStranica.value = 1; ucitajTeme(); };
+
+// Rukovanje pretragom koja dolazi iz ForumSearchDropdown komponente
+const handleSearchSubmitted = (query) => {
+  search.value = query;
+  trenutnaStranica.value = 1;
+  ucitajTeme();
+};
 
 const obrisiTemu = async (temaId) => {
   if (!confirm('Da li ste sigurni da želite obrisati ovu temu?')) return;
@@ -90,17 +97,21 @@ const obrisiTemu = async (temaId) => {
         <div class="flex-1 w-full">
           <div class="flex flex-col justify-between min-h-[500px]">
             <div>
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <span class="px-4 py-1.5 font-extrabold text-xs rounded-full border dark:border-slate-700 shadow-sm transition-all duration-300"
-                  :style="{ backgroundColor: trenutnaKategorija.color + '15', borderColor: trenutnaKategorija.color, color: trenutnaKategorija.color }">
-                  {{ trenutnaKategorija.name }}
-                </span>
-
-                <div class="flex gap-2 w-full sm:w-80">
-                  <input v-model="search" type="text" placeholder="Pretraži teme..." @keyup.enter="applySearch"
-                    class="w-full border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200" />
-                  <button @click="applySearch" class="bg-slate-800 dark:bg-slate-700 text-white text-xs px-4 rounded-lg font-bold hover:bg-slate-700 dark:hover:bg-slate-600">Traži</button>
+              
+              <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 w-full">
+                
+                <div class="flex-shrink-0">
+                  <span class="px-4 py-1.5 font-extrabold text-xs rounded-full border dark:border-slate-700 shadow-sm transition-all duration-300"
+                    :style="{ backgroundColor: trenutnaKategorija.color + '15', borderColor: trenutnaKategorija.color, color: trenutnaKategorija.color }">
+                    {{ trenutnaKategorija.name }}
+                  </span>
                 </div>
+
+                <div class="flex-1 w-full max-w-xl mx-auto">
+                  <ForumSearchDropdown @search-submitted="handleSearchSubmitted" />
+                </div>
+                
+                <div class="hidden md:block w-32"></div>
               </div>
 
               <div v-if="isLoading" class="flex flex-col items-center justify-center py-12">
