@@ -120,7 +120,10 @@ function getInitials(name) {
         v-for="comment in comments"
         :key="comment.id"
         class="bg-white rounded-xl border p-5 flex gap-4 transition-all"
-        :class="comment.is_best_answer ? 'border-yellow-300 bg-yellow-50/30' : 'border-gray-200 shadow-sm'"
+        :class="[
+          comment.is_admin_notice ? 'border-red-300 bg-red-50' : 
+          comment.is_best_answer ? 'border-yellow-300 bg-yellow-50/30' : 'border-gray-200 shadow-sm'
+        ]"
       >
         <!-- Voting lijevo -->
         <div class="flex flex-col items-center gap-0.5 flex-shrink-0 pt-1">
@@ -159,6 +162,9 @@ function getInitials(name) {
               <strong class="text-slate-600">{{ comment.author?.full_name || 'Kolega' }}</strong>
               <span>•</span>
               <span>{{ formatDate(comment.created_at) }}</span>
+              <span v-if="comment.is_admin_notice" class="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-full font-bold shadow-sm flex items-center gap-1">
+                🛡️ Admin Notice
+              </span>
               <span 
                 v-if="comment.is_best_answer"
                 class="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-bold border border-yellow-200"
