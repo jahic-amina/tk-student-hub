@@ -43,8 +43,6 @@ class ForumComment(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     content: str
 
-    is_admin_notice: bool = Field(default=False)
-
     is_best_answer: bool = Field(default=False)
     is_deleted: bool = Field(default=False)
 
@@ -97,24 +95,3 @@ class ForumTopicTag(SQLModel, table=True):
         foreign_key="forum_tags.id",
         primary_key=True
     )
-
-
-class TopicReport(SQLModel, table=True):
-    __tablename__ = "topic_reports"
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    topic_id: int = Field(foreign_key="forum_topics.id")
-    user_id: int = Field(foreign_key="users.id")
-    reason: str = Field(max_length=100)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    status: str = Field(default="pending") 
-    
-
-class AdminAnnouncement(SQLModel, table=True):
-    __tablename__ = "admin_announcements"
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    admin_id: int = Field(foreign_key="users.id")
-    content: str
-    is_active: bool = Field(default=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)

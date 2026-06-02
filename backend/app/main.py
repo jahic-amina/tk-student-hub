@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer
 from app.core.config import settings
 from app.database import create_db_and_tables
-from app.routers import auth, forum_categories, forum_topics, forum_comments, prakse, profiles, forum_tags, forum_admin  
+from app.routers import auth, forum_categories, forum_topics, forum_comments, prakse, profiles, forum_tags   
 from app.core.security import get_current_user
 from app.models.user import User
 
@@ -31,7 +31,7 @@ app.include_router(forum_topics.router)
 app.include_router(forum_comments.router)
 app.include_router(profiles.router)
 app.include_router(forum_tags.router)
-app.include_router(forum_admin.router)
+
 @app.get("/")
 def root():
     return {"message": f"{settings.APP_NAME} API radi"}

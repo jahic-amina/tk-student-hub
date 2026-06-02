@@ -18,8 +18,6 @@ const isSubmitting = ref(false);
 const commentError = ref('');
 const successMessage = ref('');
 
-const isAdmin = computed(() => localStorage.getItem('role') === 'admin');
-
 const sortedComments = computed(() => {
   const komentari = fullTopicData.value?.comments || [];
   return [...komentari].sort((a, b) => {
@@ -74,8 +72,7 @@ const handleNewComment = async ({ content, clearForm }) => {
   try {
     await createComment({
       content: content.trim(),
-      topic_id: parseInt(props.id),
-      is_admin_notice: isAdmin.value
+      topic_id: parseInt(props.id)
     });
     
     successMessage.value = 'Odgovor uspješno objavljen!';
@@ -106,32 +103,16 @@ const handleNewComment = async ({ content, clearForm }) => {
 
       <template v-else-if="fullTopicData">
         
-        <ForumTopicMainCard :topic="fullTopicData" :is-admin="isAdmin" />
+        <ForumTopicMainCard :topic="fullTopicData" />
 
         <ForumTopicCommentsList :comments="sortedComments" :topic-author-id="topicAuthorId" @refresh="() => loadTopicAndComments(props.id)" />
 
-        <div v-if="fullTopicData.is_locked" class="bg-gray-100 text-center text-gray-500 p-4 rounded-xl border border-gray-200 font-bold">
-          🔒 Ova tema je zaključana za daljnje odgovore.
-        </div>
-
-        <div v-else>
-          <ForumTopicCommentForm 
-            v-if="!isAdmin"
-            :is-submitting="isSubmitting"
-            :comment-error="commentError"
-            :success-message="successMessage"
-            @posaljiKomentar="handleNewComment"
-          />
-          <div v-else class="bg-red-50 border border-red-200 p-6 rounded-xl">
-            <h3 class="text-sm font-bold text-red-700 mb-2">🛡️ Ostavite moderacijsko obavještenje na temi</h3>
-            <ForumTopicCommentForm 
-              :is-submitting="isSubmitting"
-              :comment-error="commentError"
-              :success-message="successMessage"
-              @posaljiKomentar="handleNewComment"
-            />
-          </div>
-        </div>
+        <ForumTopicCommentForm 
+          :is-submitting="isSubmitting"
+          :comment-error="commentError"
+          :success-message="successMessage"
+          @posaljiKomentar="handleNewComment"
+        />
 
       </template>
 
