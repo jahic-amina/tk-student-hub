@@ -6,7 +6,8 @@ from sqlmodel import Session, select
 from app.models.application import Application, ApplicationCreate, ApplicationRead, ApplicationStatus, ApplicationUpdate
 from app.models.ad import Ad, AdStatus
 from app.models.user import User, UserRole
-from app.core.security import get_current_user
+from app.models.company import Company
+from app.core.security import get_current_user, get_current_company
 from app.database import get_db
 import os
 from uuid import uuid4
@@ -15,6 +16,7 @@ LOCAL_UPLOAD_DIR = os.path.join(os.getcwd(), "uploads", "applications")
 os.makedirs(LOCAL_UPLOAD_DIR, exist_ok=True)
 
 ALLOWED_FILE_EXTENSIONS = {"pdf"}
+ALLOWED_CONTENT_TYPES = {"application/pdf"}
 
 router = APIRouter(prefix="/applications", tags=["Applications"])
 
@@ -27,7 +29,7 @@ def applications(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if current_user.role not in [UserRole.admin, UserRole.saradnik]:
+    if current_user.role != UserRole.admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have access to this resource.",
@@ -35,22 +37,8 @@ def applications(
     
     statement = select(Application)
     
-    if current_user.role == UserRole.saradnik:
-        if ad_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Contributors must specify the ad_id parameter.",
-            )
-        ad = db.get(Ad, ad_id)
-        if not ad:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Ad not found.",
-            )
-        statement = statement.where(Application.ad_id == ad.id)
-    elif current_user.role == UserRole.admin:
-        if ad_id is not None:
-            statement = statement.where(Application.ad_id == ad_id)
+    if ad_id is not None:
+        statement = statement.where(Application.ad_id == ad_id)
     
     if app_status is not None:
         statement = statement.where(Application.status == app_status)
@@ -59,8 +47,101 @@ def applications(
 
     return db.exec(statement).all()
 
+@router.get("/company/all", response_model=List[ApplicationRead])
+def get_all_company_applications(
+    app_status: Optional[ApplicationStatus] = None,
+    db: Session = Depends(get_db),
+    current_company: Company = Depends(get_current_company),
+):
+    """Get all applications for ads that belong to the current company, with optional status filtering."""
 
-@router.post("/", response_model=ApplicationRead, status_code=status.HTTP_201_CREATED)
+    statement = select(Application).join(Ad, Application.ad_id == Ad.id).where(
+        Ad.company_id == current_company.id,
+        Application.is_archived == False
+    )
+    
+    if app_status is not None:
+        statement = statement.where(Application.status == app_status)
+
+    return db.exec(statement).all()
+
+@router.get("/company/by-ad/{ad_id}", response_model=List[ApplicationRead])
+def get_company_applications(
+    ad_id: int,
+    limit: int = 100,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+    current_company: Company = Depends(get_current_company),
+):
+    """Get applications for a specific ad that belongs to the current company."""
+    ad = db.get(Ad, ad_id)
+    if not ad:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ad not found.",
+        )
+    
+    # Check if this ad belongs to the current company
+    if ad.company_id != current_company.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to applications for this ad.",
+        )
+    
+    # Get applications for this ad
+    statement = (select(Application).where(
+            Application.ad_id == ad_id,
+            Application.is_archived == False
+        )
+        .limit(limit)
+        .offset(offset)
+    )
+    
+    return db.exec(statement).all()
+
+@router.get("/company/application/{application_id}", response_model=ApplicationRead)
+def get_company_application(
+    application_id: int,
+    db: Session=Depends(get_db),
+    current_company: Company=Depends(get_current_company),                              
+    ):
+    application = db.get(Application, application_id)
+    if not application:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found.",
+        )
+    ad = db.get(Ad, application.ad_id)
+    if not ad or ad.company_id != current_company.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to this application.",
+        )
+
+    return application
+
+@router.get("/{application_id}", response_model=ApplicationRead)
+def get_application(
+    application_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    application = db.get(Application, application_id)
+    if not application:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found.",
+        )
+
+    if current_user.role != UserRole.admin and application.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to this application.",
+        )
+
+    return application
+
+@router.post("/", response_model=ApplicationRead, status_code=status.HTTP_201_CREATED)  
 def create_application(
     payload: ApplicationCreate,
     db: Session = Depends(get_db),
@@ -104,29 +185,6 @@ def create_application(
     db.refresh(application)
     return application
 
-
-@router.get("/{application_id}", response_model=ApplicationRead)
-def get_application(
-    application_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    application = db.get(Application, application_id)
-    if not application:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Application not found.",
-        )
-
-    if current_user.role != UserRole.admin and application.user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have access to this application.",
-        )
-
-    return application
-
-
 @router.patch("/{application_id}", response_model=ApplicationRead)
 def update_application(
     application_id: int,
@@ -156,28 +214,63 @@ def update_application(
     db.refresh(application)
     return application
 
-
 @router.post("/upload-cv")
 def upload_cv_local(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
 ):
-    # Validacija datoteke
-    if file.content_type not in ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]:
-        raise HTTPException(status_code=400, detail="File must be PDF, DOC or DOCX.")
+    MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
+
+    file_ext= file.filename.split(".")[-1].lower()
+    if file_ext not in ALLOWED_FILE_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="File must have a .pdf extension.") 
+    if file.content_type not in ALLOWED_CONTENT_TYPES:
+        raise HTTPException(status_code=400, detail="File must be a PDF.") 
+     
+    content = file.file.read()
+
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="File size exceeds 5 MB limit.")    
     
     # Spremi fajl sa UUID imenom
-    file_ext = file.filename.split(".")[-1].lower()
     filename = f"{uuid4().hex}.{file_ext}"
     cv_path = f"uploads/applications/{filename}"
     dest = os.path.join(LOCAL_UPLOAD_DIR, filename)
     
     with open(dest, "wb") as f:
-        content = file.file.read()
         f.write(content)
 
     return {"path": cv_path}
 
+@router.patch("/company/{application_id}", response_model=ApplicationRead)
+def update_application_company(
+    application_id: int,
+    payload: ApplicationUpdate,
+    db: Session = Depends(get_db),
+    current_company: Company = Depends(get_current_company),
+):
+    application = db.get(Application, application_id)
+    if not application:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found.",
+        )
+
+    ad = db.get(Ad, application.ad_id)
+    if not ad or ad.company_id != current_company.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to alter this application.",
+        )
+
+    updates = payload.model_dump(exclude_unset=True)
+    for field_name, field_value in updates.items():
+        setattr(application, field_name, field_value)
+
+    db.add(application)
+    db.commit()
+    db.refresh(application)
+    return application
 
 @router.delete("/{application_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_application(

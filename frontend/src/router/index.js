@@ -4,6 +4,7 @@ import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import AdsView from '../views/ads/AdsView.vue'
 import AdView from '../views/ads/AdView.vue'
+import ApplicationView from '../views/application/ApplicationView.vue'
 import CompanyRegisterView from '../views/company/CompanyRegisterView.vue'
 import CompanyLoginView from '../views/company/CompanyLoginView.vue'
 import AdminCompanyApprovalView from '../views/company/AdminCompanyApprovalView.vue'
@@ -36,6 +37,12 @@ const routes = [
     path: '/ads/:id',
     name: 'ad-detail',
     component: AdView
+  },
+  {
+    path: '/ads/:id/apply',
+    name: 'application',
+    component: ApplicationView,
+    meta: { requiresAuth: true }
   },
   {
     path: '/companies/:id',

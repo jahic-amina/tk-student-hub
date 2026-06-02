@@ -59,7 +59,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 
 
 def get_current_company(token: str = Depends(oauth2_scheme_company), db: Session = Depends(get_db)):
-    from backend.app.models.company import Company
+    from app.models.company import Company
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials.",
