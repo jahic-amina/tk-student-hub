@@ -61,3 +61,46 @@ def get_all_users(
         "total": len(users),
         "prikazano": len(users)
     }
+
+@router.post("/users/{id}/deactivate")
+def deactivate_user(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    # 1. Pronađi korisnika u bazi preko ID-ja
+    user = db.get(User, id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Korisnik nije pronađen")
+    
+    # 2. Postavi status na False (deaktiviran)
+    user.is_active = False
+    
+    # 3. Spasi izmjene u bazu
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    
+    return {"message": f"Korisnik {user.full_name} je uspješno deaktiviran."}
+
+
+@router.post("/users/{id}/activate")
+def activate_user(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    # 1. Pronađi korisnika u bazi preko ID-ja
+    user = db.get(User, id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Korisnik nije pronađen")
+    
+    # 2. Postavi status na True (aktiviran)
+    user.is_active = True
+    
+    # 3. Spasi izmjene u bazu
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    
+    return {"message": f"Korisnik {user.full_name} je uspješno aktiviran."}
