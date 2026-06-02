@@ -79,7 +79,7 @@ export default {
           const user = await getMe(response.access_token)
           
           // --- KLJUČNI DIO: Provjeravamo da li je backend vratio 'detail' (grešku) ---
-          if (user && user.detail) {
+          if ((user && user.detail) || (user && user.is_active === false)) {
              // Znači da je backend blokirao pristup (403) i vratio poruku o deaktivaciji!
              localStorage.removeItem('token') // Odmah brišemo token
              this.error = 'Vaš nalog je deaktiviran. Molimo obratite se administratoru.'

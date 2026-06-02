@@ -86,17 +86,27 @@
               {{ user.email }}
             </td>
             <td class="px-6 py-4">
-              <span
-                :class="user.is_active
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-gray-100 text-gray-500'"
-                class="px-3 py-1 rounded-full text-xs font-medium"
+              <button
+                @click="toggleUserStatus(user)"
+                :class="(user.is_active && user.status !== 'inactive')
+                  ? 'bg-green-100 text-green-700 hover:bg-green-200 cursor-pointer'
+                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200 cursor-pointer'"
+                class="px-3 py-1 rounded-full text-xs font-medium transition-colors"
+                title="Klikni za promjenu statusa"
               >
-                {{ user.is_active ? 'Aktivan' : 'Deaktiviran' }}
-              </span>
+                {{ (user.is_active && user.status !== 'inactive') ? 'Aktivan' : 'Deaktiviran' }}
+              </button>
             </td>
             <td class="px-6 py-4 text-sm text-gray-700">
               {{ roleLabel(user.role) }}
+            </td>
+            <td class="px-6 py-4 text-right text-sm">
+              <button 
+                @click="openDeleteModal(user)" 
+                class="text-red-600 hover:text-red-800 font-semibold cursor-pointer transition-colors"
+              >
+                OBRIŠI
+              </button>
             </td>
           </tr>
 
@@ -115,10 +125,56 @@
       </div>
 
     </div>
+
+    <div v-if="isDeleteModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 overflow-y-auto px-4">
+      <div class="bg-white rounded-xl p-6 max-w-md w-full shadow-xl border border-gray-100">
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">Trajno brisanje korisnika</h3>
+        
+        <p class="text-sm text-gray-500 mb-4">
+          Da li ste sigurni da želite trajno obrisati korisnika 
+          <strong class="text-gray-800">{{ userToDelete?.full_name }}</strong> ({{ userToDelete?.email }})? 
+          Ova akcija je nepovratna.
+        </p>
+        
+        <p class="text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
+          Upišite riječ <span class="text-red-600 font-bold">OBRIŠI</span> za potvrdu:
+        </p>
+        
+        <input 
+          v-model="deleteConfirmationInput"
+          type="text" 
+          placeholder="OBRIŠI" 
+          class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-500/30 mb-5"
+        />
+        
+        <div class="flex justify-end gap-3">
+          <button 
+            @click="closeDeleteModal" 
+            class="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
+          >
+            Odustani
+          </button>
+          <button 
+            @click="confirmDeleteUser" 
+            :disabled="deleteConfirmationInput !== 'OBRIŠI'"
+            :class="deleteConfirmationInput === 'OBRIŠI' 
+              ? 'bg-red-600 hover:bg-red-700 text-white cursor-pointer shadow-sm shadow-red-500/20' 
+              : 'bg-gray-200 text-gray-400 cursor-not-allowed'"
+            class="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+          >
+            Potvrdi brisanje
+          </button>
+        </div>
+      </div>
+    </div>
+
+
   </div>
 </template>
+
+
 <script>
-import { getAllUsers } from '../../services/api.js'
+import { getAllUsers, activateUser, deactivateUser, deleteUser } from '../../services/api.js'
 
 export default {
   name: 'AdminKorisniciView',
@@ -131,7 +187,10 @@ export default {
       error: null,        
       searchQuery: '',    
       selectedRole: '',   
-      selectedStatus: '' 
+      selectedStatus: '', 
+      isDeleteModalOpen: false,
+      userToDelete: null,
+      deleteConfirmationInput: ''
     }
   },
 
@@ -143,7 +202,6 @@ export default {
     async fetchUsers() {
       this.loading = true
       this.error = null
-
       const token = localStorage.getItem('token')
 
       const filters = {
@@ -158,10 +216,78 @@ export default {
         this.users = data.users
         this.total = data.total
       } else {
-        this.error = 'Doslo je do greske pri dohvatu korisnika.'
+        this.error = 'Došlo je do greške pri dohvatu korisnika.'
       }
 
       this.loading = false
+    },
+
+    async toggleUserStatus(user) {
+      const token = localStorage.getItem('token');
+      
+      // Pamtimo staro stanje
+      const oldIsActive = user.is_active;
+      const oldStatus = user.status;
+
+      // Provjeravamo da li je stvarno aktivan
+      const isCurrentlyActive = oldIsActive && oldStatus !== 'inactive';
+
+      // 1. Optimistic UI update
+      if (isCurrentlyActive) {
+        user.is_active = false;
+      } else {
+        user.is_active = true;
+        user.status = 'active'; 
+      }
+
+      try {
+        if (isCurrentlyActive) {
+          await deactivateUser(token, user.id, "Deaktivacija od strane administratora");
+        } else {
+          await activateUser(token, user.id);
+        }
+      } catch (error) {
+        // 2. Rollback u slučaju greške
+        user.is_active = oldIsActive;
+        user.status = oldStatus;
+        alert("Došlo je do greške prilikom promjene statusa.");
+        console.error(error);
+      }
+    }, 
+
+    // Metode za upravljanje brisanjem
+    openDeleteModal(user) {
+      this.userToDelete = user
+      this.deleteConfirmationInput = ''
+      this.isDeleteModalOpen = true
+    },
+
+    closeDeleteModal() {
+      this.isDeleteModalOpen = false
+      this.userToDelete = null
+      this.deleteConfirmationInput = ''
+    },
+
+    async confirmDeleteUser() {
+      // Dvostruka provjera za svaki slučaj
+      if (this.deleteConfirmationInput !== 'OBRIŠI') return
+
+      const token = localStorage.getItem('token')
+      
+      try {
+        // Poziv API servisa za brisanje
+        await deleteUser(token, this.userToDelete.id)
+        
+        // Lokalno uklanjanje korisnika iz tabele (Optimistic / Instant UX)
+        this.users = this.users.filter(u => u.id !== this.userToDelete.id)
+        this.total--
+        
+        // Zatvaranje modala
+        this.closeDeleteModal()
+      } catch (error) {
+        alert("Došlo je do greške prilikom brisanja korisnika.")
+        console.error(error)
+      }
     },
 
     roleLabel(role) {
