@@ -35,10 +35,11 @@ export async function getCategories() {
   return handleResponse(response, 'Greška pri dohvatanju kategorija.');
 }
 
-export async function getTopics({ category_id = null, search = "", page = 1, per_page = 5 } = {}) {
+export async function getTopics({ category_id = null, search = "", page = 1, per_page = 5, sort_by = "najnovije", unanswered = false, days_old = null } = {}) {
   let queryParams = new URLSearchParams({
     page: page.toString(),
-    per_page: per_page.toString()
+    per_page: per_page.toString(),
+    sort_by: sort_by
   });
 
   if (category_id !== null) {
@@ -47,6 +48,14 @@ export async function getTopics({ category_id = null, search = "", page = 1, per
 
   if (search && search.trim()) {
     queryParams.append('search', search.trim());
+  }
+
+  if (unanswered) {
+    queryParams.append('unanswered', 'true');
+  }
+
+  if (days_old !== null && days_old > 0) {
+    queryParams.append('days_old', days_old.toString());
   }
 
   const response = await fetch(`${BASE_URL}/forum/topics?${queryParams.toString()}`, {
