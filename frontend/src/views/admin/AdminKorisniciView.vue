@@ -88,13 +88,11 @@
             <td class="px-6 py-4">
               <button
                 @click="toggleUserStatus(user)"
-                :class="(user.is_active && user.status !== 'inactive')
-                  ? 'bg-green-100 text-green-700 hover:bg-green-200 cursor-pointer'
-                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200 cursor-pointer'"
+                :class="user.is_active ? 'bg-green-100 text-green-700 hover:bg-green-200 cursor-pointer' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 cursor-pointer'"
                 class="px-3 py-1 rounded-full text-xs font-medium transition-colors"
                 title="Klikni za promjenu statusa"
               >
-                {{ (user.is_active && user.status !== 'inactive') ? 'Aktivan' : 'Deaktiviran' }}
+                {{ user.is_active ? 'Aktivan' : 'Deaktiviran' }}
               </button>
             </td>
             <td class="px-6 py-4 text-sm text-gray-700">
@@ -227,21 +225,11 @@ export default {
       
       // Pamtimo staro stanje
       const oldIsActive = user.is_active;
-      const oldStatus = user.status;
 
-      // Provjeravamo da li je stvarno aktivan
-      const isCurrentlyActive = oldIsActive && oldStatus !== 'inactive';
-
-      // 1. Optimistic UI update
-      if (isCurrentlyActive) {
-        user.is_active = false;
-      } else {
-        user.is_active = true;
-        user.status = 'active'; 
-      }
+      user.is_active = !user.is_active;
 
       try {
-        if (isCurrentlyActive) {
+        if (oldIsActive) {
           await deactivateUser(token, user.id, "Deaktivacija od strane administratora");
         } else {
           await activateUser(token, user.id);
@@ -249,7 +237,6 @@ export default {
       } catch (error) {
         // 2. Rollback u slučaju greške
         user.is_active = oldIsActive;
-        user.status = oldStatus;
         alert("Došlo je do greške prilikom promjene statusa.");
         console.error(error);
       }
