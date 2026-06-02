@@ -2,6 +2,8 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { deleteTopic } from '../services/forum';
+import { reportTopic } from '../services/forum';
+import { toggleTopicLock } from '../services/forum_admin';
 
 const router = useRouter();
 const currentUserId = ref(null);
@@ -22,7 +24,8 @@ onMounted(async () => {
 });
 
 const props = defineProps({
-  topic: { type: Object, required: true }
+  topic: { type: Object, required: true },
+  isAdmin: { type: Boolean, default: false }
 });
 
 const formatDate = (dateValue) => {
@@ -44,6 +47,9 @@ const getInitials = (name) => {
 const showShareBox = ref(false);
 const copySuccess = ref(false);
 const shareUrl = computed(() => window.location.href);
+
+const showReportOptions = ref(false);
+const reportReasons = ['Spam', 'Neprimjeren rječnik / Vrijeđanje', 'Off-topic', 'Netačne informacije'];
 
 function toggleShare() {
   showShareBox.value = !showShareBox.value;
@@ -75,6 +81,21 @@ async function handleDeleteTopic() {
   } catch (e) {
     alert('Greška pri brisanju teme.');
   }
+}
+
+async function handleReport(reason) {
+  try {
+    await reportTopic(props.topic.id, reason);
+    alert('Tema je uspješno prijavljena adminima.');
+    showReportOptions.value = false;
+  } catch (e) {
+    alert('Greška pri prijavi.');
+  }
+}
+
+async function handleLockTopic() {
+  await toggleTopicLock(props.topic.id);
+  props.topic.is_locked = !props.topic.is_locked;
 }
 
 </script>
