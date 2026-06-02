@@ -26,4 +26,4 @@ frontend/.vite/
 .idea/
 
 # Superpowers internal docs
-docs/superpowers/
+docs/superpowers/venv/
