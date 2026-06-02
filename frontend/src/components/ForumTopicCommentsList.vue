@@ -120,7 +120,7 @@ function getInitials(name) {
         v-for="comment in comments"
         :key="comment.id"
         class="bg-white dark:bg-slate-800 rounded-xl border p-5 flex gap-4 transition-all"
-        :class="comment.is_best_answer ? 'border-yellow-300 dark:border-yellow-600 bg-yellow-50/30 dark:bg-yellow-950/20' : 'border-gray-200 dark:border-slate-700 shadow-sm'"
+        :class="comment.is_best_answer ? 'border-yellow-400 dark:border-yellow-600 bg-yellow-50/40 dark:bg-yellow-950/20 ring-1 ring-yellow-400/30' : 'border-gray-200 dark:border-slate-700 shadow-sm'"
       >
         <div class="flex flex-col items-center gap-0.5 flex-shrink-0 pt-1">
           <button
@@ -157,9 +157,10 @@ function getInitials(name) {
               <strong class="text-slate-600 dark:text-slate-300">{{ comment.author?.full_name || 'Kolega' }}</strong>
               <span>•</span>
               <span>{{ formatDate(comment.created_at) }}</span>
+              
               <span 
                 v-if="comment.is_best_answer"
-                class="text-[10px] bg-yellow-100 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-400 px-2 py-0.5 rounded-full font-bold border border-yellow-200 dark:border-yellow-900"
+                class="text-[10px] bg-yellow-100 dark:bg-yellow-950/60 text-yellow-700 dark:text-yellow-400 px-2 py-0.5 rounded-full font-bold border border-yellow-300 dark:border-yellow-800"
               >
                 ✓ Najbolji odgovor
               </span>
@@ -169,7 +170,7 @@ function getInitials(name) {
                 v-if="isTopicAuthor"
                 @click="handleBestAnswer(comment)"
                 class="w-7 h-7 flex items-center justify-center rounded-full transition-all"
-                :class="comment.is_best_answer ? 'text-yellow-400 hover:text-red-400' : 'text-slate-300 dark:text-slate-600 hover:text-yellow-400 dark:hover:text-yellow-500'"
+                :class="comment.is_best_answer ? 'text-yellow-500 hover:text-red-400' : 'text-slate-300 dark:text-slate-600 hover:text-yellow-500 dark:hover:text-yellow-400'"
                 :title="comment.is_best_answer ? 'Ukloni najbolji odgovor' : 'Označi kao najbolji odgovor'"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import ForumTopicMainCard from '../../components/ForumTopicMainCard.vue';
 import ForumTopicCommentsList from '../../components/ForumTopicCommentsList.vue';
@@ -19,16 +19,22 @@ const commentError = ref('');
 const successMessage = ref('');
 
 const sortedComments = computed(() => {
-  return fullTopicData.value?.comments || [];
+  const komentari = fullTopicData.value?.comments || [];
+  return [...komentari].sort((a, b) => {
+    if (a.is_best_answer && !b.is_best_answer) return -1;
+    if (!a.is_best_answer && b.is_best_answer) return 1;
+    return 0;
+  });
 });
 
 const topicAuthorId = computed(() => fullTopicData.value?.author?.id || null);
 
-const loadTopicAndComments = async () => {
+const loadTopicAndComments = async (topicId) => {
+  if (!topicId) return;
   isLoading.value = true;
   try {
-    await incrementTopicView(props.id);
-    fullTopicData.value = await getTopicById(props.id);
+    await incrementTopicView(topicId);
+    fullTopicData.value = await getTopicById(topicId);
   } catch (error) {
     console.error("Greška pri učitavanju detalja:", error);
   } finally {
@@ -37,8 +43,17 @@ const loadTopicAndComments = async () => {
 };
 
 onMounted(async () => {
-  await loadTopicAndComments();
+  await loadTopicAndComments(props.id);
 });
+
+watch(
+  () => props.id,
+  async (noviId) => {
+    if (noviId) {
+      await loadTopicAndComments(noviId);
+    }
+  }
+);
 
 const handleNewComment = async ({ content, clearForm }) => {
   commentError.value = '';
@@ -62,7 +77,7 @@ const handleNewComment = async ({ content, clearForm }) => {
     
     successMessage.value = 'Odgovor uspješno objavljen!';
     clearForm(); 
-    await loadTopicAndComments(); 
+    await loadTopicAndComments(props.id); 
   } catch (error) {
     commentError.value = 'Došlo je do greške. Pokušajte ponovo.';
   } finally {
@@ -90,7 +105,7 @@ const handleNewComment = async ({ content, clearForm }) => {
         
         <ForumTopicMainCard :topic="fullTopicData" />
 
-        <ForumTopicCommentsList :comments="sortedComments" :topic-author-id="topicAuthorId" @refresh="loadTopicAndComments" />
+        <ForumTopicCommentsList :comments="sortedComments" :topic-author-id="topicAuthorId" @refresh="() => loadTopicAndComments(props.id)" />
 
         <ForumTopicCommentForm 
           :is-submitting="isSubmitting"
