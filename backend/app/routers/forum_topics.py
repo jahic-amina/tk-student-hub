@@ -94,6 +94,52 @@ def get_all_topics(
     topics_list = [build_topic_list_item(db, topic) for topic in topics]
     return {"items": topics_list, "total": total_topics, "page": page, "per_page": per_page}
 
+@router.get("/suggestions")
+def get_suggestions(search: Optional[str] = None, db: Session = Depends(get_db)):
+    # --- STANJE 1: Korisnik je samo kliknuo na Search Bar (Prazan input) ---
+    if not search or not search.strip():
+        # 1. Najgledanije teme (Prvo sortiraj po pregledima, pa po ID-u)
+        popular_stmt = (
+            select(ForumTopic)
+            .where(ForumTopic.is_deleted == False)
+            .order_by(ForumTopic.views_count.desc(), ForumTopic.id.desc())
+            .limit(3)
+        )
+        popular_topics = db.exec(popular_stmt).all()
+        
+        # 2. Najaktivnije rasprave 
+        # Da ne bismo lomili bazu komplikovanim join-ovanjem tabela u ovom trenutku,
+        # povlačimo najnovije teme jer su one po prirodi najaktivnije (Reddit "Hot" logika)
+        active_stmt = (
+            select(ForumTopic)
+            .where(ForumTopic.is_deleted == False)
+            .order_by(ForumTopic.created_at.desc())
+            .limit(3)
+        )
+        active_topics = db.exec(active_stmt).all()
+        
+        return {
+            "popular": [{"id": t.id, "title": t.title} for t in popular_topics],
+            "active": [{"id": t.id, "title": t.title} for t in active_topics]
+        }
+    
+    # --- STANJE 2: Korisnik aktivno kuca tekst ---
+    search_term = search.strip()
+    
+    # 1. Pokušaj: Teme koje POČINJU na to slovo/riječ (npr. "D%")
+    starts_with_value = f"{search_term}%"
+    filtered_stmt = select(ForumTopic).where(ForumTopic.is_deleted == False).where(ForumTopic.title.ilike(starts_with_value)).limit(5)
+    filtered_topics = db.exec(filtered_stmt).all()
+    
+    # 2. Pokušaj (Fallback): Ako nema tema koje počinju tim slovom, nađi one koje ga sadrže bilo gdje (%d%)
+    if not filtered_topics:
+        contains_value = f"%{search_term}%"
+        filtered_stmt = select(ForumTopic).where(ForumTopic.is_deleted == False).where(ForumTopic.title.ilike(contains_value)).limit(5)
+        filtered_topics = db.exec(filtered_stmt).all()
+    
+    return {
+        "filtered": [{"id": t.id, "title": t.title} for t in filtered_topics]
+    }
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def create_forum_topic(
