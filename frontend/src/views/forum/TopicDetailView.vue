@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import ForumTopicMainCard from '../../components/ForumTopicMainCard.vue';
 import ForumTopicCommentsList from '../../components/ForumTopicCommentsList.vue';
@@ -21,16 +21,22 @@ const successMessage = ref('');
 const isAdmin = computed(() => localStorage.getItem('role') === 'admin');
 
 const sortedComments = computed(() => {
-  return fullTopicData.value?.comments || [];
+  const komentari = fullTopicData.value?.comments || [];
+  return [...komentari].sort((a, b) => {
+    if (a.is_best_answer && !b.is_best_answer) return -1;
+    if (!a.is_best_answer && b.is_best_answer) return 1;
+    return 0;
+  });
 });
 
 const topicAuthorId = computed(() => fullTopicData.value?.author?.id || null);
 
-const loadTopicAndComments = async () => {
+const loadTopicAndComments = async (topicId) => {
+  if (!topicId) return;
   isLoading.value = true;
   try {
-    await incrementTopicView(props.id);
-    fullTopicData.value = await getTopicById(props.id);
+    await incrementTopicView(topicId);
+    fullTopicData.value = await getTopicById(topicId);
   } catch (error) {
     console.error("Greška pri učitavanju detalja:", error);
   } finally {
@@ -39,8 +45,17 @@ const loadTopicAndComments = async () => {
 };
 
 onMounted(async () => {
-  await loadTopicAndComments();
+  await loadTopicAndComments(props.id);
 });
+
+watch(
+  () => props.id,
+  async (noviId) => {
+    if (noviId) {
+      await loadTopicAndComments(noviId);
+    }
+  }
+);
 
 const handleNewComment = async ({ content, clearForm }) => {
   commentError.value = '';
@@ -65,7 +80,7 @@ const handleNewComment = async ({ content, clearForm }) => {
     
     successMessage.value = 'Odgovor uspješno objavljen!';
     clearForm(); 
-    await loadTopicAndComments(); 
+    await loadTopicAndComments(props.id); 
   } catch (error) {
     commentError.value = 'Došlo je do greške. Pokušajte ponovo.';
   } finally {
@@ -75,12 +90,12 @@ const handleNewComment = async ({ content, clearForm }) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 p-6">
+  <div class="min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-6 transition-colors duration-200">
     <div class="max-w-4xl mx-auto">
 
       <button
         @click="router.push('/forum')"
-        class="flex items-center gap-2 text-slate-500 hover:text-slate-700 mb-6 text-sm transition-colors font-semibold bg-transparent border-none cursor-pointer"
+        class="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 mb-6 text-sm transition-colors font-semibold bg-transparent border-none cursor-pointer"
       >
         ← Nazad na listu
       </button>
@@ -93,7 +108,7 @@ const handleNewComment = async ({ content, clearForm }) => {
         
         <ForumTopicMainCard :topic="fullTopicData" :is-admin="isAdmin" />
 
-        <ForumTopicCommentsList :comments="sortedComments" :topic-author-id="topicAuthorId" @refresh="loadTopicAndComments" />
+        <ForumTopicCommentsList :comments="sortedComments" :topic-author-id="topicAuthorId" @refresh="() => loadTopicAndComments(props.id)" />
 
         <div v-if="fullTopicData.is_locked" class="bg-gray-100 text-center text-gray-500 p-4 rounded-xl border border-gray-200 font-bold">
           🔒 Ova tema je zaključana za daljnje odgovore.

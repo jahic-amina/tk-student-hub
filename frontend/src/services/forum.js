@@ -13,7 +13,7 @@ function getHeaders() {
 // Centralizovana funkcija za obradu odgovora i izvlačenje grešaka sa backenda
 async function handleResponse(response, defaultErrorMessage) {
   if (response.ok) {
-    // Ako nema sadržaja (24 No Content), vrati prazan objekat ili true
+    // Ako nema sadržaja (204 No Content), vrati prazan objekat ili true
     if (response.status === 204) return { success: true };
     return response.json();
   }
@@ -35,10 +35,11 @@ export async function getCategories() {
   return handleResponse(response, 'Greška pri dohvatanju kategorija.');
 }
 
-export async function getTopics({ category_id = null, search = "", page = 1, per_page = 5 } = {}) {
+export async function getTopics({ category_id = null, search = "", page = 1, per_page = 5, sort_by = "najnovije", unanswered = false, days_old = null } = {}) {
   let queryParams = new URLSearchParams({
     page: page.toString(),
-    per_page: per_page.toString()
+    per_page: per_page.toString(),
+    sort_by: sort_by
   });
 
   if (category_id !== null) {
@@ -47,6 +48,14 @@ export async function getTopics({ category_id = null, search = "", page = 1, per
 
   if (search && search.trim()) {
     queryParams.append('search', search.trim());
+  }
+
+  if (unanswered) {
+    queryParams.append('unanswered', 'true');
+  }
+
+  if (days_old !== null && days_old > 0) {
+    queryParams.append('days_old', days_old.toString());
   }
 
   const response = await fetch(`${BASE_URL}/forum/topics?${queryParams.toString()}`, {
@@ -139,31 +148,41 @@ export async function reportTopic(topicId, reason) {
 }
 
 export async function getActiveAnnouncements() {
-  const response = await fetch(`${BASE_URL}/admin/announcements/active`, { headers: getHeaders() });
+  const response = await fetch(`${BASE_URL}/admin/announcements/active`, { 
+    headers: getHeaders() 
+  });
   return handleResponse(response, 'Greška pri učitavanju obavještenja.');
 }
 
-export async function getActiveReports () {
+export async function getActiveReports() {
   const response = await fetch(`${BASE_URL}/forum/topics/reports/active`, {
     method: 'GET',
     headers: getHeaders()
   });
-  if (!response.ok) {
-    throw new Error('Neuspješno učitavanje prijava za moderaciju.');
-  }
-  return await response.json();
-};
+  return handleResponse(response, 'Neuspješno učitavanje prijava za moderaciju.');
+}
 
 export async function handleReportAction(reportId, action) {
   const response = await fetch(`${BASE_URL}/forum/topics/reports/${reportId}/action?action=${action}`, {
     method: 'PATCH',
     headers: getHeaders()
   });
-  if (!response.ok) {
-    throw new Error('Greška pri izvršavanju akcije nad prijavom.');
+  return handleResponse(response, 'Greška pri izvršavanju akcije nad prijavom.');
+}
+
+export async function getSearchSuggestions(query = "", options = {}) {
+  let url = `${BASE_URL}/forum/topics/suggestions`;
+  
+  if (query && query.trim()) {
+    url += `?search=${encodeURIComponent(query.trim())}`;
   }
-  return await response.json();
-};
+  
+  const response = await fetch(url, {
+    headers: getHeaders(),
+    ...options
+  });
+  return handleResponse(response, 'Greška pri dohvatanju sugestija.');
+}
 
 export default {
   getCategories,
@@ -180,5 +199,6 @@ export default {
   reportTopic,
   getActiveAnnouncements,
   getActiveReports,
-  handleReportAction
+  handleReportAction,
+  getSearchSuggestions
 };

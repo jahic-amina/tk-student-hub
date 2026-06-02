@@ -23,4 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 
-.venv
+venv/
+.venv/
+__pycache__/
+*.pyc
+.env
+node_modules/
+dist/
+.DS_Store

@@ -136,6 +136,7 @@ def toggle_best_answer(
     db.add(comment)
     db.commit()
     db.refresh(comment)
+    db.expire_all()
     return {"id": comment.id, "is_best_answer": comment.is_best_answer}
 
 
