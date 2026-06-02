@@ -130,7 +130,7 @@
 
         <div>
           <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            💼 Aktivni oglasi za prakse
+            💼 Aktivni oglasi 
             <span class="text-gray-400 font-medium text-base">({{ ads.length }})</span>
           </h2>
 
@@ -158,11 +158,21 @@
           </div>
 
           <div class="space-y-4">
-            <div>
-              <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Naslov pozicije</label>
-              <input v-model="adForm.title" type="text" placeholder="npr. Junior Backend Developer" class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-orange-500" />
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Naslov pozicije</label>
+                <input v-model="adForm.title" type="text" placeholder="npr. Junior Backend Developer" class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-orange-500" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Tip oglasa</label>
+                <select v-model="adForm.type" class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-orange-500 bg-white">
+                  <option value="internship">Praksa</option>
+                  <option value="education">Edukacija</option>
+                  <option value="scholarship">Stipendija</option>
+                </select>
+              </div>
             </div>
-            
+
             <div class="grid grid-cols-3 gap-2">
               <div class="col-span-1">
                 <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Oblast</label>

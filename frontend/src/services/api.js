@@ -218,3 +218,30 @@ export async function updateApplicationStatus(applicationId, status, feedback, t
   })
   return parseResponse(response)
 }
+export async function getBookmarks(token) {
+  const response = await fetch(`${BASE_URL}/bookmarks/`, {
+    headers: authHeaders(token)
+  })
+  return parseResponse(response)
+}
+
+export async function addBookmark(adId, token) {
+  const response = await fetch(`${BASE_URL}/bookmarks/`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ ad_id: adId })
+  })
+  return parseResponse(response)
+}
+
+export async function removeBookmark(bookmarkId, token) {
+  const response = await fetch(`${BASE_URL}/bookmarks/${bookmarkId}`, {
+    method: 'DELETE',
+    headers: authHeaders(token)
+  })
+  if (!response.ok) {
+    const message = await response.text()
+    throw new Error(message || `Request failed with status ${response.status}`)
+  }
+  return true;
+}
