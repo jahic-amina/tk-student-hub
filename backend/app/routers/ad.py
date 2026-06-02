@@ -6,7 +6,8 @@ from app.models.ad import Ad, AdStatus, AdType, AdCreate, AdUpdate, AdPatch, Sta
 from app.models.user import User, UserRole
 from app.core.security import get_current_user
 from app.database import get_db
-
+from app.models.company import Company 
+from app.core.security import get_current_company
 router = APIRouter(prefix="/ads", tags=["Ads"])
 
 
@@ -121,11 +122,20 @@ def get_ad(ad_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=AdRead, status_code=status.HTTP_201_CREATED)
-def create_ad(data: AdCreate, db: Session = Depends(get_db)):
-    ad = Ad(**data.model_dump())
+def create_ad(
+    data: AdCreate, 
+    db: Session = Depends(get_db),
+    current_company: Company = Depends(get_current_company)  
+):
+    ad_data = data.model_dump()
+    
+    ad_data["company_id"] = current_company.id
+    
+    ad = Ad(**ad_data)
     db.add(ad)
     db.commit()
     db.refresh(ad)
+    
     return ad_to_read(ad)
 
 
