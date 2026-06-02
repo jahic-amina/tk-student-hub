@@ -168,13 +168,13 @@
       </div>
     </div>
 
-    
+
   </div>
 </template>
 
 
 <script>
-import { getAllUsers, activateUser, deactivateUser } from '../../services/api.js'
+import { getAllUsers, activateUser, deactivateUser, deleteUser } from '../../services/api.js'
 
 export default {
   name: 'AdminKorisniciView',
@@ -187,7 +187,10 @@ export default {
       error: null,        
       searchQuery: '',    
       selectedRole: '',   
-      selectedStatus: '' 
+      selectedStatus: '', 
+      isDeleteModalOpen: false,
+      userToDelete: null,
+      deleteConfirmationInput: ''
     }
   },
 
@@ -217,7 +220,7 @@ export default {
       }
 
       this.loading = false
-    }, // <-- Ovaj zarez je jako bitan!
+    },
 
     async toggleUserStatus(user) {
       const token = localStorage.getItem('token');
@@ -250,7 +253,42 @@ export default {
         alert("Došlo je do greške prilikom promjene statusa.");
         console.error(error);
       }
-    }, // <-- I ovaj zarez je jako bitan!
+    }, 
+
+    // Metode za upravljanje brisanjem
+    openDeleteModal(user) {
+      this.userToDelete = user
+      this.deleteConfirmationInput = ''
+      this.isDeleteModalOpen = true
+    },
+
+    closeDeleteModal() {
+      this.isDeleteModalOpen = false
+      this.userToDelete = null
+      this.deleteConfirmationInput = ''
+    },
+
+    async confirmDeleteUser() {
+      // Dvostruka provjera za svaki slučaj
+      if (this.deleteConfirmationInput !== 'OBRIŠI') return
+
+      const token = localStorage.getItem('token')
+      
+      try {
+        // Poziv API servisa za brisanje
+        await deleteUser(token, this.userToDelete.id)
+        
+        // Lokalno uklanjanje korisnika iz tabele (Optimistic / Instant UX)
+        this.users = this.users.filter(u => u.id !== this.userToDelete.id)
+        this.total--
+        
+        // Zatvaranje modala
+        this.closeDeleteModal()
+      } catch (error) {
+        alert("Došlo je do greške prilikom brisanja korisnika.")
+        console.error(error)
+      }
+    },
 
     roleLabel(role) {
       const labels = {

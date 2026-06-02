@@ -101,3 +101,20 @@ export async function deactivateUser(token, userId, reason = "") {
 
   return await response.json();
 }
+
+// Trajno brisanje korisnika
+export async function deleteUser(token, userId) {
+  const response = await fetch(`${BASE_URL}/admin/users/${userId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error('Greška pri brisanju korisnika');
+  }
+
+  return await response.json();
+}
