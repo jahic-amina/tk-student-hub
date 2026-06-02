@@ -62,6 +62,15 @@ const routes = [
     component: () => import('../views/profiles/ProfilesView.vue'),
     meta: { requiresAuth: true }
   },
+
+  // =========================================================
+
+  {
+    path: '/admin',
+    name: 'admin-dashboard',
+    component: () => import('../views/admin/AdminDashboardView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
 ]
 
 const router = createRouter({
@@ -71,11 +80,14 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const isLoggedIn = !!localStorage.getItem('token')
+  const userRole = localStorage.getItem('role')
 
   if (to.meta.requiresAuth && !isLoggedIn) {
     next('/login')
   } else if (to.meta.guestOnly && isLoggedIn) {
     next('/')
+  } else if (to.meta.requiresAdmin && userRole !== 'admin') {
+    next('/') // Ako nije admin, baci ga na pocetnu
   } else {
     next()
   }
