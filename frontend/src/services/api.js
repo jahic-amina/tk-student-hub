@@ -66,6 +66,33 @@ export async function getAllUsers(token, { search = '', role = '', is_active = '
   return response.json()
 }
 
+async function handleAdminFetch(response, defaultErrorMessage) {
+  // 1. Provjera da li je backend vratio 403 (Forbidden)
+  if (response.status === 403) {
+    const clone = response.clone(); // Kloniramo odgovor da ga možemo pročitati
+    try {
+      const errorData = await clone.json();
+      if (errorData?.detail?.includes("deaktiviran")) {
+        // Logika za odjavu i preusmjeravanje
+        localStorage.removeItem('token');
+        localStorage.removeItem('access_token');
+        alert("Vaš nalog je deaktiviran. Kontaktirajte administratora za reaktivaciju.");
+        window.location.href = '/login';
+        
+        throw new Error("Akcija prekinuta: Nalog je deaktiviran.");
+      }
+    } catch (e) {
+      // Ignorišemo ako odgovor nije JSON
+    }
+  }
+
+  // 2. Standardna provjera za ostale greške (400, 404, 500...)
+  if (!response.ok) {
+    throw new Error(defaultErrorMessage);
+  }
+
+  return await response.json();
+}
 // Aktivacija korisnika
 export async function activateUser(token, userId) {
   const response = await fetch(`${BASE_URL}/admin/users/${userId}/activate`, {
@@ -76,11 +103,7 @@ export async function activateUser(token, userId) {
     }
   });
 
-  if (!response.ok) {
-    throw new Error('Greška pri aktivaciji korisnika');
-  }
-
-  return await response.json();
+  return handleAdminFetch(response, 'Greška pri aktivaciji korisnika');
 }
 
 // Deaktivacija korisnika
@@ -91,15 +114,10 @@ export async function deactivateUser(token, userId, reason = "") {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     },
-    // Šaljemo razlog u body-ju, kako backend (DeactivateUserRequest model) očekuje
     body: JSON.stringify({ reason: reason }) 
   });
 
-  if (!response.ok) {
-    throw new Error('Greška pri deaktivaciji korisnika');
-  }
-
-  return await response.json();
+  return handleAdminFetch(response, 'Greška pri deaktivaciji korisnika');
 }
 
 // Trajno brisanje korisnika
@@ -112,9 +130,5 @@ export async function deleteUser(token, userId) {
     }
   });
 
-  if (!response.ok) {
-    throw new Error('Greška pri brisanju korisnika');
-  }
-
-  return await response.json();
+  return handleAdminFetch(response, 'Greška pri brisanju korisnika');
 }

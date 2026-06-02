@@ -14,7 +14,7 @@ class UserAdminResponse(BaseModel):
     email: str
     role: UserRole
     is_active: bool
-    status: str
+    
 
     class Config:
         from_attributes = True
@@ -76,7 +76,6 @@ def deactivate_user(
     
     # 2. Postavi status na False (deaktiviran)
     user.is_active = False
-    user.status = "inactive"
     
     # 3. Spasi izmjene u bazu
     db.add(user)
@@ -99,7 +98,6 @@ def activate_user(
     
     # 2. Postavi status na True (aktiviran)
     user.is_active = True
-    user.status = "active"
     
     # 3. Spasi izmjene u bazu
     db.add(user)
@@ -112,18 +110,10 @@ def activate_user(
 async def delete_user(
     user_id: int, 
     db: Session = Depends(get_db),
-    current_admin: User = Depends(get_current_user) # Promijenjeno ovdje prema sugestiji Pythona
+    current_admin: User = Depends(require_admin) 
 ):
-    # Dodatna sigurnosna provjera: ako get_current_user pušta sve ulogovane korisnike,
-    # ovdje osiguravamo da samo korisnik sa ulogom 'admin' može nastaviti dalje.
-    if current_admin.role != "admin":
-        raise HTTPException(
-            status_code=403, 
-            detail="Nemate dozvolu za izvršavanje ove akcije."
-        )
-
-    # 1. Pronađi korisnika u bazi podataka
-    user = db.query(User).filter(User.id == user_id).first()
+    # 1. Pronađi korisnika u bazi
+    user = db.exec(select(User).where(User.id == user_id)).first()
     
     if not user:
         raise HTTPException(

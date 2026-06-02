@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from datetime import datetime, timezone
 
 from app.database import get_db
-from app.core.security import get_current_user, pwd_context
+from app.core.security import get_current_user, verify_password
 from app.models.user import User
 
 router = APIRouter(prefix="/account", tags=["account"])
@@ -28,14 +28,13 @@ def deactivate_account(
     db: Session = Depends(get_db)
 ):
     # a) Verifikacija lozinke
-    if not pwd_context.verify(data.password, current_user.password_hash):
+    if not verify_password(data.password, current_user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Unesena lozinka nije ispravna."
         )
-    
-    # b) Postavljanje statusa na 'inactive' i bilježenje vremena
-    current_user.status = "inactive"
+
+    current_user.is_active = False
     current_user.deactivated_at = datetime.now(timezone.utc)
     
     db.add(current_user)
@@ -63,17 +62,17 @@ def reactivate_account(
         )
     
     # b) Verifikacija lozinke
-    if not pwd_context.verify(data.password, user.password_hash):
+    if not verify_password(data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Unesena lozinka nije ispravna."
         )
     
-    if user.status == "active":
+    if user.is_active:
         return {"detail": "Nalog je već aktivan."}
         
-    # c) Vraćanje statusa na 'active' i postavljanje deactivated_at na NULL
-    user.status = "active"
+    # c) Vraćanje is_active na True i postavljanje deactivated_at na NULL
+    user.is_active = True
     user.deactivated_at = None
     
     db.add(user)

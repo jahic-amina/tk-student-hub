@@ -75,19 +75,17 @@ export default {
           
           localStorage.setItem('token', response.access_token)
           
-          // 3. Pokušavamo dohvatiti tvoje podatke
+          // 3. Pokušavamo dohvatiti podatke
           const user = await getMe(response.access_token)
           
-          // --- KLJUČNI DIO: Provjeravamo da li je backend vratio 'detail' (grešku) ---
+          // --- Provjeravamo da li je backend vratio 'detail' (grešku) ---
           if ((user && user.detail) || (user && user.is_active === false)) {
              // Znači da je backend blokirao pristup (403) i vratio poruku o deaktivaciji!
              localStorage.removeItem('token') // Odmah brišemo token
              this.error = 'Vaš nalog je deaktiviran. Molimo obratite se administratoru.'
              this.loading = false
-             return // OVDJE PREKIDAMO SVE, nema prelaska na Dashboard!
+             return 
           }
-          // ---------------------------------------------------------------------------
-
           // Ako nema greške, snimi korisnika i prebaci ga na dashboard
           if (user && user.full_name) {
              localStorage.setItem('username', user.full_name)
