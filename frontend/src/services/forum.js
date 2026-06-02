@@ -144,13 +144,9 @@ export async function getActiveAnnouncements() {
 }
 
 export async function getActiveReports () {
-  const token = localStorage.getItem('token'); // Ili kako već skladištiš JWT token
-  const response = await fetch('http://127.0.0.1:8000/forum/topics/reports/active', {
+  const response = await fetch(`${BASE_URL}/forum/topics/reports/active`, {
     method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    }
+    headers: getHeaders()
   });
   if (!response.ok) {
     throw new Error('Neuspješno učitavanje prijava za moderaciju.');
@@ -159,13 +155,9 @@ export async function getActiveReports () {
 };
 
 export async function handleReportAction(reportId, action) {
-  const token = localStorage.getItem('token');
-  const response = await fetch(`http://127.0.0.1:8000/forum/topics/reports/${reportId}/action?action=${action}`, {
+  const response = await fetch(`${BASE_URL}/forum/topics/reports/${reportId}/action?action=${action}`, {
     method: 'PATCH',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    }
+    headers: getHeaders()
   });
   if (!response.ok) {
     throw new Error('Greška pri izvršavanju akcije nad prijavom.');

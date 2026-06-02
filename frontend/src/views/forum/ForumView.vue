@@ -1,8 +1,8 @@
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue';
 import ForumSidebar from '../../components/ForumSidebar.vue';
-import ForumTopicCard from '../../components/ForumTopicCard.vue'; // Nova komponenta
-import ForumPagination from '../../components/ForumPagination.vue'; // Nova komponenta
+import ForumTopicCard from '../../components/ForumTopicCard.vue';
+import ForumPagination from '../../components/ForumPagination.vue'; 
 import { getTopics, getCategories, deleteTopic as deleteTopicApi, getActiveAnnouncements, getActiveReports, handleReportAction } from '../../services/forum.js';
 
 const teme = ref([]);
@@ -57,7 +57,6 @@ onMounted(async () => {
 });
 
 watch(odabraniKategorijaId, () => { 
-  // Ako admin promijeni kategoriju sa strane, automatski ga vraćamo u normalni pregled tema
   prikaziPrijave.value = false;
   trenutnaStranica.value = 1; 
   ucitajTeme(); 
