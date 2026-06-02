@@ -127,8 +127,7 @@
               <h3 class="text-sm font-bold text-red-800">Deaktivacija računa</h3>
               <p class="text-xs text-red-500">Privremeno onemogućite svoj račun.</p>
             </div>
-            <button @click="alertAction('Deaktivacija računa')" type="button" class="px-4 py-2 bg-white text-red-700 border border-red-200 font-bold rounded-xl hover:bg-red-100 transition text-xs">Deaktiviraj nalog</button>
-          </div>
+            <button @click="showDeactivateModal = true" type="button" class="px-4 py-2 bg-white text-red-700 border border-red-200 font-bold rounded-xl hover:bg-red-100 transition text-xs">Deaktiviraj nalog</button>          </div>
         </div>
       </main>
     </div>
@@ -141,6 +140,35 @@
       @remove="onRemove"
       :initials="(form.first_name?.charAt(0) || '') + (form.last_name?.charAt(0) || '')"
     />
+    <div v-if="showDeactivateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
+      <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-gray-100">
+        <h3 class="text-lg font-bold text-red-600 mb-2">Potvrda deaktivacije</h3>
+        <p class="text-sm text-gray-600 mb-4">
+          Da biste deaktivirali nalog, molimo unesite svoju lozinku. Nakon uspješne deaktivacije bićete odjavljeni iz sistema.
+        </p>
+        
+        <div v-if="deactivateError" class="mb-4 p-3 rounded-xl text-xs bg-red-50 text-red-700 border border-red-100 font-medium">
+          ⚠️ {{ deactivateError }}
+        </div>
+        
+        <label class="block text-xs font-medium mb-1 text-gray-500">Vaša lozinka</label>
+        <input 
+          v-model="deactivatePassword" 
+          type="password" 
+          placeholder="Unesite lozinku..." 
+          class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none mb-6"
+        />
+        
+        <div class="flex justify-end gap-3">
+          <button @click="closeDeactivateModal" :disabled="isDeactivating" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl font-medium transition text-sm">
+            Odustani
+          </button>
+          <button @click="handleDeactivate" :disabled="isDeactivating || !deactivatePassword" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl disabled:opacity-50 transition shadow-md text-sm">
+            {{ isDeactivating ? 'Deaktivacija...' : 'Potvrdi deaktivaciju' }}
+          </button>
+        </div>
+      </div>
+    </div>
 
   </div>
 </template>
@@ -148,6 +176,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import axios from 'axios'
+import { useRouter } from 'vue-router'
 
 import UserProfileCard from '../../components/UserProfileCard.vue'
 import AvatarUploadModal from '../../components/AvatarUploadModal.vue'
@@ -160,6 +189,29 @@ api.interceptors.request.use(config => {
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
+api.interceptors.response.use(
+  (response) => {
+    return response; // Ako je sve ok, samo proslijedi odgovor dalje
+  },
+  (error) => {
+    // Provjeravamo da li je backend vratio grešku 403 i našu poruku o deaktivaciji
+    if (error.response && error.response.status === 403) {
+      if (error.response.data?.detail?.includes("deaktiviran")) {
+        
+        // 1. Očisti tokene (odjavi korisnika)
+        localStorage.removeItem('token')
+        localStorage.removeItem('access_token')
+        
+        // 2. Izbaci upozorenje
+        alert("Vaš nalog je deaktiviran. Kontaktirajte administratora za reaktivaciju.")
+        
+        // 3. Preusmjeri ga na stranicu za login
+        window.location.href = '/login' // Prilagodi putanju ako ti se login ruta zove drugačije
+      }
+    }
+    return Promise.reject(error);
+  }
+)
 
 const token = localStorage.getItem('token') || localStorage.getItem('access_token')
 
@@ -170,6 +222,16 @@ const loading = ref(false)
 const error = ref(null)
 const successMessage = ref(null)
 const showModal = ref(false)
+const router = useRouter()
+const showDeactivateModal = ref(false)
+const deactivatePassword = ref('')
+const deactivateError = ref('')
+const isDeactivating = ref(false)
+const closeDeactivateModal = () => {
+  showDeactivateModal.value = false
+  deactivatePassword.value = ''
+  deactivateError.value = ''
+}
 
 const isLoading = ref(false)
 const toast = reactive({ show: false, message: '' })
@@ -203,6 +265,18 @@ const fetchProfileData = async () => {
       })
     }
   } catch (err) {
+    if (err.response && err.response.status === 403) {
+      // 1. Očisti tokene
+      localStorage.removeItem('token')
+      localStorage.removeItem('access_token')
+      
+      // 2. Obavijesti korisnika
+      alert("Vaš nalog je deaktiviran. Kontaktirajte administratora za reaktivaciju.")
+      
+      // 3. Vrati ga na login
+      window.location.href = '/login' // Pobrini se da je ovo tvoja tačna putanja do logina
+      return // Prekidamo dalje izvršavanje koda
+    }
     error.value = "Greška pri učitavanju profila. Molimo pokušajte ponovo."
     if (err.response?.status === 401) Object.assign(status, { message: 'Sesija je istekla.', isError: true })
   } finally {
@@ -238,7 +312,7 @@ const handleSubmit = async () => {
     }
 
     showToast('Izmjene uspješno sačuvane!')
-    // Uklonjeno: isEditing.value = false (kako bi korisnik ostao na formi)
+
     await fetchProfileData() 
   } catch (err) {
     Object.assign(status, { message: err.response?.data?.detail || err.message || 'Greška prilikom spašavanja.', isError: true })
@@ -274,6 +348,40 @@ async function onRemove() {
   } catch (e) {
     error.value = 'Greska pri uklanjanju slike.'
     Object.assign(status, { message: 'Greska pri uklanjanju slike.', isError: true })
+  }
+}
+
+// --- Funkcija za deaktivaciju ---
+const handleDeactivate = async () => {
+  if (!deactivatePassword.value) return
+
+  isDeactivating.value = true
+  deactivateError.value = ''
+
+  try {
+    // Pozivamo backend rutu kreiranu u prethodnom koraku
+    await api.post('/account/deactivate', { 
+      password: deactivatePassword.value 
+    })
+
+    // Ako je uspješno, zatvori modal
+    closeDeactivateModal()
+    
+    // Obriši sesiju (token) iz lokalnog storage-a
+    localStorage.removeItem('token')
+    localStorage.removeItem('access_token')
+    
+    // Preusmjeri korisnika na login (provjeri da li ti se ruta zove '/login')
+    router.push('/login') 
+    
+    // Opciono, možeš izbaciti neki globalni alert
+    alert("Vaš nalog je uspješno deaktiviran.")
+
+  } catch (err) {
+    // Ako lozinka nije tačna, ispiši grešku unutar modala
+    deactivateError.value = err.response?.data?.detail || "Greška pri deaktivaciji. Pokušajte ponovo."
+  } finally {
+    isDeactivating.value = false
   }
 }
 </script>
