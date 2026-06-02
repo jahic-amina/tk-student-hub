@@ -1,12 +1,17 @@
 from sqlmodel import SQLModel, Field
 from typing import Optional
-from enum import Enum
+import enum
 from datetime import datetime
+from sqlalchemy import Column, Enum, DateTime
 
-class UserRole(str, Enum):
+class UserRole(str, enum.Enum):
     member = "member"
     mentor = "mentor"
     admin = "admin"
+
+class UserStatus(str, enum.Enum):
+    active = "active"
+    inactive = "inactive"
 
 class User(SQLModel, table=True):
     __tablename__ = "users"
@@ -21,3 +26,11 @@ class User(SQLModel, table=True):
     profilna_slika_url: Optional[str] = Field(default=None)
     biografija: Optional[str] = Field(default=None)
     godina_studija: Optional[str] = Field(default=None)
+    status: UserStatus = Field(
+        default=UserStatus.active,
+        sa_column=Column(Enum(UserStatus), server_default="active", nullable=False)
+    )
+    deactivated_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(DateTime, nullable=True)
+    )
