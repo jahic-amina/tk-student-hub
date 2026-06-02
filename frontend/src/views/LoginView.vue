@@ -91,6 +91,7 @@ export default {
           // Ako nema greške, snimi korisnika i prebaci ga na dashboard
           if (user && user.full_name) {
              localStorage.setItem('username', user.full_name)
+             localStorage.setItem('role', user.role)
           }
           
           window.dispatchEvent(new Event('user-login'))
