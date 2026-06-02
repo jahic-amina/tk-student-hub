@@ -20,11 +20,14 @@
               Admin
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
             </button>
-            <div class="absolute left-0 mt-0 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 group-hover:opacity-100 invisible group-hover:visible transition z-10">
-              <router-link to="/admin/companies" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100 first:rounded-t-lg">
-                Upravljanje kompanijama
-              </router-link>
-            </div>
+          <div class="absolute left-0 mt-0 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 group-hover:opacity-100 invisible group-hover:visible transition z-10">
+            <router-link to="/admin/companies" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100 first:rounded-t-lg">
+             Upravljanje kompanijama
+            </router-link>
+            <router-link to="/admin/ads" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 last:rounded-b-lg">
+             Upravljanje oglasima
+            </router-link>
+          </div> 
           </div>
           <span class="text-gray-600 font-medium">{{ username }}</span>
           <button @click="logoutUser" class="border border-primary text-primary px-4 py-1.5 rounded-lg hover:bg-primary hover:text-white transition">
