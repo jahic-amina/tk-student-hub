@@ -129,14 +129,17 @@ export async function deleteComment(commentId) {
   return handleResponse(response, 'Brisanje komentara nije uspjelo.');
 }
 
-export async function getSearchSuggestions(query = "") {
-  let url = `${BASE_URL}/forum/suggestions`;
+export async function getSearchSuggestions(query = "", options = {}) {
+  // POPRAVLJENO: Dodat "/topics" u putanju kako bi se poklopilo sa backend ruterom
+  let url = `${BASE_URL}/forum/topics/suggestions`;
+  
   if (query && query.trim()) {
     url += `?search=${encodeURIComponent(query.trim())}`;
   }
   
   const response = await fetch(url, {
-    headers: getHeaders()
+    headers: getHeaders(),
+    ...options // Ovo omogućava AbortController signalizaciju
   });
   return handleResponse(response, 'Greška pri dohvatanju sugestija.');
 }
