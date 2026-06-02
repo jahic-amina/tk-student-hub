@@ -51,6 +51,11 @@
 <script>
 export default {
   name: 'NavBar',
+  data() {
+    return {
+      isDarkMode: localStorage.getItem('theme') === 'dark'
+    }
+  },
   computed: {
     isLoggedIn() {
       return !!localStorage.getItem('token')
@@ -59,7 +64,25 @@ export default {
       return localStorage.getItem('username') || 'Profil'
     }
   },
+  mounted() {
+    if (this.isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  },
   methods: {
+    toggleDarkMode() {
+      this.isDarkMode = !this.isDarkMode;
+      
+      if (this.isDarkMode) {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      }
+    },
     logout() {
       localStorage.removeItem('token')
       localStorage.removeItem('username')
