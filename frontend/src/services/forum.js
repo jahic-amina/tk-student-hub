@@ -129,6 +129,18 @@ export async function deleteComment(commentId) {
   return handleResponse(response, 'Brisanje komentara nije uspjelo.');
 }
 
+export async function getSearchSuggestions(query = "") {
+  let url = `${BASE_URL}/forum/suggestions`;
+  if (query && query.trim()) {
+    url += `?search=${encodeURIComponent(query.trim())}`;
+  }
+  
+  const response = await fetch(url, {
+    headers: getHeaders()
+  });
+  return handleResponse(response, 'Greška pri dohvatanju sugestija.');
+}
+
 export default {
   getCategories,
   getTopics,
