@@ -37,10 +37,7 @@ export async function uploadMaterial(formData) {
   });
   return response;
 }
-export async function getMaterials() {
-  const response = await fetch(`${BASE_URL}/materials`);
-  return response.json();
-}
+
 
 export async function getMaterial(id) {
   const response = await fetch(`${BASE_URL}/materials/${id}`);
@@ -62,6 +59,40 @@ export async function getSubjects() {
   const res = await fetch(`${BASE_URL}/materials/subjects`);
   return res.json();
 }
+export async function getMaterials(filters = {}) {
+  const params = new URLSearchParams();
+
+  // Dodavanje filtera u query parametre
+  if (filters.years && filters.years.length > 0) {
+    filters.years.forEach(y => params.append('years', y));
+  }
+  if (filters.types && filters.types.length > 0) {
+    filters.types.forEach(t => params.append('types', t));
+  }
+  if (filters.subject_id) {
+    params.append('subject_id', filters.subject_id);
+  }
+
+  const queryString = params.toString();
+  
+  // KLJUČNO: Dodajemo kosu crtu "/" pre upitnika. 
+  // Ako nema filtera, šaljemo samo "/materials/", ako ima, šaljemo "/materials/?..."
+  const url = queryString 
+    ? `${BASE_URL}/materials/?${queryString}` 
+    : `${BASE_URL}/materials/`;
+
+  console.log("Konačni URL koji šaljemo:", url);
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Mrežna greška');
+    return await response.json();
+  } catch (error) {
+    console.error("Greška u API pozivu:", error);
+    return [];
+  }
+}
+//
 
 export async function getComments(materialId) {
   const response = await fetch(`${BASE_URL}/materials/${materialId}/comments`)
