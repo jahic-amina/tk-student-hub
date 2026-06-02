@@ -1,70 +1,92 @@
 <script setup>
 import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { getSearchSuggestions } from '../services/forum.js';
 
 const emit = defineEmits(['search-submitted']);
+const router = useRouter();
 
 const search = ref("");
 const isOpen = ref(false);
 const isLoading = ref(false);
-const suggestions = ref({ popular: [], active: [], filtered: [] });
+
+const popularTopics = ref([]);
+const activeTopics = ref([]);
+const filteredTopics = ref([]);
+
 const rootRef = ref(null);
 let debounceTimeout = null;
+let trenutniKontroler = null;
 
-// Funkcija koja povlači podatke sa API-ja
-const fetchSuggestions = async () => {
+// 1. Povlačenje top tema sa backenda
+const ucitajPocetneSugestije = async () => {
   isLoading.value = true;
   try {
-    const data = await getSearchSuggestions(search.value);
-    // Pretpostavka strukture: { popular: [], active: [], filtered: [] }
-    suggestions.value = {
-      popular: data.popular || [],
-      active: data.active || [],
-      filtered: data.filtered || []
-    };
+    const data = await getSearchSuggestions(""); 
+    popularTopics.value = data.popular || [];
+    activeTopics.value = data.active || [];
   } catch (error) {
-    console.error("Greška sa sugestijama:", error);
-    // Fallback/Demo podaci za lakše debugovanje
-    if (!search.value) {
-      suggestions.value.popular = [{ id: 1, title: "Popularna tema 1 (Demo)" }, { id: 2, title: "Popularna tema 2 (Demo)" }];
-      suggestions.value.active = [{ id: 3, title: "Aktivna diskusija 1 (Demo)" }];
-    } else {
-      suggestions.value.filtered = [{ id: 1, title: `Rezultat za: ${search.value}` }];
+    console.error("Greška pri učitavanju popularnih tema:", error);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// 2. Real-time pretraga (kucanje)
+const ucitajFiltriraneSugestije = async (query) => {
+  if (trenutniKontroler) {
+    trenutniKontroler.abort();
+  }
+
+  trenutniKontroler = new AbortController();
+  isLoading.value = true;
+
+  try {
+    const data = await getSearchSuggestions(query, { signal: trenutniKontroler.signal });
+    filteredTopics.value = data.filtered || [];
+  } catch (error) {
+    if (error.name !== 'AbortError') {
+      console.error("Greška pri real-time pretrazi:", error);
     }
   } finally {
     isLoading.value = false;
   }
 };
 
-// Debounce logika za kucanje (štiti backend)
+// Prati kucanje korisnika
 watch(search, (newVal) => {
   clearTimeout(debounceTimeout);
   
-  // Ako je prazno, odmah povuci inicijalne popularne/aktivne teme
   if (!newVal.trim()) {
-    fetchSuggestions();
+    filteredTopics.value = [];
+    if (trenutniKontroler) trenutniKontroler.abort();
     return;
   }
 
-  // Inače čekaj 300ms pauze u kucanju prije slanja zahtjeva
   debounceTimeout = setTimeout(() => {
-    fetchSuggestions();
-  }, 300);
+    ucitajFiltriraneSugestije(newVal.trim());
+  }, 250); 
 });
 
-// Otvaranje dropdown-a na fokus
 const onFocus = () => {
   isOpen.value = true;
-  fetchSuggestions(); // Povuci čim klikne
+  // Uvijek povuci svježe top teme kada korisnik klikne na prazan bar
+  if (!search.value.trim()) {
+    ucitajPocetneSugestije();
+  }
 };
 
-// Zatvaranje na Enter ili klik na dugme "Traži"
+const idiNaTemu = (id) => {
+  isOpen.value = false;
+  search.value = ""; 
+  router.push(`/forum/topics/${id}`); 
+};
+
 const triggerSearch = () => {
   isOpen.value = false;
   emit('search-submitted', search.value);
 };
 
-// Zatvaranje klikom bilo gdje van komponente
 const handleClickOutside = (event) => {
   if (rootRef.value && !rootRef.value.contains(event.target)) {
     isOpen.value = false;
@@ -75,6 +97,7 @@ onMounted(() => document.addEventListener('click', handleClickOutside));
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside);
   clearTimeout(debounceTimeout);
+  if (trenutniKontroler) trenutniKontroler.abort();
 });
 </script>
 
@@ -85,19 +108,21 @@ onUnmounted(() => {
         <input 
           v-model="search" 
           type="text" 
-          placeholder="Pretraži teme (npr. ispit, literatura)..." 
+          placeholder="Pretraži forum (kucaj za sugestije)..." 
           @focus="onFocus"
           @keyup.enter="triggerSearch"
           class="w-full border border-gray-200 dark:border-slate-700 rounded-lg pl-4 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 shadow-sm" 
         />
-        <div v-if="isLoading" class="absolute right-3 top-2.5 animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500"></div>
+        <div v-if="isLoading" class="absolute right-3 top-2.5">
+          <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500"></div>
+        </div>
       </div>
       <button @click="triggerSearch" class="bg-slate-800 dark:bg-slate-700 text-white text-xs px-5 rounded-lg font-bold hover:bg-slate-700 dark:hover:bg-slate-600 shadow-sm transition-colors">
         Traži
       </button>
     </div>
 
-    <div v-if="isOpen" class="absolute left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden max-h-[400px] overflow-y-auto z-50">
+    <div v-if="isOpen" class="absolute left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden max-h-[380px] overflow-y-auto z-50">
       
       <div v-if="!search.trim()">
         <div class="p-3 border-b border-gray-100 dark:border-slate-700/50">
@@ -105,54 +130,51 @@ onUnmounted(() => {
             🔥 Najgledanije teme
           </div>
           <div class="space-y-1">
-            <router-link 
-              v-for="tema in suggestions.popular" 
+            <button 
+              v-for="tema in popularTopics" 
               :key="'pop-'+tema.id" 
-              :to="`/forum/tema/${tema.id}`"
-              @click="isOpen = false"
-              class="block p-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors truncate"
+              @click="idiNaTemu(tema.id)"
+              class="w-full text-left block p-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors truncate"
             >
               {{ tema.title }}
-            </router-link>
-            <p v-if="suggestions.popular.length === 0" class="text-xs text-slate-400 italic p-2">Nema podataka.</p>
+            </button>
+            <p v-if="popularTopics.length === 0 && !isLoading" class="text-xs text-slate-400 italic p-2">Nema tema u bazi.</p>
           </div>
         </div>
 
         <div class="p-3">
           <div class="text-xs font-bold uppercase tracking-wider text-blue-500 mb-2 flex items-center gap-1">
-            💬 Najaktivnije rasprave
+            💬 Najnovije rasprave
           </div>
           <div class="space-y-1">
-            <router-link 
-              v-for="tema in suggestions.active" 
+            <button 
+              v-for="tema in activeTopics" 
               :key="'act-'+tema.id" 
-              :to="`/forum/tema/${tema.id}`"
-              @click="isOpen = false"
-              class="block p-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors truncate"
+              @click="idiNaTemu(tema.id)"
+              class="w-full text-left block p-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors truncate"
             >
               {{ tema.title }}
-            </router-link>
-            <p v-if="suggestions.active.length === 0" class="text-xs text-slate-400 italic p-2">Nema podataka.</p>
+            </button>
+            <p v-if="activeTopics.length === 0 && !isLoading" class="text-xs text-slate-400 italic p-2">Nema aktivnih tema.</p>
           </div>
         </div>
       </div>
 
       <div v-else class="p-3">
         <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-          🔍 Rezultati pretrage sugerisani za vas
+          🔍 Predložene teme na osnovu vašeg unosa
         </div>
         <div class="space-y-1">
-          <router-link 
-            v-for="tema in suggestions.filtered" 
+          <button 
+            v-for="tema in filteredTopics" 
             :key="'filt-'+tema.id" 
-            :to="`/forum/tema/${tema.id}`"
-            @click="isOpen = false"
-            class="block p-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors truncate"
+            @click="idiNaTemu(tema.id)"
+            class="w-full text-left block p-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors truncate"
           >
             {{ tema.title }}
-          </router-link>
-          <p v-if="suggestions.filtered.length === 0 && !isLoading" class="text-xs text-slate-400 italic p-2">
-            Nema direktnih poklapanja za "{{ search }}"... Pritisnite Enter za punu pretragu.
+          </button>
+          <p v-if="filteredTopics.length === 0 && !isLoading" class="text-xs text-slate-400 italic p-2">
+            Nema pronađenih tema za "{{ search }}"
           </p>
         </div>
       </div>
