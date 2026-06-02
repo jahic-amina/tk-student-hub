@@ -126,6 +126,20 @@ async function handleLockTopic() {
         >
           🔗 Dijeli
         </button>
+        <div v-if="!isAdmin" class="relative">
+          <button @click="showReportOptions = !showReportOptions" class="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors font-medium px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50">
+            🚩 Prijavi
+          </button>
+          <div v-if="showReportOptions" class="absolute top-full mt-1 left-0 bg-white border shadow-lg rounded-lg w-48 z-10 text-xs">
+            <button v-for="reason in reportReasons" :key="reason" @click="handleReport(reason)" class="block w-full text-left px-4 py-2 hover:bg-gray-50 text-slate-600">
+              {{ reason }}
+            </button>
+          </div>
+        </div>
+
+        <button v-if="isAdmin" @click="handleLockTopic" class="flex items-center gap-1.5 text-xs text-orange-500 hover:text-orange-700 transition-colors font-medium px-3 py-1.5 rounded-lg border border-orange-200 hover:bg-orange-50">
+          🔒 {{ topic.is_locked ? 'Otključaj temu' : 'Zaključaj temu' }}
+        </button>
         <button
         v-if="currentUserId === topic.author?.id"
         @click="handleDeleteTopic"
