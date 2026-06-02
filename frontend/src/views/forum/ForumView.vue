@@ -3,7 +3,7 @@ import { ref, onMounted, watch, computed } from 'vue';
 import ForumSidebar from '../../components/ForumSidebar.vue';
 import ForumTopicCard from '../../components/ForumTopicCard.vue'; // Nova komponenta
 import ForumPagination from '../../components/ForumPagination.vue'; // Nova komponenta
-import { getTopics, getCategories, deleteTopic as deleteTopicApi, getActiveAnnouncements } from '../../services/forum.js';
+import { getTopics, getCategories, deleteTopic as deleteTopicApi, getActiveAnnouncements, getActiveReports, handleReportAction } from '../../services/forum.js';
 
 const teme = ref([]);
 const sveKategorije = ref([]); 
@@ -17,6 +17,8 @@ const announcements = ref([]);
 
 const ukupnoStranica = computed(() => Math.ceil(ukupnoTema.value / velicinaStranice) || 1);
 const isAdmin = computed(() => localStorage.getItem('role') === 'admin');
+const prikaziPrijave = ref(false); 
+const svePrijave = ref([]);
 
 const trenutnaKategorija = computed(() => {
   if (!odabraniKategorijaId.value) return { name: 'General (Sve teme)', color: '#64748b' };
@@ -67,6 +69,39 @@ const obrisiTemu = async (temaId) => {
     teme.value = teme.value.filter(t => t.id !== temaId);
     ukupnoTema.value = Math.max(0, ukupnoTema.value - 1);
   } catch (error) { alert(error.message || 'Greška.'); }
+
+
+const ucitajPrijave = async () => {
+  isLoading.value = true;
+  try {
+    svePrijave.value = await getActiveReports();
+  } catch (error) {
+    console.error("Greška pri učitavanju prijava:", error);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const toggleModPrijava = (status) => {
+  prikaziPrijave.value = status;
+  trenutnaStranica.value = 1;
+  if (status === true) {
+    ucitajPrijave();
+  } else {
+    ucitajTeme();
+  }
+};
+
+const procesuirajPrijavu = async (reportId, akcija) => {
+  try {
+    await handleReportAction(reportId, akcija);
+    svePrijave.value = svePrijave.value.filter(p => p.report_id !== reportId);
+    alert(akcija === 'dismiss' ? "Prijava uspješno odbačena." : "Prijava označena kao riješena.");
+  } catch (error) {
+    alert("Greška: " + error.message);
+  }
+};
+
 };
 </script>
 
