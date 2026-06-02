@@ -7,7 +7,7 @@ from datetime import datetime, timedelta # DODATO: timedelta za računanje staro
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User, UserRole
-from app.models.forum import ForumCategory, ForumTopic, ForumTag, ForumTopicTag
+from app.models.forum import ForumCategory, ForumTopic, ForumTag, ForumTopicTag, TopicReport
 from app.routers.forum_categories import get_category_data 
 
 router = APIRouter(prefix="/forum/topics", tags=["Forum Topics"])
@@ -18,6 +18,9 @@ class ForumTopicCreate(BaseModel):
     content: str = Field(min_length=10)
     category_id: int
     tags: Optional[List[Any]] = None
+
+class ReportCreate(BaseModel):
+    reason: str = Field(min_length=3, max_length=100)
 
 # Pomocne funkcije
 def make_summary(text: str, max_length: int = 150) -> str:
@@ -211,6 +214,67 @@ def create_forum_topic(
     return build_topic_list_item(db, new_topic)
 
 
+@router.get("/reports/active", response_model=List[Dict[str, Any]])
+def get_active_reports(
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.admin:
+        raise HTTPException(
+            status_code=403, 
+            detail="Nemate ovlaštenje za pristup administratorskim prijavama."
+        )
+    
+    statement = select(TopicReport).where(TopicReport.status == "pending").order_by(TopicReport.created_at.desc())
+    reports = db.exec(statement).all()
+    
+    output = []
+    for report in reports:
+        topic = db.get(ForumTopic, report.topic_id)
+        if not topic or topic.is_deleted:
+            continue
+            
+        reporter = db.get(User, report.user_id)
+        reporter_name = reporter.full_name if reporter else "Nepoznat korisnik"
+        
+        output.append({
+            "report_id": report.id,
+            "reason": report.reason,
+            "created_at": report.created_at,
+            "status": report.status,
+            "reporter_name": reporter_name,
+            "topic": build_topic_list_item(db, topic) 
+        })
+        
+    return output
+
+
+@router.patch("/reports/{report_id}/action")
+def handle_report_action(
+    report_id: int, 
+    action: str,
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.admin:
+        raise HTTPException(status_code=403, detail="Nemate ovlaštenje.")
+        
+    report = db.get(TopicReport, report_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Prijava nije pronađena.")
+        
+    if action == "dismiss":
+        report.status = "dismissed"
+    elif action == "resolve":
+        report.status = "resolved"
+    else:
+        raise HTTPException(status_code=400, detail="Nevalidna akcija. Dozvoljeno: 'dismiss' ili 'resolve'.")
+        
+    db.add(report)
+    db.commit()
+    return {"success": True, "new_status": report.status}
+
+
 @router.get("/{topic_id}")
 def get_topic_details(topic_id: int, db: Session = Depends(get_db)):
     topic = db.get(ForumTopic, topic_id)
@@ -255,3 +319,16 @@ def delete_topic(id: int, db: Session = Depends(get_db), current_user: User = De
     db.add(topic)
     db.commit()
     return {"message": "Tema je uspješno obrisana.", "topic_id": id}
+
+
+@router.post("/{topic_id}/report")
+def report_topic(topic_id: int, report_data: ReportCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    topic = db.get(ForumTopic, topic_id)
+    if not topic or topic.is_deleted:
+        raise HTTPException(status_code=404, detail="Tema koju želite prijaviti ne postoji.")
+        
+    report = TopicReport(topic_id=topic_id, user_id=current_user.id, reason=report_data.reason)
+    db.add(report)
+    db.commit()
+    return {"success": True}
+

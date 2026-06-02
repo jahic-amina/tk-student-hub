@@ -13,7 +13,7 @@ function getHeaders() {
 // Centralizovana funkcija za obradu odgovora i izvlačenje grešaka sa backenda
 async function handleResponse(response, defaultErrorMessage) {
   if (response.ok) {
-    // Ako nema sadržaja (24 No Content), vrati prazan objekat ili true
+    // Ako nema sadržaja (204 No Content), vrati prazan objekat ili true
     if (response.status === 204) return { success: true };
     return response.json();
   }
@@ -138,8 +138,39 @@ export async function deleteComment(commentId) {
   return handleResponse(response, 'Brisanje komentara nije uspjelo.');
 }
 
+export async function reportTopic(topicId, reason) {
+  const response = await fetch(`${BASE_URL}/forum/topics/${topicId}/report`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ reason })
+  });
+  return handleResponse(response, 'Prijavljivanje nije uspjelo.');
+}
+
+export async function getActiveAnnouncements() {
+  const response = await fetch(`${BASE_URL}/admin/announcements/active`, { 
+    headers: getHeaders() 
+  });
+  return handleResponse(response, 'Greška pri učitavanju obavještenja.');
+}
+
+export async function getActiveReports() {
+  const response = await fetch(`${BASE_URL}/forum/topics/reports/active`, {
+    method: 'GET',
+    headers: getHeaders()
+  });
+  return handleResponse(response, 'Neuspješno učitavanje prijava za moderaciju.');
+}
+
+export async function handleReportAction(reportId, action) {
+  const response = await fetch(`${BASE_URL}/forum/topics/reports/${reportId}/action?action=${action}`, {
+    method: 'PATCH',
+    headers: getHeaders()
+  });
+  return handleResponse(response, 'Greška pri izvršavanju akcije nad prijavom.');
+}
+
 export async function getSearchSuggestions(query = "", options = {}) {
-  // POPRAVLJENO: Dodat "/topics" u putanju kako bi se poklopilo sa backend ruterom
   let url = `${BASE_URL}/forum/topics/suggestions`;
   
   if (query && query.trim()) {
@@ -148,7 +179,7 @@ export async function getSearchSuggestions(query = "", options = {}) {
   
   const response = await fetch(url, {
     headers: getHeaders(),
-    ...options // Ovo omogućava AbortController signalizaciju
+    ...options
   });
   return handleResponse(response, 'Greška pri dohvatanju sugestija.');
 }
@@ -164,5 +195,10 @@ export default {
   voteOnComment,
   toggleBestAnswer,
   getPopularTags,
-  deleteComment
+  deleteComment,
+  reportTopic,
+  getActiveAnnouncements,
+  getActiveReports,
+  handleReportAction,
+  getSearchSuggestions
 };

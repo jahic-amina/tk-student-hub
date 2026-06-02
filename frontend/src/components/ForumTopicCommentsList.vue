@@ -10,6 +10,7 @@ const props = defineProps({
 const emit = defineEmits(['refresh']);
 
 const currentUserId = ref(null);
+const currentUserRole = ref(null);
 
 onMounted(async () => {
   try {
@@ -21,11 +22,17 @@ onMounted(async () => {
       if (res.ok) {
         const data = await res.json();
         currentUserId.value = data.id;
+        currentUserRole.value = data.role; // Kolegina izmjena za povlačenje role iz tokena
       }
     }
   } catch (e) {
     console.warn('Nije moguće dohvatiti korisnika.');
   }
+});
+
+// Provjera da li je trenutni korisnik admin
+const isAdmin = computed(() => {
+  return currentUserRole.value === 'admin';
 });
 
 const isTopicAuthor = computed(() => {
@@ -119,8 +126,14 @@ function getInitials(name) {
       <div
         v-for="comment in comments"
         :key="comment.id"
-        class="bg-white dark:bg-slate-800 rounded-xl border p-5 flex gap-4 transition-all"
-        :class="comment.is_best_answer ? 'border-yellow-400 dark:border-yellow-600 bg-yellow-50/40 dark:bg-yellow-950/20 ring-1 ring-yellow-400/30' : 'border-gray-200 dark:border-slate-700 shadow-sm'"
+        class="bg-white dark:bg-slate-800 rounded-xl border p-5 flex gap-4 transition-all shadow-sm"
+        :class="[
+          comment.is_admin_notice 
+            ? 'border-red-300 dark:border-red-900 bg-red-50/50 dark:bg-red-950/20 ring-1 ring-red-400/20' 
+            : comment.is_best_answer 
+              ? 'border-yellow-400 dark:border-yellow-600 bg-yellow-50/40 dark:bg-yellow-950/20 ring-1 ring-yellow-400/30' 
+              : 'border-gray-200 dark:border-slate-700'
+        ]"
       >
         <div class="flex flex-col items-center gap-0.5 flex-shrink-0 pt-1">
           <button
@@ -158,6 +171,10 @@ function getInitials(name) {
               <span>•</span>
               <span>{{ formatDate(comment.created_at) }}</span>
               
+              <span v-if="comment.is_admin_notice" class="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-full font-bold shadow-sm flex items-center gap-1M">
+                🛡️ Admin Notice
+              </span>
+              
               <span 
                 v-if="comment.is_best_answer"
                 class="text-[10px] bg-yellow-100 dark:bg-yellow-950/60 text-yellow-700 dark:text-yellow-400 px-2 py-0.5 rounded-full font-bold border border-yellow-300 dark:border-yellow-800"
@@ -165,6 +182,7 @@ function getInitials(name) {
                 ✓ Najbolji odgovor
               </span>
             </div>
+
             <div class="flex flex-col items-center gap-1">
               <button
                 v-if="isTopicAuthor"
@@ -177,11 +195,12 @@ function getInitials(name) {
                   <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd" />
                 </svg>
               </button>
+
               <button
-                v-if="currentUserId === comment.author?.id"
+                v-if="currentUserId === comment.author?.id || isAdmin"
                 @click="handleDeleteComment(comment)"
                 class="w-7 h-7 flex items-center justify-center rounded-full transition-all text-slate-300 dark:text-slate-600 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"
-                title="Obriši komentar"
+                :title="isAdmin ? 'Admin: Obriši komentar' : 'Obriši komentar'"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
                   <path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z" clip-rule="evenodd" />
@@ -191,7 +210,6 @@ function getInitials(name) {
           </div>
           <p class="text-slate-700 dark:text-slate-300 leading-relaxed text-sm whitespace-pre-line">{{ comment.content }}</p>
         </div>
-
       </div>
 
       <div v-if="comments.length === 0" class="text-center py-8 text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm">
