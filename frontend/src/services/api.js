@@ -62,7 +62,7 @@ export async function getSubjects() {
 export async function getMaterials(filters = {}) {
   const params = new URLSearchParams();
 
-  // Dodavanje filtera u query parametre
+  
   if (filters.years && filters.years.length > 0) {
     filters.years.forEach(y => params.append('years', y));
   }
@@ -75,8 +75,7 @@ export async function getMaterials(filters = {}) {
 
   const queryString = params.toString();
   
-  // KLJUČNO: Dodajemo kosu crtu "/" pre upitnika. 
-  // Ako nema filtera, šaljemo samo "/materials/", ako ima, šaljemo "/materials/?..."
+  
   const url = queryString 
     ? `${BASE_URL}/materials/?${queryString}` 
     : `${BASE_URL}/materials/`;

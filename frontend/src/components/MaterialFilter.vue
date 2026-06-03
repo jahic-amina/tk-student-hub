@@ -39,7 +39,6 @@ import { getSubjects } from '../services/api'
 const emit = defineEmits(['change'])
 const subjects = ref([])
 
-// Ključevi (lijevo) MORAJU odgovarati vrijednostima u bazi (kolona file_type)
 const typesMap = {
   'skripta': 'Skripte',
   'biljeske': 'Bilješke',
@@ -62,7 +61,7 @@ onMounted(async () => {
 })
 
 function update() { 
-  // Šaljemo kopiju roditelju
+  
   emit('change', JSON.parse(JSON.stringify(filters))) 
 }
 </script>
