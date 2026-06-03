@@ -21,6 +21,7 @@
             v-for="material in filteredMaterials" 
             :key="material.id" 
             :material="material"
+            @click="$router.push(`/materials/${$event}`)"
             @deleted="handleDelete"
           />
         </div>
