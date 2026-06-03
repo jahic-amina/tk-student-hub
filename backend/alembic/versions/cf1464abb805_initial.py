@@ -80,7 +80,8 @@ def upgrade() -> None:
     )
     op.create_table('notifications',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=True),
+    sa.Column('company_id', sa.Integer(), nullable=True),
     sa.Column('text', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('type', sa.Enum('NEW_OPPORTUNITY', 'STATUS_CHANGE', 'DEADLINE_EXPIRING', name='notificationtype'), nullable=False),
     sa.Column('is_read', sa.Boolean(), nullable=False),
@@ -91,7 +92,8 @@ def upgrade() -> None:
     op.create_index(op.f('ix_notifications_user_id'), 'notifications', ['user_id'], unique=False)
     op.create_table('applications',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=True),
+    sa.Column('company_id', sa.Integer(), nullable=True),
     sa.Column('ad_id', sa.Integer(), nullable=False),
     sa.Column('cv_path', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('motivational_letter_path', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
@@ -111,7 +113,8 @@ def upgrade() -> None:
     op.create_index(op.f('ix_applications_user_id'), 'applications', ['user_id'], unique=False)
     op.create_table('bookmarks',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=True),
+    sa.Column('company_id', sa.Integer(), nullable=True),
     sa.Column('ad_id', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['ad_id'], ['ads.id'], ),
