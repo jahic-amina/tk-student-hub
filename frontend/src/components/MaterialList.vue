@@ -13,8 +13,13 @@
 
       <div v-else>
         <div v-if="filteredMaterials.length > 0" class="flex flex-col gap-4">
-          <MaterialCard v-for="material in materials" :key="material.id" :material="material"
-            @click="$emit('open', $event)" @deleted="handleDelete" />
+          <MaterialCard 
+            v-for="material in filteredMaterials" 
+            :key="material.id" 
+            :material="material"
+            @click="$router.push(`/materials/${$event}`)"
+            @deleted="handleDelete"
+          />
         </div>
 
         <div v-else class="w-full py-20 text-left">
