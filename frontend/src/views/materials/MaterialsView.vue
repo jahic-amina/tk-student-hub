@@ -11,9 +11,10 @@
     </div>
     <MaterialUploadForm @submit="refreshList" />
     <div class="flex gap-6">
-     <MaterialList v-if="activeTab === 'pregled'" :key="listKey" @open="openMaterial" />
-     <PendingMaterialList v-if="activeTab === 'odobravanje' && isAdmin" :key="listKey" @open="openMaterial" />
-     <MaterialDetail v-if="selectedMaterialId" :material="selectedMaterialId" @close="selectedMaterialId = null" @rated="refreshMaterial" />
+      <MaterialList v-if="activeTab === 'pregled'" :key="listKey" @open="openMaterial" />
+      <PendingMaterialList v-if="activeTab === 'odobravanje' && isAdmin" :key="listKey" @open="openMaterial" />
+      <MaterialDetail v-if="selectedMaterialId" :material="selectedMaterialId" @close="selectedMaterialId = null"
+        @rated="refreshMaterial" />
     </div>
   </div>
 </template>
@@ -49,13 +50,13 @@ function refreshList() {
 }
 
 async function openMaterial(id) {
-  selectedMaterialId.value = await getMaterial(id)
+  router.push({ path: `/materials/${id}` })
 }
 //----------------------------------------------------
 // Osvježavanje liste i ocjene nakon ocjenjivanja - Marinela
 async function refreshMaterial(id) {
-    selectedMaterialId.value = await getMaterial(id)
-    listKey.value += 1  // osvježava kartice na listi
+  selectedMaterialId.value = await getMaterial(id)
+  listKey.value += 1  // osvježava kartice na listi
 }
 //----------------------------------------------------
 </script>
