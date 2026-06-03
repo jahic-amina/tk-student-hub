@@ -71,6 +71,7 @@ class RatingCreate(SQLModel):
     
 
 class UserResponse(SQLModel):
+    id: int
     full_name: str
     
 class CommentResponse(SQLModel):
