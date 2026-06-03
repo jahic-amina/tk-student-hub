@@ -1,5 +1,5 @@
 from typing import Optional, List
-from datetime import date
+from datetime import date, datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from fastapi.params import File
 from sqlmodel import Session, select
@@ -275,6 +275,19 @@ def update_application_company(
         if application.status == ApplicationStatus.accepted:
             tekst = f"Čestitamo! Vaša prijava za oglas '{ad.title}' kod kompanije '{current_company.company_name}' je prihvaćena."
             db.add(Notification(user_id=application.user_id, text=tekst, type=NotificationType.STATUS_CHANGE))
+
+            accepted_count = db.exec(
+                select(Application).where(
+                    Application.ad_id == ad.id,
+                    Application.status == ApplicationStatus.accepted
+                )
+            ).all()
+
+            if len(accepted_count) >= ad.spots:
+                ad.status = AdStatus.expired
+                ad.updated_at = datetime.now(timezone.utc)
+                db.add(ad)
+
         elif application.status == ApplicationStatus.rejected:
             tekst = f"Vaša prijava za oglas '{ad.title}' kod kompanije '{current_company.company_name}' ovaj put nije odabrana."
             db.add(Notification(user_id=application.user_id, text=tekst, type=NotificationType.STATUS_CHANGE))
