@@ -1,7 +1,7 @@
 """add_activity_logs_table
 
 Revision ID: e72918d76c2f
-Revises: caac721204c5
+Revises: 5f57a3168506
 Create Date: 2026-05-25 22:55:41.511750
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = 'e72918d76c2f'
-down_revision: Union[str, Sequence[str], None] = 'caac721204c5'
+down_revision: Union[str, Sequence[str], None] = '5f57a3168506'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
