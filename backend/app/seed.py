@@ -131,8 +131,8 @@ def seed_topics_and_comments(session: Session):
         if category.name == "Praksa i posao":
             continue
             
-        # Generišemo po 10 tema za svaku ostalu kategoriju zbog paginacije
-        for i in range(1, 11):
+        # POPRAVLJENO: Petlja sada ide do 20 (range od 1 do 21) kako bi generisala po 20 tema za svaku kategoriju
+        for i in range(1, 21):
             title_text = f"Tema broj {i} u kategoriji {category.name}"
             
             existing_topic = session.exec(
@@ -140,8 +140,8 @@ def seed_topics_and_comments(session: Session):
             ).first()
             
             if not existing_topic:
-                # Simuliramo objave u različito vrijeme kako bi sortiranje po datumu imalo smisla
-                time_offset = datetime.utcnow() - timedelta(days=11-i, hours=i*2)
+                # Simuliramo objave u različito vrijeme (prilagođeno za 20 tema da idu unazad kroz dane)
+                time_offset = datetime.utcnow() - timedelta(days=21-i, hours=i)
                 
                 topic = ForumTopic(
                     title=title_text,

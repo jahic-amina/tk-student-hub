@@ -6,24 +6,33 @@ const emit = defineEmits(['filters-changed']);
 const isPopoverOpen = ref(false);
 const containerRef = ref(null);
 
-const filteri = reactive({
+// Početno stanje filtera izdvojeno radi lakšeg resetovanja
+const getPocetniFilteri = () => ({
   sort_by: 'najnovije',
   unanswered: false,
   days_old: null
 });
 
+const filteri = reactive(getPocetniFilteri());
+
+// Funkcija za kompletno poništavanje stanja na inicijalno kroz "Poništi sve"
+const resetujFiltere = () => {
+  Object.assign(filteri, getPocetniFilteri());
+};
+
+// Funkcija koja omogućava odznačavanje radio button-a na ponovni klik
+const toggleSortBy = (vrijednost) => {
+  if (filteri.sort_by === vrijednost) {
+    // Ako kliknemo na već aktivno, vraćamo na podrazumijevano ('najnovije')
+    filteri.sort_by = 'najnovije';
+  } else {
+    filteri.sort_by = vrijednost;
+  }
+};
+
 watch(filteri, () => {
   emit('filters-changed', { ...filteri });
 }, { deep: true });
-
-let daysTimeout = null;
-const handleDaysInput = (event) => {
-  clearTimeout(daysTimeout);
-  daysTimeout = setTimeout(() => {
-    const val = event.target.value;
-    filteri.days_old = val ? parseInt(val, 10) : null;
-  }, 350);
-};
 
 const handleClickOutside = (event) => {
   if (containerRef.value && !containerRef.value.contains(event.target)) {
@@ -34,7 +43,6 @@ const handleClickOutside = (event) => {
 onMounted(() => document.addEventListener('click', handleClickOutside));
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside);
-  clearTimeout(daysTimeout);
 });
 </script>
 
@@ -56,39 +64,80 @@ onUnmounted(() => {
     </button>
 
     <div v-if="isPopoverOpen" class="absolute right-0 mt-2 w-72 divide-y divide-gray-100 dark:divide-slate-700/50 rounded-xl bg-white dark:bg-slate-800 shadow-2xl border border-gray-100 dark:border-slate-700 z-50">
+      
+      <div class="p-4 flex items-center justify-between bg-gray-50/50 dark:bg-slate-900/10 rounded-t-xl">
+        <span class="block text-xs font-bold uppercase tracking-wider text-slate-400">Opcije filtriranja</span>
+        <button 
+          v-if="filteri.unanswered || filteri.days_old || filteri.sort_by !== 'najnovije'"
+          @click="resetujFiltere"
+          type="button"
+          class="text-xs font-bold text-orange-500 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+        >
+          Poništi sve
+        </button>
+      </div>
+
+      <!-- SORTIRANJE (Radio dugmad sa podrškom za odznačavanje) -->
       <div class="p-4">
         <span class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Sortiraj po</span>
         <div class="space-y-2">
-          <label class="flex items-center gap-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
-            <input type="radio" v-model="filteri.sort_by" value="najnovije" class="accent-orange-500" />
+          <label 
+            @click.prevent="toggleSortBy('najnovije')" 
+            class="flex items-center gap-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer select-none"
+          >
+            <input type="radio" :checked="filteri.sort_by === 'najnovije'" class="accent-orange-500" />
             <span>Najnovije</span>
           </label>
-          <label class="flex items-center gap-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
-            <input type="radio" v-model="filteri.sort_by" value="najgledanije" class="accent-orange-500" />
+          <label 
+            @click.prevent="toggleSortBy('najgledanije')" 
+            class="flex items-center gap-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer select-none"
+          >
+            <input type="radio" :checked="filteri.sort_by === 'najgledanije'" class="accent-orange-500" />
             <span>Najgledanije</span>
           </label>
-          <label class="flex items-center gap-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
-            <input type="radio" v-model="filteri.sort_by" value="najaktivnije" class="accent-orange-500" />
+          <label 
+            @click.prevent="toggleSortBy('najaktivnije')" 
+            class="flex items-center gap-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer select-none"
+          >
+            <input type="radio" :checked="filteri.sort_by === 'najaktivnije'" class="accent-orange-500" />
             <span>Najaktivnije</span>
           </label>
         </div>
       </div>
 
+      <!-- STANJE (Checkbox - on sam po sebi radi toggle na klik) -->
       <div class="p-4">
         <span class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Stanje</span>
-        <label class="flex items-center gap-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+        <label class="flex items-center gap-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer select-none">
           <input type="checkbox" v-model="filteri.unanswered" class="accent-orange-500" />
           <span>Bez odgovora (0 replies)</span>
         </label>
       </div>
 
+      <!-- MAKSIMALNA STAROST (Dodato malo "x" dugme za brzi reset unosa) -->
       <div class="p-4 bg-gray-50/50 dark:bg-slate-900/30 rounded-b-xl">
         <span class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Maksimalna starost</span>
         <div class="relative flex items-center">
-          <input type="number" placeholder="Sve teme" min="1" :value="filteri.days_old" @input="handleDaysInput" class="w-full border border-gray-200 dark:border-slate-700 rounded-lg pl-3 pr-12 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white dark:bg-slate-800" />
-          <span class="absolute right-3 text-xs font-medium text-gray-400">dana</span>
+          <input 
+            type="number" 
+            placeholder="Sve teme" 
+            min="1" 
+            v-model.number="filteri.days_old" 
+            class="w-full border border-gray-200 dark:border-slate-700 rounded-lg pl-3 pr-16 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white dark:bg-slate-800" 
+          />
+          <!-- Malo dugme "x" koje se pojavljuje samo kada je unesen broj, za brisanje filtera na klik -->
+          <button 
+            v-if="filteri.days_old !== null" 
+            @click="filteri.days_old = null"
+            type="button"
+            class="absolute right-10 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xs font-bold p-1 transition"
+          >
+            ✕
+          </button>
+          <span class="absolute right-3 text-xs font-medium text-gray-400 pointer-events-none">dana</span>
         </div>
       </div>
+
     </div>
   </div>
 </template>

@@ -2,7 +2,6 @@
 import { ref, onMounted, watch, computed, reactive } from 'vue';
 import ForumSidebar from '../../components/ForumSidebar.vue';
 import ForumTopicCard from '../../components/ForumTopicCard.vue';
-//import ForumPagination from '../../components/ForumPagination.vue'; 
 import { useForumLazyLoading, updateTopicLikeInList } from '../../composables/useForumExtras.js';
 import ForumSearchDropdown from '../../components/ForumSearchDropdown.vue';
 import ForumFilters from '../../components/ForumFilters.vue';
@@ -21,13 +20,12 @@ const isLoading = ref(true);
 const odabraniKategorijaId = ref(null);
 const trenutnaStranica = ref(1);
 const ukupnoTema = ref(0);
-const velicinaStranice = 2;
+const velicinaStranice = 5; // Promijenjeno sa 2 na 5
 const search = ref("");
 const announcements = ref([]);
 const prikaziPrijave = ref(false); 
 const svePrijave = ref([]);
 
-// Reaktivno stanje za praćenje izabranih filtera iz ForumFilters komponente
 const aktivniFilteri = reactive({
   sort_by: 'najnovije',
   unanswered: false,
@@ -105,25 +103,20 @@ onMounted(async () => {
   try { announcements.value = await getActiveAnnouncements(); } catch (e) { console.error(e); }
 });
 
-// Osluškivanje promjena za kategoriju i stranicu (Spojeno u čistu logiku)
 watch(odabraniKategorijaId, () => { 
   prikaziPrijave.value = false;
   trenutnaStranica.value = 1; 
   ucitajTeme(); 
 });
 
-
-
 const filtrirajPoKategoriji = (id) => odabraniKategorijaId.value = id;
 
-// Rukovanje pretragom koja dolazi iz ForumSearchDropdown komponente
 const handleSearchSubmitted = (query) => {
   search.value = query;
   trenutnaStranica.value = 1;
   ucitajTeme();
 };
 
-// Funkcija koja prihvata promjene filtera i ponovo povlači podatke
 const handleFiltersChanged = (noviFilteri) => {
   aktivniFilteri.sort_by = noviFilteri.sort_by;
   aktivniFilteri.unanswered = noviFilteri.unanswered;
@@ -190,7 +183,7 @@ const { isLoadingMore, imaJosTema } = useForumLazyLoading({
   <div class="min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-6 transition-colors duration-200">
     <div class="max-w-7xl mx-auto">
       
-        <div class="sticky top-20 z-30 bg-gray-50 dark:bg-slate-900 flex justify-between items-center mb-8 border-b border-gray-200 dark:border-slate-800 py-4">
+      <div class="sticky top-[72px] z-30 bg-gray-50 dark:bg-slate-900 flex justify-between items-center mb-8 border-b border-gray-200 dark:border-slate-800 py-4 pt-6 -mt-2">
         <div>
           <h1 class="text-3xl font-bold tracking-tight text-slate-800 dark:text-white">Studentski Forum</h1>
           <p class="text-slate-500 dark:text-slate-400 mt-1">Postavi pitanje, podijeli ideju ili pomogni kolegama.</p>
@@ -203,7 +196,7 @@ const { isLoadingMore, imaJosTema } = useForumLazyLoading({
       <div class="flex flex-col md:flex-row gap-8 items-start">
         <div 
            class="w-full md:w-72 flex-shrink-0"
-           style="position: sticky; top: 190px; align-self: flex-start; z-index: 20;"
+           style="position: sticky; top: 160px; align-self: flex-start; z-index: 20;"
         >
           <ForumSidebar :aktivna-kategorija-id="odabraniKategorijaId" @kategorija-izabrana="filtrirajPoKategoriji" />
        </div>
@@ -294,10 +287,6 @@ const { isLoadingMore, imaJosTema } = useForumLazyLoading({
                     </div>
                   </div>
 
-        
-
-                
-
                   <ForumTopicCard 
                     v-if="prijava.topic"
                     :tema="prijava.topic" 
@@ -317,8 +306,6 @@ const { isLoadingMore, imaJosTema } = useForumLazyLoading({
                 </div>
 
                 <div v-else class="space-y-4">
-                 
-
                   <ForumTopicCard 
                     v-for="tema in teme" 
                     :key="tema.id" 
@@ -332,18 +319,17 @@ const { isLoadingMore, imaJosTema } = useForumLazyLoading({
 
             </div>
 
-            
             <div 
              v-if="!prikaziPrijave && teme.length > 0" 
              class="mt-8 text-center text-xs text-slate-500 dark:text-slate-400"
             >
-            <div v-if="isLoadingMore" class="py-6 flex justify-center">
-              <div class="w-8 h-8 border-4 border-gray-300 border-t-[#ff7a00] rounded-full animate-spin"></div>
-           </div>
+              <div v-if="isLoadingMore" class="py-6 flex justify-center">
+                <div class="w-8 h-8 border-4 border-gray-300 border-t-[#ff7a00] rounded-full animate-spin"></div>
+              </div>
 
-             <div v-else-if="!imaJosTema" class="py-4">
-               Prikazane su sve teme.
-            </div>
+              <div v-else-if="!imaJosTema" class="py-4">
+                 Prikazane su sve teme.
+              </div>
            </div>
 
           </div>
