@@ -176,8 +176,7 @@
         </div>
 
         <section v-if="isAdmin || isCompanyLoggedIn" class="rounded-3xl border border-gray-100 bg-white shadow-sm p-6 sm:p-8 w-full">
-          <h2 class="text-2xl font-bold text-gray-900 mb-6">Prijave ({{ applications.length }})</h2>
-
+          <h2 class="text-2xl font-bold text-gray-900 mb-6">Prijave ({{ applications.length }}) · Broj mjesta: {{ ad.spots }}</h2>
           <div v-if="loadingApplications" class="text-center text-gray-500 py-8">
             Učitavanje prijava...
           </div>
