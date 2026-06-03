@@ -9,6 +9,7 @@ from app.core.security import get_current_user
 from app.models.user import User, UserRole
 from app.models.forum import ForumCategory, ForumTopic, ForumTag, ForumTopicTag, TopicReport
 from app.routers.forum_categories import get_category_data 
+from app.routers.forum_likes import get_topic_likes_count
 
 router = APIRouter(prefix="/forum/topics", tags=["Forum Topics"])
 
@@ -55,6 +56,7 @@ def build_topic_list_item(db: Session, topic: ForumTopic) -> dict:
         "summary": make_summary(topic.content),
         "content": topic.content,
         "views_count": topic.views_count,
+        "likes_count": get_topic_likes_count(db, topic.id),
         "comments_count": comments_count,
         "answers_count": comments_count,
         "created_at": topic.created_at,
