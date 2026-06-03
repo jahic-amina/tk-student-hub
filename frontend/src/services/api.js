@@ -286,7 +286,13 @@ export const notificationService = {
     const response = await fetch(`${BASE_URL}/notifications/clear-all`, {
       method: 'DELETE',
       headers: authHeaders(token)
-    })
-    return parseResponse(response)
+    });
+    
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(message || `Request failed with status ${response.status}`);
+    }
+    
+    return true;
   }
 }

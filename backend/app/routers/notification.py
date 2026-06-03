@@ -135,6 +135,14 @@ def mark_single_as_read_path(
     if not db_notification:
         raise HTTPException(status_code=404, detail="Notification not found.")
         
+    if not (isinstance(current_actor, User) and current_actor.role == UserRole.admin):
+        if isinstance(current_actor, User):
+            if db_notification.user_id != current_actor.id:
+                raise HTTPException(status_code=403, detail="Permission denied. You can only read your own notifications.")
+        else:
+            if db_notification.company_id != current_actor.id:
+                raise HTTPException(status_code=403, detail="Permission denied. You can only read your own notifications.")
+        
     db_notification.is_read = True
     session.add(db_notification)
     session.commit()
@@ -166,6 +174,15 @@ def get_notification(
     db_notification = session.get(Notification, notification_id)
     if not db_notification:
         raise HTTPException(status_code=404, detail="Notification not found.")
+        
+    if not (isinstance(current_actor, User) and current_actor.role == UserRole.admin):
+        if isinstance(current_actor, User):
+            if db_notification.user_id != current_actor.id:
+                raise HTTPException(status_code=403, detail="Permission denied. You can only view your own notifications.")
+        else:
+            if db_notification.company_id != current_actor.id:
+                raise HTTPException(status_code=403, detail="Permission denied. You can only view your own notifications.")
+
     return db_notification
 
 
@@ -179,6 +196,14 @@ def update_notification(
     db_notification = session.get(Notification, notification_id)
     if not db_notification:
         raise HTTPException(status_code=404, detail="Notification not found.")
+    
+    if not (isinstance(current_actor, User) and current_actor.role == UserRole.admin):
+        if isinstance(current_actor, User):
+            if db_notification.user_id != current_actor.id:
+                raise HTTPException(status_code=403, detail="Permission denied. You can only update your own notifications.")
+        else:
+            if db_notification.company_id != current_actor.id:
+                raise HTTPException(status_code=403, detail="Permission denied. You can only update your own notifications.")
     
     obj_data = notification_data.model_dump(exclude_unset=True)
     for key, value in obj_data.items():
@@ -199,6 +224,14 @@ def delete_notification(
     db_notification = session.get(Notification, notification_id)
     if not db_notification:
         raise HTTPException(status_code=404, detail="Notification not found.")
+    
+    if not (isinstance(current_actor, User) and current_actor.role == UserRole.admin):
+        if isinstance(current_actor, User):
+            if db_notification.user_id != current_actor.id:
+                raise HTTPException(status_code=403, detail="Permission denied. You can only delete your own notifications.")
+        else:
+            if db_notification.company_id != current_actor.id:
+                raise HTTPException(status_code=403, detail="Permission denied. You can only delete your own notifications.")
     
     session.delete(db_notification)
     session.commit()

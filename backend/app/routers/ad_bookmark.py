@@ -3,7 +3,7 @@ from sqlmodel import Session, select
 from typing import List
 from app.database import get_db
 from app.core.security import get_current_user
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.ad_bookmark import AdBookmark, AdBookmarkCreate, AdBookmarkRead
 
 router = APIRouter(
@@ -17,6 +17,13 @@ def bookmark_ad(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+
+    if current_user.role != UserRole.member:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="Permission denied. Only students can use bookmarks."
+        )
+
     statement = select(AdBookmark).where(
         AdBookmark.user_id == current_user.id,
         AdBookmark.ad_id == data.ad_id
@@ -44,6 +51,13 @@ def get_my_bookmarks(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    
+    if current_user.role != UserRole.member:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="Permission denied. Only students can use bookmarks."
+        )
+
     statement = select(AdBookmark).where(AdBookmark.user_id == current_user.id)
     return db.exec(statement).all()
 
@@ -54,6 +68,13 @@ def get_bookmark(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+
+    if current_user.role != UserRole.member:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="Permission denied. Only students can use bookmarks."
+        )
+
     db_bookmark = db.get(AdBookmark, bookmark_id)
     if not db_bookmark:
         raise HTTPException(
@@ -76,6 +97,13 @@ def remove_bookmark(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    if current_user.role != UserRole.member:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="Permission denied. Only students can use bookmarks."
+        )
+    
+
     db_bookmark = db.get(AdBookmark, bookmark_id)
     if not db_bookmark:
         raise HTTPException(

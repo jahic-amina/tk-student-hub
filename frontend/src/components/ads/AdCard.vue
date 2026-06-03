@@ -74,12 +74,11 @@ export default {
       type: Object,
       required: true
     },
-    // ID bookmarka, ako je null onda oglas nije sačuvan
     bookmarkId: {
-      type: [Number, null],
+      type: Number,
       default: null
     },
-    // DODANO: Kontroliše da li korisnik uopšte ima pravo da sačuva oglas (samo uloga 'member')
+
     canBookmark: {
       type: Boolean,
       default: false
@@ -101,7 +100,7 @@ export default {
       if (statusLabel === 'Uskoro ističe') return `bg-orange-50 text-orange-600 ${BASE_BADGE}`
       return `bg-red-50 text-red-600 ${BASE_BADGE}`
     },
-    // Slanje eventa roditeljskoj komponenti
+   
     toggleBookmark() {
       this.$emit('toggle-bookmark', {
         adId: this.ad.id,
