@@ -2,7 +2,8 @@
 import { ref, onMounted, watch, computed, reactive } from 'vue';
 import ForumSidebar from '../../components/ForumSidebar.vue';
 import ForumTopicCard from '../../components/ForumTopicCard.vue';
-import ForumPagination from '../../components/ForumPagination.vue'; 
+//import ForumPagination from '../../components/ForumPagination.vue'; 
+import { useForumLazyLoading, updateTopicLikeInList } from '../../composables/useForumExtras.js';
 import ForumSearchDropdown from '../../components/ForumSearchDropdown.vue';
 import ForumFilters from '../../components/ForumFilters.vue';
 import { 
@@ -20,7 +21,7 @@ const isLoading = ref(true);
 const odabraniKategorijaId = ref(null);
 const trenutnaStranica = ref(1);
 const ukupnoTema = ref(0);
-const velicinaStranice = 5;
+const velicinaStranice = 2;
 const search = ref("");
 const announcements = ref([]);
 const prikaziPrijave = ref(false); 
@@ -41,9 +42,11 @@ const trenutnaKategorija = computed(() => {
   return sveKategorije.value.find(c => c.id === odabraniKategorijaId.value) || { name: 'Kategorija', color: '#ff7a00' };
 });
 
-// Funkcija koja šalje i parametre iz aktivniFilteri objekta u backend servis
-const ucitajTeme = async () => {
-  isLoading.value = true;
+const ucitajTeme = async (append = false) => {
+  if (!append) {
+    isLoading.value = true;
+  }
+
   try {
     const data = await getTopics({
       category_id: odabraniKategorijaId.value,
@@ -54,19 +57,34 @@ const ucitajTeme = async () => {
       unanswered: aktivniFilteri.unanswered,
       days_old: aktivniFilteri.days_old
     }); 
+
     if (data && data.items) {
-      teme.value = data.items;      
-      ukupnoTema.value = data.total;  
+      teme.value = append ? [...teme.value, ...data.items] : data.items;
+      ukupnoTema.value = data.total;
     } else if (Array.isArray(data)) {
-      teme.value = data;
+      teme.value = append ? [...teme.value, ...data] : data;
       ukupnoTema.value = data.length;
     }
   } catch (error) {
     console.warn("Učitavam demo podatke...");
-    teme.value = [{ id: 1, title: "Dobrodošli na TK Student Hub forum", content: "...", views_count: 42, comments_count: 3, category: { name: "Opšta diskusija" }, author: { full_name: "Admin Hub" }, created_at: new Date() }];
-    ukupnoTema.value = 1;
+    if (!append) {
+      teme.value = [{ 
+        id: 1, 
+        title: "Dobrodošli na TK Student Hub forum", 
+        content: "...", 
+        views_count: 42, 
+        comments_count: 3,
+        likes_count: 0,
+        category: { name: "Opšta diskusija" }, 
+        author: { full_name: "Admin Hub" }, 
+        created_at: new Date() 
+      }];
+      ukupnoTema.value = 1;
+    }
   } finally {
-    isLoading.value = false;
+    if (!append) {
+      isLoading.value = false;
+    }
   }
 };
 
@@ -94,11 +112,7 @@ watch(odabraniKategorijaId, () => {
   ucitajTeme(); 
 });
 
-watch(trenutnaStranica, () => {
-  if (!prikaziPrijave.value) {
-    ucitajTeme();
-  }
-});
+
 
 const filtrirajPoKategoriji = (id) => odabraniKategorijaId.value = id;
 
@@ -158,13 +172,25 @@ const procesuirajPrijavu = async (reportId, akcija) => {
     alert("Greška: " + error.message);
   }
 };
+
+const handleLikeUpdated = (payload) => {
+  updateTopicLikeInList(teme, payload);
+};
+
+const { isLoadingMore, imaJosTema } = useForumLazyLoading({
+  teme,
+  ukupnoTema,
+  trenutnaStranica,
+  prikaziPrijave,
+  ucitajTeme
+});
 </script>
 
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-6 transition-colors duration-200">
     <div class="max-w-7xl mx-auto">
       
-      <div class="flex justify-between items-center mb-8 border-b border-gray-200 dark:border-slate-800 pb-4">
+        <div class="sticky top-20 z-30 bg-gray-50 dark:bg-slate-900 flex justify-between items-center mb-8 border-b border-gray-200 dark:border-slate-800 py-4">
         <div>
           <h1 class="text-3xl font-bold tracking-tight text-slate-800 dark:text-white">Studentski Forum</h1>
           <p class="text-slate-500 dark:text-slate-400 mt-1">Postavi pitanje, podijeli ideju ili pomogni kolegama.</p>
@@ -175,9 +201,12 @@ const procesuirajPrijavu = async (reportId, akcija) => {
       </div>
 
       <div class="flex flex-col md:flex-row gap-8 items-start">
-        <div class="w-full md:w-72 flex-shrink-0">
+        <div 
+           class="w-full md:w-72 flex-shrink-0"
+           style="position: sticky; top: 190px; align-self: flex-start; z-index: 20;"
+        >
           <ForumSidebar :aktivna-kategorija-id="odabraniKategorijaId" @kategorija-izabrana="filtrirajPoKategoriji" />
-        </div>
+       </div>
 
         <div class="flex-1 w-full">
           <div class="flex flex-col justify-between min-h-[500px]">
@@ -265,6 +294,10 @@ const procesuirajPrijavu = async (reportId, akcija) => {
                     </div>
                   </div>
 
+        
+
+                
+
                   <ForumTopicCard 
                     v-if="prijava.topic"
                     :tema="prijava.topic" 
@@ -284,26 +317,34 @@ const procesuirajPrijavu = async (reportId, akcija) => {
                 </div>
 
                 <div v-else class="space-y-4">
+                 
+
                   <ForumTopicCard 
                     v-for="tema in teme" 
                     :key="tema.id" 
                     :tema="tema" 
                     :is-admin="isAdmin"
                     @obrisi="obrisiTemu"
-                  />
+                    @like-updated="handleLikeUpdated"
+                 />
                 </div>
               </div>
 
             </div>
 
-            <ForumPagination 
-              v-if="teme.length > 0 && !isLoading && !prikaziPrijave"
-              :trenutna-stranica="trenutnaStranica"
-              :ukupno-stranica="ukupnoStranica"
-              :prikazano-tema="teme.length"
-              :ukupno-tema="ukupnoTema"
-              @promijeniStranicu="(novaStr) => trenutnaStranica = novaStr"
-            />
+            
+            <div 
+             v-if="!prikaziPrijave && teme.length > 0" 
+             class="mt-8 text-center text-xs text-slate-500 dark:text-slate-400"
+            >
+            <div v-if="isLoadingMore" class="py-6 flex justify-center">
+              <div class="w-8 h-8 border-4 border-gray-300 border-t-[#ff7a00] rounded-full animate-spin"></div>
+           </div>
+
+             <div v-else-if="!imaJosTema" class="py-4">
+               Prikazane su sve teme.
+            </div>
+           </div>
 
           </div>
         </div>
