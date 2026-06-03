@@ -305,3 +305,27 @@ def rate_material(
     db.commit()
     db.refresh(new_rating)
     return new_rating
+
+"""Promijeni ocijenu materijala endpoint"""
+
+@router.patch("/{id}/rate", status_code=200)
+def update_rating(
+    id: int,
+    rating_data: RatingCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    existing = db.exec(
+        select(Rating).where(
+            Rating.material_id == id,
+            Rating.user_id == current_user.id
+        )
+    ).first()
+    if not existing:
+        raise HTTPException(status_code=404, detail="Niste ocijenili ovaj materijal.")
+    
+    existing.rating = rating_data.rating
+    db.add(existing)
+    db.commit()
+    db.refresh(existing)
+    return existing
