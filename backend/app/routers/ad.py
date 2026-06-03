@@ -12,6 +12,14 @@ from app.models.notification import Notification, NotificationType
 
 router = APIRouter(prefix="/ads", tags=["Ads"])
 
+def expire_if_deadline_passed(ad: Ad, db: Session) -> None:
+    """Automatski postavlja oglas na expired ako je deadline prošao."""
+    from datetime import date
+    if ad.status == AdStatus.active and ad.deadline < date.today():
+        ad.status = AdStatus.expired
+        ad.updated_at = datetime.now(timezone.utc)
+        db.add(ad)
+        db.commit()
 
 def ad_to_read(ad: Ad) -> AdRead:
     """Helper function to convert Ad to AdRead with company_name and approver_name."""
@@ -71,6 +79,8 @@ def get_ads(
         )
 
     ads = db.exec(query).all()
+    for ad in ads:
+        expire_if_deadline_passed(ad, db)
     return [ad_to_read(ad) for ad in ads]
 
 
@@ -118,6 +128,7 @@ def get_ad(ad_id: int, db: Session = Depends(get_db)):
     ad = db.get(Ad, ad_id)
     if not ad or ad.is_deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ad not found.")
+    expire_if_deadline_passed(ad, db)
     return ad_to_read(ad)
 
 
