@@ -9,31 +9,38 @@
       </div>
       
       <div v-else-if="profile">
-        <UserProfileCard :profile="profile" @edit-avatar="showModal = true" />
+        <UserProfileCard :profile="profile" @edit-avatar="showModal = true" @edit-profile="isEditing = true"/>
         
-        <div class="flex justify-end mt-4 mb-6">
-          <button @click="isEditing = true" class="px-5 py-2 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 transition text-sm shadow-md">
-            Uredi profil
-          </button>
-        </div>
-
         <div class="bg-white rounded-xl shadow p-6 mb-6">
           <h2 class="text-lg font-bold mb-3">O meni</h2>
           <p class="text-gray-600 text-sm">{{ profile.biografija || 'Nije unesena biografija.' }}</p>
         </div>
+      <div class="grid grid-cols-2 gap-6">
+  <div class="bg-white rounded-xl shadow p-6">
+    <h2 class="text-lg font-bold mb-4">Trenutne prakse</h2>
+    <div v-if="prakse.length === 0">
+      <p class="text-gray-400 text-sm">Nema trenutnih praksi.</p>
+    </div>
+    <div v-else class="flex flex-col gap-3">
+      <div v-for="praksa in prakse" :key="praksa.id">
+        <p class="font-medium text-gray-800">{{ praksa.naziv }}</p>
+        <p class="text-sm text-gray-400">{{ praksa.kompanija }} · <span class="text-orange-500">{{ praksa.status }}</span></p>
+      </div>
+    </div>
+  </div>
 
-        <div class="grid grid-cols-2 gap-6">
-          <div class="bg-white rounded-xl shadow p-6">
-            <h2 class="text-lg font-bold mb-4">Trenutne prakse</h2>
-            <p class="text-gray-400 text-sm">Nema trenutnih praksi.</p>
-          </div>
-
-          <div class="bg-white rounded-xl shadow p-6">
-            <h2 class="text-lg font-bold mb-4">Nedavna aktivnost</h2>
-            <p class="text-gray-400 text-sm">Nema nedavne aktivnosti.</p>
-          </div>
-        </div>
-        
+  <div class="bg-white rounded-xl shadow p-6">
+    <h2 class="text-lg font-bold mb-4">Nedavna aktivnost</h2>
+    <ActivityFeed :activities="activities" :loading="activityLoading" />
+    <button 
+      v-if="hasMore && !showingAll"
+      @click="handleShowAll"
+      class="mt-4 text-sm text-orange-500 hover:text-orange-600 flex items-center gap-1"
+    >
+      Prikaži sve
+    </button>
+  </div>
+</div>
         <div v-if="successMessage" class="mt-4 bg-green-100 text-green-700 p-3 rounded-lg font-medium">{{ successMessage }} </div>
       </div>
 
@@ -181,6 +188,49 @@ import { useRouter } from 'vue-router'
 import UserProfileCard from '../../components/UserProfileCard.vue'
 import AvatarUploadModal from '../../components/AvatarUploadModal.vue'
 import { getMyProfile, uploadAvatar, removeAvatar } from '../../services/api.js'
+import ActivityFeed from '../../components/ActivityFeed.vue'
+import { getMyActivity } from '../../services/api.js'
+
+
+const activities = ref([])
+const activityLoading = ref(false)
+const hasMore = ref(false)
+const showingAll = ref(false)
+
+function getToken() {
+  return localStorage.getItem('token') || localStorage.getItem('access_token')
+}
+
+async function loadPreview() {
+  activityLoading.value = true
+  try {
+    const data = await getMyActivity(getToken(), 3, 0)
+    activities.value = data.items
+    hasMore.value = data.has_more
+  } catch (error) {
+    console.error('Greška pri dohvatanju aktivnosti:', error)
+  } finally {
+    activityLoading.value = false
+  }
+}
+
+async function loadAll() {
+  activityLoading.value = true
+  try {
+    const data = await getMyActivity(getToken(), 20, 0)
+    activities.value = data.items
+    hasMore.value = data.has_more
+  } catch (error) {
+    console.error('Greška pri dohvatanju aktivnosti:', error)
+  } finally {
+    activityLoading.value = false
+  }
+}
+
+async function handleShowAll() {
+  await loadAll()
+  showingAll.value = true
+}
 
 
 const api = axios.create({ baseURL: 'http://127.0.0.1:8000' })
@@ -284,7 +334,10 @@ const fetchProfileData = async () => {
   }
 }
 
-onMounted(fetchProfileData)
+onMounted(() => {
+  fetchProfileData()
+  loadPreview()
+})
 
 const handleSubmit = async () => {
   const { first_name, last_name, bio, study_year } = form
@@ -350,6 +403,20 @@ async function onRemove() {
     Object.assign(status, { message: 'Greska pri uklanjanju slike.', isError: true })
   }
 }
+const prakse = ref([
+  {
+    id: 1,
+    naziv: "Full Stack Developer",
+    kompanija: "Tech Corp",
+    status: "U toku"
+  },
+  {
+    id: 2,
+    naziv: "AI Research Assistant",
+    kompanija: "University Lab",
+    status: "U toku"
+  }
+])
 
 // --- Funkcija za deaktivaciju ---
 const handleDeactivate = async () => {
