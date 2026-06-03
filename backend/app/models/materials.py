@@ -103,6 +103,9 @@ class MaterialDetailResponse(SQLModel):
     comments: list[CommentResponse] = []
     ratings: list[Rating] = []
     
+    average_rating: Optional[float] = None
+    rating_count: Optional[int] = None
+    
 def get_default_subjects():
     return [
         Subject(name="Matematika 1", study_year=1),

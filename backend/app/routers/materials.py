@@ -230,7 +230,24 @@ def get_material(material_id: int, session: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Materijal nije pronadjen")
     
     material.comments.sort(key=lambda c: c.created_at, reverse=True) 
-    return material
+    avg = sum(r.rating for r in material.ratings) / len(material.ratings) if material.ratings else None
+    count = len(material.ratings)
+    
+    return MaterialDetailResponse(
+        id=material.id,
+        title=material.title,
+        description=material.description,
+        file_type=material.file_type,
+        status=material.status,
+        created_at=material.created_at,
+        number_of_downloads=material.number_of_downloads,
+        subject=material.subject,
+        user=material.user,
+        comments=material.comments,
+        ratings=material.ratings,
+        average_rating=round(avg, 1) if avg else None,
+        rating_count=count
+    )
 
 
 #amer

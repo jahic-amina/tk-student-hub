@@ -30,7 +30,7 @@
             <h3 class="font-semibold mb-2">Ocjena materijala</h3>
             <div class="flex items-center gap-2">
                 <span v-for="star in 5" :key="star" class="text-yellow-400 text-2xl">
-                    {{ star <= Math.round(material.average_rating) ? '★' : '☆' }} </span>
+                    {{ star <= Math.round(localAvgRating) ? '★' : '☆' }} </span>
                         <span class="text-gray-600">{{ localAvgRating }} / 5.0 ({{ localRatingCount }}
                             ocjena)</span>
             </div>
@@ -92,7 +92,7 @@ const props = defineProps({
     }
 })
 
-defineEmits(['close', 'rated'])
+const emit = defineEmits(['close', 'rated'])
 
 const hoverRating = ref(0)
 const selectedRating = ref(0)
@@ -117,9 +117,17 @@ const isLoggedIn = computed(() => !!localStorage.getItem('token'))
 
 // Kad se kartica otvori, provjeri da li je korisnik ocijenio ovaj materijal
 onMounted(async () => {
+    const response = await fetch(`${BASE_URL}/materials/${props.material.id}`)
+    const data = await response.json()
+    
+    // Izracunaj prosjek iz ratings liste
+    if (data.ratings && data.ratings.length > 0) {
+        const sum = data.ratings.reduce((acc, r) => acc + r.rating, 0)
+        localAvgRating.value = Math.round((sum / data.ratings.length) * 10) / 10
+        localRatingCount.value = data.ratings.length
+    }
+
     if (isLoggedIn.value) {
-        const response = await fetch(`${BASE_URL}/materials/${props.material.id}`)
-        const data = await response.json()
         const user = JSON.parse(localStorage.getItem('user') || '{}')
         const myRatingObj = data.ratings?.find(r => r.user_id === user.id)
         if (myRatingObj) {
@@ -164,6 +172,8 @@ async function submitRating(star) {
         const data = await updated.json()
         localAvgRating.value = data.average_rating
         localRatingCount.value = data.rating_count
+        emit('rated', props.material.id)
+
     } catch (err) {
         ratingError.value = 'Greška prilikom ocjenjivanja.'
     }

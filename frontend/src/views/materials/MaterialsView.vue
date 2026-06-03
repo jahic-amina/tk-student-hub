@@ -28,10 +28,11 @@ function refreshList() {
 async function openMaterial(id) {
   selectedMaterialId.value = await getMaterial(id)
 }
-//-------------------------------------------------
-// Osvježavanje ocjene nakon ocjenjivanja - Marinela
+//----------------------------------------------------
+// Osvježavanje liste i ocjene nakon ocjenjivanja - Marinela
 async function refreshMaterial(id) {
     selectedMaterialId.value = await getMaterial(id)
+    listKey.value += 1  // osvježava kartice na listi
 }
-//-------------------------------------------------
+//----------------------------------------------------
 </script>
