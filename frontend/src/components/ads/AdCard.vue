@@ -1,7 +1,29 @@
 <template>
-  <div class="bg-white border border-gray-100 rounded-2xl p-4 sm:p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition duration-200 h-full">
+  <div class="bg-white border border-gray-100 rounded-2xl p-4 sm:p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition duration-200 h-full relative">
+    
+    <button 
+      v-if="canBookmark"
+      @click.prevent.stop="toggleBookmark" 
+      class="absolute top-4 right-4 focus:outline-none transition-transform hover:scale-110 active:scale-95 z-10"
+      title="Sačuvaj oglas"
+    >
+      <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        :fill="isBookmarked ? 'currentColor' : 'none'" 
+        viewBox="0 0 24 24" 
+        stroke-width="1.5" 
+        stroke="currentColor" 
+        :class="[
+          'w-6 h-6 sm:w-7 sm:h-7 transition-colors duration-300', 
+          isBookmarked ? 'text-orange-500' : 'text-gray-300 hover:text-orange-400'
+        ]"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
+      </svg>
+    </button>
+
     <div>
-      <div class="flex gap-1.5 mb-4 text-[10px] sm:text-xs font-semibold flex-wrap">
+      <div class="flex gap-1.5 mb-4 text-[10px] sm:text-xs font-semibold flex-wrap pr-10">
         <span :class="getTypeClass(ad.typeLabel)">{{ ad.typeLabel }}</span>
         <span :class="getStatusClass(ad.statusLabel)">{{ ad.statusLabel }}</span>
       </div>
@@ -51,6 +73,20 @@ export default {
     ad: {
       type: Object,
       required: true
+    },
+    bookmarkId: {
+      type: Number,
+      default: null
+    },
+
+    canBookmark: {
+      type: Boolean,
+      default: false
+    }
+  },
+  computed: {
+    isBookmarked() {
+      return this.bookmarkId !== null;
     }
   },
   methods: {
@@ -63,6 +99,13 @@ export default {
       if (statusLabel === 'Aktivan') return `bg-green-50 text-green-600 ${BASE_BADGE}`
       if (statusLabel === 'Uskoro ističe') return `bg-orange-50 text-orange-600 ${BASE_BADGE}`
       return `bg-red-50 text-red-600 ${BASE_BADGE}`
+    },
+   
+    toggleBookmark() {
+      this.$emit('toggle-bookmark', {
+        adId: this.ad.id,
+        bookmarkId: this.bookmarkId
+      });
     }
   }
 }

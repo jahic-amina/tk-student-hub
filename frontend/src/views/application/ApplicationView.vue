@@ -68,9 +68,9 @@
                   required
                 />
                 <div v-if="!form.cvFile" class="text-gray-600">
-                <div v-if="!form.cvFile" class="text-gray-600">
                   <p class="font-medium">Klikni da odabereš fajl ili povuci i pusti ovdje</p>
                   <p class="text-xs text-gray-500 mt-1">PDF (max 5MB)</p>
+                </div>
                 <div v-else class="text-green-600">
                   <p class="font-medium">✓ {{ form.cvFile.name }}</p>
                   <button
@@ -111,9 +111,9 @@
                   required
                 />
                 <div v-if="!form.letterFile" class="text-gray-600">
-                <div v-if="!form.letterFile" class="text-gray-600">
                   <p class="font-medium">Klikni da odabereš fajl ili povuci i pusti ovdje</p>
                   <p class="text-xs text-gray-500 mt-1">PDF (max 5MB)</p>
+                </div>
                 <div v-else class="text-green-600">
                   <p class="font-medium">✓ {{ form.letterFile.name }}</p>
                   <button
@@ -247,9 +247,9 @@ export default {
       const validExtensions = ['pdf']
       const ext = file.name.split('.').pop().toLowerCase()
       return validTypes.includes(file.type) && validExtensions.includes(ext) && file.size <= 5 * 1024 * 1024
-    }
+    },
 
-    async uploadFile(file) {
+    async handleFileUpload(file) {
       try {
         const response = await uploadFile(file)
         return response.path
@@ -277,11 +277,11 @@ export default {
 
       try {
         // Upload CV
-        this.form.cvPath = await this.uploadFile(this.form.cvFile)
+        this.form.cvPath = await this.handleFileUpload(this.form.cvFile)
         this.cvUploadProgress = 50
 
         // Upload motivational letter
-        this.form.letterPath = await this.uploadFile(this.form.letterFile)
+        this.form.letterPath = await this.handleFileUpload(this.form.letterFile)
         this.letterUploadProgress = 50
 
         // Create application

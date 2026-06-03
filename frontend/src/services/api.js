@@ -218,3 +218,81 @@ export async function updateApplicationStatus(applicationId, status, feedback, t
   })
   return parseResponse(response)
 }
+
+// --- Bookmarks ---
+
+export async function getBookmarks(token) {
+  const response = await fetch(`${BASE_URL}/bookmarks/`, {
+    headers: authHeaders(token)
+  })
+  return parseResponse(response)
+}
+
+export async function addBookmark(adId, token) {
+  const response = await fetch(`${BASE_URL}/bookmarks/`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ ad_id: adId })
+  })
+  return parseResponse(response)
+}
+
+export async function removeBookmark(bookmarkId, token) {
+  const response = await fetch(`${BASE_URL}/bookmarks/${bookmarkId}`, {
+    method: 'DELETE',
+    headers: authHeaders(token)
+  })
+  if (!response.ok) {
+    const message = await response.text()
+    throw new Error(message || `Request failed with status ${response.status}`)
+  }
+  return true;
+}
+
+// --- Notifications (Konačna i popravljena verzija) ---
+
+export const notificationService = {
+  getMyNotifications: async () => {
+
+    const token = localStorage.getItem('token') || localStorage.getItem('company_token');
+    
+    const response = await fetch(`${BASE_URL}/notifications/me`, {
+      method: 'GET',
+      headers: authHeaders(token)
+    })
+    return parseResponse(response)
+  },
+
+  markAsRead: async (id) => {
+    const token = localStorage.getItem('token') || localStorage.getItem('company_token');
+    const response = await fetch(`${BASE_URL}/notifications/${id}/read`, {
+      method: 'PUT',
+      headers: authHeaders(token)
+    })
+    return parseResponse(response)
+  },
+
+  markAllAsRead: async () => {
+    const token = localStorage.getItem('token') || localStorage.getItem('company_token');
+    const response = await fetch(`${BASE_URL}/notifications/read-all`, {
+      method: 'PUT',
+      headers: authHeaders(token)
+    })
+    return parseResponse(response)
+  },
+
+  clearAll: async () => {
+    const token = localStorage.getItem('token') || localStorage.getItem('company_token');
+    const response = await fetch(`${BASE_URL}/notifications/clear-all`, {
+      method: 'DELETE',
+      headers: authHeaders(token)
+    });
+    
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(message || `Request failed with status ${response.status}`);
+    }
+    
+    return true;
+  }
+}

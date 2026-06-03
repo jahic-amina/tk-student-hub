@@ -7,13 +7,14 @@
       </router-link>
 
       <div class="flex gap-6">
-      <router-link to="/ads" class="text-gray-600 hover:text-primary font-medium transition">Prakse i edukacije</router-link>
-      <span class="text-gray-400 font-medium cursor-not-allowed">Materijali</span>
-      <span class="text-gray-400 font-medium cursor-not-allowed">Forum</span>
-      <span class="text-gray-400 font-medium cursor-not-allowed">Profili</span>
-        </div>
+        <router-link to="/ads" class="text-gray-600 hover:text-primary font-medium transition">Prakse i edukacije</router-link>
+        <span class="text-gray-400 font-medium cursor-not-allowed">Materijali</span>
+        <span class="text-gray-400 font-medium cursor-not-allowed">Forum</span>
+        <span class="text-gray-400 font-medium cursor-not-allowed">Profili</span>
+      </div>
 
       <div class="flex items-center gap-4">
+        
         <template v-if="isUserLoggedIn">
           <div v-if="isAdmin" class="relative group">
             <button class="text-gray-600 hover:text-primary font-medium transition flex items-center gap-1">
@@ -22,21 +23,31 @@
             </button>
             <div class="absolute left-0 mt-0 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 group-hover:opacity-100 invisible group-hover:visible transition z-10">
               <router-link to="/admin/companies" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100 first:rounded-t-lg">
-                Upravljanje kompanijama
+               Upravljanje kompanijama
               </router-link>
-            </div>
+              <router-link to="/admin/ads" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 last:rounded-b-lg">
+               Upravljanje oglasima
+              </router-link>
+            </div> 
           </div>
+
+          <NotificationBell />
+
           <span class="text-gray-600 font-medium">{{ username }}</span>
           <button @click="logoutUser" class="border border-primary text-primary px-4 py-1.5 rounded-lg hover:bg-primary hover:text-white transition">
             Odjava
           </button>
         </template>
+
         <template v-else-if="isCompanyLoggedIn">
+          <NotificationBell />
+
           <router-link :to="`/companies/${companyId}`" class="text-gray-600 hover:text-primary font-medium">{{ companyName }}</router-link>
           <button @click="logoutCompany" class="border border-primary text-primary px-4 py-1.5 rounded-lg hover:bg-primary hover:text-white transition">
             Odjava
           </button>
         </template>
+
         <template v-else>
           <div class="flex items-center gap-3">
             <router-link to="/login" class="text-gray-600 hover:text-primary font-medium">Prijava</router-link>
@@ -45,7 +56,7 @@
             </router-link>
           </div>
           
-          <div class="w-px bg-gray-200"></div>
+          <div class="w-px h-6 bg-gray-200"></div>
           
           <div class="flex items-center gap-3">
             <router-link to="/company/login" class="text-gray-600 hover:text-primary font-medium">Prijava kompanije</router-link>
@@ -61,8 +72,14 @@
 </template>
 
 <script>
+
+import NotificationBell from './NotificationBell.vue';
+
 export default {
   name: 'NavBar',
+  components: {
+    NotificationBell 
+  },
   computed: {
     isUserLoggedIn() {
       return !!localStorage.getItem('token')

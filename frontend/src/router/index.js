@@ -9,6 +9,7 @@ import CompanyRegisterView from '../views/company/CompanyRegisterView.vue'
 import CompanyLoginView from '../views/company/CompanyLoginView.vue'
 import AdminCompanyApprovalView from '../views/company/AdminCompanyApprovalView.vue'
 import CompanyView from '../views/company/CompanyView.vue'
+import AdminAdsView from '../views/ads/AdminAdsApprovalView.vue'
 
 const routes = [
   {
@@ -66,6 +67,12 @@ const routes = [
     component: AdminCompanyApprovalView,
     meta: { requiresAuth: true }
   },
+  {
+    path: '/admin/ads',
+    name: 'admin-ads',
+    component: AdminAdsView,
+    meta: { requiresAuth: true }
+  }
 ]
 
 const router = createRouter({

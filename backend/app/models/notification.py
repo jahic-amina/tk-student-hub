@@ -16,7 +16,8 @@ class Notification(SQLModel, table=True):
     __table_args__ = {"extend_existing": True}
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="users.id", index=True)
+    user_id: Optional[int] = Field(default=None, foreign_key="users.id", index=True)
+    company_id: Optional[int] = Field(default=None, foreign_key="companies.id", index=True)
     text: str
     type: NotificationType
     is_read: bool = Field(default=False)
@@ -24,6 +25,8 @@ class Notification(SQLModel, table=True):
 
 
 class NotificationCreate(SQLModel):
+    user_id: Optional[int] = None
+    company_id: Optional[int] = None
     text: str
     type: NotificationType
     is_read: bool = False
@@ -44,8 +47,6 @@ class NotificationUpdate(SQLModel):
     def validate_text(cls, v):
         return _validate_text(v)
 
-
-# --- Validation helpers ---
 
 def _validate_text(v: Optional[str]) -> Optional[str]:
     if v is not None:

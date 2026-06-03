@@ -19,13 +19,35 @@
         
         <div class="grid gap-6 lg:grid-cols-[1.6fr_0.9fr] items-start">
           
-          <section class="rounded-3xl border border-gray-100 bg-white shadow-sm p-6 sm:p-8">
-            <div class="flex flex-wrap gap-2 mb-4 text-xs font-semibold">
+          <section class="rounded-3xl border border-gray-100 bg-white shadow-sm p-6 sm:p-8 relative">
+            
+            <button 
+              v-if="isUserLoggedIn && !isCompanyLoggedIn && !isAdmin"
+              @click.prevent="toggleBookmark" 
+              class="absolute top-6 right-6 focus:outline-none transition-transform hover:scale-110 active:scale-95 z-10"
+              title="Sačuvaj oglas"
+            >
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                :fill="bookmarkId ? 'currentColor' : 'none'" 
+                viewBox="0 0 24 24" 
+                stroke-width="1.5" 
+                stroke="currentColor" 
+                :class="[
+                  'w-8 h-8 transition-colors duration-300', 
+                  bookmarkId ? 'text-orange-500' : 'text-gray-300 hover:text-orange-400'
+                ]"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
+              </svg>
+            </button>
+
+            <div class="flex flex-wrap gap-2 mb-4 text-xs font-semibold pr-12">
               <span :class="getTypeClass(ad.typeLabel)">{{ ad.typeLabel }}</span>
               <span :class="getStatusClass(ad.statusLabel)">{{ ad.statusLabel }}</span>
             </div>
 
-            <h1 class="text-2xl sm:text-4xl font-black text-gray-900 leading-tight mb-3">
+            <h1 class="text-2xl sm:text-4xl font-black text-gray-900 leading-tight mb-3 pr-12">
               {{ ad.title }}
             </h1>
 
@@ -179,7 +201,8 @@
 </template>
 
 <script>
-import { getAdById, getApprovedCompanies, getApplicationsByAd } from '../../services/api.js'
+// Dodane funkcije za bookmarke iz api.js
+import { getAdById, getApprovedCompanies, getApplicationsByAd, getBookmarks, addBookmark, removeBookmark } from '../../services/api.js'
 import ApplicationCard from '../../components/application/ApplicationCard.vue'
 
 const BASE_BADGE = 'px-3 py-1.5 rounded-full'
@@ -225,7 +248,8 @@ export default {
       applications: [],
       loadingApplications: false,
       applicationsError: '',
-      companyToken: localStorage.getItem('company_token')
+      companyToken: localStorage.getItem('company_token'),
+      bookmarkId: null 
     }
   },
   computed: {
@@ -319,14 +343,68 @@ export default {
       } finally {
         this.loadingApplications = false
       }
+    },
+
+    // --- PRAVA LOGIKA ZA SAČUVANE OGLASE SA API-JEM ---
+    async checkBookmarkStatus() {
+      if (!this.isUserLoggedIn || this.isCompanyLoggedIn || this.isAdmin) return;
+      
+      const token = localStorage.getItem('token')
+      if (!token || token === 'null' || token === 'undefined') return;
+
+      const adId = Number(this.$route.params.id)
+
+      try {
+        const bookmarks = await getBookmarks(token)
+        // Tražimo da li postoji bookmark sa istim ad_id
+        const foundBookmark = bookmarks.find(bm => bm.ad_id === adId)
+        
+        if (foundBookmark) {
+          // Ako je nađen, čuvamo ID iz baze kako bismo ga mogli obrisati
+          this.bookmarkId = foundBookmark.id;
+        } else {
+          this.bookmarkId = null;
+        }
+      } catch (err) {
+        console.error('Nisam uspio provjeriti status bookmarka:', err)
+      }
+    },
+    
+    async toggleBookmark() {
+      const token = localStorage.getItem('token')
+      
+      if (!token || token === 'null' || token === 'undefined') {
+        alert('Morate biti prijavljeni da biste sačuvali oglas.')
+        return
+      }
+
+      const adId = Number(this.$route.params.id)
+
+      try {
+        if (this.bookmarkId) {
+          // Ako već postoji bookmarkId, brišemo ga iz baze
+          await removeBookmark(this.bookmarkId, token)
+          this.bookmarkId = null;
+        } else {
+          // Ako ne postoji, dodajemo u bazu i uzimamo generisani ID
+          const newBookmark = await addBookmark(adId, token)
+          this.bookmarkId = newBookmark.id;
+        }
+      } catch (err) {
+        console.error('Greška prilikom promjene statusa bookmarka:', err)
+        alert('Došlo je do greške pri čuvanju oglasa. Molimo pokušajte ponovo.')
+      }
     }
   },
-  mounted() {
+  async mounted() {
     this.isUserLoggedIn = !!localStorage.getItem('token')
     this.isCompanyLoggedIn = !!localStorage.getItem('company_token')
     this.userRole = localStorage.getItem('role')
-    this.fetchAd()
-    this.fetchApplications()
+    
+    await this.fetchAd()
+    await this.fetchApplications()
+    // Pokrećemo provjeru nakon što se komponenta učita
+    await this.checkBookmarkStatus()
   }
 }
 </script>

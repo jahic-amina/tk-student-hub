@@ -26,8 +26,16 @@
         <h2 class="text-base sm:text-lg font-bold text-gray-800 text-center sm:text-left">
           {{ filteredAds.length }} aktivnih oglasa
         </h2>
-        <button class="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-lg transition shadow-sm text-center">
-          Sačuvane prilike
+        
+        <button 
+          v-if="isStudent"
+          @click="showOnlySaved = !showOnlySaved"
+          :class="[
+            'w-full sm:w-auto text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-lg transition shadow-sm text-center',
+            showOnlySaved ? 'bg-gray-800 hover:bg-gray-900 text-white' : 'bg-orange-500 hover:bg-orange-600 text-white'
+          ]"
+        >
+          {{ showOnlySaved ? 'Prikaži sve oglase' : 'Sačuvane prilike' }}
         </button>
       </div>
 
@@ -44,11 +52,16 @@
           v-for="ad in filteredAds"
           :key="ad.id"
           :ad="ad"
+          :bookmarkId="savedAds[ad.id] || null"
+          :canBookmark="isStudent"
+          @toggle-bookmark="handleToggleBookmark"
         />
       </div>
 
       <div v-else class="text-center py-10 px-4 bg-white rounded-xl border border-dashed border-gray-300">
-        <p class="text-gray-500 font-medium text-base sm:text-lg">Nema pronađenih oglasa za traženi pojam.</p>
+        <p class="text-gray-500 font-medium text-base sm:text-lg">
+          {{ showOnlySaved ? 'Nemate nijednu sačuvanu priliku za odabrane filtere.' : 'Nema pronađenih oglasa za traženi pojam.' }}
+        </p>
         <p class="text-gray-400 text-xs sm:text-sm mt-1">Pokušajte sa nekom drugom ključnom riječi ili filterom.</p>
       </div>
 
@@ -60,7 +73,7 @@
 import HeroBanner from '../../components/HeroBanner.vue'
 import AdFilter from '../../components/ads/AdFilter.vue'
 import AdCard from '../../components/ads/AdCard.vue'
-import { getApprovedCompanies, getAds } from '../../services/api.js'
+import { getAds, getBookmarks, addBookmark, removeBookmark } from '../../services/api.js'
 
 const TAB_TO_TYPE = {
   Prakse: 'internship',
@@ -108,10 +121,17 @@ export default {
       isPaid: false,
       selectedField: '',
       ads: [],
-      errorMessage: ''
+      errorMessage: '',
+      savedAds: {}, 
+      showOnlySaved: false,
+      userRole: localStorage.getItem('role') || 'guest' // Čitamo 'member', 'company', 'admin' ili 'guest'
     }
   },
   computed: {
+    // Vraća true samo ako je ulogovani korisnik obični član / student
+    isStudent() {
+      return this.userRole === 'member'
+    },
     fields() {
       const all = this.ads.map(ad => ad.field).filter(Boolean)
       return [...new Set(all)]
@@ -135,49 +155,87 @@ export default {
         const matchesPaid = !this.isPaid || Boolean(ad.compensation)
         const matchesField = !this.selectedField || ad.field === this.selectedField
 
-        return matchesTab && matchesSearch && matchesPaid && matchesField
+        // Filtriranje sačuvanih oglasa ukoliko je aktiviran filter
+        const matchesSaved = this.showOnlySaved ? (this.savedAds[ad.id] !== undefined) : true;
+
+        return matchesTab && matchesSearch && matchesPaid && matchesField && matchesSaved
       })
     }
   },
   methods: {
-    async fetchAds() {
+    async fetchAdsAndBookmarks() {
       this.loading = true
       this.errorMessage = ''
+      
+      const token = localStorage.getItem('token')
 
-      let ads
       try {
-        ads = await getAds()
+        const adsData = await getAds()
+        this.ads = (adsData || []).map(ad => {
+          return {
+            id: ad.id,
+            title: ad.title,
+            company: ad.company_name || `Kompanija #${ad.company_id}`,
+            company_id: ad.company_id,
+            description: ad.description,
+            tags: [ad.field, ad.location].filter(Boolean),
+            typeLabel: formatType(ad.type),
+            compensation: formatCompensation(ad.compensation, ad.currency),
+            statusLabel: formatStatus(ad.status),
+            statusKey: ad.status,
+            typeKey: ad.type,
+            location: ad.location,
+            duration: ad.duration_months,
+            field: ad.field
+          }
+        })
+
+        // Povuci bookmarke samo ako korisnik ima token i uloga mu je 'member'
+        if (token && token !== 'null' && token !== 'undefined' && this.isStudent) {
+          try {
+            const bookmarks = await getBookmarks(token)
+            const newSavedAds = {}
+            bookmarks.forEach(bm => {
+              newSavedAds[bm.ad_id] = bm.id 
+            })
+            this.savedAds = newSavedAds
+          } catch (bmErr) {
+            console.error('Nisam uspio učitati sačuvane oglase:', bmErr)
+          }
+        }
       } catch (err) {
         console.error('Failed to fetch ads:', err)
         this.errorMessage = 'Ne mogu učitati oglase sa backend-a. Provjeri da li je API pokrenut na 127.0.0.1:8000.'
+      } finally {
         this.loading = false
+      }
+    },
+    
+    async handleToggleBookmark(payload) {
+      const { adId, bookmarkId } = payload;
+      const token = localStorage.getItem('token')
+
+      if (!token || token === 'null' || token === 'undefined') {
+        alert('Morate biti prijavljeni da biste sačuvali oglas.')
         return
       }
 
-      this.ads = (ads || []).map(ad => {
-        return {
-          id: ad.id,
-          title: ad.title,
-          company: ad.company_name || `Kompanija #${ad.company_id}`,
-          company_id: ad.company_id,
-          description: ad.description,
-          tags: [ad.field, ad.location].filter(Boolean),
-          typeLabel: formatType(ad.type),
-          compensation: formatCompensation(ad.compensation, ad.currency),
-          statusLabel: formatStatus(ad.status),
-          statusKey: ad.status,
-          typeKey: ad.type,
-          location: ad.location,
-          duration: ad.duration_months,
-          field: ad.field
+      try {
+        if (bookmarkId) {
+          await removeBookmark(bookmarkId, token)
+          delete this.savedAds[adId];
+        } else {
+          const newBookmark = await addBookmark(adId, token)
+          this.savedAds[adId] = newBookmark.id;
         }
-      })
-
-      this.loading = false
+      } catch (error) {
+        console.error("Greška pri ažuriranju bookmarka:", error)
+        alert("Došlo je do greške pri čuvanju oglasa. Pokušajte ponovo.")
+      }
     }
   },
   mounted() {
-    this.fetchAds()
+    this.fetchAdsAndBookmarks()
   }
 }
 </script>
