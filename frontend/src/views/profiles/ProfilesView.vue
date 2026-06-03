@@ -15,26 +15,32 @@
           <h2 class="text-lg font-bold mb-3">O meni</h2>
           <p class="text-gray-600 text-sm">{{ profile.biografija || 'Nije unesena biografija.' }}</p>
         </div>
+      <div class="grid grid-cols-2 gap-6">
+  <div class="bg-white rounded-xl shadow p-6">
+    <h2 class="text-lg font-bold mb-4">Trenutne prakse</h2>
+    <div v-if="prakse.length === 0">
+      <p class="text-gray-400 text-sm">Nema trenutnih praksi.</p>
+    </div>
+    <div v-else class="flex flex-col gap-3">
+      <div v-for="praksa in prakse" :key="praksa.id">
+        <p class="font-medium text-gray-800">{{ praksa.naziv }}</p>
+        <p class="text-sm text-gray-400">{{ praksa.kompanija }} · <span class="text-orange-500">{{ praksa.status }}</span></p>
+      </div>
+    </div>
+  </div>
 
-        <div class="grid grid-cols-2 gap-6">
-          <div class="bg-white rounded-xl shadow p-6">
-            <h2 class="text-lg font-bold mb-4">Trenutne prakse</h2>
-            <p class="text-gray-400 text-sm">Nema trenutnih praksi.</p>
-          </div>
-
-          <div class="bg-white rounded-xl shadow p-6">
-            <h2 class="text-lg font-bold mb-4">Nedavna aktivnost</h2>
-            <ActivityFeed :activities="activities" :loading="activityLoading" />
-            <button 
-              v-if="hasMore && !showingAll"
-              @click = "handleShowAll"
-              class="mt-4 text-sm text-orange-500 hover:text-orange-600 flex items-center gap-1"
-            >
-              Prikaži sve 
-            </button>
-          </div>
-        </div>
-        
+  <div class="bg-white rounded-xl shadow p-6">
+    <h2 class="text-lg font-bold mb-4">Nedavna aktivnost</h2>
+    <ActivityFeed :activities="activities" :loading="activityLoading" />
+    <button 
+      v-if="hasMore && !showingAll"
+      @click="handleShowAll"
+      class="mt-4 text-sm text-orange-500 hover:text-orange-600 flex items-center gap-1"
+    >
+      Prikaži sve
+    </button>
+  </div>
+</div>
         <div v-if="successMessage" class="mt-4 bg-green-100 text-green-700 p-3 rounded-lg font-medium">{{ successMessage }} </div>
       </div>
 
@@ -323,4 +329,18 @@ async function onRemove() {
     Object.assign(status, { message: 'Greska pri uklanjanju slike.', isError: true })
   }
 }
+const prakse = ref([
+  {
+    id: 1,
+    naziv: "Full Stack Developer",
+    kompanija: "Tech Corp",
+    status: "U toku"
+  },
+  {
+    id: 2,
+    naziv: "AI Research Assistant",
+    kompanija: "University Lab",
+    status: "U toku"
+  }
+])
 </script>
