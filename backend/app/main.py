@@ -5,9 +5,10 @@ from fastapi.staticfiles import StaticFiles
 import os                                    
 from app.core.config import settings
 from app.database import create_db_and_tables
-from app.routers import auth, forum, prakse, profiles, dashboard, activity  
+from app.routers import auth, forum, prakse, profiles, dashboard, activity, admin
 from app.core.security import get_current_user
 from app.models.user import User
+from app.routers import account
 
 create_db_and_tables()
 
@@ -36,6 +37,9 @@ app.include_router(forum.router)
 app.include_router(profiles.router)
 app.include_router(dashboard.router)
 app.include_router(activity.router)
+app.include_router(admin.router)
+app.include_router(account.router)
+
 @app.get("/")
 def root():
     return {"message": f"{settings.APP_NAME} API radi"}

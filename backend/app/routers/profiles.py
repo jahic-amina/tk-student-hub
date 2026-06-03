@@ -173,3 +173,4 @@ def delete_avatar(
     db.refresh(current_user)
     
     return {"message": "Profilna slika obrisana."}
+
