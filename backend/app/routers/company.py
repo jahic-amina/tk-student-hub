@@ -7,6 +7,7 @@ from app.database import get_db
 from app.models.company import Company, CompanyCreate, CompanyUpdate, CompanyStatus, CompanyRead
 from app.models.user import User, UserRole
 from app.core.security import hash_password, get_current_user, get_current_company
+from app.models.notification import Notification, NotificationType
 import os
 from uuid import uuid4
 
@@ -90,6 +91,12 @@ def create_company(
         logo_path=logo_path,
     )
     db.add(company)
+
+    admini = db.exec(select(User).where(User.role == UserRole.admin)).all()
+    for admin in admini:
+        tekst = f"Nova kompanija '{company_name}' se registrovala i čeka verifikaciju."
+        db.add(Notification(user_id=admin.id, text=tekst, type=NotificationType.STATUS_CHANGE))
+
     db.commit()
     db.refresh(company)
     return company
@@ -158,8 +165,14 @@ def update_company_status(
     if not company or company.is_deleted:
         raise HTTPException(status_code=404, detail="Company not found.")
 
+    stari_status = company.status
     company.status = status_update
     db.add(company)
+
+    if stari_status != status_update and status_update == CompanyStatus.approved:
+        tekst = "Vaš profil kompanije je uspješno odobren! Sada možete objavljivati oglase."
+        db.add(Notification(company_id=company.id, text=tekst, type=NotificationType.STATUS_CHANGE))
+
     db.commit()
     db.refresh(company)
     return company
@@ -201,18 +214,17 @@ def upload_company_logo(
             detail="Nemate dozvolu da ažurirate logo ove kompanije.",
         )
     
-    # Validacija datoteke
     if logo.content_type not in ["image/png", "image/jpeg", "image/webp"]:
         raise HTTPException(status_code=400, detail="Logo mora biti PNG, JPG, JPEG ili WebP.")
     
-    # Obriši stari logo ako postoji
+    
     if current_company.logo_path:
         old_filename = current_company.logo_path.split("/")[-1]
         old_dest = os.path.join(LOCAL_UPLOAD_DIR, old_filename)
         if os.path.exists(old_dest):
             os.remove(old_dest)
     
-    # Spremi novu sliku
+   
     file_ext = logo.filename.split(".")[-1].lower()
     filename = f"{uuid4().hex}.{file_ext}"
     logo_path = f"uploads/companies/{filename}"
@@ -222,7 +234,7 @@ def upload_company_logo(
         content = logo.file.read()
         f.write(content)
     
-    # Ažuriraj kompaniju
+    
     current_company.logo_path = logo_path
     db.add(current_company)
     db.commit()

@@ -42,7 +42,8 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
 
-    token = create_access_token({"sub": str(user.id)})
+    role_str = str(user.role.value) if hasattr(getattr(user, 'role', None), 'value') else str(getattr(user, 'role', 'student'))
+    token = create_access_token({"sub": str(user.id), "role": role_str})
     return {"access_token": token, "token_type": "bearer"}
 
 
@@ -52,7 +53,8 @@ def login(data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
     if not user or not verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password.")
 
-    token = create_access_token({"sub": str(user.id)})
+    role_str = str(user.role.value) if hasattr(getattr(user, 'role', None), 'value') else str(getattr(user, 'role', 'student'))
+    token = create_access_token({"sub": str(user.id), "role": role_str})
     return {"access_token": token, "token_type": "bearer"}
 
 
@@ -68,5 +70,6 @@ def company_login(data: OAuth2PasswordRequestForm = Depends(), db: Session = Dep
     if company.status != "approved":
         raise HTTPException(status_code=403, detail="Company account is not approved yet.")
 
-    token = create_access_token({"sub": str(company.id)})
+   
+    token = create_access_token({"sub": str(company.id), "role": "company"})
     return {"access_token": token, "token_type": "bearer", "company_name": company.company_name, "company_id": company.id}

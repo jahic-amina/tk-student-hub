@@ -8,6 +8,8 @@ from app.core.security import get_current_user
 from app.database import get_db
 from app.models.company import Company 
 from app.core.security import get_current_company
+from app.models.notification import Notification, NotificationType
+
 router = APIRouter(prefix="/ads", tags=["Ads"])
 
 
@@ -111,14 +113,12 @@ def get_ads_admin(
     return [ad_to_read(ad) for ad in ads]
 
 
-
 @router.get("/{ad_id}", response_model=AdRead)
 def get_ad(ad_id: int, db: Session = Depends(get_db)):
     ad = db.get(Ad, ad_id)
     if not ad or ad.is_deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ad not found.")
     return ad_to_read(ad)
-
 
 
 @router.post("/", response_model=AdRead, status_code=status.HTTP_201_CREATED)
@@ -128,16 +128,20 @@ def create_ad(
     current_company: Company = Depends(get_current_company)  
 ):
     ad_data = data.model_dump()
-    
     ad_data["company_id"] = current_company.id
     
     ad = Ad(**ad_data)
     db.add(ad)
+    db.flush()  
+    
+    admini = db.exec(select(User).where(User.role == UserRole.admin)).all()
+    for admin in admini:
+        tekst = f"Kompanija '{current_company.company_name}' je objavila novi oglas '{ad.title}' koji čeka odobrenje."
+        db.add(Notification(user_id=admin.id, text=tekst, type=NotificationType.NEW_OPPORTUNITY))
+
     db.commit()
     db.refresh(ad)
-    
     return ad_to_read(ad)
-
 
 
 @router.put("/{ad_id}", response_model=AdRead)
@@ -160,8 +164,7 @@ def update_ad(
     return ad_to_read(ad)
 
 
-
-@router.patch("/{ad_id}", response_model=Ad)
+@router.patch("/{ad_id}", response_model=AdRead)
 def patch_ad(
     ad_id: int,
     data: AdPatch,
@@ -196,6 +199,7 @@ def update_status(
     if not ad or ad.is_deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ad not found.")
 
+    stari_status = ad.status
     ad.status = data.status
     if data.admin_comment is not None:
         ad.admin_comment = data.admin_comment
@@ -206,6 +210,16 @@ def update_status(
 
     ad.updated_at = datetime.now(timezone.utc)
     db.add(ad)
+
+    if stari_status != data.status:
+        if data.status == AdStatus.active:
+            tekst = f"Vaš oglas '{ad.title}' je odobren i sada je vidljiv studentima."
+            db.add(Notification(company_id=ad.company_id, text=tekst, type=NotificationType.STATUS_CHANGE))
+        elif data.status == AdStatus.rejected or data.status == AdStatus.changes_requested:
+            komentar = f" Razlog: {data.admin_comment}" if data.admin_comment else ""
+            tekst = f"Vaš oglas '{ad.title}' je odbijen ili vraćen na doradu.{komentar}"
+            db.add(Notification(company_id=ad.company_id, text=tekst, type=NotificationType.STATUS_CHANGE))
+
     db.commit()
     db.refresh(ad)
     return ad_to_read(ad)
@@ -221,6 +235,7 @@ def delete_ad(ad_id: int, db: Session = Depends(get_db)):
     ad.updated_at = datetime.now(timezone.utc)
     db.add(ad)
     db.commit()
+
 
 @router.post("/{ad_id}/restore", response_model=AdRead)
 def restore_ad(

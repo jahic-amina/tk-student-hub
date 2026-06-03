@@ -9,6 +9,7 @@ from app.models.user import User, UserRole
 from app.models.company import Company
 from app.core.security import get_current_user, get_current_company
 from app.database import get_db
+from app.models.notification import Notification, NotificationType
 import os
 from uuid import uuid4
 
@@ -81,14 +82,14 @@ def get_company_applications(
             detail="Ad not found.",
         )
     
-    # Check if this ad belongs to the current company
+    
     if ad.company_id != current_company.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have access to applications for this ad.",
         )
     
-    # Get applications for this ad
+    
     statement = (select(Application).where(
             Application.ad_id == ad_id,
             Application.is_archived == False
@@ -219,7 +220,7 @@ def upload_cv_local(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
 ):
-    MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
+    MAX_FILE_SIZE = 5 * 1024 * 1024  
 
     file_ext= file.filename.split(".")[-1].lower()
     if file_ext not in ALLOWED_FILE_EXTENSIONS:
@@ -232,7 +233,6 @@ def upload_cv_local(
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail="File size exceeds 5 MB limit.")    
     
-    # Spremi fajl sa UUID imenom
     filename = f"{uuid4().hex}.{file_ext}"
     cv_path = f"uploads/applications/{filename}"
     dest = os.path.join(LOCAL_UPLOAD_DIR, filename)
@@ -263,11 +263,22 @@ def update_application_company(
             detail="You do not have access to alter this application.",
         )
 
+    stari_status = application.status
+
     updates = payload.model_dump(exclude_unset=True)
     for field_name, field_value in updates.items():
         setattr(application, field_name, field_value)
 
     db.add(application)
+
+    if stari_status != application.status:
+        if application.status == ApplicationStatus.accepted:
+            tekst = f"Čestitamo! Vaša prijava za oglas '{ad.title}' kod kompanije '{current_company.company_name}' je prihvaćena."
+            db.add(Notification(user_id=application.user_id, text=tekst, type=NotificationType.STATUS_CHANGE))
+        elif application.status == ApplicationStatus.rejected:
+            tekst = f"Vaša prijava za oglas '{ad.title}' kod kompanije '{current_company.company_name}' ovaj put nije odabrana."
+            db.add(Notification(user_id=application.user_id, text=tekst, type=NotificationType.STATUS_CHANGE))
+
     db.commit()
     db.refresh(application)
     return application
@@ -293,4 +304,4 @@ def delete_application(
 
     application.is_archived = True
     db.add(application)
-    db.commit() 
+    db.commit()
