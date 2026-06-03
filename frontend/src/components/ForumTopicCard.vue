@@ -1,10 +1,33 @@
 <script setup>
+import { ref } from 'vue';
+import { toggleTopicLike } from '../composables/useForumExtras.js';
 defineProps({
   tema: { type: Object, required: true },
   isAdmin: { type: Boolean, default: false }
 });
 
-const emit = defineEmits(['obrisi']);
+const emit = defineEmits(['obrisi', 'like-updated']);
+
+const likeLoading = ref(false);
+
+async function handleLike(tema) {
+  if (likeLoading.value) return;
+
+  try {
+    likeLoading.value = true;
+    const result = await toggleTopicLike(tema.id);
+
+    emit('like-updated', {
+      topicId: tema.id,
+      likesCount: result.likes_count,
+      liked: result.liked
+    });
+  } catch (error) {
+    alert(error.message || 'Lajkovanje nije uspjelo.');
+  } finally {
+    likeLoading.value = false;
+  }
+}
 
 function formatDate(dateValue) {
   if (!dateValue) return "";
@@ -62,9 +85,20 @@ function getInitials(name) {
       </div>
 
       <div class="flex items-center space-x-3 font-semibold">
-        <span>👁️ {{ tema.views_count || 0 }} pregleda</span>
-        <span class="text-[#ff7a00] dark:text-orange-400">💬 {{ tema.comments_count || 0 }} odgovora</span>
-      </div>
+       <button
+         @click.prevent.stop="handleLike(tema)"
+         :disabled="likeLoading"
+         class="text-red-500 hover:text-red-600 disabled:opacity-50 transition-colors"
+         title="Lajkuj temu"
+       >
+         ❤️ {{ tema.likes_count || 0 }}
+       </button>
+
+       <span>👁️ {{ tema.views_count || 0 }} pregleda</span>
+       <span class="text-[#ff7a00] dark:text-orange-400">
+       💬 {{ tema.comments_count || 0 }} odgovora
+       </span>
+     </div>
     </div>
   </router-link>
 </template>
