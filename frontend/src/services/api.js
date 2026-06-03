@@ -180,3 +180,8 @@ export async function updateRating(materialId, rating) {
   return response
 }
 
+// Download materijala - Marinela
+export async function downloadMaterial(materialId) {
+  const response = await fetch(`${BASE_URL}/materials/${materialId}/download`)
+  return response
+}
