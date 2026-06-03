@@ -30,7 +30,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="w-full bg-white dark:bg-slate-800 p-6 rounded-2xl border border-gray-100 dark:border-slate-700/50 shadow-sm transition-colors duration-200">
+ <div class="w-full bg-white dark:bg-slate-800 p-6 rounded-2xl border border-gray-100 dark:border-slate-700/50 shadow-sm transition-colors duration-200">
     <h2 class="text-xl font-extrabold text-slate-800 dark:text-white mb-6 flex items-center">
       <span class="w-1.5 h-6 bg-[#ff7a00] mr-3 rounded-full"></span>
       Kategorije

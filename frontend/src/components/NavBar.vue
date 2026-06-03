@@ -1,5 +1,5 @@
 <template>
-  <nav class="bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700 shadow-sm transition-colors duration-300">
+  <nav class="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700 shadow-sm transition-colors duration-300">
     <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
       
       <router-link to="/" class="text-xl font-bold text-primary dark:text-orange-500">
