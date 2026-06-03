@@ -30,7 +30,7 @@
               @click = "handleShowAll"
               class="mt-4 text-sm text-orange-500 hover:text-orange-600 flex items-center gap-1"
             >
-              Prikaži sve v
+              Prikaži sve 
             </button>
           </div>
         </div>
