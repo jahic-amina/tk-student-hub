@@ -221,3 +221,25 @@ def delete_ad(ad_id: int, db: Session = Depends(get_db)):
     ad.updated_at = datetime.now(timezone.utc)
     db.add(ad)
     db.commit()
+
+@router.post("/{ad_id}/restore", response_model=AdRead)
+def restore_ad(
+    ad_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role != UserRole.admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied.")
+
+    ad = db.get(Ad, ad_id)
+    if not ad:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ad not found.")
+
+    ad.is_deleted = False
+    ad.status = AdStatus.pending 
+    ad.updated_at = datetime.now(timezone.utc)
+    
+    db.add(ad)
+    db.commit()
+    db.refresh(ad)
+    return ad_to_read(ad)
