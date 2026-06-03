@@ -56,7 +56,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 
-const BASE_URL = 'http://127.0.0.1:8000'
+// Importujemo API funkcije umjesto direktnog fetch-a
+import { getMaterial, rateMaterial, updateRating } from '../services/api'
 
 const props = defineProps({
     materialId: {
@@ -67,24 +68,35 @@ const props = defineProps({
 
 const hoverRating = ref(0)
 const selectedRating = ref(0)
+
+// Lokalne kopije prosjecne ocjene i broja ocjena
 const localAvgRating = ref(0)
 const localRatingCount = ref(0)
+
+// Korisnikova ocjena
 const myRating = ref(0)
+
+// Poruke uspjeha i greske
 const ratingMessage = ref('')
 const ratingError = ref('')
+
+// Modal za promjenu ocjene
 const showChangeModal = ref(false)
 const pendingStar = ref(0)
 
+// Provjera da li je korisnik prijavljen
 const isLoggedIn = computed(() => !!localStorage.getItem('token'))
 
+// Kad se komponenta mountuje, fetchaj ocjene i provjeri korisnikovu ocjenu
 onMounted(async () => {
-    const response = await fetch(`${BASE_URL}/materials/${props.materialId}`)
-    const data = await response.json()
+    const data = await getMaterial(props.materialId)
     if (data.ratings && data.ratings.length > 0) {
         const sum = data.ratings.reduce((acc, r) => acc + r.rating, 0)
         localAvgRating.value = Math.round((sum / data.ratings.length) * 10) / 10
         localRatingCount.value = data.ratings.length
     }
+
+    // Provjeri da li je korisnik vec ocijenio ovaj materijal
     if (isLoggedIn.value) {
         const user = JSON.parse(localStorage.getItem('user') || '{}')
         const myRatingObj = data.ratings?.find(r => r.user_id === user.id)
@@ -95,6 +107,7 @@ onMounted(async () => {
     }
 })
 
+// Slanje ocjene na backend
 async function submitRating(star) {
     if (!isLoggedIn.value) return
 
@@ -107,6 +120,8 @@ if (materialData.user?.id === user.id) {
     ratingError.value = 'Ne možete ocijeniti vlastiti materijal.'
     return
 }
+
+// Ako je vec ocijenio, prikazuje modal za promjenu
     if (selectedRating.value > 0) {
         pendingStar.value = star
         showChangeModal.value = true
@@ -117,11 +132,8 @@ if (materialData.user?.id === user.id) {
     ratingError.value = ''
     try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`${BASE_URL}/materials/${props.materialId}/rate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ rating: star, material_id: props.materialId })
-        })
+        const response = await rateMaterial(props.materialId, star)
+
         if (response.status === 409) { ratingError.value = 'Već ste ocijenili ovaj materijal.'; return }
         if (!response.ok) { ratingError.value = 'Greška prilikom ocjenjivanja.'; return }
         ratingMessage.value = 'Hvala na ocjeni! ⭐'
@@ -132,15 +144,12 @@ if (materialData.user?.id === user.id) {
     }
 }
 
+// Promjena postojece ocjene
 async function confirmChangeRating() {
     showChangeModal.value = false
     const token = localStorage.getItem('token')
     try {
-        const response = await fetch(`${BASE_URL}/materials/${props.materialId}/rate`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ rating: pendingStar.value, material_id: props.materialId })
-        })
+        const response = await rateMaterial(props.materialId, star)
         if (!response.ok) { ratingError.value = 'Greška prilikom promjene ocjene.'; return }
         selectedRating.value = pendingStar.value
         ratingMessage.value = 'Ocjena promijenjena! ⭐'
@@ -151,9 +160,9 @@ async function confirmChangeRating() {
     }
 }
 
+// Osvjezavanje prosjecne ocjene i broja ocjena nakon ocjenjivanja
 async function osvjeziOcjenu() {
-    const updated = await fetch(`${BASE_URL}/materials/${props.materialId}`)
-    const data = await updated.json()
+    const data = await getMaterial(props.materialId)
     if (data.ratings && data.ratings.length > 0) {
         const sum = data.ratings.reduce((acc, r) => acc + r.rating, 0)
         localAvgRating.value = Math.round((sum / data.ratings.length) * 10) / 10
