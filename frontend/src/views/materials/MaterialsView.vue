@@ -11,8 +11,9 @@
     </div>
     <MaterialUploadForm @submit="refreshList" />
     <div class="flex gap-6">
-      <MaterialList v-if="activeTab === 'pregled'" :key="listKey" @open="openMaterial" />
-      <PendingMaterialList v-if="activeTab === 'odobravanje' && isAdmin" :key="listKey" @open="openMaterial" />
+     <MaterialList v-if="activeTab === 'pregled'" :key="listKey" @open="openMaterial" />
+     <PendingMaterialList v-if="activeTab === 'odobravanje' && isAdmin" :key="listKey" @open="openMaterial" />
+     <MaterialDetail v-if="selectedMaterialId" :material="selectedMaterialId" @close="selectedMaterialId = null" @rated="refreshMaterial" />
     </div>
   </div>
 </template>
@@ -23,6 +24,9 @@ import { ref, computed, watch } from 'vue'
 import MaterialList from '../../components/MaterialList.vue'
 import PendingMaterialList from '../../components/PendingMaterialList.vue'
 import { useRouter } from 'vue-router'
+import MaterialDetail from '../../components/MaterialDetail.vue'
+import { getMaterial } from '../../services/api'
+const selectedMaterialId = ref(null)
 
 const router = useRouter()
 
@@ -45,6 +49,13 @@ function refreshList() {
 }
 
 async function openMaterial(id) {
-  router.push({ path: `/materials/${id}` })
+  selectedMaterialId.value = await getMaterial(id)
 }
+//----------------------------------------------------
+// Osvježavanje liste i ocjene nakon ocjenjivanja - Marinela
+async function refreshMaterial(id) {
+    selectedMaterialId.value = await getMaterial(id)
+    listKey.value += 1  // osvježava kartice na listi
+}
+//----------------------------------------------------
 </script>
