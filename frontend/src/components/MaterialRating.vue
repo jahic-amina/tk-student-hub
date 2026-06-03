@@ -13,16 +13,16 @@
         <div class="fixed inset-0 bg-black opacity-40 -z-10"></div>
     </div>
 
-    <!-- Modal uspjeh ocjene - Marinela -->
+    <!-- Modal uspjeh ocjene -->
     <div v-if="ratingMessage" class="fixed inset-0 flex items-center justify-center z-[60]">
-        <div class="bg-white rounded-xl shadow-xl p-8 max-w-md w-full mx-4 text-center">
-            <div class="text-5xl mb-4">⭐</div>
-            <h3 class="text-xl font-bold text-gray-800 mb-2">Hvala na ocjeni!</h3>
-            <p class="text-gray-600 mb-6">Uspješno ste ocijenili ovaj materijal.</p>
-            <button @click="ratingMessage = ''" class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition">U redu</button>
-        </div>
-        <div class="fixed inset-0 bg-black opacity-40 -z-10"></div>
+    <div class="bg-white rounded-xl shadow-xl p-8 max-w-md w-full mx-4 text-center">
+        <div class="text-5xl mb-4">⭐</div>
+        <h3 class="text-xl font-bold text-gray-800 mb-2">{{ ratingMessage === 'Ocjena promijenjena! ⭐' ? 'Ocjena promijenjena!' : 'Hvala na ocjeni!' }}</h3>
+        <p class="text-gray-600 mb-6">{{ ratingMessage === 'Ocjena promijenjena! ⭐' ? 'Vaša ocjena je uspješno promijenjena.' : 'Uspješno ste ocijenili ovaj materijal.' }}</p>
+        <button @click="ratingMessage = ''" class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition">U redu</button>
     </div>
+    <div class="fixed inset-0 bg-black opacity-40 -z-10"></div>
+</div>
 
     <!-- Ocjena materijala -->
     <div class="mb-6">
@@ -113,9 +113,7 @@ async function submitRating(star) {
 
 // Provjera - korisnik ne moze ocijeniti vlastiti materijal 
 const user = JSON.parse(localStorage.getItem('user') || '{}')
-const materialResponse = await fetch(`${BASE_URL}/materials/${props.materialId}`)
-const materialData = await materialResponse.json()
-
+const materialData = await getMaterial(props.materialId)
 if (materialData.user?.id === user.id) {
     ratingError.value = 'Ne možete ocijeniti vlastiti materijal.'
     return
@@ -131,7 +129,6 @@ if (materialData.user?.id === user.id) {
     ratingMessage.value = ''
     ratingError.value = ''
     try {
-        const token = localStorage.getItem('token')
         const response = await rateMaterial(props.materialId, star)
 
         if (response.status === 409) { ratingError.value = 'Već ste ocijenili ovaj materijal.'; return }
@@ -147,9 +144,10 @@ if (materialData.user?.id === user.id) {
 // Promjena postojece ocjene
 async function confirmChangeRating() {
     showChangeModal.value = false
-    const token = localStorage.getItem('token')
+    ratingMessage.value = '' 
+    ratingError.value = '' 
     try {
-        const response = await rateMaterial(props.materialId, star)
+        const response = await updateRating(props.materialId, pendingStar.value)
         if (!response.ok) { ratingError.value = 'Greška prilikom promjene ocjene.'; return }
         selectedRating.value = pendingStar.value
         ratingMessage.value = 'Ocjena promijenjena! ⭐'
