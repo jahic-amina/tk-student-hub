@@ -24,7 +24,7 @@
         <div class="fixed inset-0 bg-black opacity-40 -z-10"></div>
     </div>
 
-    <!-- Ocjena materijala - Marinela -->
+    <!-- Ocjena materijala -->
     <div class="mb-6">
         <h3 class="font-semibold mb-2">Ocjena materijala</h3>
         <div class="flex items-center gap-2">
@@ -97,6 +97,16 @@ onMounted(async () => {
 
 async function submitRating(star) {
     if (!isLoggedIn.value) return
+
+// Provjera - korisnik ne moze ocijeniti vlastiti materijal 
+const user = JSON.parse(localStorage.getItem('user') || '{}')
+const materialResponse = await fetch(`${BASE_URL}/materials/${props.materialId}`)
+const materialData = await materialResponse.json()
+
+if (materialData.user?.id === user.id) {
+    ratingError.value = 'Ne možete ocijeniti vlastiti materijal.'
+    return
+}
     if (selectedRating.value > 0) {
         pendingStar.value = star
         showChangeModal.value = true
