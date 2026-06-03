@@ -45,6 +45,18 @@ const routes = [
     component: () => import("../views/profiles/ProfilesView.vue"),
     meta: { requiresAuth: true },
   },
+  {
+    path: "/materials/:id",
+    name: "material-details",
+    component: () => import("../views/materials/MaterialDetailView.vue"),
+    meta: { requiresAuth: false },
+  },
+  {
+    path: "/materials/pending",
+    name: "pending-materials",
+    component: () => import("../views/materials/MaterialsView.vue"),
+    meta: { requiresAuth: true },
+  },
 ];
 
 const router = createRouter({

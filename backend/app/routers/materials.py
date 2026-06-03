@@ -2,14 +2,15 @@ import os
 import mimetypes
 import shutil
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status, Query
 from fastapi.responses import FileResponse
 from sqlmodel import Session, select, func
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from app.models.materials import Material, MaterialsResponse, MaterialDetailResponse, Rating, Comment, Subject,  RatingCreate
+from app.models.materials import Material, MaterialsResponse, MaterialDetailResponse, Rating, Comment, Subject, RatingCreate, CommentResponse, CommentCreate
 from sqlalchemy.orm import selectinload
+from typing import List, Optional
 
 router = APIRouter(prefix="/materials", tags=["materials"])
 
@@ -27,6 +28,58 @@ router = APIRouter(prefix="/materials", tags=["materials"])
 #     return {"message": "your code here"}
 #
 # -------------------------------------------------------
+
+
+def get_materials_by_status(
+        session: Session, 
+        status: str,
+        years: Optional[List[int]] = None,
+        types: Optional[List[str]] = None,
+        subject_id: Optional[int] = None
+):
+
+    query = (
+        select(
+            Material,
+            func.avg(Rating.rating).label("average_rating"),
+            func.count(Rating.id).label("rating_count")
+        )
+        .outerjoin(Rating, Rating.material_id == Material.id)
+        .where(Material.status == status)
+    )
+    # --- NOVI FILTERI ---
+    if years:
+        # Moramo uraditi join sa Subject tabelom jer je tamo study_year
+        query = query.join(Subject, Material.subject_id == Subject.id).where(Subject.study_year.in_(years))
+    
+    if types:
+        query = query.where(Material.file_type.in_(types))
+        
+    if subject_id:
+        query = query.where(Material.subject_id == subject_id)
+    # --------------------
+
+    query = (
+        query.options(
+            selectinload(Material.subject),
+            selectinload(Material.user)
+        )
+        .group_by(Material.id)
+        .order_by(Material.created_at.desc())
+    )
+    results = session.exec(query).all()
+    materials = []
+    for material, avg, count in results:
+        response = MaterialsResponse(
+            **material.model_dump(),
+            subject=material.subject,
+            user=material.user,
+            average_rating=round(avg, 1) if avg is not None else None,
+            rating_count=count
+        )
+        materials.append(response)
+    return materials
+
 
 """ 
 
@@ -178,34 +231,50 @@ def upload_material(
 # -------------------------------------------------------
 
 @router.get("/", response_model=list[MaterialsResponse])
-def get_materials(session: Session = Depends(get_db)):
-    query = (
-        select(
-            Material,
-            func.avg(Rating.rating).label("average_rating"),
-            func.count(Rating.id).label("rating_count")
-        )
-        .outerjoin(Rating, Rating.material_id == Material.id)
-        .where(Material.status != "deleted")
-        .options(
-            selectinload(Material.subject),
-            selectinload(Material.user)
-        )
-        .group_by(Material.id)
-        .order_by(Material.created_at.desc())
+def get_materials(
+    session: Session = Depends(get_db),
+    years: Optional[list[int]] = Query(None), # Prima ?years=1&years=2
+    types: Optional[list[str]] = Query(None), # Prima ?types=skripta
+    subject_id: Optional[int] = Query(None)
+):
+    # Prosleđujemo filtere u pomoćnu funkciju
+    return get_materials_by_status(
+        session, 
+        "approved", 
+        years=years, 
+        types=types, 
+        subject_id=subject_id
     )
-    results = session.exec(query).all()
-    materials = []
-    for material, avg, count in results:
-        response = MaterialsResponse(
-            **material.model_dump(),
-            subject=material.subject,
-            user=material.user,
-            average_rating=round(avg, 1) if avg is not None else None,
-            rating_count=count
-        )
-        materials.append(response)
-    return materials
+
+@router.get("/pending", response_model=list[MaterialsResponse])
+def get_pending_materials(session: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Samo admin može pristupiti ovom endpointu.")
+    return get_materials_by_status(session, "pending")
+
+@router.patch("/{material_id}/approve")
+def approve_material(material_id: int, session: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Samo admin može odobriti materijal.")
+    material = session.get(Material, material_id)
+    if not material:
+        raise HTTPException(status_code=404, detail="Materijal nije pronađen.")
+    material.status = "approved"
+    session.add(material)
+    session.commit()
+    return {"message": "Materijal odobren."}
+
+@router.patch("/{material_id}/reject")
+def reject_material(material_id: int, session: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Samo admin može odbiti materijal.")
+    material = session.get(Material, material_id)
+    if not material:
+        raise HTTPException(status_code=404, detail="Materijal nije pronađen.")
+    material.status = "rejected"
+    session.add(material)
+    session.commit()
+    return {"message": "Materijal odbijen."}
 
 @router.get("/subjects", response_model=list[Subject])
 def get_subjects(session: Session = Depends(get_db)):
@@ -216,7 +285,7 @@ def get_subjects(session: Session = Depends(get_db)):
 def get_material(material_id: int, session: Session = Depends(get_db)):
     query = (
         select(Material)
-        .where(Material.id == material_id, Material.status != "deleted")
+        .where(Material.id == material_id)
         .options(
             selectinload(Material.subject),
             selectinload(Material.user),
@@ -329,3 +398,74 @@ def update_rating(
     db.commit()
     db.refresh(existing)
     return existing
+# endpoint za dohvatanje komentara materijala
+@router.get("/{material_id}/comments", response_model=list[CommentResponse])
+def get_comments(material_id: int, session: Session = Depends(get_db)):
+    material = session.get(Material, material_id)
+    if not material or material.status == "deleted":
+        raise HTTPException(status_code=404, detail="Materijal nije pronađen.")
+    
+    query = (
+        select(Comment)
+        .where(Comment.material_id == material_id)
+        .options(selectinload(Comment.user))
+        .order_by(Comment.created_at.desc())
+    )
+    comments = session.exec(query).all()
+    return comments
+
+# Zaštićeni endpoint za dodavanje komentara
+@router.post("/{material_id}/comments", response_model=CommentResponse, status_code=201)
+def create_comment(
+    material_id: int,
+    comment_data: CommentCreate,
+    session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    material = session.get(Material, material_id)
+    if not material or material.status == "deleted":
+        raise HTTPException(status_code=404, detail="Materijal nije pronađen.")
+
+    sadrzaj = comment_data.content.strip()
+    if not sadrzaj:
+        raise HTTPException(status_code=400, detail="Komentar ne može biti prazan.")
+    if len(sadrzaj) > 500:
+        raise HTTPException(status_code=400, detail="Komentar ne može biti duži od 500 karaktera.")
+
+    novi_komentar = Comment(
+        content=sadrzaj,
+        material_id=material_id,
+        user_id=current_user.id
+    )
+    session.add(novi_komentar)
+    session.commit()
+    session.refresh(novi_komentar)
+
+
+    session.refresh(novi_komentar)
+    novi_komentar.user = current_user
+
+    return novi_komentar
+
+
+# Zaštićeni endpoint za brisanje komentara
+@router.delete("/{material_id}/comments/{comment_id}", status_code=204)
+def delete_comment(
+    material_id: int,
+    comment_id: int,
+    session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    komentar = session.get(Comment, comment_id)
+    if not komentar or komentar.material_id != material_id:
+        raise HTTPException(status_code=404, detail="Komentar nije pronađen.")
+
+    is_admin = getattr(current_user, "role", "") == "admin"
+    is_autor = komentar.user_id == current_user.id
+
+    if not is_admin and not is_autor:
+        raise HTTPException(status_code=403, detail="Nemate dozvolu za brisanje ovog komentara.")
+
+    session.delete(komentar)
+    session.commit()
+    return None
