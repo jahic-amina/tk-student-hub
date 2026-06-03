@@ -1,4 +1,27 @@
 <template>
+//------------------------------------------------------------------------------------------------------------------
+//Promjena ocijene - Marinela
+<!-- Modal za promjenu ocjene -->
+<div v-if="showChangeModal" class="fixed inset-0 flex items-center justify-center z-[60]">
+    <div class="bg-white rounded-xl shadow-xl p-8 max-w-md w-full mx-4 text-center">
+        <div class="text-5xl mb-4">⭐</div>
+        <h3 class="text-xl font-bold text-gray-800 mb-2">Želite li promijeniti ocjenu?</h3>
+        <p class="text-gray-600 mb-6">Već ste ocijenili ovaj materijal. Da li ste sigurni da želite promijeniti svoju ocjenu?</p>
+        <div class="flex gap-3 justify-center">
+            <button @click="showChangeModal = false"
+                class="border border-gray-300 px-6 py-2 rounded-lg hover:bg-gray-50 transition">
+                Ne
+            </button>
+            <button @click="confirmChangeRating"
+                class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition">
+                Da, promijeni
+            </button>
+        </div>
+    </div>
+    <div class="fixed inset-0 bg-black opacity-40 -z-10"></div>
+</div> 
+
+//------------------------------------------------------------------------------------------------------------
     <!-- Overlay -->
     <div class="fixed inset-0 bg-black/50 z-40" @click="$emit('close')" />
 
@@ -112,6 +135,10 @@ const myRating = ref(0)
 const ratingMessage = ref('')
 const ratingError = ref('')
 
+// Modal za promjenu ocjene  
+const showChangeModal = ref(false)
+const pendingStar = ref(0)
+
 // Provjera da li je korisnik prijavljen
 const isLoggedIn = computed(() => !!localStorage.getItem('token'))
 
@@ -140,6 +167,14 @@ onMounted(async () => {
 // Slanje ocjene na backend
 async function submitRating(star) {
     if (!isLoggedIn.value) return
+
+    // Ako je vec ocijenio, prikazuje modal za promjenu  
+    if (selectedRating.value > 0) {
+        pendingStar.value = star
+        showChangeModal.value = true
+        return
+    }
+
     selectedRating.value = star
     ratingMessage.value = ''
     ratingError.value = ''
@@ -178,6 +213,37 @@ async function submitRating(star) {
         ratingError.value = 'Greška prilikom ocjenjivanja.'
     }
 }
+
+// Promjena ocjene - Marinela
+async function confirmChangeRating() {
+    showChangeModal.value = false
+    const token = localStorage.getItem('token')
+    try {
+        const response = await fetch(`${BASE_URL}/materials/${props.material.id}/rate`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ rating: pendingStar.value, material_id: props.material.id })
+        })
+        if (!response.ok) {
+            ratingError.value = 'Greška prilikom promjene ocjene.'
+            return
+        }
+        selectedRating.value = pendingStar.value
+        ratingMessage.value = 'Ocjena promijenjena! ⭐'
+        ratingError.value = ''
+        const updated = await fetch(`${BASE_URL}/materials/${props.material.id}`)
+        const data = await updated.json()
+        localAvgRating.value = data.average_rating
+        localRatingCount.value = data.rating_count
+        emit('rated', props.material.id)
+    } catch (err) {
+        ratingError.value = 'Greška prilikom promjene ocjene.'
+    }
+}
+
 //----------------------------------------------------------------------------------
 function formatDate(dateStr) {
     const date = new Date(dateStr)
