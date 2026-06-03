@@ -107,14 +107,13 @@ export async function activateUser(token, userId) {
 }
 
 // Deaktivacija korisnika
-export async function deactivateUser(token, userId, reason = "") {
+export async function deactivateUser(token, userId) {
   const response = await fetch(`${BASE_URL}/admin/users/${userId}/deactivate`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ reason: reason }) 
+    }
   });
 
   return handleAdminFetch(response, 'Greška pri deaktivaciji korisnika');
@@ -132,3 +131,4 @@ export async function deleteUser(token, userId) {
 
   return handleAdminFetch(response, 'Greška pri brisanju korisnika');
 }
+

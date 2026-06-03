@@ -73,6 +73,7 @@ export default {
       this.token = null
       this.username = 'Profil'
       this.role = ''
+      window.dispatchEvent(new Event('user-logout'))
       this.$router.push('/login')
     }
   }
