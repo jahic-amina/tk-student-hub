@@ -1,7 +1,6 @@
 <template>
-//------------------------------------------------------------------------------------------------------------------
-//Promjena ocijene - Marinela
-<!-- Modal za promjenu ocjene -->
+<!----------------------------------------------------------------------------------------------------------------->
+<!---Promjena ocijene - Marinela---->
 <div v-if="showChangeModal" class="fixed inset-0 flex items-center justify-center z-[60]">
     <div class="bg-white rounded-xl shadow-xl p-8 max-w-md w-full mx-4 text-center">
         <div class="text-5xl mb-4">⭐</div>
@@ -21,8 +20,8 @@
     <div class="fixed inset-0 bg-black opacity-40 -z-10"></div>
 </div> 
 
-//------------------------------------------------------------------------------------------------------------
-    <!-- Overlay -->
+<!----------------------------------------------------------------------------------------------------------->
+  <!-- Overlay -->
     <div class="fixed inset-0 bg-black/50 z-40" @click="$emit('close')" />
 
     <!-- Modal -->
@@ -47,6 +46,22 @@
             <h3 class="font-semibold mb-2">Detaljan opis</h3>
             <p class="text-gray-600 text-sm">{{ material.description }}</p>
         </div>
+
+<!---Poruka za uspjesno ocijenjen materijal - Marinela--->
+<div v-if="ratingMessage" class="fixed inset-0 flex items-center justify-center z-[60]">
+    <div class="bg-white rounded-xl shadow-xl p-8 max-w-md w-full mx-4 text-center">
+        <div class="text-5xl mb-4">⭐</div>
+        <h3 class="text-xl font-bold text-gray-800 mb-2">Hvala na ocjeni!</h3>
+        <p class="text-gray-600 mb-6">Uspješno ste ocijenili ovaj materijal.</p>
+        <button
+            @click="ratingMessage = ''"
+            class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition">
+            U redu
+        </button>
+    </div>
+    <div class="fixed inset-0 bg-black opacity-40 -z-10"></div>
+</div>
+<!------------------------------------------------------------------------------------------>
 
         <!-- Ocjena -->
         <div class="mb-6">
@@ -73,7 +88,6 @@
             @mouseleave="hoverRating = 0"
             @click="submitRating(star)">★</span>
     </div>
-    <p v-if="ratingMessage" class="text-sm text-green-600 mt-2">{{ ratingMessage }}</p>
     <p v-if="ratingError" class="text-sm text-red-600 mt-2">{{ ratingError }}</p>
     <p v-if="!isLoggedIn" class="text-sm text-gray-400 mt-2">Prijavite se da biste ocijenili materijal.</p>
     </div>
