@@ -17,9 +17,9 @@
 
       <AdFilter
         v-model:searchQuery="searchQuery"
-        v-model:placeno="isPaid"
-        v-model:selectedOblast="selectedField"
-        :oblasti="fields"
+        v-model:isPaid="isPaid"
+        v-model:selectedField="selectedField"
+        :fields="fields"
       />
 
       <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
