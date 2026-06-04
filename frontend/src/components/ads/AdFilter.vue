@@ -15,6 +15,9 @@
         <button
           type="button"
           @click="isFieldOpen = !isFieldOpen"
+          @keydown.esc.stop.prevent="isFieldOpen = false"
+          :aria-expanded="isFieldOpen ? 'true' : 'false'"
+          aria-haspopup="listbox"
           class="w-full sm:w-auto min-w-[180px] px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg font-medium text-gray-700 focus:outline-none text-xs sm:text-sm flex items-center justify-between gap-3"
         >
           <span class="truncate">{{ selectedField || 'Oblast' }}</span>
