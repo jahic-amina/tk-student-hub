@@ -10,8 +10,8 @@
             <span>NAZAD</span>
         </button>
 
-       <!-- Forma za upload — prikazuje se odmah bez dugmeta -->
-       <MaterialUploadForm :direct-show="true" @submit="handleSubmit" />
+       <!-- Forma za upload — prikazuje se sa dugmetom uspjeha -->
+       <MaterialUploadForm :direct-show="true" @submit="handleSubmit" @success="handleSuccess" />
     </div>
 </template>
 
@@ -23,8 +23,12 @@ import MaterialUploadForm from '../../components/MaterialUploadForm.vue'
 
 const router = useRouter()
 
-// Nakon uspješnog uploada, vraća korisnika na listu materijala
-function handleSubmit() {
+// Nakon što korisnik klikne "U redu" na success modalu, preusmjerava na listu
+function handleSuccess() {
     router.push('/materials')
+}
+
+// handleSubmit samo čeka na success event
+function handleSubmit() {
 }
 </script>
