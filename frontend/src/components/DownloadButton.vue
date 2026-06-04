@@ -28,6 +28,7 @@ import { downloadMaterial } from '../services/api'
 
 export default {
   name: 'DownloadButton',
+  emits: ['downloaded'], 
 
   // Prop koji komponenta prima izvana — id materijala i fullWidth za prikaz
  props: {
@@ -89,6 +90,7 @@ export default {
 
         //Oslobodi memoriju
         window.URL.revokeObjectURL(url)
+        this.$emit('downloaded')
       } catch (err) {
         this.errorMessage = err.message || 'Greška prilikom preuzimanja.'
       } finally {
