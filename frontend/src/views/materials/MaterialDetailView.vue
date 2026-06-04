@@ -39,8 +39,10 @@
 
             <!-- Preuzmi -->
             <div class="mb-6">
-                <DownloadButton :material-id="material.id" :full-width="true" />
+                <p class="text-sm text-gray-500 mb-2">Broj preuzimanja: {{ material.number_of_downloads }}</p>
+                <DownloadButton :material-id="material.id" :full-width="true" @downloaded="updateDownloadCount" />
             </div>
+            
             <div v-if="isAdmin && material.status === 'pending'" class="flex w-full gap-4 mb-6">
                 <button @click="handleApprove"
                     class="flex-1 justify-center py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 font-medium">
@@ -102,6 +104,10 @@ async function handleReject() {
     } catch (error) {
         console.error('Greška prilikom odbijanja materijala:', error)
     }
+}
+// Ažurira broj preuzimanja lokalno nakon downloada - Marinela
+function updateDownloadCount() {
+    material.value.number_of_downloads += 1
 }
 
 function goBack() {
