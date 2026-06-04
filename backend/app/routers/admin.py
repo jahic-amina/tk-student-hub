@@ -69,6 +69,13 @@ def deactivate_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin)
 ):
+    
+    # Sigurnosna provjera: Spriječi admina da deaktivira sam sebe
+    if current_user.id == id:
+        raise HTTPException(
+            status_code=400,
+            detail="Ne možete mijenjati status vlastitog administratorskog računa."
+        )
     # 1. Pronađi korisnika u bazi preko ID-ja
     user = db.exec(select(User).where(User.id == id)).first()
     if not user:
@@ -91,6 +98,13 @@ def activate_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin)
 ):
+    # Sigurnosna provjera: Spriječi admina da deaktivira sam sebe
+    if current_user.id == id:
+        raise HTTPException(
+            status_code=400,
+            detail="Ne možete mijenjati status vlastitog administratorskog računa."
+        )
+
     # 1. Pronađi korisnika u bazi preko ID-ja
     user = db.exec(select(User).where(User.id == id)).first()
     if not user:
