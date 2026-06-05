@@ -177,6 +177,20 @@
       </div>
     </div>
 
+    <div v-if="showSuccessModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
+      <div class="bg-white rounded-2xl p-8 w-full max-w-md shadow-xl border border-gray-100 text-center">
+        <div class="mb-4 text-4xl">✓</div>
+        <h3 class="text-lg font-bold text-green-600 mb-2">Deaktivacija uspješna</h3>
+        <p class="text-sm text-gray-600 mb-6">
+          Uspješno ste deaktivirali profil. Za ponovnu aktivaciju obratite se administratoru.
+        </p>
+        
+        <button @click="handleSuccessModalClose" class="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition shadow-md text-sm">
+          Razumijem
+        </button>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -274,6 +288,7 @@ const successMessage = ref(null)
 const showModal = ref(false)
 const router = useRouter()
 const showDeactivateModal = ref(false)
+const showSuccessModal = ref(false)
 const deactivatePassword = ref('')
 const deactivateError = ref('')
 const isDeactivating = ref(false)
@@ -324,7 +339,7 @@ const fetchProfileData = async () => {
       alert("Vaš nalog je deaktiviran. Kontaktirajte administratora za reaktivaciju.")
       
       // 3. Vrati ga na login
-      window.location.href = '/login' // Pobrini se da je ovo tvoja tačna putanja do logina
+      window.location.href = '/login' 
       return // Prekidamo dalje izvršavanje koda
     }
     error.value = "Greška pri učitavanju profila. Molimo pokušajte ponovo."
@@ -426,7 +441,7 @@ const handleDeactivate = async () => {
   deactivateError.value = ''
 
   try {
-    // Pozivamo backend rutu kreiranu u prethodnom koraku
+    // Pozivamo backend rutu 
     await api.post('/account/deactivate', { 
       password: deactivatePassword.value 
     })
@@ -438,11 +453,8 @@ const handleDeactivate = async () => {
     localStorage.removeItem('token')
     localStorage.removeItem('access_token')
     
-    // Preusmjeri korisnika na login (provjeri da li ti se ruta zove '/login')
-    router.push('/login') 
-    
-    // Opciono, možeš izbaciti neki globalni alert
-    alert("Vaš nalog je uspješno deaktiviran.")
+    // Prikaži success modal
+    showSuccessModal.value = true
 
   } catch (err) {
     // Ako lozinka nije tačna, ispiši grešku unutar modala
@@ -450,5 +462,11 @@ const handleDeactivate = async () => {
   } finally {
     isDeactivating.value = false
   }
+}
+
+const handleSuccessModalClose = () => {
+  showSuccessModal.value = false
+  // Preusmjeri korisnika na login nakon što zatvori modal
+  router.push('/login')
 }
 </script>
