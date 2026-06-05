@@ -401,8 +401,7 @@ async function onSave(file) {
   try {
     const data = await uploadAvatar(token, file)
     console.log('Response od backend-a:', data)
-    //if(profile.value) profile.value.profilna_slika_url = data.profilna_slika_url
-    await fetchProfileData()
+    if(profile.value) profile.value.profilna_slika_url = data.profilna_slika_url
     successMessage.value = 'Profilna slika je uspjesno azurirana.'
     showToast('Profilna slika je uspješno ažurirana.')
     setTimeout(() => { successMessage.value = null }, 3000)
