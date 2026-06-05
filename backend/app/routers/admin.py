@@ -63,6 +63,7 @@ def get_all_users(
         "prikazano": len(users)
     }
 
+
 @router.post("/users/{id}/deactivate")
 def deactivate_user(
     id: int,

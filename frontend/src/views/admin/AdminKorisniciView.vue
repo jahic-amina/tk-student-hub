@@ -166,13 +166,40 @@
       </div>
     </div>
 
+    <div v-if="showErrorModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 overflow-y-auto px-4">
+      <div class="bg-white rounded-xl p-6 max-w-md w-full shadow-xl border border-red-100">
+        <h3 class="text-lg font-semibold text-red-600 mb-2">⚠️ Akcija nije dozvoljena</h3>
+        
+        <p class="text-sm text-gray-600 mb-6">
+          {{ errorMessage }}
+        </p>
+        
+        <div class="flex justify-end">
+          <button 
+            @click="closeErrorModal" 
+            class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors cursor-pointer"
+          >
+            Razumijem
+          </button>
+        </div>
+      </div>
+    </div>
+
 
   </div>
 </template>
 
 
 <script>
-import { getAllUsers, activateUser, deactivateUser, deleteUser } from '../../services/api.js'
+import { getAllUsers, activateUser, deactivateUser, deleteUser, getMyProfile } from '../../services/api.js'
+
+// ERROR PORUKE - CENTRALIZOVANE
+const ERROR_MESSAGES = {
+  CANNOT_DEACTIVATE_SELF: 'Ne možete deaktivirati svoj profil. Molimo kontaktirajte drugog administratora.',
+  CANNOT_DELETE_SELF: 'Ne možete obrisati svoj profil. Molimo kontaktirajte drugog administratora.',
+  DEACTIVATE_ERROR: 'Došlo je do greške prilikom promjene statusa. Pokušajte ponovo.',
+  DELETE_ERROR: 'Došlo je do greške prilikom brisanja korisnika. Pokušajte ponovo.'
+}
 
 export default {
   name: 'AdminKorisniciView',
@@ -188,15 +215,29 @@ export default {
       selectedStatus: '', 
       isDeleteModalOpen: false,
       userToDelete: null,
-      deleteConfirmationInput: ''
+      deleteConfirmationInput: '',
+      showErrorModal: false,
+      errorMessage: '',
+      currentUserId: null
     }
   },
 
   mounted() {
+    this.loadCurrentUser()
     this.fetchUsers()
   },
 
   methods: {
+    async loadCurrentUser() {
+      try {
+        const token = localStorage.getItem('token')
+        const profile = await getMyProfile(token)
+        this.currentUserId = profile?.id
+      } catch (error) {
+        console.error('Greška pri dohvatanju profila:', error)
+      }
+    },
+
     async fetchUsers() {
       this.loading = true
       this.error = null
@@ -221,6 +262,12 @@ export default {
     },
 
     async toggleUserStatus(user) {
+      // Provjera da li admin pokušava deaktivirati samog sebe
+      if (user.id === this.currentUserId) {
+        this.showError(ERROR_MESSAGES.CANNOT_DEACTIVATE_SELF)
+        return
+      }
+
       const token = localStorage.getItem('token');
       
       // Pamtimo staro stanje
@@ -235,15 +282,19 @@ export default {
           await activateUser(token, user.id);
         }
       } catch (error) {
-        // 2. Rollback u slučaju greške
-        user.is_active = oldIsActive;
-        alert("Došlo je do greške prilikom promjene statusa.");
-        console.error(error);
+        user.is_active = oldIsActive
+        this.showError(ERROR_MESSAGES.DEACTIVATE_ERROR)
+        console.error(error)
       }
     }, 
 
     // Metode za upravljanje brisanjem
     openDeleteModal(user) {
+      // Provjera da li admin pokušava obrisati samog sebe
+      if (user.id === this.currentUserId) {
+        this.showError(ERROR_MESSAGES.CANNOT_DELETE_SELF)
+        return
+      }
       this.userToDelete = user
       this.deleteConfirmationInput = ''
       this.isDeleteModalOpen = true
@@ -252,7 +303,16 @@ export default {
     closeDeleteModal() {
       this.isDeleteModalOpen = false
       this.userToDelete = null
-      this.deleteConfirmationInput = ''
+    },
+
+    closeErrorModal() {
+      this.showErrorModal = false
+      this.errorMessage = ''
+    },
+
+    showError(message) {
+      this.errorMessage = message
+      this.showErrorModal = true
     },
 
     async confirmDeleteUser() {
@@ -272,7 +332,7 @@ export default {
         // Zatvaranje modala
         this.closeDeleteModal()
       } catch (error) {
-        alert("Došlo je do greške prilikom brisanja korisnika.")
+        this.showError(ERROR_MESSAGES.DELETE_ERROR)
         console.error(error)
       }
     },

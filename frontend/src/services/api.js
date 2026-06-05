@@ -89,7 +89,7 @@ async function handleAdminFetch(response, defaultErrorMessage) {
         throw new Error("Akcija prekinuta: Nalog je deaktiviran.");
       }
     } catch (e) {
-      // Ignorišemo ako odgovor nije JSON
+      
     }
   }
 
