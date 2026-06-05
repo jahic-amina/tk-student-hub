@@ -44,7 +44,13 @@ export async function uploadAvatar(token, file) {
     headers: { 'Authorization': `Bearer ${token}` },
     body: formData
   })
-  return response.json()
+  const data = await response.json()
+  
+  if (data.profilna_slika_url) {
+    data.profilna_slika_url = data.profilna_slika_url + '?t=' + Date.now()
+  }
+  
+  return data
 }
 
 export async function removeAvatar(token) {

@@ -62,8 +62,10 @@
         
         <div class="space-y-4">
           <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm text-center">
-            <img :src="profile?.profilna_slika_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=128'" class="w-24 h-24 rounded-full object-cover mx-auto mb-3 border border-orange-200"/>
-            <h3 class="text-base font-bold text-gray-800">{{ form.first_name }} {{ form.last_name }}</h3>
+            <div class="w-24 h-24 rounded-full mx-auto mb-3 border bg-gray-200 flex items-center justify-center overflow-hidden">
+              <img v-if="profile?.profilna_slika_url" :src="`http://localhost:8000${profile.profilna_slika_url}`" class="w-full h-full object-cover" />
+              <span v-else class="text-white text-4xl font-bold">{{ getInitials() }}</span>
+            </div>            
             <p class="text-xs text-gray-400 mb-4">{{ form.email }}</p>
             <button @click="showModal = true" type="button" class="w-full py-2 bg-orange-55 hover:bg-orange-100 text-orange-600 rounded-xl border border-orange-200 font-bold text-xs transition shadow-sm flex justify-center items-center gap-2">
               <span>📷</span> Uredi profilnu sliku
@@ -246,6 +248,11 @@ async function handleShowAll() {
   showingAll.value = true
 }
 
+function getInitials() {
+  const first = form.first_name?.charAt(0).toUpperCase() || ''
+  const last = form.last_name?.charAt(0).toUpperCase() || ''
+  return first + last
+}
 
 const api = axios.create({ baseURL: 'http://127.0.0.1:8000' })
 api.interceptors.request.use(config => {
@@ -393,8 +400,8 @@ async function onSave(file) {
   showModal.value = false
   try {
     const data = await uploadAvatar(token, file)
+    console.log('Response od backend-a:', data)
     if(profile.value) profile.value.profilna_slika_url = data.profilna_slika_url
-    
     successMessage.value = 'Profilna slika je uspjesno azurirana.'
     showToast('Profilna slika je uspješno ažurirana.')
     setTimeout(() => { successMessage.value = null }, 3000)
