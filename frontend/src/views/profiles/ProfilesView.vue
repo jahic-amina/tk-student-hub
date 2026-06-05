@@ -201,7 +201,7 @@ import { useRouter } from 'vue-router'
 
 import UserProfileCard from '../../components/UserProfileCard.vue'
 import AvatarUploadModal from '../../components/AvatarUploadModal.vue'
-import { getMyProfile, uploadAvatar, removeAvatar, handleLogout } from '../../services/api.js'
+import { getMyProfile, uploadAvatar, removeAvatar } from '../../services/api.js'
 import ActivityFeed from '../../components/ActivityFeed.vue'
 import { getMyActivity } from '../../services/api.js'
 
@@ -260,9 +260,17 @@ api.interceptors.response.use(
   (error) => {
     // Provjeravamo da li je backend vratio grešku 403 i našu poruku o deaktivaciji
     if (error.response && error.response.status === 403) {
-      if (error.response.data?.detail?.includes("deaktiviran")) {       
+      if (error.response.data?.detail?.includes("deaktiviran")) {
+        
+        // 1. Očisti tokene (odjavi korisnika)
+        localStorage.removeItem('token')
+        localStorage.removeItem('access_token')
+        
+        // 2. Izbaci upozorenje
         alert("Vaš nalog je deaktiviran. Kontaktirajte administratora za reaktivaciju.")
-        handleLogout()
+        
+        // 3. Preusmjeri ga na stranicu za login
+        window.location.href = '/login' // Prilagodi putanju ako ti se login ruta zove drugačije
       }
     }
     return Promise.reject(error);
@@ -323,8 +331,15 @@ const fetchProfileData = async () => {
     }
   } catch (err) {
     if (err.response && err.response.status === 403) {
+      // 1. Očisti tokene
+      localStorage.removeItem('token')
+      localStorage.removeItem('access_token')
+      
+      // 2. Obavijesti korisnika
       alert("Vaš nalog je deaktiviran. Kontaktirajte administratora za reaktivaciju.")
-      handleLogout() 
+      
+      // 3. Vrati ga na login
+      window.location.href = '/login' 
       return // Prekidamo dalje izvršavanje koda
     }
     error.value = "Greška pri učitavanju profila. Molimo pokušajte ponovo."
