@@ -22,7 +22,9 @@
             <h1 class="text-2xl font-bold text-gray-900">{{ profile.full_name }}</h1>
             <p class="text-gray-500 text-sm mt-1">{{ profile.role }}</p>
           </div>
-          
+          <button @click="$emit('edit-profile')" class="px-5 py-2 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 transition text-sm shadow-md">
+    Uredi profil
+  </button>
         </div>
          <div class="grid grid-cols-2 gap-3 mt-4 text-sm text-gray-600">
           <div class="flex items-center gap-2">
@@ -52,7 +54,7 @@ const props = defineProps({
     required: true
   }
 })
-defineEmits(['edit-avatar'])
+defineEmits(['edit-avatar', 'edit-profile'])
 
 const initials = computed(() => {
   if (!props.profile?.full_name) return '?'

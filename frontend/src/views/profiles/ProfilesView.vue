@@ -9,31 +9,38 @@
       </div>
       
       <div v-else-if="profile">
-        <UserProfileCard :profile="profile" @edit-avatar="showModal = true" />
+        <UserProfileCard :profile="profile" @edit-avatar="showModal = true" @edit-profile="isEditing = true"/>
         
-        <div class="flex justify-end mt-4 mb-6">
-          <button @click="isEditing = true" class="px-5 py-2 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 transition text-sm shadow-md">
-            Uredi profil
-          </button>
-        </div>
-
         <div class="bg-white rounded-xl shadow p-6 mb-6">
           <h2 class="text-lg font-bold mb-3">O meni</h2>
           <p class="text-gray-600 text-sm">{{ profile.biografija || 'Nije unesena biografija.' }}</p>
         </div>
+      <div class="grid grid-cols-2 gap-6">
+  <div class="bg-white rounded-xl shadow p-6">
+    <h2 class="text-lg font-bold mb-4">Trenutne prakse</h2>
+    <div v-if="prakse.length === 0">
+      <p class="text-gray-400 text-sm">Nema trenutnih praksi.</p>
+    </div>
+    <div v-else class="flex flex-col gap-3">
+      <div v-for="praksa in prakse" :key="praksa.id">
+        <p class="font-medium text-gray-800">{{ praksa.naziv }}</p>
+        <p class="text-sm text-gray-400">{{ praksa.kompanija }} · <span class="text-orange-500">{{ praksa.status }}</span></p>
+      </div>
+    </div>
+  </div>
 
-        <div class="grid grid-cols-2 gap-6">
-          <div class="bg-white rounded-xl shadow p-6">
-            <h2 class="text-lg font-bold mb-4">Trenutne prakse</h2>
-            <p class="text-gray-400 text-sm">Nema trenutnih praksi.</p>
-          </div>
-
-          <div class="bg-white rounded-xl shadow p-6">
-            <h2 class="text-lg font-bold mb-4">Nedavna aktivnost</h2>
-            <p class="text-gray-400 text-sm">Nema nedavne aktivnosti.</p>
-          </div>
-        </div>
-        
+  <div class="bg-white rounded-xl shadow p-6">
+    <h2 class="text-lg font-bold mb-4">Nedavna aktivnost</h2>
+    <ActivityFeed :activities="activities" :loading="activityLoading" />
+    <button 
+      v-if="hasMore && !showingAll"
+      @click="handleShowAll"
+      class="mt-4 text-sm text-orange-500 hover:text-orange-600 flex items-center gap-1"
+    >
+      Prikaži sve
+    </button>
+  </div>
+</div>
         <div v-if="successMessage" class="mt-4 bg-green-100 text-green-700 p-3 rounded-lg font-medium">{{ successMessage }} </div>
       </div>
 
@@ -55,8 +62,10 @@
         
         <div class="space-y-4">
           <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm text-center">
-            <img :src="profile?.profilna_slika_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=128'" class="w-24 h-24 rounded-full object-cover mx-auto mb-3 border border-orange-200"/>
-            <h3 class="text-base font-bold text-gray-800">{{ form.first_name }} {{ form.last_name }}</h3>
+            <div class="w-24 h-24 rounded-full mx-auto mb-3 border bg-gray-200 flex items-center justify-center overflow-hidden">
+              <img v-if="profile?.profilna_slika_url" :src="`http://localhost:8000${profile.profilna_slika_url}`" class="w-full h-full object-cover" />
+              <span v-else class="text-white text-4xl font-bold">{{ getInitials() }}</span>
+            </div>            
             <p class="text-xs text-gray-400 mb-4">{{ form.email }}</p>
             <button @click="showModal = true" type="button" class="w-full py-2 bg-orange-55 hover:bg-orange-100 text-orange-600 rounded-xl border border-orange-200 font-bold text-xs transition shadow-sm flex justify-center items-center gap-2">
               <span>📷</span> Uredi profilnu sliku
@@ -127,8 +136,7 @@
               <h3 class="text-sm font-bold text-red-800">Deaktivacija računa</h3>
               <p class="text-xs text-red-500">Privremeno onemogućite svoj račun.</p>
             </div>
-            <button @click="alertAction('Deaktivacija računa')" type="button" class="px-4 py-2 bg-white text-red-700 border border-red-200 font-bold rounded-xl hover:bg-red-100 transition text-xs">Deaktiviraj nalog</button>
-          </div>
+            <button @click="showDeactivateModal = true" type="button" class="px-4 py-2 bg-white text-red-700 border border-red-200 font-bold rounded-xl hover:bg-red-100 transition text-xs">Deaktiviraj nalog</button>          </div>
         </div>
       </main>
     </div>
@@ -141,6 +149,49 @@
       @remove="onRemove"
       :initials="(form.first_name?.charAt(0) || '') + (form.last_name?.charAt(0) || '')"
     />
+    <div v-if="showDeactivateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
+      <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-gray-100">
+        <h3 class="text-lg font-bold text-red-600 mb-2">Potvrda deaktivacije</h3>
+        <p class="text-sm text-gray-600 mb-4">
+          Da biste deaktivirali nalog, molimo unesite svoju lozinku. Nakon uspješne deaktivacije bićete odjavljeni iz sistema.
+        </p>
+        
+        <div v-if="deactivateError" class="mb-4 p-3 rounded-xl text-xs bg-red-50 text-red-700 border border-red-100 font-medium">
+          ⚠️ {{ deactivateError }}
+        </div>
+        
+        <label class="block text-xs font-medium mb-1 text-gray-500">Vaša lozinka</label>
+        <input 
+          v-model="deactivatePassword" 
+          type="password" 
+          placeholder="Unesite lozinku..." 
+          class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none mb-6"
+        />
+        
+        <div class="flex justify-end gap-3">
+          <button @click="closeDeactivateModal" :disabled="isDeactivating" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl font-medium transition text-sm">
+            Odustani
+          </button>
+          <button @click="handleDeactivate" :disabled="isDeactivating || !deactivatePassword" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl disabled:opacity-50 transition shadow-md text-sm">
+            {{ isDeactivating ? 'Deaktivacija...' : 'Potvrdi deaktivaciju' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showSuccessModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
+      <div class="bg-white rounded-2xl p-8 w-full max-w-md shadow-xl border border-gray-100 text-center">
+        <div class="mb-4 text-4xl">✓</div>
+        <h3 class="text-lg font-bold text-green-600 mb-2">Deaktivacija uspješna</h3>
+        <p class="text-sm text-gray-600 mb-6">
+          Uspješno ste deaktivirali profil. Za ponovnu aktivaciju obratite se administratoru.
+        </p>
+        
+        <button @click="handleSuccessModalClose" class="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition shadow-md text-sm">
+          Razumijem
+        </button>
+      </div>
+    </div>
 
   </div>
 </template>
@@ -148,11 +199,60 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import axios from 'axios'
+import { useRouter } from 'vue-router'
 
 import UserProfileCard from '../../components/UserProfileCard.vue'
 import AvatarUploadModal from '../../components/AvatarUploadModal.vue'
 import { getMyProfile, uploadAvatar, removeAvatar } from '../../services/api.js'
+import ActivityFeed from '../../components/ActivityFeed.vue'
+import { getMyActivity } from '../../services/api.js'
 
+
+const activities = ref([])
+const activityLoading = ref(false)
+const hasMore = ref(false)
+const showingAll = ref(false)
+
+function getToken() {
+  return localStorage.getItem('token') || localStorage.getItem('access_token')
+}
+
+async function loadPreview() {
+  activityLoading.value = true
+  try {
+    const data = await getMyActivity(getToken(), 3, 0)
+    activities.value = data.items
+    hasMore.value = data.has_more
+  } catch (error) {
+    console.error('Greška pri dohvatanju aktivnosti:', error)
+  } finally {
+    activityLoading.value = false
+  }
+}
+
+async function loadAll() {
+  activityLoading.value = true
+  try {
+    const data = await getMyActivity(getToken(), 20, 0)
+    activities.value = data.items
+    hasMore.value = data.has_more
+  } catch (error) {
+    console.error('Greška pri dohvatanju aktivnosti:', error)
+  } finally {
+    activityLoading.value = false
+  }
+}
+
+async function handleShowAll() {
+  await loadAll()
+  showingAll.value = true
+}
+
+function getInitials() {
+  const first = form.first_name?.charAt(0).toUpperCase() || ''
+  const last = form.last_name?.charAt(0).toUpperCase() || ''
+  return first + last
+}
 
 const api = axios.create({ baseURL: 'http://127.0.0.1:8000' })
 api.interceptors.request.use(config => {
@@ -160,6 +260,29 @@ api.interceptors.request.use(config => {
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
+api.interceptors.response.use(
+  (response) => {
+    return response; // Ako je sve ok, samo proslijedi odgovor dalje
+  },
+  (error) => {
+    // Provjeravamo da li je backend vratio grešku 403 i našu poruku o deaktivaciji
+    if (error.response && error.response.status === 403) {
+      if (error.response.data?.detail?.includes("deaktiviran")) {
+        
+        // 1. Očisti tokene (odjavi korisnika)
+        localStorage.removeItem('token')
+        localStorage.removeItem('access_token')
+        
+        // 2. Izbaci upozorenje
+        alert("Vaš nalog je deaktiviran. Kontaktirajte administratora za reaktivaciju.")
+        
+        // 3. Preusmjeri ga na stranicu za login
+        window.location.href = '/login' // Prilagodi putanju ako ti se login ruta zove drugačije
+      }
+    }
+    return Promise.reject(error);
+  }
+)
 
 const token = localStorage.getItem('token') || localStorage.getItem('access_token')
 
@@ -170,6 +293,17 @@ const loading = ref(false)
 const error = ref(null)
 const successMessage = ref(null)
 const showModal = ref(false)
+const router = useRouter()
+const showDeactivateModal = ref(false)
+const showSuccessModal = ref(false)
+const deactivatePassword = ref('')
+const deactivateError = ref('')
+const isDeactivating = ref(false)
+const closeDeactivateModal = () => {
+  showDeactivateModal.value = false
+  deactivatePassword.value = ''
+  deactivateError.value = ''
+}
 
 const isLoading = ref(false)
 const toast = reactive({ show: false, message: '' })
@@ -203,6 +337,18 @@ const fetchProfileData = async () => {
       })
     }
   } catch (err) {
+    if (err.response && err.response.status === 403) {
+      // 1. Očisti tokene
+      localStorage.removeItem('token')
+      localStorage.removeItem('access_token')
+      
+      // 2. Obavijesti korisnika
+      alert("Vaš nalog je deaktiviran. Kontaktirajte administratora za reaktivaciju.")
+      
+      // 3. Vrati ga na login
+      window.location.href = '/login' 
+      return // Prekidamo dalje izvršavanje koda
+    }
     error.value = "Greška pri učitavanju profila. Molimo pokušajte ponovo."
     if (err.response?.status === 401) Object.assign(status, { message: 'Sesija je istekla.', isError: true })
   } finally {
@@ -210,7 +356,10 @@ const fetchProfileData = async () => {
   }
 }
 
-onMounted(fetchProfileData)
+onMounted(() => {
+  fetchProfileData()
+  loadPreview()
+})
 
 const handleSubmit = async () => {
   const { first_name, last_name, bio, study_year } = form
@@ -238,7 +387,7 @@ const handleSubmit = async () => {
     }
 
     showToast('Izmjene uspješno sačuvane!')
-    // Uklonjeno: isEditing.value = false (kako bi korisnik ostao na formi)
+
     await fetchProfileData() 
   } catch (err) {
     Object.assign(status, { message: err.response?.data?.detail || err.message || 'Greška prilikom spašavanja.', isError: true })
@@ -251,8 +400,8 @@ async function onSave(file) {
   showModal.value = false
   try {
     const data = await uploadAvatar(token, file)
+    console.log('Response od backend-a:', data)
     if(profile.value) profile.value.profilna_slika_url = data.profilna_slika_url
-    
     successMessage.value = 'Profilna slika je uspjesno azurirana.'
     showToast('Profilna slika je uspješno ažurirana.')
     setTimeout(() => { successMessage.value = null }, 3000)
@@ -275,5 +424,56 @@ async function onRemove() {
     error.value = 'Greska pri uklanjanju slike.'
     Object.assign(status, { message: 'Greska pri uklanjanju slike.', isError: true })
   }
+}
+const prakse = ref([
+  {
+    id: 1,
+    naziv: "Full Stack Developer",
+    kompanija: "Tech Corp",
+    status: "U toku"
+  },
+  {
+    id: 2,
+    naziv: "AI Research Assistant",
+    kompanija: "University Lab",
+    status: "U toku"
+  }
+])
+
+// --- Funkcija za deaktivaciju ---
+const handleDeactivate = async () => {
+  if (!deactivatePassword.value) return
+
+  isDeactivating.value = true
+  deactivateError.value = ''
+
+  try {
+    // Pozivamo backend rutu 
+    await api.post('/account/deactivate', { 
+      password: deactivatePassword.value 
+    })
+
+    // Ako je uspješno, zatvori modal
+    closeDeactivateModal()
+    
+    // Obriši sesiju (token) iz lokalnog storage-a
+    localStorage.removeItem('token')
+    localStorage.removeItem('access_token')
+    
+    // Prikaži success modal
+    showSuccessModal.value = true
+
+  } catch (err) {
+    // Ako lozinka nije tačna, ispiši grešku unutar modala
+    deactivateError.value = err.response?.data?.detail || "Greška pri deaktivaciji. Pokušajte ponovo."
+  } finally {
+    isDeactivating.value = false
+  }
+}
+
+const handleSuccessModalClose = () => {
+  showSuccessModal.value = false
+  // Preusmjeri korisnika na login nakon što zatvori modal
+  router.push('/login')
 }
 </script>

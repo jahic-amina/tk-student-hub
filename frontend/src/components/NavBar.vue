@@ -8,7 +8,7 @@
 
       <div class="flex gap-6">
       <router-link to="/prakse-i-edukacije" class="text-gray-600 hover:text-primary font-medium transition">Prakse i edukacije</router-link>
-      <router-link to="/mentoring" class="text-gray-600 hover:text-primary font-medium transition">Materijali</router-link>
+      <router-link to="/materials" class="text-gray-600 hover:text-primary font-medium transition">Materijali</router-link>
       <router-link to="/forum" class="text-gray-600 hover:text-primary font-medium transition">Forum</router-link>
       <router-link to="/profiles" class="text-gray-600 hover:text-primary font-medium transition">Profili</router-link>
       <router-link to="/dashboard" class="text-gray-600 hover:text-primary font-medium transition">Dashboard</router-link>
@@ -73,6 +73,7 @@ export default {
       this.token = null
       this.username = 'Profil'
       this.role = ''
+      window.dispatchEvent(new Event('user-logout'))
       this.$router.push('/login')
     }
   }
