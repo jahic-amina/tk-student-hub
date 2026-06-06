@@ -3,7 +3,7 @@ from uuid import uuid4
 from typing import Optional
 
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status
-from sqlmodel import Session, SQLModel, Field
+from sqlmodel import Session, SQLModel, Field, select
 from pydantic import BaseModel
 
 from app.database import get_db
@@ -174,3 +174,40 @@ def delete_avatar(
     
     return {"message": "Profilna slika obrisana."}
 
+class PublicProfileResponse(BaseModel):
+    id: int
+    full_name: str
+    biografija: Optional[str] = None
+    godina_studija: Optional[str] = None
+    profilna_slika_url: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+@router.get("/public", response_model=list[PublicProfileResponse])
+def get_public_profiles(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    users = db.exec(
+        select(User).where(User.is_active == True)
+    ).all()
+
+    return users
+
+
+@router.get("/{user_id}/public", response_model=PublicProfileResponse)
+def get_public_profile_by_id(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    user = db.exec(
+        select(User).where(User.id == user_id, User.is_active == True)
+    ).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="Javni profil nije pronađen.")
+
+    return user

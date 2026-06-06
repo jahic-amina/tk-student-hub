@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlmodel import Session, select
 from typing import Optional
@@ -7,6 +9,7 @@ from app.models.user import User, UserRole
 from app.core.security import get_current_user
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+logger = logging.getLogger(__name__)
 
 class UserAdminResponse(BaseModel):
     id: int
@@ -24,6 +27,9 @@ class UsersListResponse(BaseModel):
     users: list[UserAdminResponse]
     total: int
     prikazano: int
+
+class ChangeRoleRequest(BaseModel):
+    role: UserRole
 
 def require_admin(current_user: User = Depends(get_current_user)) -> User:
     if current_user.role != UserRole.admin:
@@ -63,6 +69,30 @@ def get_all_users(
         "prikazano": len(users)
     }
 
+@router.patch("/users/{user_id}/role", response_model=UserAdminResponse)
+def change_user_role(
+    user_id: int,
+    data: ChangeRoleRequest,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_admin)
+):
+    user = db.exec(select(User).where(User.id == user_id)).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="Korisnik nije pronađen.")
+
+    if current_admin.id == user_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Administrator ne može sam sebi promijeniti ulogu."
+        )
+
+    user.role = data.role
+
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
 
 @router.post("/users/{id}/deactivate")
 def deactivate_user(
@@ -152,7 +182,7 @@ async def delete_user(
         
     except Exception as e:
         db.rollback()
-        print(f"Greška pri brisanju: {e}")
+        logger.error("Greška pri brisanju korisnika: %s", e)
         raise HTTPException(
             status_code=500, 
             detail="Došlo je do greške na serveru prilikom brisanja korisnika."
