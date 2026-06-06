@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlmodel import Session, select
 from typing import Optional
@@ -7,6 +9,7 @@ from app.models.user import User, UserRole
 from app.core.security import get_current_user
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+logger = logging.getLogger(__name__)
 
 class UserAdminResponse(BaseModel):
     id: int
@@ -89,7 +92,6 @@ def change_user_role(
     db.add(user)
     db.commit()
     db.refresh(user)
-    return user
     return user
 
 @router.post("/users/{id}/deactivate")
@@ -180,7 +182,7 @@ async def delete_user(
         
     except Exception as e:
         db.rollback()
-        print(f"Greška pri brisanju: {e}")
+        logger.error("Greška pri brisanju korisnika: %s", e)
         raise HTTPException(
             status_code=500, 
             detail="Došlo je do greške na serveru prilikom brisanja korisnika."
