@@ -1,15 +1,30 @@
 <script setup>
 import { ref, onMounted } from 'vue';
-import { getUsers, changeUserRole, getReports, dismissReport, createAnnouncement, deleteAnnouncement } from '../../services/admin';
+import { 
+  getUsers, 
+  changeUserRole, 
+  getReports, 
+  dismissReport, 
+  createAnnouncement, 
+  deleteAnnouncement,
+  getAllAnnouncements,   
+  updateAnnouncement     
+} from '../../services/admin';
 
 const activeTab = ref('reports');
 const users = ref([]);
 const reports = ref([]);
+const announcements = ref([]); //Lista za prikaz u admin panelu
+
 const newAnnouncement = ref('');
+const durationDays = ref(0);   //Default: Beskonačno
+
+const editingAnn = ref(null);  //Prati obavještenje koje trenutno editujemo
 
 const loadData = async () => {
   if (activeTab.value === 'users') users.value = await getUsers();
   if (activeTab.value === 'reports') reports.value = await getReports();
+  if (activeTab.value === 'announcements') announcements.value = await getAllAnnouncements();
 };
 
 onMounted(() => loadData());
@@ -26,9 +41,34 @@ const resolveReport = async (reportId) => {
 
 const postAnnouncement = async () => {
   if (!newAnnouncement.value.trim()) return;
-  await createAnnouncement(newAnnouncement.value);
+  await createAnnouncement(newAnnouncement.value, durationDays.value);
   newAnnouncement.value = '';
-  alert('Obavještenje objavljeno!');
+  durationDays.value = 0;
+  alert('Globalno obavještenje uspješno objavljeno!');
+  await loadData();
+};
+
+const handleDeactivate = async (annId) => {
+  if (confirm('Da li ste sigurni da želite deaktivirati ovo obavještenje?')) {
+    await deleteAnnouncement(annId);
+    await loadData();
+  }
+};
+
+const startEdit = (ann) => {
+  editingAnn.value = { ...ann, duration_days: 0 };
+};
+
+const saveEdit = async () => {
+  if (!editingAnn.value.content.trim()) return;
+  await updateAnnouncement(editingAnn.value.id, {
+    content: editingAnn.value.content,
+    duration_days: editingAnn.value.duration_days,
+    is_active: editingAnn.value.is_active
+  });
+  editingAnn.value = null;
+  alert('Obavještenje uspješno izmijenjeno!');
+  await loadData();
 };
 </script>
 
@@ -41,7 +81,7 @@ const postAnnouncement = async () => {
     <div class="flex gap-4 mb-6 border-b pb-2">
       <button @click="activeTab = 'reports'; loadData()" :class="activeTab === 'reports' ? 'text-orange-500 border-b-2 border-orange-500 font-bold' : 'text-slate-500'">Prijavljene teme</button>
       <button @click="activeTab = 'users'; loadData()" :class="activeTab === 'users' ? 'text-orange-500 border-b-2 border-orange-500 font-bold' : 'text-slate-500'">Korisnici</button>
-      <button @click="activeTab = 'announcements'" :class="activeTab === 'announcements' ? 'text-orange-500 border-b-2 border-orange-500 font-bold' : 'text-slate-500'">Postavi Obavještenje</button>
+      <button @click="activeTab = 'announcements'; loadData()" :class="activeTab === 'announcements' ? 'text-orange-500 border-b-2 border-orange-500 font-bold' : 'text-slate-500'">Upravljanje Obavještenjima</button>
     </div>
 
     <div v-if="activeTab === 'reports'" class="space-y-4">
@@ -78,10 +118,63 @@ const postAnnouncement = async () => {
       </table>
     </div>
 
-    <div v-if="activeTab === 'announcements'" class="bg-white p-6 rounded-xl shadow-sm border">
-      <h3 class="font-bold mb-2">Globalno obavještenje za Forum</h3>
-      <textarea v-model="newAnnouncement" rows="4" class="w-full border rounded p-2 mb-3 focus:ring focus:ring-orange-200" placeholder="Ukucajte obavještenje koje će se vidjeti na vrhu foruma..."></textarea>
-      <button @click="postAnnouncement" class="bg-orange-500 text-white px-4 py-2 rounded font-bold hover:bg-orange-600">Objavi obavještenje</button>
+    <div v-if="activeTab === 'announcements'" class="space-y-6">
+      <div class="bg-white p-6 rounded-xl shadow-sm border">
+        <h3 class="font-bold text-lg mb-3 text-slate-800">Kreiraj Novo Globalno Obavještenje</h3>
+        <textarea v-model="newAnnouncement" rows="3" class="w-full border rounded p-2 mb-3 focus:ring focus:ring-orange-200" placeholder="Ukucajte obavještenje koje će se fiksirati na vrh foruma..."></textarea>
+        
+        <div class="flex items-center gap-4 mb-4">
+          <label class="text-sm font-semibold text-slate-600">Vrijeme trajanja obavještenja:</label>
+          <select v-model="durationDays" class="border rounded p-1.5 bg-gray-50 text-sm">
+            <option :value="0">Beskonačno (Dok ga ne obrišem)</option>
+            <option :value="3">3 Dana</option>
+            <option :value="10">10 Dana</option>
+          </select>
+        </div>
+
+        <button @click="postAnnouncement" class="bg-orange-500 text-white px-4 py-2 rounded font-bold hover:bg-orange-600 transition-colors">Objavi obavještenje</button>
+      </div>
+
+      <div class="bg-white p-6 rounded-xl shadow-sm border">
+        <h3 class="font-bold text-lg mb-4 text-slate-800">Prethodna obavještenja</h3>
+        <div v-if="announcements.length === 0" class="text-gray-500 text-sm">Nema ranije kreiranih obavještenja.</div>
+        
+        <div class="space-y-3">
+          <div v-for="ann in announcements" :key="ann.id" class="p-4 border rounded-xl bg-slate-50 flex flex-col justify-between md:flex-row md:items-center gap-4">
+            
+            <div v-if="editingAnn && editingAnn.id === ann.id" class="w-full space-y-2">
+              <input v-model="editingAnn.content" type="text" class="w-full border rounded p-2 text-sm bg-white" />
+              <div class="flex items-center gap-4 text-xs">
+                <select v-model="editingAnn.duration_days" class="border rounded p-1">
+                  <option :value="0">Beskonačno</option>
+                  <option :value="3">Produži za 3 dana</option>
+                  <option :value="10">Produži za 10 dana</option>
+                </select>
+                <label class="flex items-center gap-1">
+                  <input type="checkbox" v-model="editingAnn.is_active" /> Aktivno
+                </label>
+                <button @click="saveEdit" class="bg-green-600 text-white px-3 py-1 rounded font-bold">Spasi</button>
+                <button @click="editingAnn = null" class="bg-gray-400 text-white px-3 py-1 rounded">Odustani</button>
+              </div>
+            </div>
+
+            <template v-else>
+              <div class="flex-1">
+                <p class="text-slate-800 font-medium text-sm">{{ ann.content }}</p>
+                <div class="flex gap-3 text-xs text-slate-400 mt-1">
+                  <span>Status: <b :class="ann.is_active ? 'text-green-600':'text-red-500'">{{ ann.is_active ? 'Aktivno' : 'Deaktivirano' }}</b></span>
+                  <span v-if="ann.expires_at">Ističe: {{ new Date(ann.expires_at).toLocaleDateString() }}</span>
+                  <span v-else>Ističe: Beskonačno</span>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <button @click="startEdit(ann)" class="text-xs border border-blue-400 text-blue-600 px-3 py-1 rounded hover:bg-blue-50">Uredi</button>
+                <button v-if="ann.is_active" @click="handleDeactivate(ann.id)" class="text-xs bg-red-100 border border-red-200 text-red-600 px-3 py-1 rounded hover:bg-red-200">Deaktiviraj</button>
+              </div>
+              </template>
+            </div>
+          </div>
+      </div>
     </div>
   </div>
 </template>
