@@ -118,6 +118,7 @@ class AdminAnnouncement(SQLModel, table=True):
     content: str
     is_active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    expires_at: Optional[datetime] = Field(default=None, nullable=True)
 
 
 class TopicLike(SQLModel, table=True):
