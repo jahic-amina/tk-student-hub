@@ -33,8 +33,26 @@ export async function toggleTopicLock(topicId) {
   return res.json();
 }
 
-export async function createAnnouncement(content) {
-  const res = await fetch(`${BASE_URL}/admin/announcements`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ content }) });
+export async function createAnnouncement(content, durationDays) {
+  const res = await fetch(`${BASE_URL}/admin/announcements`, { 
+    method: 'POST', 
+    headers: getHeaders(), 
+    body: JSON.stringify({ content, duration_days: durationDays }) 
+  });
+  return res.json();
+}
+
+export async function getAllAnnouncements() {
+  const res = await fetch(`${BASE_URL}/admin/announcements/all`, { headers: getHeaders() });
+  return res.json();
+}
+
+export async function updateAnnouncement(annId, data) {
+  const res = await fetch(`${BASE_URL}/admin/announcements/${annId}`, {
+    method: 'PATCH',
+    headers: getHeaders(),
+    body: JSON.stringify(data)
+  });
   return res.json();
 }
 
