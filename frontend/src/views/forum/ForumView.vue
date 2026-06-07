@@ -13,6 +13,7 @@ import {
   getActiveReports, 
   handleReportAction 
 } from '../../services/forum.js';
+import AdminAnnouncementBanner from '../../components/ForumAdminAnnouncementBanner.vue';
 
 const teme = ref([]);
 const sveKategorije = ref([]); 
@@ -182,6 +183,11 @@ const { isLoadingMore, imaJosTema } = useForumLazyLoading({
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-6 transition-colors duration-200">
     <div class="max-w-7xl mx-auto">
+
+      <AdminAnnouncementBanner />
+
+      <div class="flex gap-6">
+      </div>
       
       <div class="sticky top-[72px] z-30 bg-gray-50 dark:bg-slate-900 flex justify-between items-center mb-8 border-b border-gray-200 dark:border-slate-800 py-4 pt-6 -mt-2">
         <div>
