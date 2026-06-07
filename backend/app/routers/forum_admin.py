@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlmodel import Session, select
 from typing import List, Dict, Any
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
 from app.models.forum import TopicReport, AdminAnnouncement, ForumTopic, ForumCategory
+from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -68,18 +69,68 @@ def toggle_topic_lock(topic_id: int, db: Session = Depends(get_db), admin: User 
     db.commit()
     return {"is_locked": topic.is_locked}
 
-#Globalna obavještenja
+#Globalna obavještenja sa odabirom trajanja
 @router.post("/announcements")
-def create_announcement(content: dict, db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
-    ann = AdminAnnouncement(admin_id=admin.id, content=content.get("content", ""))
+def create_announcement(content: dict = Body(...), db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
+    content_text = content.get("content", "")
+    duration_days = content.get("duration_days", 0)  
+    
+    expires_at = None
+    if duration_days and duration_days > 0:
+        expires_at = datetime.utcnow() + timedelta(days=int(duration_days))
+        
+    ann = AdminAnnouncement(
+        admin_id=admin.id, 
+        content=content_text,
+        expires_at=expires_at,
+        is_active=True
+    )
     db.add(ann)
     db.commit()
     return {"success": True}
 
+#Ruta za dohvatanje aktivnih obavještenja (koja nisu istekla)
 @router.get("/announcements/active")
-def get_active_announcements(db: Session = Depends(get_db)): # Ovo je public ruta da bi se obavjestenja prikazala svima
-    anns = db.exec(select(AdminAnnouncement).where(AdminAnnouncement.is_active == True).order_by(AdminAnnouncement.created_at.desc())).all()
+def get_active_announcements(db: Session = Depends(get_db)): #Ovo je public ruta da bi se obavjestenja prikazala svima
+    now = datetime.utcnow()
+    statement = select(AdminAnnouncement).where(
+        AdminAnnouncement.is_active == True,
+        (AdminAnnouncement.expires_at == None) | (AdminAnnouncement.expires_at > now)
+    ).order_by(AdminAnnouncement.created_at.desc())
+    
+    anns = db.exec(statement).all()
     return anns
+
+#Admin ruta za dohvatanje svih obavještenja (uključujući neaktivna i istekla)
+@router.get("/announcements/all")
+def get_all_announcements(db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
+    anns = db.exec(select(AdminAnnouncement).order_by(AdminAnnouncement.created_at.desc())).all()
+    return anns
+
+#Admin ruta za editovanje postojeceg obavjestenja
+@router.patch("/announcements/{ann_id}")
+def update_announcement(ann_id: int, payload: dict = Body(...), db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
+    ann = db.get(AdminAnnouncement, ann_id)
+    if not ann:
+        raise HTTPException(status_code=404, detail="Obavještenje nije pronađeno.")
+    
+    if "content" in payload:
+        ann.content = payload["content"]
+        
+    if "duration_days" in payload:
+        duration_days = payload["duration_days"]
+        if duration_days and duration_days > 0:
+            ann.expires_at = datetime.utcnow() + timedelta(days=int(duration_days))
+        else:
+            ann.expires_at = None  # Postaje beskonačno
+            
+    if "is_active" in payload:
+        ann.is_active = payload["is_active"]
+        
+    db.add(ann)
+    db.commit()
+    db.refresh(ann)
+    return {"success": True, "announcement": ann}
 
 @router.delete("/announcements/{ann_id}")
 def delete_announcement(ann_id: int, db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
