@@ -48,6 +48,93 @@ class ForumCommentUpdate(BaseModel):
     content: str = Field(min_length=2)
 
 
+# --- Lokalne implementacije / Override pomoćnih funkcija za nested strukturu ---
+
+def local_get_comment_dislikes_count(db: Session, comment_id: int) -> int:
+    result = db.exec(
+        select(func.count(ForumCommentVote.id))
+        .where(ForumCommentVote.comment_id == comment_id, ForumCommentVote.value == -1)
+    ).one()
+    return int(result or 0)
+
+def local_get_comments_count(db: Session, topic_id: int) -> int:
+    result = db.exec(
+        select(func.count(ForumComment.id))
+        .where(ForumComment.topic_id == topic_id, ForumComment.is_deleted == False)
+    ).one()
+    return int(result or 0)
+
+def local_has_best_answer(db: Session, topic_id: int) -> bool:
+    best_answer = db.exec(
+        select(ForumComment)
+        .where(ForumComment.topic_id == topic_id, ForumComment.is_deleted == False, ForumComment.is_best_answer == True)
+    ).first()
+    return best_answer is not None
+
+def local_get_topic_votes_count(db: Session, topic_id: int) -> int:
+    comments = db.exec(
+        select(ForumComment).where(ForumComment.topic_id == topic_id, ForumComment.is_deleted == False)
+    ).all()
+    total = 0
+    for comment in comments:
+        total += get_comment_votes_count(db, comment.id)
+    return total
+
+def local_get_topic_comments(db: Session, topic_id: int) -> list[dict]:
+    all_comments = db.exec(select(ForumComment).where(ForumComment.topic_id == topic_id)).all()
+    
+    def build_comment_dict(comment: ForumComment) -> dict:
+        votes_count = get_comment_votes_count(db, comment.id)
+        likes_count = get_comment_likes_count(db, comment.id)
+        dislikes_count = local_get_comment_dislikes_count(db, comment.id)
+        
+        if comment.is_deleted:
+            return {
+                "id": comment.id,
+                "content": "deleted by user",
+                "is_deleted": True,
+                "is_best_answer": False,
+                "parent_id": comment.parent_id,
+                "created_at": comment.created_at,
+                "updated_at": comment.updated_at,
+                "votes_count": 0,
+                "likes_count": 0,
+                "dislikes_count": 0,
+                "author": None,
+                "replies": []
+            }
+        
+        return {
+            "id": comment.id,
+            "content": comment.content,
+            "is_deleted": False,
+            "is_best_answer": comment.is_best_answer,
+            "parent_id": comment.parent_id,
+            "created_at": comment.created_at,
+            "updated_at": comment.updated_at,
+            "votes_count": votes_count,
+            "likes_count": likes_count,
+            "dislikes_count": dislikes_count,
+            "author": get_author_data(db, comment.user_id),
+            "replies": []
+        }
+    
+    comment_dict = {comment.id: build_comment_dict(comment) for comment in all_comments}
+    
+    top_level = []
+    for comment in all_comments:
+        comment_data = comment_dict[comment.id]
+        if comment.parent_id is None:
+            top_level.append(comment_data)
+        else:
+            parent = comment_dict.get(comment.parent_id)
+            if parent:
+                parent["replies"].append(comment_data)
+    
+    top_level.sort(key=lambda item: (not item["is_best_answer"], -item["votes_count"], item["created_at"]))
+    return top_level
+
+
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
@@ -76,7 +163,7 @@ def create_forum_comment(
     db.commit()
     db.refresh(new_comment)
 
-    comments_count = get_comments_count(db, topic.id)
+    comments_count = local_get_comments_count(db, topic.id)
     log_activity(
         db,
         current_user.id,
@@ -98,7 +185,7 @@ def get_comments(topic_id: int, db: Session = Depends(get_db)):
     topic = db.get(ForumTopic, topic_id)
     if not topic or topic.is_deleted:
         raise HTTPException(status_code=404, detail="Tema nije pronađena.")
-    return get_topic_comments(db, topic_id)
+    return local_get_topic_comments(db, topic_id)
 
 
 @router.patch("/{comment_id}/best-answer", status_code=status.HTTP_200_OK)
