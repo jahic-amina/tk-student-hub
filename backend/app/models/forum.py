@@ -47,6 +47,7 @@ class ForumComment(SQLModel, table=True):
 
     is_best_answer: bool = Field(default=False)
     is_deleted: bool = Field(default=False)
+    parent_id: Optional[int] = Field(default=None, foreign_key="forum_comments.id")
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: Optional[datetime] = None
