@@ -119,20 +119,22 @@ const saveEdit = async () => {
     </div>
 
     <div v-if="activeTab === 'announcements'" class="space-y-6">
-      <div class="bg-white p-6 rounded-xl shadow-sm border">
-        <h3 class="font-bold text-lg mb-3 text-slate-800">Kreiraj Novo Globalno Obavještenje</h3>
-        <textarea v-model="newAnnouncement" rows="3" class="w-full border rounded p-2 mb-3 focus:ring focus:ring-orange-200" placeholder="Ukucajte obavještenje koje će se fiksirati na vrh foruma..."></textarea>
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-orange-200">
+        <h3 class="font-bold text-lg mb-3 text-slate-800">📢 Kreiraj Globalno Obavještenje</h3>
+        <textarea v-model="newAnnouncement" rows="3" class="w-full border rounded p-2 mb-3 focus:ring focus:ring-orange-400" placeholder="Ukucajte obavještenje koje će se fiksirati na sam vrh foruma (vidljivo svima)..."></textarea>
         
-        <div class="flex items-center gap-4 mb-4">
-          <label class="text-sm font-semibold text-slate-600">Vrijeme trajanja obavještenja:</label>
-          <select v-model="durationDays" class="border rounded p-1.5 bg-gray-50 text-sm">
-            <option :value="0">Beskonačno (Dok ga ne obrišem)</option>
-            <option :value="3">3 Dana</option>
-            <option :value="10">10 Dana</option>
+        <div class="flex flex-col md:flex-row md:items-center gap-4 mb-4">
+          <label class="text-sm font-semibold text-slate-600">Vrijeme trajanja obavještenja na forumu:</label>
+          <select v-model="durationDays" class="border border-gray-300 rounded p-2 bg-gray-50 text-sm focus:ring focus:ring-orange-400">
+            <option :value="0">Beskonačno (Dok ga ručno ne obrišem)</option>
+            <option :value="1">Traje 1 Dan</option>
+            <option :value="2">Traje 2 Dana</option>
+            <option :value="3">Traje 3 Dana</option>
+            <option :value="5">Traje 5 Dana</option>
           </select>
         </div>
 
-        <button @click="postAnnouncement" class="bg-orange-500 text-white px-4 py-2 rounded font-bold hover:bg-orange-600 transition-colors">Objavi obavještenje</button>
+        <button @click="postAnnouncement" class="bg-orange-500 text-white px-6 py-2 rounded font-bold hover:bg-orange-600 transition-colors">Objavi globalno obavještenje</button>
       </div>
 
       <div class="bg-white p-6 rounded-xl shadow-sm border">
