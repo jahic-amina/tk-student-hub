@@ -53,25 +53,60 @@ def get_topic_votes_count(db: Session, topic_id: int) -> int:
     return total
 
 def get_topic_comments(db: Session, topic_id: int) -> list[dict]:
-    
     from app.routers.forum_topics import get_author_data
     
-    comments = db.exec(select(ForumComment).where(ForumComment.topic_id == topic_id, ForumComment.is_deleted == False)).all()
-    comment_items = []
-    for comment in comments:
+    all_comments = db.exec(select(ForumComment).where(ForumComment.topic_id == topic_id)).all()
+    
+    def build_comment_dict(comment: ForumComment) -> dict:
         votes_count = get_comment_votes_count(db, comment.id)
         likes_count = get_comment_likes_count(db, comment.id)
         dislikes_count = get_comment_dislikes_count(db, comment.id)
-        comment_items.append({
-            "id": comment.id, "content": comment.content, "is_best_answer": comment.is_best_answer,
-            "created_at": comment.created_at, "updated_at": comment.updated_at, 
+        
+        if comment.is_deleted:
+            return {
+                "id": comment.id,
+                "content": "deleted by user",
+                "is_deleted": True,
+                "is_best_answer": False,
+                "parent_id": comment.parent_id,
+                "created_at": comment.created_at,
+                "updated_at": comment.updated_at,
+                "votes_count": 0,
+                "likes_count": 0,
+                "dislikes_count": 0,
+                "author": None,
+                "replies": []
+            }
+        
+        return {
+            "id": comment.id,
+            "content": comment.content,
+            "is_deleted": False,
+            "is_best_answer": comment.is_best_answer,
+            "parent_id": comment.parent_id,
+            "created_at": comment.created_at,
+            "updated_at": comment.updated_at,
             "votes_count": votes_count,
             "likes_count": likes_count,
             "dislikes_count": dislikes_count,
             "author": get_author_data(db, comment.user_id),
-        })
-    comment_items.sort(key=lambda item: (not item["is_best_answer"], -item["votes_count"], item["created_at"]))
-    return comment_items
+            "replies": []
+        }
+    
+    comment_dict = {comment.id: build_comment_dict(comment) for comment in all_comments}
+    
+    top_level = []
+    for comment in all_comments:
+        comment_data = comment_dict[comment.id]
+        if comment.parent_id is None:
+            top_level.append(comment_data)
+        else:
+            parent = comment_dict.get(comment.parent_id)
+            if parent:
+                parent["replies"].append(comment_data)
+    
+    top_level.sort(key=lambda item: (not item["is_best_answer"], -item["votes_count"], item["created_at"]))
+    return top_level
 
 # Rute za komentare
 
