@@ -31,6 +31,10 @@ class ForumTopicCreate(BaseModel):
 class ReportCreate(BaseModel):
     reason: str = Field(min_length=3, max_length=100)
 
+class ForumTopicUpdate(BaseModel):
+    title: Optional[str] = Field(None, min_length=3, max_length=200)
+    content: Optional[str] = Field(None, min_length=3)
+
 # Pomocne funkcije
 def make_summary(text: str, max_length: int = 150) -> str:
     clean_text = " ".join((text or "").split())
@@ -365,9 +369,9 @@ def report_topic(topic_id: int, report_data: ReportCreate, db: Session = Depends
     return {"success": True}
 
 
-#Ruta za dohvatanje aktivnih obavještenja (koja nisu istekla)
+# Ruta za dohvatanje aktivnih obavještenja (koja nisu istekla)
 @router.get("/announcements/active")
-def get_active_announcements(db: Session = Depends(get_db)): #Ovo je public ruta da bi se obavjestenja prikazala svima
+def get_active_announcements(db: Session = Depends(get_db)): 
     now = datetime.utcnow()
     statement = select(AdminAnnouncement).where(
         AdminAnnouncement.is_active == True,
@@ -376,3 +380,30 @@ def get_active_announcements(db: Session = Depends(get_db)): #Ovo je public ruta
     
     anns = db.exec(statement).all()
     return anns
+
+
+@router.put("/{topic_id}", status_code=status.HTTP_200_OK)
+def update_topic(
+    topic_id: int,
+    topic_data: ForumTopicUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    topic = db.get(ForumTopic, topic_id)
+    if not topic or topic.is_deleted:
+        raise HTTPException(status_code=404, detail="Tema nije pronađena.")
+    
+    if topic.user_id != current_user.id and getattr(current_user, 'role', 'member') != 'admin':
+        raise HTTPException(status_code=403, detail="Možete editovati samo vlastitu temu.")
+    
+    if topic_data.title is not None:
+        topic.title = topic_data.title
+    if topic_data.content is not None:
+        topic.content = topic_data.content
+    
+    topic.updated_at = datetime.utcnow() # Promijenjeno u utcnow radi konzistentnosti sa bazom
+    db.add(topic)
+    db.commit()
+    db.refresh(topic)
+    
+    return build_topic_list_item(db, topic)
