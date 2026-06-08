@@ -17,6 +17,7 @@ class ForumCommentCreate(BaseModel):
     content: str = Field(min_length=2)
     topic_id: int
     is_admin_notice: Optional[bool] = False
+    parent_id: Optional[int] = None
 
 class VoteInput(BaseModel):
     value: int = Field(..., description="1 za like, -1 za dislike")
@@ -125,7 +126,7 @@ def create_forum_comment(
     if is_admin_notice and getattr(current_user, 'role', 'member') != 'admin':
         is_admin_notice = False
 
-    new_comment = ForumComment(content=comment_data.content, topic_id=comment_data.topic_id, user_id=current_user.id, is_admin_notice=is_admin_notice)
+    new_comment = ForumComment(content=comment_data.content, topic_id=comment_data.topic_id, user_id=current_user.id, is_admin_notice=is_admin_notice, parent_id=comment_data.parent_id)
     db.add(new_comment)
     db.commit()
     db.refresh(new_comment)
