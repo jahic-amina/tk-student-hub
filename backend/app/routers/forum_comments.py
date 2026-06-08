@@ -194,10 +194,22 @@ def delete_comment(
     if not comment or comment.is_deleted:
         raise HTTPException(status_code=404, detail="Komentar nije pronađen.")
     
-    if comment.user_id != current_user.id:
+    if comment.user_id != current_user.id and getattr(current_user, 'role', 'member') != 'admin':
         raise HTTPException(status_code=403, detail="Možete obrisati samo vlastiti komentar.")
     
-    comment.is_deleted = True
-    db.add(comment)
-    db.commit()
+    replies = db.exec(
+        select(ForumComment).where(
+            ForumComment.parent_id == comment_id,
+            ForumComment.is_deleted == False
+        )
+    ).all()
+
+    if replies:
+        comment.is_deleted = True
+        db.add(comment)
+        db.commit()
+    else:
+        db.delete(comment)
+        db.commit()
+    
     return {"message": "Komentar je uspješno obrisan.", "comment_id": comment_id}
