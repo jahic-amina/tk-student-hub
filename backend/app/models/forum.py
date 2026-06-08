@@ -57,7 +57,7 @@ class ForumComment(SQLModel, table=True):
 
     topic: Optional[ForumTopic] = Relationship(back_populates="comments")
     votes: List["ForumCommentVote"] = Relationship(back_populates="comment")
-
+    replies: List["ForumComment"] = Relationship("primaryjoin": "ForumComment.parent_id == ForumComment.id", "lazy": "select")
 
 class ForumCommentVote(SQLModel, table=True):
     __tablename__ = "forum_comment_votes"
