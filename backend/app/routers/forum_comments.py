@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select, func
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
+from datetime import datetime
 
 from app.database import get_db
 from app.core.security import get_current_user
@@ -20,6 +21,8 @@ class ForumCommentCreate(BaseModel):
 class VoteInput(BaseModel):
     value: int = Field(..., description="1 za like, -1 za dislike")
 
+class ForumCommentUpdate(BaseModel):
+    content: str = Field(min_length=2)
     
 # Pomocne funkcije za komentare
 def get_comment_votes_count(db: Session, comment_id: int) -> int:
@@ -213,3 +216,25 @@ def delete_comment(
         db.commit()
     
     return {"message": "Komentar je uspješno obrisan.", "comment_id": comment_id}
+
+@router.put("/{comment_id}", status_code=status.HTTP_200_OK)
+def update_comment(
+    comment_id: int,
+    comment_data: ForumCommentUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    comment = db.get(ForumComment, comment_id)
+    if not comment or comment.is_deleted:
+        raise HTTPException(status_code=404, detail="Komentar nije pronađen.")
+    
+    if comment.user_id != current_user.id and getattr(current_user, 'role', 'member') != 'admin':
+        raise HTTPException(status_code=403, detail="Možete editovati samo vlastiti komentar.")
+    
+    comment.content = comment_data.content
+    comment.updated_at = datetime.utcnow()
+    db.add(comment)
+    db.commit()
+    db.refresh(comment)
+    
+    return {"id": comment.id, "content": comment.content, "updated_at": comment.updated_at}
