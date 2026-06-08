@@ -186,7 +186,7 @@ const { isLoadingMore, imaJosTema } = useForumLazyLoading({
 
       <AdminAnnouncementBanner />
 
-      <div class="flex gap-6">
+      <div class="flex flex-col lg:flex-row gap-8 mt-6">
       </div>
       
       <div class="sticky top-[72px] z-30 bg-gray-50 dark:bg-slate-900 flex justify-between items-center mb-8 border-b border-gray-200 dark:border-slate-800 py-4 pt-6 -mt-2">
