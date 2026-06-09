@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { voteOnComment, toggleBestAnswer, deleteComment } from '../services/forum';
+import { voteOnComment, toggleBestAnswer, deleteComment, updateComment, createComment } from '../services/forum';
 
 const props = defineProps({
   comments: { type: Array, required: true },
@@ -44,6 +44,56 @@ const localVotes = ref({});
 function getUserVote(comment) {
   if (localVotes.value[comment.id] !== undefined) return localVotes.value[comment.id];
   return comment.user_vote || 0;
+}
+
+// Edit komentar
+const editingCommentId = ref(null);
+const editContent = ref('');
+
+function startEdit(comment) {
+  editingCommentId.value = comment.id;
+  editContent.value = comment.content;
+}
+
+function cancelEdit() {
+  editingCommentId.value = null;
+  editContent.value = '';
+}
+
+async function submitEdit(comment) {
+  if (!editContent.value.trim()) return;
+  try {
+    await updateComment(comment.id, editContent.value);
+    editingCommentId.value = null;
+    emit('refresh');
+  } catch (e) {
+    alert('Greška pri editovanju komentara.');
+  }
+}
+
+// Reply
+const replyingToId = ref(null);
+const replyContent = ref('');
+
+function startReply(comment) {
+  replyingToId.value = comment.id;
+  replyContent.value = '';
+}
+
+function cancelReply() {
+  replyingToId.value = null;
+  replyContent.value = '';
+}
+
+async function submitReply(comment, topicId) {
+  if (!replyContent.value.trim()) return;
+  try {
+    await createComment(replyContent.value, topicId, comment.id);
+    replyingToId.value = null;
+    emit('refresh');
+  } catch (e) {
+    alert('Greška pri slanju odgovora.');
+  }
 }
 
 function getLikesCount(comment) {
