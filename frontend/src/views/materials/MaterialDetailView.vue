@@ -35,33 +35,14 @@
             </div>
 
             <!-- Ocjena -->
-            <div class="mb-6">
-                <h3 class="font-semibold mb-2">Ocjena materijala</h3>
-                <div class="flex items-center gap-2">
-                    <span v-for="star in 5" :key="star" class="text-yellow-400 text-2xl">
-                        {{ star <= Math.round(material.average_rating) ? '★' : '☆' }} </span>
-                            <span class="text-gray-600">{{ material.average_rating }} / 5.0 ({{ material.rating_count }}
-                                ocjena)</span>
-                </div>
-
-                <p class="text-sm text-gray-500 mt-2">Broj preuzimanja: {{ material.number_of_downloads }}</p>
-
-                <!-- Ocijeni -->
-                <div class="mt-4">
-                    <p class="text-sm text-gray-500 mb-1">Ocijenite ovaj materijal:</p>
-                    <div class="flex gap-1">
-                        <span v-for="star in 5" :key="star" class="text-2xl cursor-pointer transition"
-                            :class="star <= hoverRating || star <= selectedRating ? 'text-yellow-400' : 'text-gray-300'"
-                            @mouseover="hoverRating = star" @mouseleave="hoverRating = 0"
-                            @click="selectedRating = star">★</span>
-                    </div>
-                </div>
-            </div>
+            <MaterialRating :material-id="material.id" />
 
             <!-- Preuzmi -->
             <div class="mb-6">
-                <DownloadButton :material-id="material.id" :full-width="true" />
+                <p class="text-sm text-gray-500 mb-2">Broj preuzimanja: {{ material.number_of_downloads }}</p>
+                <DownloadButton :material-id="material.id" :full-width="true" @downloaded="updateDownloadCount" />
             </div>
+            
             <div v-if="isAdmin && material.status === 'pending'" class="flex w-full gap-4 mb-6">
                 <button @click="handleApprove"
                     class="flex-1 justify-center py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 font-medium">
@@ -87,13 +68,12 @@ import DownloadButton from '../../components/DownloadButton.vue'
 import { getMaterial, approveMaterial, rejectMaterial } from '../../services/api'
 import SuccessMessage from '../../components/SuccessMessage.vue'
 import CommentList from '../../components/CommentList.vue'
+import MaterialRating from '../../components/MaterialRating.vue'
 
 const route = useRoute()
 const router = useRouter()
 const material = ref(null)
 const loading = ref(true)
-const hoverRating = ref(0)
-const selectedRating = ref(0)
 const isAdmin = localStorage.getItem('role') === 'admin'
 const successMessage = ref('')
 const successTitle = ref('')
@@ -124,6 +104,10 @@ async function handleReject() {
     } catch (error) {
         console.error('Greška prilikom odbijanja materijala:', error)
     }
+}
+// Ažurira broj preuzimanja lokalno nakon downloada - Marinela
+function updateDownloadCount() {
+    material.value.number_of_downloads += 1
 }
 
 function goBack() {

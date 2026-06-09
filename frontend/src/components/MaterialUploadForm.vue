@@ -1,6 +1,6 @@
 <template>
   <div>
-    
+  <!-- Dugme za otvaranje forme za upload - Lejla -->
   <button
   v-if="!showForm"
   @click="handleDodajKlik"
@@ -10,21 +10,22 @@
   + DODAJTE MATERIJAL
 </button>
 
-  
   <div v-if="successMessage" class="fixed inset-0 flex items-center justify-center z-50">
   <div class="bg-white rounded-xl shadow-xl p-8 max-w-md w-full mx-4 text-center">
     <div class="text-5xl mb-4">✅</div>
     <h3 class="text-xl font-bold text-gray-800 mb-2">Materijal poslan!</h3>
     <p class="text-gray-600 mb-6">{{ successMessage }}</p>
     <button
-      @click="successMessage = ''"
-      class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition"
-    >
-      U redu
-    </button>
+    @click="successMessage = ''; emit('success')"
+    class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition"
+  >
+    U redu
+  </button>
   </div>
   <div class="fixed inset-0 bg-black opacity-40 -z-10"></div>
 </div>
+
+ <!-----Polja forme, validacija, drag&drop, submit — Marinela ----->
     <div v-if="showForm" class="bg-white rounded-lg shadow p-6 mt-6">
       
       <!-- Naslov -->
@@ -204,55 +205,76 @@
 </template>
 
 <script setup>
+
+// ============================================================
+// Dugme "+ DODAJTE MATERIJAL" — Lejla
+// Forma, validacija, drag&drop, upload na backend — Marinela
+// ============================================================
+
 import { ref, watch, onMounted, computed } from 'vue'
 import { uploadMaterial, getSubjects } from '../services/api'
 
-const showForm = ref(false)
+// Prop koji kontroliše da li se forma prikazuje odmah (true) ili tek nakon klika na dugme (false)
+// Postavlja se na true kad se forma otvara na posebnoj stranici /materials/upload - Marinela
+const props = defineProps({
+  directShow: {
+    type: Boolean,
+    default: false
+  }
+})
+
+// Reaktivne varijable za stanje
+const showForm = ref(props.directShow)
 const successMessage = ref('')
 const uploadError = ref('')
 const isSubmitting = ref(false)
 
+// Klik na dugme "Dodajte materijal" — neprijavljene preusmjeravas na login,
+// prijavljene na stranicu za upload 
 function handleDodajKlik() {
   const isLoggedIn = !!localStorage.getItem('token')
   if (!isLoggedIn) {
     window.location.href = '/login'
   } else {
-    showForm.value = true
+    window.location.href = '/materials/upload' 
   }
 }
 
-// === Polja forme — Marinela ===
+// Polja forme — vezana za v-model u templatu
 const title = ref('')
 const description = ref('')
 const studyYear = ref('')
 const materialType = ref('')
 const subjectId = ref('')
 const selectedFile = ref(null)
-const subjects = ref([])
+const subjects = ref([]) // Lista svih predmeta sa backenda
+
+// Filtrira predmete prema odabranoj godini studija
 const filteredSubjects = computed(() => {
   if (!studyYear.value) return []
   return subjects.value.filter(s => s.study_year == studyYear.value)
 })
 
+// Učitava predmete sa backenda pri mountovanju komponente
 onMounted(async () => {
   subjects.value = await getSubjects()
 })
 
-// === Drag & drop state ===
+// Drag & drop — prati stanje prevlačenja fajla
 const isDragging = ref(false)
 const fileInput = ref(null)
 
-// Klik na drag zonu — programski klikne hidden <input type="file">
+// Klik na drag zonu — programski otvara file picker bez vidljivog inputa
 function triggerFileInput() {
   fileInput.value.click()
 }
 
-// Handler za standardni file picker
+// Korisnik odabrao fajl kroz standardni file picker
 function onFileChange(event) {
   selectedFile.value = event.target.files[0] || null
 }
 
-// Handler za drag & drop
+// Korisnik prevukao fajl u drag zonu — uzima prvi fajl iz liste
 function onFileDrop(event) {
   isDragging.value = false
   const files = event.dataTransfer.files
@@ -261,12 +283,12 @@ function onFileDrop(event) {
   }
 }
 
-// === Validacija ===
+// Objekti za greške po poljima (za crveni border) i opća poruka greške
 const errors = ref({})         
 const formError = ref('')       
-const emit = defineEmits(['submit'])
+const emit = defineEmits(['submit' , 'success'])
 
-// Provjeri sva polja, popuni errors, vrati true/false
+// Prolazi kroz sva polja, označava prazna kao greške, vraća true ako je sve ispravno
 function validateForm() {
   const e = {}
   if (!title.value.trim()) e.title = true
@@ -283,7 +305,7 @@ function validateForm() {
   return valid
 }
 
-// Klik na "Dodaj materijal" — validira, pa šalje FormData na backend
+// Validira formu, kreira FormData i šalje na backend — obradjuje greške po statusu
 async function handleSubmit() {
   if (!validateForm()) return
 
@@ -302,17 +324,23 @@ async function handleSubmit() {
     const response = await uploadMaterial(formData)
 
     if (!response.ok) {
-      const data = await response.json().catch(() => ({}))
-      if (response.status === 401) throw new Error('Morate biti prijavljeni.')
-      if (response.status === 400) throw new Error(data.detail || 'Format fajla nije podržan.')
-      if (response.status === 409) throw new Error(data.detail || 'Materijal već postoji.')
-      throw new Error(data.detail || 'Greška prilikom dodavanja materijala.')
-    }
+  const data = await response.json().catch(() => ({}))
+  if (response.status === 401) {
+
+    // Token istekao — obriši ga i preusmjeri na login
+    localStorage.removeItem('token')
+    window.location.href = '/login'
+    return
+  }
+  if (response.status === 400) throw new Error(data.detail || 'Format fajla nije podržan.')
+  if (response.status === 409) throw new Error(data.detail || 'Materijal već postoji.')
+  throw new Error(data.detail || 'Greška prilikom dodavanja materijala.')
+}
 
     const created = await response.json()
     successMessage.value = 'Materijal je uspješno poslan na pregled. Status: Na čekanju.'
-    showForm.value = false
     
+    // Resetuj sva polja nakon uspješnog slanja
     title.value = ''
     description.value = ''
     studyYear.value = ''
@@ -323,6 +351,11 @@ async function handleSubmit() {
 
     emit('submit', created)
 
+    // Sakrij formu samo ako nije direktno prikazana na posebnoj stranici
+    if (!props.directShow) {
+      showForm.value = false
+    }
+
   } catch (err) {
     uploadError.value = err.message || 'Greška prilikom dodavanja materijala.'
   } finally {
@@ -330,8 +363,8 @@ async function handleSubmit() {
   }
 }
 
-// Watch — kad korisnik promijeni bilo koje polje, ako je validacija već
-// triggerovana, ponovo validiraj (greske se same brišu kad popuni polje)
+// Automatski ponovo validira formu čim korisnik promijeni bilo koje polje
+// — greške se brišu čim se polje ispravno popuni
 watch(
   [title, description, studyYear, subjectId, materialType, selectedFile],
   () => {

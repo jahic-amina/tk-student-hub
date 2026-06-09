@@ -8,7 +8,7 @@ from sqlmodel import Session, select, func
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from app.models.materials import Material, MaterialsResponse, MaterialDetailResponse, Rating, Comment, Subject,CommentResponse,CommentCreate
+from app.models.materials import Material, MaterialsResponse, MaterialDetailResponse, Rating, Comment, Subject, RatingCreate, CommentResponse, CommentCreate
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
 from app.models.materials import Bookmark
@@ -310,7 +310,24 @@ def get_material(material_id: int, session: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Materijal nije pronadjen")
     
     material.comments.sort(key=lambda c: c.created_at, reverse=True) 
-    return material
+    avg = sum(r.rating for r in material.ratings) / len(material.ratings) if material.ratings else None
+    count = len(material.ratings)
+    
+    return MaterialDetailResponse(
+        id=material.id,
+        title=material.title,
+        description=material.description,
+        file_type=material.file_type,
+        status=material.status,
+        created_at=material.created_at,
+        number_of_downloads=material.number_of_downloads,
+        subject=material.subject,
+        user=material.user,
+        comments=material.comments,
+        ratings=material.ratings,
+        average_rating=round(avg, 1) if avg else None,
+        rating_count=count
+    )
 
 
 #amer
@@ -338,6 +355,60 @@ def delete_material(
     db.commit()
     return None
 
+"""RATING MATERIAL ENDPOINT"""
+@router.post("/{id}/rate", status_code=201)
+def rate_material(
+    id: int,
+    rating_data: RatingCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    material = db.exec(select(Material).where(Material.id == id)).first()
+    if not material:
+        raise HTTPException(status_code=404, detail="Materijal nije pronađen.")
+
+    existing = db.exec(
+        select(Rating).where(
+            Rating.material_id == id,
+            Rating.user_id == current_user.id
+        )
+    ).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="Već ste ocijenili ovaj materijal.")
+
+    new_rating = Rating(
+        rating=rating_data.rating,
+        material_id=id,
+        user_id=current_user.id
+    )
+    db.add(new_rating)
+    db.commit()
+    db.refresh(new_rating)
+    return new_rating
+
+"""Promijeni ocijenu materijala endpoint"""
+
+@router.patch("/{id}/rate", status_code=200)
+def update_rating(
+    id: int,
+    rating_data: RatingCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    existing = db.exec(
+        select(Rating).where(
+            Rating.material_id == id,
+            Rating.user_id == current_user.id
+        )
+    ).first()
+    if not existing:
+        raise HTTPException(status_code=404, detail="Niste ocijenili ovaj materijal.")
+    
+    existing.rating = rating_data.rating
+    db.add(existing)
+    db.commit()
+    db.refresh(existing)
+    return existing
 # endpoint za dohvatanje komentara materijala
 @router.get("/{material_id}/comments", response_model=list[CommentResponse])
 def get_comments(material_id: int, session: Session = Depends(get_db)):
@@ -409,6 +480,7 @@ def delete_comment(
     session.delete(komentar)
     session.commit()
     return None
+<<<<<<< HEAD
 
 
 
@@ -438,3 +510,5 @@ def toggle_bookmark(
         session.add(new_bookmark)
         session.commit()
         return {"is_bookmarked": True}
+=======
+>>>>>>> origin/tim2/dev

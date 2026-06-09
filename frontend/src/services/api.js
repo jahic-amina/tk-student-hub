@@ -174,4 +174,39 @@ export async function rejectMaterial(id) {
   return response.json();
 }
 
+<<<<<<< HEAD
 
+=======
+// Ocjenjivanje materijala 
+export async function rateMaterial(materialId, rating) {
+  const token = localStorage.getItem('token')
+  const response = await fetch(`${BASE_URL}/materials/${materialId}/rate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ rating, material_id: materialId })
+  })
+  return response
+}
+
+export async function updateRating(materialId, rating) {
+  const token = localStorage.getItem('token')
+  const response = await fetch(`${BASE_URL}/materials/${materialId}/rate`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ rating, material_id: materialId })
+  })
+  return response
+}
+
+// Download materijala - Marinela
+export async function downloadMaterial(materialId) {
+  const response = await fetch(`${BASE_URL}/materials/${materialId}/download`)
+  return response
+}
+>>>>>>> origin/tim2/dev

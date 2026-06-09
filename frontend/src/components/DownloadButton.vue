@@ -24,12 +24,13 @@
 </template>
 
 <script>
-const BASE_URL = 'http://127.0.0.1:8000'
+import { downloadMaterial } from '../services/api'
 
 export default {
   name: 'DownloadButton',
+  emits: ['downloaded'], 
 
-  // Prop koji komponenta prima izvana (od roditeljske komponente). 
+  // Prop koji komponenta prima izvana — id materijala i fullWidth za prikaz
  props: {
     materialId: {
       type: [Number, String],
@@ -43,8 +44,8 @@ export default {
 
   data() {
     return {
-      isDownloading: false,
-      errorMessage: null,
+      isDownloading: false, // Stanje preuzimanja — onemogućava dvostruki klik
+      errorMessage: null, // Poruka greške ako download ne uspije
     }
   },
 
@@ -54,10 +55,8 @@ export default {
       this.isDownloading = true
 
       try {
-        //Fetch bez autentifikacije - download je javan
-        const response = await fetch(
-          `${BASE_URL}/materials/${this.materialId}/download`,
-        )
+        // Fetch bez autentifikacije — download je javan za sve korisnike
+        const response = await downloadMaterial(this.materialId)
 
         //Provjera HTTP statusa
         if (!response.ok) {
@@ -91,6 +90,7 @@ export default {
 
         //Oslobodi memoriju
         window.URL.revokeObjectURL(url)
+        this.$emit('downloaded')
       } catch (err) {
         this.errorMessage = err.message || 'Greška prilikom preuzimanja.'
       } finally {

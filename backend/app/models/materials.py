@@ -75,6 +75,9 @@ class UserResponse(SQLModel):
     full_name: str
     
 class CommentResponse(SQLModel):
+    id: int
+    user_id: int
+    material_id: int
     content: str
     created_at: datetime
     user: UserResponse
@@ -105,6 +108,7 @@ class MaterialDetailResponse(SQLModel):
     comments: list[CommentResponse] = []
     ratings: list[Rating] = []
     
+<<<<<<< HEAD
 
 
 class Bookmark(SQLModel, table=True):
@@ -113,6 +117,11 @@ class Bookmark(SQLModel, table=True):
     material_id: int = Field(foreign_key="materials.id", primary_key=True)
 
 
+=======
+    average_rating: Optional[float] = None
+    rating_count: Optional[int] = None
+    
+>>>>>>> origin/tim2/dev
 def get_default_subjects():
     return [
         Subject(name="Matematika 1", study_year=1),
