@@ -88,7 +88,11 @@ function cancelReply() {
 async function submitReply(comment, topicId) {
   if (!replyContent.value.trim()) return;
   try {
-    await createComment(replyContent.value, topicId, comment.id);
+    await createComment({
+      content: replyContent.value,
+      topic_id: topicId,
+      parent_id: comment.id
+    });
     replyingToId.value = null;
     emit('refresh');
   } catch (e) {

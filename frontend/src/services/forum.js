@@ -138,6 +138,15 @@ export async function deleteComment(commentId) {
   return handleResponse(response, 'Brisanje komentara nije uspjelo.');
 }
 
+export async function updateComment(commentId, content) {
+  const response = await fetch(`${BASE_URL}/forum/comments/${commentId}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify({ content })
+  });
+  return handleResponse(response, 'Editovanje komentara nije uspjelo.');
+}
+
 export async function reportTopic(topicId, reason) {
   const response = await fetch(`${BASE_URL}/forum/topics/${topicId}/report`, {
     method: 'POST',
@@ -200,5 +209,6 @@ export default {
   getActiveAnnouncements,
   getActiveReports,
   handleReportAction,
-  getSearchSuggestions
+  getSearchSuggestions,
+  updateComment
 };
