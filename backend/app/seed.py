@@ -25,6 +25,7 @@ def _build_users() -> list[User]:
         {"email": "member7@test.local", "full_name": "Member Seven", "role": UserRole.member},
         {"email": "member8@test.local", "full_name": "Member Eight", "role": UserRole.member},
         {"email": "member9@test.local", "full_name": "Member Nine", "role": UserRole.member},
+        {"email": "member10@test.local","full_name": "Member Ten",    "role": UserRole.member},
     ]
 
     return [
@@ -294,25 +295,76 @@ def _build_ads(companies: list[Company], users: list[User]) -> list[Ad]:
     return ads
 
 
-def _build_applications(users: list[User], ads: list[Ad]) -> list[Application]:
-    """Create 10 test applications."""
-    applications = []
-    statuses = [ApplicationStatus.pending, ApplicationStatus.accepted, ApplicationStatus.rejected]
+# Distribution pattern for 10 applications per ad:
+#   index 0 -> pending   (no feedback)
+#   index 1 -> pending   (no feedback)
+#   index 2 -> pending   (no feedback)
+#   index 3 -> pending   (no feedback)
+#   index 4 -> accepted  (positive feedback)
+#   index 5 -> accepted  (positive feedback)
+#   index 6 -> accepted  (positive feedback)
+#   index 7 -> rejected  (constructive feedback)
+#   index 8 -> rejected  (constructive feedback)
+#   index 9 -> rejected  (constructive feedback)
+_APP_STATUS_PATTERN = [
+    ApplicationStatus.pending,
+    ApplicationStatus.pending,
+    ApplicationStatus.pending,
+    ApplicationStatus.pending,
+    ApplicationStatus.accepted,
+    ApplicationStatus.accepted,
+    ApplicationStatus.accepted,
+    ApplicationStatus.rejected,
+    ApplicationStatus.rejected,
+    ApplicationStatus.rejected,
+]
 
-    for index in range(10):
-        applications.append(
-            Application(
-                user_id=users[(index + 1) % len(users)].id,  # Skip admin
-                ad_id=ads[index].id,
-                cv_path=f"uploads/applications/cv_{index}.pdf",
-                motivational_letter_path=f"uploads/applications/letter_{index}.pdf",
-                linkedin_url=f"https://linkedin.com/in/user{index}" if index % 2 == 0 else None,
-                phone=f"+38761{100000 + index:06d}",
-                status=statuses[index % len(statuses)],
-                admin_feedback="Good application!" if index % 3 == 0 else None,
-                is_archived=False,
+_ACCEPTED_FEEDBACK = [
+    "Odlican kandidat, pokazuje veliko interesovanje i potencijal.",
+    "Profil kandidata odgovara svim trazenim kriterijima.",
+    "Impresivno motivacijsko pismo i relevantno iskustvo.",
+]
+
+_REJECTED_FEEDBACK = [
+    "Nedovoljno iskustvo u trazenim tehnologijama.",
+    "Kandidat ne ispunjava minimalne uslove za poziciju.",
+    "Pozicija je popunjena prikladnijim kandidatom.",
+]
+
+
+def _build_applications(users: list[User], ads: list[Ad]) -> list[Application]:
+    """Create 10 applications per ad (100 total) with varied statuses."""
+    # members are users[1..9] — skip admin at index 0
+    members = users[1:]
+    applications = []
+    global_index = 0
+
+    for ad in ads:
+        for slot in range(10):
+            status = _APP_STATUS_PATTERN[slot]
+            user = members[slot % len(members)]
+
+            if status == ApplicationStatus.accepted:
+                feedback = _ACCEPTED_FEEDBACK[slot % len(_ACCEPTED_FEEDBACK)]
+            elif status == ApplicationStatus.rejected:
+                feedback = _REJECTED_FEEDBACK[slot % len(_REJECTED_FEEDBACK)]
+            else:
+                feedback = None
+
+            applications.append(
+                Application(
+                    user_id=user.id,
+                    ad_id=ad.id,
+                    cv_path=f"uploads/applications/cv_{global_index}.pdf",
+                    motivational_letter_path=f"uploads/applications/letter_{global_index}.pdf",
+                    linkedin_url=f"https://linkedin.com/in/user{global_index}" if global_index % 2 == 0 else None,
+                    phone=f"+38761{200000 + global_index:06d}",
+                    status=status,
+                    admin_feedback=feedback,
+                    is_archived=False,
+                )
             )
-        )
+            global_index += 1
 
     return applications
 
