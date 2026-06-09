@@ -56,6 +56,22 @@ function toggleShare() {
   copySuccess.value = false;
 }
 
+function shareOnFacebook() {
+  window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl.value)}`, '_blank');
+}
+
+function shareOnWhatsApp() {
+  window.open(`https://wa.me/?text=${encodeURIComponent(shareUrl.value)}`, '_blank');
+}
+
+function shareOnViber() {
+  window.open(`viber://forward?text=${encodeURIComponent(shareUrl.value)}`, '_blank');
+}
+
+function shareOnMessenger() {
+  window.open(`fb-messenger://share/?link=${encodeURIComponent(shareUrl.value)}`, '_blank');
+}
+
 async function copyToClipboard() {
   try {
     await navigator.clipboard.writeText(shareUrl.value);
