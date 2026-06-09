@@ -1,6 +1,33 @@
 <template>
     <div
-        class="flex flex-col sm:flex-row sm:items-center justify-between border rounded-xl p-4 shadow-sm hover:shadow-md transition gap-4">
+        class="relative flex flex-col sm:flex-row sm:items-center justify-between border rounded-xl p-4 shadow-sm hover:shadow-md transition gap-4"
+    >
+       <button 
+    v-if="userRole !== 'admin'"
+    type="button"
+    @click.stop="$emit('toggle-bookmark', material.id)"
+    class="absolute top-0 right-0 z-20 group"
+>
+    <div 
+        :class="[
+            'w-8 h-10 transition-all duration-300 flex items-center justify-center rounded-tr-xl',
+            material.is_bookmarked ? 'bg-amber-400 shadow-md' : 'bg-gray-200 hover:bg-gray-300'
+        ]"
+        style="clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 50% 80%, 0% 100%);"
+    >
+        <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            width="16" height="16" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            :stroke="material.is_bookmarked ? 'white' : '#9ca3af'" 
+            stroke-width="3"
+        >
+            <path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path>
+        </svg>
+    </div>
+</button>
+
         <div class="flex items-start gap-4 flex-1 cursor-pointer" @click="$emit('click', material.id)">
             <div class="bg-red-100 text-red-500 p-3 rounded-lg shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -66,11 +93,14 @@ defineProps({
     pending: {
         type: Boolean,
         default: false
+    },
+    userRole: {
+        type: String,
+        default: 'member'
     }
-
 })
 
-defineEmits(['click', 'deleted', 'approve', 'reject'])
+defineEmits(['click', 'deleted', 'approve', 'reject', 'toggle-bookmark'])
 
 function formatDate(dateStr) {
     if (!dateStr) return 'N/A'

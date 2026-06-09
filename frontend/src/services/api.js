@@ -80,10 +80,21 @@ export async function getMaterials(filters = {}) {
     ? `${BASE_URL}/materials/?${queryString}` 
     : `${BASE_URL}/materials/`;
 
-  console.log("Konačni URL koji šaljemo:", url);
+  const token = localStorage.getItem("token");
 
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      method: "GET",
+      headers: { 
+        "Authorization": `Bearer ${token}` // POŠALJI TOKEN
+      },
+    });
+    
+    if (response.status === 401) {
+       console.error("Niste ulogovani ili je token istekao");
+       return [];
+    }
+
     if (!response.ok) throw new Error('Mrežna greška');
     return await response.json();
   } catch (error) {
@@ -91,6 +102,16 @@ export async function getMaterials(filters = {}) {
     return [];
   }
 }
+
+export async function toggleBookmark(materialId) {
+  const token = localStorage.getItem("token");
+  const response = await fetch(`${BASE_URL}/materials/${materialId}/bookmark`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.json();
+}
+
 //
 
 export async function getComments(materialId) {
@@ -152,3 +173,5 @@ export async function rejectMaterial(id) {
   });
   return response.json();
 }
+
+

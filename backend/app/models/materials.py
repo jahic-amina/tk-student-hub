@@ -90,6 +90,7 @@ class MaterialsResponse(SQLModel):
     user: UserResponse  
     average_rating: Optional[float] = None
     rating_count: Optional[int] = None
+    is_bookmarked: bool = False
     
 class MaterialDetailResponse(SQLModel):
     id: int
@@ -104,6 +105,14 @@ class MaterialDetailResponse(SQLModel):
     comments: list[CommentResponse] = []
     ratings: list[Rating] = []
     
+
+
+class Bookmark(SQLModel, table=True):
+    __tablename__ = "bookmarks"
+    user_id: int = Field(foreign_key="users.id", primary_key=True)
+    material_id: int = Field(foreign_key="materials.id", primary_key=True)
+
+
 def get_default_subjects():
     return [
         Subject(name="Matematika 1", study_year=1),
@@ -141,3 +150,8 @@ def get_default_subjects():
         Subject(name="Projektovanje telekomunikacionih mreža", study_year=4),
         Subject(name="Multimedijski sistemi i komunikacije", study_year=4),
     ]
+
+
+
+
+

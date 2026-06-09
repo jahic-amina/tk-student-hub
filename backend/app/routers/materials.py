@@ -11,6 +11,7 @@ from app.models.user import User
 from app.models.materials import Material, MaterialsResponse, MaterialDetailResponse, Rating, Comment, Subject,CommentResponse,CommentCreate
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
+from app.models.materials import Bookmark
 
 router = APIRouter(prefix="/materials", tags=["materials"])
 
@@ -35,7 +36,8 @@ def get_materials_by_status(
         status: str,
         years: Optional[List[int]] = None,
         types: Optional[List[str]] = None,
-        subject_id: Optional[int] = None
+        subject_id: Optional[int] = None,
+        current_user: Optional[User] = None
 ):
 
     query = (
@@ -47,7 +49,6 @@ def get_materials_by_status(
         .outerjoin(Rating, Rating.material_id == Material.id)
         .where(Material.status == status)
     )
-    # --- NOVI FILTERI ---
     if years:
         # Moramo uraditi join sa Subject tabelom jer je tamo study_year
         query = query.join(Subject, Material.subject_id == Subject.id).where(Subject.study_year.in_(years))
@@ -68,6 +69,13 @@ def get_materials_by_status(
         .order_by(Material.created_at.desc())
     )
     results = session.exec(query).all()
+
+    user_bookmarks = []
+    if current_user:
+        user_bookmarks = session.exec(
+            select(Bookmark.material_id).where(Bookmark.user_id == current_user.id)
+        ).all()
+
     materials = []
     for material, avg, count in results:
         response = MaterialsResponse(
@@ -75,7 +83,8 @@ def get_materials_by_status(
             subject=material.subject,
             user=material.user,
             average_rating=round(avg, 1) if avg is not None else None,
-            rating_count=count
+            rating_count=count,
+            is_bookmarked=material.id in user_bookmarks
         )
         materials.append(response)
     return materials
@@ -235,7 +244,8 @@ def get_materials(
     session: Session = Depends(get_db),
     years: Optional[list[int]] = Query(None), # Prima ?years=1&years=2
     types: Optional[list[str]] = Query(None), # Prima ?types=skripta
-    subject_id: Optional[int] = Query(None)
+    subject_id: Optional[int] = Query(None),
+    current_user: Optional[User] = Depends(get_current_user),
 ):
     # Prosleđujemo filtere u pomoćnu funkciju
     return get_materials_by_status(
@@ -243,7 +253,8 @@ def get_materials(
         "approved", 
         years=years, 
         types=types, 
-        subject_id=subject_id
+        subject_id=subject_id,
+        current_user=current_user
     )
 
 @router.get("/pending", response_model=list[MaterialsResponse])
@@ -398,3 +409,32 @@ def delete_comment(
     session.delete(komentar)
     session.commit()
     return None
+
+
+
+
+#toggle bookmarka
+@router.post("/{material_id}/bookmark")
+def toggle_bookmark(
+    material_id: int, 
+    session: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role == "admin":
+        raise HTTPException(status_code=403, detail="Admini ne mogu bookmarkovati materijale.")
+
+    statement = select(Bookmark).where(
+        Bookmark.user_id == current_user.id, 
+        Bookmark.material_id == material_id
+    )
+    bookmark = session.exec(statement).first()
+
+    if bookmark:
+        session.delete(bookmark)
+        session.commit()
+        return {"is_bookmarked": False}
+    else:
+        new_bookmark = Bookmark(user_id=current_user.id, material_id=material_id)
+        session.add(new_bookmark)
+        session.commit()
+        return {"is_bookmarked": True}

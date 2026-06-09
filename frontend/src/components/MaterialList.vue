@@ -16,12 +16,13 @@
       <div v-if="loading">Učitavanje...</div>
 
       <div v-else>
-        <div v-if="filteredMaterials.length > 0" class="flex flex-col gap-4">
+        <div v-if="filteredMaterialsBookmark.length > 0" class="flex flex-col gap-4">
           <MaterialCard 
-            v-for="material in filteredMaterials" 
+            v-for="material in filteredMaterialsBookmark" 
             :key="material.id" 
             :material="material"
             @deleted="handleDelete"
+            @toggle-bookmark="handleToggleBookmark"
           />
         </div>
 
@@ -39,6 +40,7 @@ import MaterialCard from './MaterialCard.vue'
 import { getMaterials } from '../services/api'
 import MaterialFilter from './MaterialFilter.vue'
 import MaterialTabs from './MaterilaTab.vue'
+import { toggleBookmark } from '../services/api'
 
 const materials = ref([])
 const loading = ref(true)
@@ -85,5 +87,35 @@ async function handleFilterChange(newFilters) {
 
 function handleDelete(deletedMaterialId) {
     materials.value = materials.value.filter(m => m.id !== deletedMaterialId)
+}
+
+
+
+const filteredMaterialsBookmark = computed(() => {
+  // 1. Ako je tab "Moji materijali", filtriraj po ID-u korisnika
+  if (currentTab.value === 'mine') {
+    return materials.value.filter(m => Number(m.user?.id) === Number(currentUserId.value));
+  }
+  
+  // 2. Ako je tab "Najdraži materijali", prikaži samo bookmarkovane
+  if (currentTab.value === 'favorites') {
+    return materials.value.filter(m => m.is_bookmarked === true);
+  }
+
+  // 3. DEFAULT (Svi materijali): Ako nije nijedan od gornjih tabova, VRATI SVE
+  // Ovo je dio koji je vjerovatno falio ili se nije izvršavao
+  return materials.value;
+});
+
+async function handleToggleBookmark(materialId) {
+    try {
+        const res = await toggleBookmark(materialId);
+        const material = materials.value.find(m => m.id === materialId);
+        if (material) {
+            material.is_bookmarked = res.is_bookmarked;
+        }
+    } catch (error) {
+        console.error("Greška kod bookmarka:", error);
+    }
 }
 </script>
