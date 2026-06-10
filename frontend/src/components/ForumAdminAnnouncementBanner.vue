@@ -17,16 +17,21 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div v-if="activeAnnouncements.length > 0" class="w-full space-y-2 mb-6">
+  <div v-if="activeAnnouncements.length > 0" class="w-full space-y-3 mb-6">
     <div 
       v-for="ann in activeAnnouncements" 
       :key="ann.id"
-      class="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-4 rounded-2xl shadow-md border-l-8 border-amber-700 flex items-start gap-3 animate-pulse-once transition-all duration-200"
+      class="bg-orange-50/90 dark:bg-slate-800/95 border border-orange-200 dark:border-orange-900/40 rounded-2xl p-5 shadow-sm flex items-start gap-4 transition-all duration-300 backdrop-blur-sm"
     >
-      <span class="text-xl select-none">📢</span>
+      <div class="p-2.5 bg-orange-100 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 rounded-xl flex items-center justify-center text-xl shadow-inner select-none">
+        📢
+      </div>
+      
       <div class="flex-1">
-        <h4 class="text-xs font-black uppercase tracking-widest text-orange-100">{{ ann.title || 'Zvanično obavještenje administratora' }}</h4>
-        <p class="text-sm font-bold mt-0.5 leading-relaxed">
+        <h3 class="text-base font-bold text-slate-800 dark:text-slate-100 tracking-tight leading-snug">
+          {{ ann.title || 'Zvanično obavještenje administratora' }}
+        </h3>
+        <p class="text-sm text-slate-600 dark:text-slate-300 mt-1.5 leading-relaxed font-medium whitespace-pre-line">
           {{ ann.content }}
         </p>
       </div>
