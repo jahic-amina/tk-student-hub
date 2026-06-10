@@ -188,7 +188,7 @@ const { isLoadingMore, imaJosTema } = useForumLazyLoading({
 
       <div class="flex flex-col lg:flex-row gap-8 mt-6">
       </div>
-      
+     
       <div class="sticky top-[72px] z-30 bg-gray-50 dark:bg-slate-900 flex justify-between items-center mb-8 border-b border-gray-200 dark:border-slate-800 py-4 pt-6 -mt-2">
         <div>
           <h1 class="text-3xl font-bold tracking-tight text-slate-800 dark:text-white">Studentski Forum</h1>
@@ -200,7 +200,7 @@ const { isLoadingMore, imaJosTema } = useForumLazyLoading({
       </div>
 
       <div class="flex flex-col md:flex-row gap-8 items-start">
-        <div 
+        <div
            class="w-full md:w-72 flex-shrink-0"
            style="position: sticky; top: 160px; align-self: flex-start; z-index: 20;"
         >
@@ -210,7 +210,7 @@ const { isLoadingMore, imaJosTema } = useForumLazyLoading({
         <div class="flex-1 w-full">
           <div class="flex flex-col justify-between min-h-[500px]">
             <div>
-              
+             
               <div v-if="announcements && announcements.length > 0" class="mb-6 space-y-3">
                 <div v-for="ann in announcements" :key="ann.id" class="bg-red-50 dark:bg-red-950/20 border-l-4 border-red-500 p-4 rounded-xl shadow-sm flex items-start gap-3">
                   <span class="text-red-500 text-xl">📢</span>
@@ -219,14 +219,14 @@ const { isLoadingMore, imaJosTema } = useForumLazyLoading({
               </div>
 
               <div v-if="isAdmin" class="flex gap-2 mb-5 bg-slate-200/60 dark:bg-slate-800 p-1 rounded-xl border border-slate-300/40 dark:border-slate-700 max-w-xs">
-                <button 
+                <button
                   @click="toggleModPrijava(false)"
                   :class="!prikaziPrijave ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm font-semibold' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'"
                   class="flex-1 py-1.5 px-3 rounded-lg text-xs transition-all"
                 >
                   Sve teme
                 </button>
-                <button 
+                <button
                   @click="toggleModPrijava(true)"
                   :class="prikaziPrijave ? 'bg-red-500 text-white shadow-sm font-bold' : 'text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30'"
                   class="flex-1 py-1.5 px-3 rounded-lg text-xs transition-all flex items-center justify-center gap-1"
@@ -247,7 +247,7 @@ const { isLoadingMore, imaJosTema } = useForumLazyLoading({
                   <ForumSearchDropdown @search-submitted="handleSearchSubmitted" />
                   <ForumFilters @filters-changed="handleFiltersChanged" />
                 </div>
-                
+               
                 <div class="hidden md:block w-10"></div>
               </div>
 
@@ -260,31 +260,31 @@ const { isLoadingMore, imaJosTema } = useForumLazyLoading({
                 <div v-if="svePrijave.length === 0" class="text-center py-12 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-8 shadow-sm">
                   <p class="text-emerald-600 dark:text-emerald-400 font-medium text-sm">🎉 Odlično! Trenutno nema neriješenih prijava korisnika.</p>
                 </div>
-                
-                <div 
-                  v-for="prijava in svePrijave" 
-                  :key="prijava.report_id" 
+               
+                <div
+                  v-for="prijava in svePrijave"
+                  :key="prijava.report_id"
                   class="bg-red-50/40 dark:bg-red-950/10 border border-red-200/80 dark:border-red-900/50 rounded-xl p-4 shadow-sm space-y-3"
                 >
                   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-red-100/60 dark:bg-red-950/40 px-3 py-2 rounded-lg text-xs border border-red-200/40 dark:border-red-900/30">
                     <div class="flex flex-wrap gap-x-4 gap-y-1">
                       <div>
-                        <span class="font-semibold text-red-800 dark:text-red-300">Prijavio:</span> 
+                        <span class="font-semibold text-red-800 dark:text-red-300">Prijavio:</span>
                         <span class="text-slate-700 dark:text-slate-300 ml-1 font-medium">{{ prijava.reporter_name }}</span>
                       </div>
                       <div>
-                        <span class="font-semibold text-red-800 dark:text-red-300">Razlog:</span> 
+                        <span class="font-semibold text-red-800 dark:text-red-300">Razlog:</span>
                         <span class="bg-red-200/80 dark:bg-red-900/60 text-red-900 dark:text-red-200 px-2 py-0.5 rounded font-bold ml-1">{{ prijava.reason }}</span>
                       </div>
                     </div>
                     <div class="flex gap-2 self-end sm:self-auto">
-                      <button 
+                      <button
                         @click="procesuirajPrijavu(prijava.report_id, 'dismiss')"
                         class="bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-[11px] font-semibold px-2 py-1 rounded border border-slate-300 dark:border-slate-600 transition-colors"
                       >
                         Zanemari prijavu
                       </button>
-                      <button 
+                      <button
                         @click="procesuirajPrijavu(prijava.report_id, 'resolve')"
                         class="bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold px-2 py-1 rounded transition-colors"
                       >
@@ -293,9 +293,9 @@ const { isLoadingMore, imaJosTema } = useForumLazyLoading({
                     </div>
                   </div>
 
-                  <ForumTopicCard 
+                  <ForumTopicCard
                     v-if="prijava.topic"
-                    :tema="prijava.topic" 
+                    :tema="prijava.topic"
                     :is-admin="isAdmin"
                     @obrisi="obrisiTemu"
                   />
@@ -312,10 +312,10 @@ const { isLoadingMore, imaJosTema } = useForumLazyLoading({
                 </div>
 
                 <div v-else class="space-y-4">
-                  <ForumTopicCard 
-                    v-for="tema in teme" 
-                    :key="tema.id" 
-                    :tema="tema" 
+                  <ForumTopicCard
+                    v-for="tema in teme"
+                    :key="tema.id"
+                    :tema="tema"
                     :is-admin="isAdmin"
                     @obrisi="obrisiTemu"
                     @like-updated="handleLikeUpdated"
@@ -325,8 +325,8 @@ const { isLoadingMore, imaJosTema } = useForumLazyLoading({
 
             </div>
 
-            <div 
-             v-if="!prikaziPrijave && teme.length > 0" 
+            <div
+             v-if="!prikaziPrijave && teme.length > 0"
              class="mt-8 text-center text-xs text-slate-500 dark:text-slate-400"
             >
               <div v-if="isLoadingMore" class="py-6 flex justify-center">
