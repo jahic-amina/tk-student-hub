@@ -18,8 +18,8 @@ export async function changeUserRole(userId, role) {
   return res.json();
 }
 
-export async function getReports() {
-  const res = await fetch(`${BASE_URL}/admin/reports`, { headers: getHeaders() });
+export async function getReports(status = 'pending') {
+  const res = await fetch(`${BASE_URL}/admin/reports?status=${status}`, { headers: getHeaders() });
   return res.json();
 }
 
