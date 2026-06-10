@@ -36,8 +36,11 @@ def change_user_role(user_id: int, role: str, db: Session = Depends(get_db), adm
 
 #Prijave (Reports)
 @router.get("/reports")
-def get_reports(db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
-    statement = select(TopicReport, ForumTopic).join(ForumTopic, TopicReport.topic_id == ForumTopic.id).where(TopicReport.status == "pending")
+def get_reports(status: str = "pending", db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
+    if status not in ["pending", "resolved"]:
+        raise HTTPException(status_code=400, detail="Nevažeći status prijave. Dozvoljeno je 'pending' ili 'resolved'.")
+        
+    statement = select(TopicReport, ForumTopic).join(ForumTopic, TopicReport.topic_id == ForumTopic.id).where(TopicReport.status == status)
     results = db.exec(statement).all()
     output = []
     for report, topic in results:
@@ -45,6 +48,7 @@ def get_reports(db: Session = Depends(get_db), admin: User = Depends(get_current
             "report_id": report.id,
             "reason": report.reason,
             "created_at": report.created_at,
+            "status": report.status,
             "topic": {"id": topic.id, "title": topic.title, "content": topic.content}
         })
     return output
