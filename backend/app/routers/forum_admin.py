@@ -73,6 +73,7 @@ def toggle_topic_lock(topic_id: int, db: Session = Depends(get_db), admin: User 
 @router.post("/announcements")
 def create_announcement(content: dict = Body(...), db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
     content_text = content.get("content", "")
+    title = content.get("title")
     duration_days = content.get("duration_days", 0)  
     
     expires_at = None
@@ -81,6 +82,7 @@ def create_announcement(content: dict = Body(...), db: Session = Depends(get_db)
         
     ann = AdminAnnouncement(
         admin_id=admin.id, 
+        title=title,
         content=content_text,
         expires_at=expires_at,
         is_active=True
