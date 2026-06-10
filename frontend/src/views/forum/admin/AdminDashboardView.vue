@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue'; 
 import { 
   getUsers, 
   changeUserRole, 
@@ -8,174 +8,149 @@ import {
   createAnnouncement, 
   deleteAnnouncement,
   getAllAnnouncements,   
-  updateAnnouncement     
-} from '../../services/admin';
+  updateAnnouncement,
+  getHandledReports     
+} from '../../services/forum_admin.js'; 
+
+import { handleReportAction } from '../../services/forum.js';
 
 const activeTab = ref('reports');
 const users = ref([]);
 const reports = ref([]);
-const announcements = ref([]); //Lista za prikaz u admin panelu
+const handledReports = ref([]); 
+const announcements = ref([]); 
 
-const newAnnouncement = ref('');
-const durationDays = ref(0);   //Default: Beskonačno
+// Za novo obavještenje
+const showAnnouncementModal = ref(false);
+const newAnnTitle = ref('');
+const newAnnContent = ref('');
+const durationDays = ref(0); 
 
-const editingAnn = ref(null);  //Prati obavještenje koje trenutno editujemo
+const editingAnn = ref(null);  
+
+// Search query
+const searchQuery = ref('');
 
 const loadData = async () => {
-  if (activeTab.value === 'users') users.value = await getUsers();
-  if (activeTab.value === 'reports') reports.value = await getReports();
-  if (activeTab.value === 'announcements') announcements.value = await getAllAnnouncements();
+  try {
+    if (activeTab.value === 'users') users.value = await getUsers() || [];
+    if (activeTab.value === 'reports') reports.value = await getActiveReports() || []; 
+    if (activeTab.value === 'announcements') announcements.value = await getAllAnnouncements() || [];
+    if (activeTab.value === 'handled_reports') handledReports.value = await getHandledReports() || [];
+  } catch (error) {
+    console.error("Greška pri učitavanju podataka:", error);
+  }
 };
 
 onMounted(() => loadData());
+
+// Computed za pretragu
+const filteredReports = computed(() => {
+  const lista = Array.isArray(reports.value) ? reports.value : [];
+  if (!searchQuery.value) return lista;
+  return lista.filter(r => 
+    r.topic?.title?.toLowerCase().includes(searchQuery.value.toLowerCase()) || 
+    r.reason?.toLowerCase().includes(searchQuery.value.toLowerCase())
+  );
+});
+
+const filteredHandledReports = computed(() => {
+  const lista = Array.isArray(handledReports.value) ? handledReports.value : [];
+  if (!searchQuery.value) return lista;
+  return lista.filter(r => 
+    r.topic?.title?.toLowerCase().includes(searchQuery.value.toLowerCase()) || 
+    r.reason?.toLowerCase().includes(searchQuery.value.toLowerCase())
+  );
+});
 
 const setRole = async (userId, role) => {
   await changeUserRole(userId, role);
   await loadData();
 };
 
-const resolveReport = async (reportId) => {
-  await dismissReport(reportId);
-  await loadData();
-};
-
 const postAnnouncement = async () => {
-  if (!newAnnouncement.value.trim()) return;
-  await createAnnouncement(newAnnouncement.value, durationDays.value);
-  newAnnouncement.value = '';
+  if (!newAnnTitle.value.trim() || !newAnnContent.value.trim()) {
+      alert("Naslov i sadržaj su obavezni!");
+      return;
+  }
+  await createAnnouncement(newAnnTitle.value, newAnnContent.value, durationDays.value);
+  newAnnTitle.value = '';
+  newAnnContent.value = '';
   durationDays.value = 0;
+  showAnnouncementModal.value = false;
   alert('Globalno obavještenje uspješno objavljeno!');
   await loadData();
 };
 
-const handleDeactivate = async (annId) => {
-  if (confirm('Da li ste sigurni da želite deaktivirati ovo obavještenje?')) {
-    await deleteAnnouncement(annId);
-    await loadData();
-  }
-};
-
-const startEdit = (ann) => {
-  editingAnn.value = { ...ann, duration_days: 0 };
-};
-
-const saveEdit = async () => {
-  if (!editingAnn.value.content.trim()) return;
-  await updateAnnouncement(editingAnn.value.id, {
-    content: editingAnn.value.content,
-    duration_days: editingAnn.value.duration_days,
-    is_active: editingAnn.value.is_active
-  });
-  editingAnn.value = null;
-  alert('Obavještenje uspješno izmijenjeno!');
-  await loadData();
+const resolveReport = async (reportId, action) => {
+  await handleReportAction(reportId, action);
+  await loadData(); 
 };
 </script>
 
+
 <template>
-  <div class="min-h-screen p-6 max-w-5xl mx-auto">
-    <h1 class="text-3xl font-extrabold text-slate-800 mb-6 flex items-center gap-2">
-      <span class="text-red-500">🛡️</span> Admin Panel
-    </h1>
-
-    <div class="flex gap-4 mb-6 border-b pb-2">
-      <button @click="activeTab = 'reports'; loadData()" :class="activeTab === 'reports' ? 'text-orange-500 border-b-2 border-orange-500 font-bold' : 'text-slate-500'">Prijavljene teme</button>
-      <button @click="activeTab = 'users'; loadData()" :class="activeTab === 'users' ? 'text-orange-500 border-b-2 border-orange-500 font-bold' : 'text-slate-500'">Korisnici</button>
-      <button @click="activeTab = 'announcements'; loadData()" :class="activeTab === 'announcements' ? 'text-orange-500 border-b-2 border-orange-500 font-bold' : 'text-slate-500'">Upravljanje Obavještenjima</button>
-    </div>
-
-    <div v-if="activeTab === 'reports'" class="space-y-4">
-      <div v-if="reports.length === 0" class="text-gray-500">Nema prijavljenih tema. Odlično!</div>
-      <div v-for="report in reports" :key="report.report_id" class="bg-red-50 border border-red-200 p-4 rounded-xl">
-        <div class="flex justify-between items-start mb-2">
-          <span class="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">Razlog: {{ report.reason }}</span>
-          <button @click="resolveReport(report.report_id)" class="text-xs bg-white border border-gray-300 px-3 py-1 rounded hover:bg-gray-100">Odbaci prijavu</button>
+  <div class="p-6 max-w-7xl mx-auto min-h-screen">
+    <div class="flex items-center justify-between mb-8 bg-slate-900 text-white p-6 rounded-xl shadow-lg border-l-8 border-orange-500">
+      <div class="flex items-center gap-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+        <div>
+          <h1 class="text-3xl font-black uppercase tracking-widest">Admin Panel</h1>
+          <p class="text-slate-400 text-sm">Upravljanje platformom i korisnicima</p>
         </div>
-        <h3 class="font-bold text-slate-800">Tema: {{ report.topic.title }}</h3>
-        <p class="text-sm text-slate-600 mt-1 truncate">{{ report.topic.content }}</p>
-        <router-link :to="`/forum/tema/${report.topic.id}`" class="text-xs text-blue-500 hover:underline mt-2 inline-block">Idi na temu →</router-link>
       </div>
+      <button @click="showAnnouncementModal = true" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-lg shadow transition-colors flex gap-2 items-center">
+        <span>📢</span> Globalno obavještenje
+      </button>
     </div>
 
-    <div v-if="activeTab === 'users'" class="bg-white p-4 rounded-xl shadow-sm border">
-      <table class="w-full text-left text-sm text-slate-600">
-        <thead class="bg-gray-50 text-slate-800 border-b">
-          <tr><th class="p-3">Ime</th><th class="p-3">Email</th><th class="p-3">Status</th><th class="p-3">Akcije</th></tr>
-        </thead>
-        <tbody>
-          <tr v-for="user in users" :key="user.id" class="border-b">
-            <td class="p-3">{{ user.full_name }}</td>
-            <td class="p-3">{{ user.email }}</td>
-            <td class="p-3">
-              <span :class="user.role === 'admin' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'" class="px-2 py-1 rounded text-xs font-bold uppercase">{{ user.role }}</span>
-            </td>
-            <td class="p-3 flex gap-2">
-              <button v-if="user.role !== 'admin'" @click="setRole(user.id, 'admin')" class="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">Daj Admina</button>
-              <button v-if="user.role === 'admin'" @click="setRole(user.id, 'member')" class="text-xs bg-slate-500 text-white px-2 py-1 rounded hover:bg-slate-600">Ukloni Admina</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div v-if="activeTab === 'announcements'" class="space-y-6">
-      <div class="bg-white p-6 rounded-xl shadow-sm border border-orange-200">
-        <h3 class="font-bold text-lg mb-3 text-slate-800">📢 Kreiraj Globalno Obavještenje</h3>
-        <textarea v-model="newAnnouncement" rows="3" class="w-full border rounded p-2 mb-3 focus:ring focus:ring-orange-400" placeholder="Ukucajte obavještenje koje će se fiksirati na sam vrh foruma (vidljivo svima)..."></textarea>
-        
-        <div class="flex flex-col md:flex-row md:items-center gap-4 mb-4">
-          <label class="text-sm font-semibold text-slate-600">Vrijeme trajanja obavještenja na forumu:</label>
-          <select v-model="durationDays" class="border border-gray-300 rounded p-2 bg-gray-50 text-sm focus:ring focus:ring-orange-400">
-            <option :value="0">Beskonačno (Dok ga ručno ne obrišem)</option>
-            <option :value="1">Traje 1 Dan</option>
-            <option :value="2">Traje 2 Dana</option>
-            <option :value="3">Traje 3 Dana</option>
-            <option :value="5">Traje 5 Dana</option>
-          </select>
-        </div>
-
-        <button @click="postAnnouncement" class="bg-orange-500 text-white px-6 py-2 rounded font-bold hover:bg-orange-600 transition-colors">Objavi globalno obavještenje</button>
+    <div class="flex gap-4 mb-6 border-b border-gray-200 pb-2">
+      <button @click="activeTab = 'reports'; loadData()" :class="activeTab === 'reports' ? 'border-b-2 border-orange-500 text-orange-600 font-bold' : 'text-gray-500'">Aktivne Prijave</button>
+      <button @click="activeTab = 'handled_reports'; loadData()" :class="activeTab === 'handled_reports' ? 'border-b-2 border-orange-500 text-orange-600 font-bold' : 'text-gray-500'">Riješene Prijave</button>
       </div>
 
-      <div class="bg-white p-6 rounded-xl shadow-sm border">
-        <h3 class="font-bold text-lg mb-4 text-slate-800">Prethodna obavještenja</h3>
-        <div v-if="announcements.length === 0" class="text-gray-500 text-sm">Nema ranije kreiranih obavještenja.</div>
-        
-        <div class="space-y-3">
-          <div v-for="ann in announcements" :key="ann.id" class="p-4 border rounded-xl bg-slate-50 flex flex-col justify-between md:flex-row md:items-center gap-4">
-            
-            <div v-if="editingAnn && editingAnn.id === ann.id" class="w-full space-y-2">
-              <input v-model="editingAnn.content" type="text" class="w-full border rounded p-2 text-sm bg-white" />
-              <div class="flex items-center gap-4 text-xs">
-                <select v-model="editingAnn.duration_days" class="border rounded p-1">
-                  <option :value="0">Beskonačno</option>
-                  <option :value="3">Produži za 3 dana</option>
-                  <option :value="10">Produži za 10 dana</option>
-                </select>
-                <label class="flex items-center gap-1">
-                  <input type="checkbox" v-model="editingAnn.is_active" /> Aktivno
-                </label>
-                <button @click="saveEdit" class="bg-green-600 text-white px-3 py-1 rounded font-bold">Spasi</button>
-                <button @click="editingAnn = null" class="bg-gray-400 text-white px-3 py-1 rounded">Odustani</button>
-              </div>
-            </div>
+    <div v-if="activeTab === 'reports' || activeTab === 'handled_reports'" class="mb-6">
+       <input type="text" v-model="searchQuery" placeholder="Pretraži prijave i teme..." class="w-full p-3 rounded border border-gray-300 focus:ring-2 focus:ring-orange-500" />
+    </div>
 
-            <template v-else>
-              <div class="flex-1">
-                <p class="text-slate-800 font-medium text-sm">{{ ann.content }}</p>
-                <div class="flex gap-3 text-xs text-slate-400 mt-1">
-                  <span>Status: <b :class="ann.is_active ? 'text-green-600':'text-red-500'">{{ ann.is_active ? 'Aktivno' : 'Deaktivirano' }}</b></span>
-                  <span v-if="ann.expires_at">Ističe: {{ new Date(ann.expires_at).toLocaleDateString() }}</span>
-                  <span v-else>Ističe: Beskonačno</span>
-                </div>
-              </div>
-              <div class="flex gap-2">
-                <button @click="startEdit(ann)" class="text-xs border border-blue-400 text-blue-600 px-3 py-1 rounded hover:bg-blue-50">Uredi</button>
-                <button v-if="ann.is_active" @click="handleDeactivate(ann.id)" class="text-xs bg-red-100 border border-red-200 text-red-600 px-3 py-1 rounded hover:bg-red-200">Deaktiviraj</button>
-              </div>
-              </template>
-            </div>
-          </div>
+    <div v-if="activeTab === 'reports'">
+       <div v-for="report in filteredReports" :key="report.report_id" class="p-4 bg-white shadow rounded mb-4 border-l-4 border-red-500">
+           <h3 class="font-bold text-lg">{{ report.topic?.title }}</h3>
+           <p class="text-sm text-gray-600 mt-1"><b>Razlog:</b> {{ report.reason }} | <b>Prijavio:</b> {{ report.reporter_name }}</p>
+           <div class="mt-3 flex gap-2">
+              <button @click="resolveReport(report.report_id, 'resolve')" class="bg-green-500 text-white px-4 py-1 rounded text-sm">Prihvati (Obrisat će/Sankcionisati)</button>
+              <button @click="resolveReport(report.report_id, 'dismiss')" class="bg-gray-500 text-white px-4 py-1 rounded text-sm">Odbaci</button>
+           </div>
+       </div>
+    </div>
+
+    <div v-if="activeTab === 'handled_reports'">
+       <div v-for="report in filteredHandledReports" :key="report.report_id" class="p-4 bg-gray-50 shadow rounded mb-4 border-l-4 border-gray-400">
+           <h3 class="font-bold text-lg text-gray-700">{{ report.topic?.title }}</h3>
+           <p class="text-sm text-gray-600 mt-1"><b>Razlog:</b> {{ report.reason }}</p>
+           <p class="text-xs font-bold mt-2 uppercase" :class="report.status === 'resolved' ? 'text-green-600' : 'text-gray-500'">Status: {{ report.status }}</p>
+       </div>
+    </div>
+
+    <div v-if="showAnnouncementModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+      <div class="bg-white p-6 rounded-xl w-96 max-w-full shadow-2xl">
+        <h2 class="text-xl font-bold mb-4 flex gap-2"><span>📢</span> Novo Obavještenje</h2>
+        
+        <label class="block mb-2 text-sm font-bold text-gray-700">Naslov</label>
+        <input v-model="newAnnTitle" type="text" class="w-full border rounded p-2 mb-4" placeholder="Kratak naslov" />
+        
+        <label class="block mb-2 text-sm font-bold text-gray-700">Sadržaj (Body)</label>
+        <textarea v-model="newAnnContent" class="w-full border rounded p-2 mb-4 h-24" placeholder="Tekst obavještenja..."></textarea>
+        
+        <label class="block mb-2 text-sm font-bold text-gray-700">Trajanje (u danima)</label>
+        <input v-model.number="durationDays" type="number" min="0" class="w-full border rounded p-2 mb-6" placeholder="0 = Beskonačno" />
+        
+        <div class="flex justify-end gap-3">
+          <button @click="showAnnouncementModal = false" class="px-4 py-2 bg-gray-200 rounded text-gray-800">Otkaži</button>
+          <button @click="postAnnouncement" class="px-4 py-2 bg-orange-500 text-white rounded font-bold hover:bg-orange-600">Objavi</button>
+        </div>
       </div>
     </div>
   </div>
