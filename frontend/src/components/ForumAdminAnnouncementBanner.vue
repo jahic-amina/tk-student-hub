@@ -25,7 +25,7 @@ onMounted(async () => {
     >
       <span class="text-xl select-none">📢</span>
       <div class="flex-1">
-        <h4 class="text-xs font-black uppercase tracking-widest text-orange-100">Zvanično obavještenje administratora</h4>
+        <h4 class="text-xs font-black uppercase tracking-widest text-orange-100">{{ ann.title || 'Zvanično obavještenje administratora' }}</h4>
         <p class="text-sm font-bold mt-0.5 leading-relaxed">
           {{ ann.content }}
         </p>
