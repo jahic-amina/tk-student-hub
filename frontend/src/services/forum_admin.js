@@ -33,11 +33,11 @@ export async function toggleTopicLock(topicId) {
   return res.json();
 }
 
-export async function createAnnouncement(content, durationDays) {
+export async function createAnnouncement(title, content, durationDays) {
   const res = await fetch(`${BASE_URL}/admin/announcements`, { 
     method: 'POST', 
     headers: getHeaders(), 
-    body: JSON.stringify({ content, duration_days: durationDays }) 
+    body: JSON.stringify({ title, content, duration_days: durationDays }) 
   });
   return res.json();
 }
@@ -58,5 +58,10 @@ export async function updateAnnouncement(annId, data) {
 
 export async function deleteAnnouncement(annId) {
   const res = await fetch(`${BASE_URL}/admin/announcements/${annId}`, { method: 'DELETE', headers: getHeaders() });
+  return res.json();
+}
+
+export async function getHandledReports() {
+  const res = await fetch(`${BASE_URL}/forum/topics/reports/handled`, { headers: getHeaders() });
   return res.json();
 }
