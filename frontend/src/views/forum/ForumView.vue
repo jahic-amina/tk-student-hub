@@ -200,7 +200,7 @@ const { isLoadingMore, imaJosTema } = useForumLazyLoading({
             Nova tema
           </router-link>
 
-          <router-link v-if="isAdmin" to="/admin" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-5 py-2.5 rounded-lg transition-colors shadow-md text-sm flex items-center gap-2 border border-slate-700 dark:border-slate-600">
+          <router-link v-if="isAdmin" to="/forum/admin" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-5 py-2.5 rounded-lg transition-colors shadow-md text-sm flex items-center gap-2 border border-slate-700 dark:border-slate-600">
             <span>⚙️</span> Admin Panel (Obavještenja)
           </router-link>
         </div>

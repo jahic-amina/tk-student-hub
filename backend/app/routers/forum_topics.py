@@ -7,7 +7,7 @@ from datetime import datetime, timedelta # DODATO: timedelta za računanje staro
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User, UserRole
-from app.models.forum import ForumCategory, ForumTopic, ForumTag, ForumTopicTag, TopicReport
+from app.models.forum import ForumCategory, ForumTopic, ForumTag, ForumTopicTag, TopicReport, AdminAnnouncement
 from app.routers.forum_categories import get_category_data 
 from app.routers.forum_likes import get_topic_likes_count
 
@@ -368,4 +368,17 @@ def report_topic(topic_id: int, report_data: ReportCreate, db: Session = Depends
     db.add(report)
     db.commit()
     return {"success": True}
+
+
+#Ruta za dohvatanje aktivnih obavještenja (koja nisu istekla)
+@router.get("/announcements/active")
+def get_active_announcements(db: Session = Depends(get_db)): #Ovo je public ruta da bi se obavjestenja prikazala svima
+    now = datetime.utcnow()
+    statement = select(AdminAnnouncement).where(
+        AdminAnnouncement.is_active == True,
+        (AdminAnnouncement.expires_at == None) | (AdminAnnouncement.expires_at > now)
+    ).order_by(AdminAnnouncement.created_at.desc())
+    
+    anns = db.exec(statement).all()
+    return anns
 

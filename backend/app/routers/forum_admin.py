@@ -91,17 +91,7 @@ def create_announcement(content: dict = Body(...), db: Session = Depends(get_db)
     db.commit()
     return {"success": True}
 
-#Ruta za dohvatanje aktivnih obavještenja (koja nisu istekla)
-@router.get("/announcements/active")
-def get_active_announcements(db: Session = Depends(get_db)): #Ovo je public ruta da bi se obavjestenja prikazala svima
-    now = datetime.utcnow()
-    statement = select(AdminAnnouncement).where(
-        AdminAnnouncement.is_active == True,
-        (AdminAnnouncement.expires_at == None) | (AdminAnnouncement.expires_at > now)
-    ).order_by(AdminAnnouncement.created_at.desc())
-    
-    anns = db.exec(statement).all()
-    return anns
+
 
 #Admin ruta za dohvatanje svih obavještenja (uključujući neaktivna i istekla)
 @router.get("/announcements/all")
