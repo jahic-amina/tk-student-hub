@@ -21,7 +21,7 @@ const isLoading = ref(true);
 const odabraniKategorijaId = ref(null);
 const trenutnaStranica = ref(1);
 const ukupnoTema = ref(0);
-const velicinaStranice = 5; // Promijenjeno sa 2 na 5
+const velicinaStranice = 5; 
 const search = ref("");
 const announcements = ref([]);
 const prikaziPrijave = ref(false); 
@@ -194,9 +194,16 @@ const { isLoadingMore, imaJosTema } = useForumLazyLoading({
           <h1 class="text-3xl font-bold tracking-tight text-slate-800 dark:text-white">Studentski Forum</h1>
           <p class="text-slate-500 dark:text-slate-400 mt-1">Postavi pitanje, podijeli ideju ili pomogni kolegama.</p>
         </div>
-        <router-link v-if="!isAdmin" to="/forum/nova-tema" class="bg-[#ff7a00] hover:bg-[#e66e00] text-white font-bold px-6 py-2.5 rounded-lg transition-colors shadow-md text-sm">
-          Nova tema
-        </router-link>
+        
+        <div>
+          <router-link v-if="!isAdmin" to="/forum/nova-tema" class="bg-[#ff7a00] hover:bg-[#e66e00] text-white font-bold px-6 py-2.5 rounded-lg transition-colors shadow-md text-sm">
+            Nova tema
+          </router-link>
+
+          <router-link v-if="isAdmin" to="/admin" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-5 py-2.5 rounded-lg transition-colors shadow-md text-sm flex items-center gap-2 border border-slate-700 dark:border-slate-600">
+            <span>⚙️</span> Admin Panel (Obavještenja)
+          </router-link>
+        </div>
       </div>
 
       <div class="flex flex-col md:flex-row gap-8 items-start">
@@ -210,13 +217,6 @@ const { isLoadingMore, imaJosTema } = useForumLazyLoading({
         <div class="flex-1 w-full">
           <div class="flex flex-col justify-between min-h-[500px]">
             <div>
-             
-              <div v-if="announcements && announcements.length > 0" class="mb-6 space-y-3">
-                <div v-for="ann in announcements" :key="ann.id" class="bg-red-50 dark:bg-red-950/20 border-l-4 border-red-500 p-4 rounded-xl shadow-sm flex items-start gap-3">
-                  <span class="text-red-500 text-xl">📢</span>
-                  <p class="text-red-800 dark:text-red-200 font-medium text-sm">{{ ann.content }}</p>
-                </div>
-              </div>
 
               <div v-if="isAdmin" class="flex gap-2 mb-5 bg-slate-200/60 dark:bg-slate-800 p-1 rounded-xl border border-slate-300/40 dark:border-slate-700 max-w-xs">
                 <button

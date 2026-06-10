@@ -10,9 +10,9 @@ import {
   getAllAnnouncements,   
   updateAnnouncement,
   getHandledReports     
-} from '../../services/forum_admin.js'; 
+} from '../../../services/forum_admin.js'; 
 
-import { handleReportAction } from '../../services/forum.js';
+import { handleReportAction, getActiveReports } from '../../../services/forum.js';
 
 const activeTab = ref('reports');
 const users = ref([]);
