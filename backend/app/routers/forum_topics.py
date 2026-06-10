@@ -251,6 +251,41 @@ def get_active_reports(
     return output
 
 
+@router.get("/reports/handled", response_model=List[Dict[str, Any]])
+def get_handled_reports(
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.admin:
+        raise HTTPException(
+            status_code=403, 
+            detail="Nemate ovlaštenje za pristup administratorskim prijavama."
+        )
+    
+    statement = select(TopicReport).where(TopicReport.status.in_(["resolved", "dismissed"])).order_by(TopicReport.created_at.desc())
+    reports = db.exec(statement).all()
+    
+    output = []
+    for report in reports:
+        topic = db.get(ForumTopic, report.topic_id)
+        if not topic or topic.is_deleted:
+            continue
+            
+        reporter = db.get(User, report.user_id)
+        reporter_name = reporter.full_name if reporter else "Nepoznat korisnik"
+        
+        output.append({
+            "report_id": report.id,
+            "reason": report.reason,
+            "created_at": report.created_at,
+            "status": report.status,
+            "reporter_name": reporter_name,
+            "topic": build_topic_list_item(db, topic) 
+        })
+        
+    return output
+
+
 @router.patch("/reports/{report_id}/action")
 def handle_report_action(
     report_id: int, 
