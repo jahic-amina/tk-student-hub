@@ -86,6 +86,7 @@ function getInitials(name) {
 
       <div class="flex items-center space-x-3 font-semibold">
        <button
+         v-if="!isAdmin"
          @click.prevent.stop="handleLike(tema)"
          :disabled="likeLoading"
          class="text-red-500 hover:text-red-600 disabled:opacity-50 transition-colors"
