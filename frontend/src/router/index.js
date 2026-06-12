@@ -66,7 +66,7 @@ const routes = [
   // =========================================================
 
   {
-    path: '/admin',
+    path: '/forum/admin',
     name: 'admin-dashboard',
     component: () => import('../views/forum/admin/AdminDashboardView.vue'),
     meta: { requiresAuth: true, requiresAdmin: true }

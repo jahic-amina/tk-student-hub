@@ -7,7 +7,7 @@ from datetime import datetime, timedelta # DODATO: timedelta za računanje staro
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User, UserRole
-from app.models.forum import ForumCategory, ForumTopic, ForumTag, ForumTopicTag, TopicReport
+from app.models.forum import ForumCategory, ForumTopic, ForumTag, ForumTopicTag, TopicReport, AdminAnnouncement
 from app.routers.forum_categories import get_category_data 
 from app.routers.forum_likes import get_topic_likes_count
 
@@ -255,6 +255,41 @@ def get_active_reports(
     return output
 
 
+@router.get("/reports/handled", response_model=List[Dict[str, Any]])
+def get_handled_reports(
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.admin:
+        raise HTTPException(
+            status_code=403, 
+            detail="Nemate ovlaštenje za pristup administratorskim prijavama."
+        )
+    
+    statement = select(TopicReport).where(TopicReport.status.in_(["resolved", "dismissed"])).order_by(TopicReport.created_at.desc())
+    reports = db.exec(statement).all()
+    
+    output = []
+    for report in reports:
+        topic = db.get(ForumTopic, report.topic_id)
+        if not topic or topic.is_deleted:
+            continue
+            
+        reporter = db.get(User, report.user_id)
+        reporter_name = reporter.full_name if reporter else "Nepoznat korisnik"
+        
+        output.append({
+            "report_id": report.id,
+            "reason": report.reason,
+            "created_at": report.created_at,
+            "status": report.status,
+            "reporter_name": reporter_name,
+            "topic": build_topic_list_item(db, topic) 
+        })
+        
+    return output
+
+
 @router.patch("/reports/{report_id}/action")
 def handle_report_action(
     report_id: int, 
@@ -338,28 +373,16 @@ def report_topic(topic_id: int, report_data: ReportCreate, db: Session = Depends
     db.commit()
     return {"success": True}
 
-@router.put("/{topic_id}", status_code=status.HTTP_200_OK)
-def update_topic(
-    topic_id: int,
-    topic_data: ForumTopicUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    topic = db.get(ForumTopic, topic_id)
-    if not topic or topic.is_deleted:
-        raise HTTPException(status_code=404, detail="Tema nije pronađena.")
+
+#Ruta za dohvatanje aktivnih obavještenja (koja nisu istekla)
+@router.get("/announcements/active")
+def get_active_announcements(db: Session = Depends(get_db)): #Ovo je public ruta da bi se obavjestenja prikazala svima
+    now = datetime.utcnow()
+    statement = select(AdminAnnouncement).where(
+        AdminAnnouncement.is_active == True,
+        (AdminAnnouncement.expires_at == None) | (AdminAnnouncement.expires_at > now)
+    ).order_by(AdminAnnouncement.created_at.desc())
     
-    if topic.user_id != current_user.id and getattr(current_user, 'role', 'member') != 'admin':
-        raise HTTPException(status_code=403, detail="Možete editovati samo vlastitu temu.")
-    
-    if topic_data.title is not None:
-        topic.title = topic_data.title
-    if topic_data.content is not None:
-        topic.content = topic_data.content
-    
-    topic.updated_at = datetime.now()
-    db.add(topic)
-    db.commit()
-    db.refresh(topic)
-    
-    return build_topic_list_item(db, topic)
+    anns = db.exec(statement).all()
+    return anns
+

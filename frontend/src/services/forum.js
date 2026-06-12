@@ -157,7 +157,7 @@ export async function reportTopic(topicId, reason) {
 }
 
 export async function getActiveAnnouncements() {
-  const response = await fetch(`${BASE_URL}/admin/announcements/active`, { 
+  const response = await fetch(`${BASE_URL}/forum/topics/announcements/active`, { 
     headers: getHeaders() 
   });
   return handleResponse(response, 'Greška pri učitavanju obavještenja.');

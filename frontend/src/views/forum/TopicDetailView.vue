@@ -116,21 +116,11 @@ const handleNewComment = async ({ content, clearForm }) => {
 
         <div v-else>
           <ForumTopicCommentForm 
-            v-if="!isAdmin"
             :is-submitting="isSubmitting"
             :comment-error="commentError"
             :success-message="successMessage"
             @posaljiKomentar="handleNewComment"
           />
-          <div v-else class="bg-red-50 border border-red-200 p-6 rounded-xl">
-            <h3 class="text-sm font-bold text-red-700 mb-2">🛡️ Ostavite moderacijsko obavještenje na temi</h3>
-            <ForumTopicCommentForm 
-              :is-submitting="isSubmitting"
-              :comment-error="commentError"
-              :success-message="successMessage"
-              @posaljiKomentar="handleNewComment"
-            />
-          </div>
         </div>
 
       </template>
