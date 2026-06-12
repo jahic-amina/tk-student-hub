@@ -5,6 +5,7 @@ import ForumTopicMainCard from '../../components/ForumTopicMainCard.vue';
 import ForumTopicCommentsList from '../../components/ForumTopicCommentsList.vue';
 import ForumTopicCommentForm from '../../components/ForumTopicCommentForm.vue';
 import ForumSidebar from '../../components/ForumSidebar.vue'; 
+import ForumWidgets from '../../components/ForumWidgets.vue'; 
 import { getTopicById, createComment, incrementTopicView } from '../../services/forum';
 
 const props = defineProps({
@@ -125,11 +126,11 @@ const handleNewComment = async ({ content, clearForm }) => {
         </button>
       </div>
 
-      <div class="flex flex-col md:flex-row gap-8 items-start">
+      <div class="grid grid-cols-12 gap-2 items-start w-full">
 
         <div 
-          class="w-full md:w-72 flex-shrink-0"
-          style="position: sticky; top: 24px; align-self: flex-start; z-index: 20;"
+          class="col-span-12 md:col-span-2 lg:col-span-2 xl:col-span-2"
+          style="position: sticky; top: 140px; align-self: flex-start; z-index: 20;"
         >
           <ForumSidebar 
             :aktivna-kategorija-id="odabraniKategorijaId" 
@@ -137,7 +138,7 @@ const handleNewComment = async ({ content, clearForm }) => {
           />
         </div>
 
-        <div class="flex-1 w-full">
+        <div class="col-span-12 md:col-span-7 lg:col-span-7 xl:col-span-7 w-full">
           
           <div v-if="isLoading" class="flex justify-center py-12">
             <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500"></div>
@@ -168,6 +169,13 @@ const handleNewComment = async ({ content, clearForm }) => {
             </div>
 
           </template>
+        </div>
+
+        <div 
+          class="col-span-12 md:col-span-3 lg:col-span-3 xl:col-span-3"
+          style="position: sticky; top: 140px; align-self: flex-start; z-index: 20;"
+        >
+          <ForumWidgets />
         </div>
 
       </div>
