@@ -47,15 +47,15 @@ function getInitials(name) {
 <template>
   <router-link 
     :to="`/forum/tema/${tema.id}`"
-    class="block p-5 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700/60 shadow-sm hover:shadow-md dark:hover:border-slate-600 transition-all cursor-pointer group"
+    class="block px-5 py-5 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700/60 shadow-sm hover:shadow-md dark:hover:border-slate-600 transition-all cursor-pointer group"
   >
     <div class="flex justify-between items-start">
-      <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#ff7a00] dark:group-hover:text-orange-400 transition-colors line-clamp-1">
+      <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#ff7a00] dark:group-hover:text-orange-400 transition-colors line-clamp-1 flex-1">
         {{ tema.title }}
       </h2>
       
       <div class="flex items-center gap-2 flex-shrink-0 ml-4">
-        <span class="bg-orange-50 dark:bg-orange-950/30 text-[#ff7a00] dark:text-orange-400 text-[9px] font-extrabold uppercase px-2 py-0.5 rounded tracking-wider">
+        <span class="bg-orange-50 dark:bg-orange-950/30 text-[#ff7a00] dark:text-orange-400 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded tracking-wider">
           {{ tema.category?.name || 'Opšta diskusija' }}
         </span>
 
@@ -70,36 +70,36 @@ function getInitials(name) {
       </div>
     </div>
     
-    <p class="text-slate-500 dark:text-slate-400 mt-2 text-xs leading-relaxed line-clamp-2">
+    <p class="text-slate-600 dark:text-slate-300 mt-3 text-sm leading-relaxed font-normal line-clamp-3">
       {{ tema.content }}
     </p>
     
-    <div class="flex items-center justify-between mt-5 pt-3 border-t border-gray-100 dark:border-slate-700 text-[11px] text-slate-400 dark:text-slate-500">
-      <div class="flex items-center gap-1.5">
-        <span class="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center font-bold text-[9px]">
+    <div class="flex items-center justify-between mt-5 pt-4 border-t border-gray-100 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400">
+      <div class="flex items-center gap-2.5 font-medium">
+        <span class="w-5.5 h-5.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold text-[10px]">
           {{ getInitials(tema.author?.full_name) }}
         </span>
-        <span class="text-slate-600 dark:text-slate-300 font-medium">{{ tema.author?.full_name || 'Korisnik' }}</span>
-        <span>•</span>
+        <span class="text-slate-700 dark:text-slate-200 font-semibold">{{ tema.author?.full_name || 'Korisnik' }}</span>
+        <span class="text-slate-300 dark:text-slate-600">•</span>
         <span>{{ formatDate(tema.created_at) }}</span>
       </div>
 
-      <div class="flex items-center space-x-3 font-semibold">
-       <button
-         v-if="!isAdmin"
-         @click.prevent.stop="handleLike(tema)"
-         :disabled="likeLoading"
-         class="text-red-500 hover:text-red-600 disabled:opacity-50 transition-colors"
-         title="Lajkuj temu"
-       >
-         ❤️ {{ tema.likes_count || 0 }}
-       </button>
+      <div class="flex items-center space-x-4 font-medium">
+        <button
+          v-if="!isAdmin"
+          @click.prevent.stop="handleLike(tema)"
+          :disabled="likeLoading"
+          class="text-red-500 hover:text-red-600 disabled:opacity-50 transition-colors flex items-center gap-1"
+          title="Lajkuj temu"
+        >
+          ❤️ <span class="font-semibold">{{ tema.likes_count || 0 }}</span>
+        </button>
 
-       <span>👁️ {{ tema.views_count || 0 }} pregleda</span>
-       <span class="text-[#ff7a00] dark:text-orange-400">
-       💬 {{ tema.comments_count || 0 }} odgovora
-       </span>
-     </div>
+        <span class="flex items-center gap-1">👁️ {{ tema.views_count || 0 }}</span>
+        <span class="text-[#ff7a00] dark:text-orange-400 flex items-center gap-1 font-semibold">
+          💬 {{ tema.comments_count || 0 }}
+        </span>
+      </div>
     </div>
   </router-link>
 </template>
