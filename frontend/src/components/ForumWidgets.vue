@@ -1,6 +1,11 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
-import { getPopularTopics, getTopics, getCategories } from '../services/forum.js';
+import { 
+  getPopularTopics, 
+  getCategoryPopularTopics, 
+  getRelatedTopics, 
+  getCategories 
+} from '../services/forum.js';
 
 const props = defineProps({
   selectedCategoryId: {
@@ -17,10 +22,8 @@ const props = defineProps({
   }
 });
 
-const popularTopics = ref([]);       
-const categoryTopics = ref([]);      
+const widgetTopics = ref([]);       
 const sveKategorije = ref([]); 
-
 const isLoading = ref(true);
 
 const isTopicMode = computed(() => props.currentTopicId !== null && props.currentTopicId !== undefined);
@@ -30,53 +33,16 @@ const naslovWidgeta = computed(() => {
   if (isTopicMode.value) return 'Slične teme';
   if (isCategoryMode.value) {
     const kat = sveKategorije.value.find(c => c.id === Number(props.selectedCategoryId));
-    return kat ? `${kat.name} - Najpopularnije` : 'Kategorija - Najpopularnije';
+    return kat ? `${kat.name} - Popularno` : 'Kategorija - Popularno';
   }
-  return 'Najpopularnije';
-});
-
-const slicneTemeAlgoritam = computed(() => {
-  if (!props.currentTopicTitle || categoryTopics.value.length === 0) return [];
-
-  const kljucneRijeci = props.currentTopicTitle
-    .toLowerCase()
-    .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "") 
-    .split(/\s+/)
-    .filter(rijec => rijec.length > 2); 
-
-  return categoryTopics.value
-    .filter(tema => Number(tema.id) !== Number(props.currentTopicId)) 
-    .map(tema => {
-      const naslovDrugeTeme = tema.title.toLowerCase();
-      let brojPoklapanja = 0;
-      
-      kljucneRijeci.forEach(rijec => {
-        if (naslovDrugeTeme.includes(rijec)) {
-          brojPoklapanja++;
-        }
-      });
-
-      return { ...tema, score: brojPoklapanja };
-    })
-    .sort((a, b) => b.score - a.score || (b.comments_count || 0) - (a.comments_count || 0))
-    .slice(0, 4); 
-});
-
-// POPRAVLJENO: Ograničavanje prikaza na top 5 najpopularnijih tema u modu kategorije
-const trenutneTeme = computed(() => {
-  if (isTopicMode.value) return slicneTemeAlgoritam.value;
-  if (isCategoryMode.value) {
-    return [...categoryTopics.value]
-      .sort((a, b) => (b.comments_count + b.views_count) - (a.comments_count + a.views_count))
-      .slice(0, 5); 
-  }
-  return popularTopics.value.slice(0, 5);
+  return 'Najpopularnije ove sedmice';
 });
 
 const trebaPrikazatiWidget = computed(() => {
-  if (isTopicMode.value) return slicneTemeAlgoritam.value.length > 0; 
-  if (isCategoryMode.value) return categoryTopics.value.length >= 3;  
-  return true; 
+  if (isLoading.value) return true;
+  if (isTopicMode.value) return widgetTopics.value.length > 0;
+  if (isCategoryMode.value) return widgetTopics.value.length >= 1; // Spušten prag radi fleksibilnosti
+  return widgetTopics.value.length > 0;
 });
 
 const skratiNaslov = (naslov) => {
@@ -84,41 +50,37 @@ const skratiNaslov = (naslov) => {
   return naslov.length > 50 ? naslov.substring(0, 47) + '...' : naslov;
 };
 
-const ucitajGlobalno = async () => {
+// Centralizovana funkcija za pametno učitavanje u zavisnosti od konteksta
+const osveziPodatkeWidgeta = async () => {
   isLoading.value = true;
   try {
-    const data = await getPopularTopics();
-    popularTopics.value = Array.isArray(data) ? data : [];
-  } catch (e) {} finally { isLoading.value = false; }
-};
-
-const ucitajTemeKategorije = async (catId) => {
-  isLoading.value = true;
-  try {
-    const data = await getTopics({ category_id: catId, per_page: 20, sort_by: 'najnovije' });
-    categoryTopics.value = data && data.items ? data.items : (Array.isArray(data) ? data : []);
+    if (isTopicMode.value) {
+      // Backend ima ugrađen algoritam sličnosti po naslovu i kategoriji
+      widgetTopics.value = await getRelatedTopics(props.currentTopicId);
+    } else if (isCategoryMode.value) {
+      // Povlači 5 najčitanijih i najaktivnijih iz baze za tu kategoriju
+      widgetTopics.value = await getCategoryPopularTopics(props.selectedCategoryId);
+    } else {
+      // Globalni mix (Zadnjih 7 dana)
+      widgetTopics.value = await getPopularTopics();
+    }
   } catch (e) {
-    categoryTopics.value = [];
-  } finally { isLoading.value = false; }
+    widgetTopics.value = [];
+  } finally {
+    isLoading.value = false;
+  }
 };
 
-watch(() => props.selectedCategoryId, (newCatId) => {
-  if (!isTopicMode.value) {
-    if (newCatId) ucitajTemeKategorije(newCatId);
-    else ucitajGlobalno();
-  }
-});
+// Reaguj na izmjene kategorije ili aktivne teme (npr. kada korisnik klikne na drugu povezanu temu)
+watch(() => [props.selectedCategoryId, props.currentTopicId], () => {
+  osveziPodatkeWidgeta();
+}, { immediate: false });
 
 onMounted(async () => {
-  try { sveKategorije.value = await getCategories(); } catch (e) {}
-  
-  if (isTopicMode.value && props.selectedCategoryId) {
-    await ucitajTemeKategorije(props.selectedCategoryId);
-  } else if (isCategoryMode.value) {
-    await ucitajTemeKategorije(props.selectedCategoryId);
-  } else {
-    await ucitajGlobalno();
-  }
+  try { 
+    sveKategorije.value = await getCategories(); 
+  } catch (e) {}
+  await osveziPodatkeWidgeta();
 });
 </script>
 
@@ -135,17 +97,17 @@ onMounted(async () => {
         </h3>
       </div>
 
-      <div v-if="isLoading" class="flex flex-col items-center justify-center py-6 gap-2">
+      <div v-if="isLoading" class="flex items-center justify-center py-6">
         <div class="animate-spin rounded-full h-5 w-5 border-b-2" :class="isTopicMode ? 'border-blue-500' : isCategoryMode ? 'border-amber-500' : 'border-orange-500'"></div>
       </div>
 
-      <div v-else-if="trenutneTeme.length === 0" class="text-center py-6 text-xs text-slate-400 dark:text-slate-500 font-medium">
-        {{ isTopicMode ? 'Nema sličnih tema.' : 'Nema aktivnih tema.' }}
+      <div v-else-if="widgetTopics.length === 0" class="text-center py-6 text-xs text-slate-400 dark:text-slate-500 font-medium">
+        {{ isTopicMode ? 'Nema sličnih tema.' : 'Nema aktivnih tema u ovoj kategoriji.' }}
       </div>
 
       <div v-else class="space-y-4">
         <router-link 
-          v-for="tema in trenutneTeme" 
+          v-for="tema in widgetTopics" 
           :key="tema.id" 
           :to="`/forum/tema/${tema.id}`" 
           class="block group cursor-pointer"
