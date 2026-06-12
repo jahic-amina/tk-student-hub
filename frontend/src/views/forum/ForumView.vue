@@ -258,24 +258,18 @@ watch(currentMode, (newMode) => {
 });
 </script>
 
-
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-6 transition-colors duration-200">
     <div class="max-w-7xl mx-auto">
 
-      <AdminAnnouncementBanner :announcements="announcements" />
-
-      <div class="sticky top-[72px] z-30 bg-gray-50 dark:bg-slate-900 flex justify-between items-center mb-8 border-b border-gray-200 dark:border-slate-800 py-4 pt-6 -mt-2">
+      <!-- Header - NIJE sticky, normalno scrolla -->
+      <div class="flex justify-between items-center mb-8 border-b border-gray-200 dark:border-slate-800 py-4 pt-6 -mt-2">
         <div>
           <h1 class="text-3xl font-bold tracking-tight text-slate-800 dark:text-white">Studentski Forum</h1>
           <p class="text-slate-500 dark:text-slate-400 mt-1">Postavi pitanje, podijeli ideju ili pomogni kolegama.</p>
         </div>
-        
-        <div>
-          <router-link v-if="!isAdmin" to="/forum/nova-tema" class="bg-[#ff7a00] hover:bg-[#e66e00] text-white font-bold px-6 py-2.5 rounded-lg transition-colors shadow-md text-sm">
-            Nova tema
-          </router-link>
 
+        <div>
           <button 
             v-if="isAdmin" 
             @click="showModalAnnouncement = true"
@@ -286,57 +280,80 @@ watch(currentMode, (newMode) => {
         </div>
       </div>
 
+      <AdminAnnouncementBanner :announcements="announcements" />
+
+      <!-- STICKY RED: admin tabovi + kategorija/search/filteri/nova tema -->
+      <div class="sticky top-[72px] z-30 bg-gray-50 dark:bg-slate-900 pb-4 mb-6 border-b border-gray-200 dark:border-slate-800">
+
+        <div v-if="isAdmin" class="flex gap-1 bg-gray-100 dark:bg-slate-800 p-1 rounded-xl max-w-lg mt-4 mb-4 border border-gray-200 dark:border-slate-700 select-none">
+          <button 
+            @click="currentMode = 'topics'"
+            :class="currentMode === 'topics' ? 'bg-white dark:bg-slate-700 shadow text-orange-600 dark:text-orange-400 font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'"
+            class="flex-1 py-2 text-xs rounded-lg transition-all"
+          >
+            Sve teme
+          </button>
+          <button 
+            @click="currentMode = 'active_reports'"
+            :class="currentMode === 'active_reports' ? 'bg-white dark:bg-slate-700 shadow text-orange-600 dark:text-orange-400 font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'"
+            class="flex-1 py-2 text-xs rounded-lg transition-all relative"
+          >
+            Aktivne prijave
+            <span v-if="currentMode !== 'active_reports' && svePrijave.length > 0" class="absolute top-1.5 right-2 flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+            </span>
+          </button>
+          <button 
+            @click="currentMode = 'solved_reports'"
+            :class="currentMode === 'solved_reports' ? 'bg-white dark:bg-slate-700 shadow text-orange-600 dark:text-orange-400 font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'"
+            class="flex-1 py-2 text-xs rounded-lg transition-all"
+          >
+            Riješene prijave
+          </button>
+        </div>
+
+        <div v-if="currentMode === 'topics'" class="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-4 w-full">
+          <div class="flex-shrink-0">
+            <span class="px-4 py-1.5 font-extrabold text-xs rounded-full border dark:border-slate-700 shadow-sm transition-all duration-300"
+              :style="{ backgroundColor: trenutnaKategorija.color + '15', borderColor: trenutnaKategorija.color, color: trenutnaKategorija.color }">
+              {{ trenutnaKategorija.name }}
+            </span>
+          </div>
+
+          <div class="flex-1 w-full max-w-xl mx-auto flex gap-2 items-center">
+            <ForumSearchDropdown @search-submitted="handleSearchSubmitted" />
+            <ForumFilters @filters-changed="handleFiltersChanged" />
+          </div>
+
+          <div class="flex-shrink-0">
+            <router-link 
+              v-if="!isAdmin" 
+              to="/forum/nova-tema" 
+              class="bg-[#ff7a00] hover:bg-[#e66e00] text-white font-bold px-6 py-2.5 rounded-lg transition-colors shadow-md text-sm whitespace-nowrap"
+            >
+              Nova tema
+            </router-link>
+            <div v-else class="hidden md:block w-10"></div>
+          </div>
+        </div>
+
+      </div>
+      <!-- KRAJ STICKY REDA -->
+
       <div class="flex flex-col md:flex-row gap-8 items-start">
-        <div class="w-full md:w-72 flex-shrink-0" style="position: sticky; top: 160px; align-self: flex-start; z-index: 20;">
+
+        <!-- SIDEBAR: sticky, bez kartice/paddinga, ispod sticky reda -->
+        <div 
+          class="w-full md:w-72 flex-shrink-0"
+          style="position: sticky; top: 180px; align-self: flex-start; z-index: 20;"
+        >
           <ForumSidebar :aktivna-kategorija-id="odabraniKategorijaId" @kategorija-izabrana="filtrirajPoKategoriji" />
         </div>
 
         <div class="flex-1 w-full">
           <div class="flex flex-col justify-between min-h-[500px]">
             <div>
-
-              <div v-if="isAdmin" class="flex gap-1 bg-gray-100 dark:bg-slate-800 p-1 rounded-xl max-w-lg mb-6 border border-gray-200 dark:border-slate-700 select-none">
-                <button 
-                  @click="currentMode = 'topics'"
-                  :class="currentMode === 'topics' ? 'bg-white dark:bg-slate-700 shadow text-orange-600 dark:text-orange-400 font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'"
-                  class="flex-1 py-2 text-xs rounded-lg transition-all"
-                >
-                  Sve teme
-                </button>
-                <button 
-                  @click="currentMode = 'active_reports'"
-                  :class="currentMode === 'active_reports' ? 'bg-white dark:bg-slate-700 shadow text-orange-600 dark:text-orange-400 font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'"
-                  class="flex-1 py-2 text-xs rounded-lg transition-all relative"
-                >
-                  Aktivne prijave
-                  <span v-if="currentMode !== 'active_reports' && svePrijave.length > 0" class="absolute top-1.5 right-2 flex h-2 w-2">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                  </span>
-                </button>
-                <button 
-                  @click="currentMode = 'solved_reports'"
-                  :class="currentMode === 'solved_reports' ? 'bg-white dark:bg-slate-700 shadow text-orange-600 dark:text-orange-400 font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'"
-                  class="flex-1 py-2 text-xs rounded-lg transition-all"
-                >
-                  Riješene prijave
-                </button>
-              </div>
-
-              <div v-if="currentMode === 'topics'" class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 w-full">
-                <div class="flex-shrink-0">
-                  <span class="px-4 py-1.5 font-extrabold text-xs rounded-full border dark:border-slate-700 shadow-sm transition-all duration-300"
-                    :style="{ backgroundColor: trenutnaKategorija.color + '15', borderColor: trenutnaKategorija.color, color: trenutnaKategorija.color }">
-                    {{ trenutnaKategorija.name }}
-                  </span>
-                </div>
-
-                <div class="flex-1 w-full max-w-xl mx-auto flex gap-2 items-center">
-                  <ForumSearchDropdown @search-submitted="handleSearchSubmitted" />
-                  <ForumFilters @filters-changed="handleFiltersChanged" />
-                </div>
-                <div class="hidden md:block w-10"></div>
-              </div>
 
               <div v-if="isLoading || isLoadingReports" class="flex flex-col items-center justify-center py-12">
                 <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff7a00] mb-4"></div>
