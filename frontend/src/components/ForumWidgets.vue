@@ -3,26 +3,48 @@
     
     <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-4 shadow-sm transition-all hover:shadow-md">
       <div class="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100 dark:border-slate-700">
-        <span class="text-base text-amber-500">⭐</span>
+        <span class="text-base text-orange-500">🔥</span>
         <h3 class="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
-          Preporučene teme
+          Popularne teme
         </h3>
       </div>
 
-      <div class="space-y-4">
-        <div v-for="i in 3" :key="i" class="group cursor-pointer">
+      <div v-if="isLoading" class="flex flex-col items-center justify-center py-6 gap-2">
+        <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-orange-500"></div>
+        <span class="text-[10px] text-slate-400 font-medium">Učitavanje...</span>
+      </div>
+
+      <div v-else-if="popularTopics.length === 0" class="text-center py-6 text-xs text-slate-400 dark:text-slate-500 font-medium">
+        Nema aktivnih tema u proteklih 7 dana.
+      </div>
+
+      <div v-else class="space-y-4">
+        <router-link 
+          v-for="tema in popularTopics" 
+          :key="tema.id" 
+          :to="`/forum/tema/${tema.id}`" 
+          class="block group cursor-pointer"
+        >
           <div class="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-orange-500 transition-colors line-clamp-2 leading-snug">
-            {{ i === 1 ? 'Kako se spremiti za ispit iz Naprednih Baza Podataka?' : i === 2 ? 'Iskustva sa praksom u lokalnim IT firmama (Sarajevo/Tuzla)' : 'Materijali i skripte za III godinu - Linkovi' }}
+            {{ skratiNaslov(tema.title) }}
           </div>
           
           <div class="flex items-center gap-3 mt-2 text-[11px] text-slate-400 dark:text-slate-500 font-semibold">
-            <span class="flex items-center gap-1">👁️ {{ 150 * i }}</span>
-            <span class="flex items-center gap-1">💬 {{ 4 * i }}</span>
-            <span class="px-2 py-0.5 rounded bg-gray-50 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-bold text-[10px]">
-              {{ i === 1 ? 'Ispiti' : i === 2 ? 'Praksa' : 'Materijali' }}
+            <span class="flex items-center gap-1">
+              💬 {{ tema.comments_count || 0 }}
+            </span>
+            
+            <span 
+              class="px-2 py-0.5 rounded text-[10px] font-bold transition-colors"
+              :style="{ 
+                backgroundColor: (tema.category?.color || '#ff7a00') + '15', 
+                color: tema.category?.color || '#ff7a00' 
+              }"
+            >
+              {{ tema.category?.name || 'Kategorija' }}
             </span>
           </div>
-        </div>
+        </router-link>
       </div>
     </div>
 
@@ -72,4 +94,28 @@
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue';
+import { getPopularTopics } from '../../services/forum.js';
+
+const popularTopics = ref([]);
+const isLoading = ref(true);
+
+
+const skratiNaslov = (naslov) => {
+  if (!naslov) return '';
+  return naslov.length > 50 ? naslov.substring(0, 47) + '...' : naslov;
+};
+
+onMounted(async () => {
+  try {
+    
+    const data = await getPopularTopics();
+    popularTopics.value = Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error("Greška pri učitavanju popularnih tema u widgetu:", error);
+    popularTopics.value = [];
+  } finally {
+    isLoading.value = false;
+  }
+});
 </script>
