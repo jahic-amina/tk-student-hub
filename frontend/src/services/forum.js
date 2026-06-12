@@ -127,6 +127,11 @@ export async function getCategoryPopularTopics(categoryId) {
   return handleResponse(response, 'Greška pri dohvatanju popularnih tema kategorije.');
 }
 
+export async function getRelatedTopics(topicId) {
+  const response = await fetch(`${BASE_URL}/forum/topics/${topicId}/related`, { headers: getHeaders() });
+  return handleResponse(response, 'Greška pri dohvatanju sličnih tema.');
+}
+
 export default {
   getCategories,
   getTopics,
@@ -146,5 +151,6 @@ export default {
   getSearchSuggestions,
   updateComment,
   getPopularTopics,
-  getCategoryPopularTopics
+  getCategoryPopularTopics,
+  getRelatedTopics
 };
