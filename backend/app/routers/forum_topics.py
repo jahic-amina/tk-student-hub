@@ -437,3 +437,56 @@ def get_active_announcements(db: Session = Depends(get_db)):
     
     anns = db.exec(statement).all()
     return anns
+
+
+@router.get("/{topic_id}/related", response_model=List[Dict[str, Any]])
+def get_related_topics_api(topic_id: int, db: Session = Depends(get_db)):
+    
+    trenutna_tema = db.get(ForumTopic, topic_id)
+    if not trenutna_tema or trenutna_tema.is_deleted:
+        raise HTTPException(status_code=404, detail="Tema nije pronađena.")
+
+    
+    import re
+    
+    cist_naslov = re.sub(r'[.,\/#!$%\^&\*;:{}=\-_`~()?]', '', trenutna_tema.title.lower())
+    sve_rijeci = cist_naslov.split()
+    kljucne_rijeci = [rijec.strip() for rijec in sve_rijeci if len(rijec.strip()) > 2]
+
+    
+    if not kljucne_rijeci:
+        return []
+
+   
+    from sqlmodel import or_
+    uvjeti_pretrage = [ForumTopic.title.ilike(f"%{rijec}%") for rijec in kljucne_rijeci]
+
+    
+    from app.models.forum import ForumComment
+    comments_sub = (
+        select(ForumComment.topic_id, func.count(ForumComment.id).label("c_count"))
+        .where(ForumComment.is_deleted == False)
+        .group_by(ForumComment.topic_id)
+        .subquery()
+    )
+
+    
+    statement = (
+        select(ForumTopic)
+        .where(ForumTopic.is_deleted == False)
+        .where(ForumTopic.category_id == trenutna_tema.category_id) # Uslov: ista kategorija
+        .where(ForumTopic.id != trenutna_tema.id)                  # Uslov: izbaci trenutnu temu
+        .where(or_(*uvjeti_pretrage))                               # Uslov: poklapanje ključnih riječi
+        .join(comments_sub, comments_sub.c.topic_id == ForumTopic.id, isouter=True)
+        
+        .order_by(
+            (ForumTopic.views_count + func.coalesce(comments_sub.c.c_count, 0)).desc(),
+            ForumTopic.id.desc()
+        )
+        .limit(4) 
+    )
+
+    slicne_teme = db.exec(statement).all()
+    
+    
+    return [build_topic_list_item(db, topic) for topic in slicne_teme]
