@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select, func
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta # DODATO: timedelta za računanje starosti tema
+from datetime import datetime, timedelta
 
 from app.database import get_db
 from app.core.security import get_current_user
@@ -80,41 +80,33 @@ def get_all_topics(
     search: Optional[str] = None,
     page: int = 1,
     per_page: int = 5,
-    
     sort_by: Optional[str] = "najnovije", 
     unanswered: Optional[bool] = False,   
     days_old: Optional[int] = None        
 ):
-    
     statement = select(ForumTopic).where(ForumTopic.is_deleted == False)
     count_statement = select(func.count(ForumTopic.id)).where(ForumTopic.is_deleted == False)
 
-   
     if category_id is not None:
         statement = statement.where(ForumTopic.category_id == category_id)
         count_statement = count_statement.where(ForumTopic.category_id == category_id)
         
-  
     if search and search.strip():
         search_value = f"%{search.strip()}%"
         condition = (ForumTopic.title.ilike(search_value)) | (ForumTopic.content.ilike(search_value))
         statement = statement.where(condition)
         count_statement = count_statement.where(condition)
 
-    
     if days_old is not None and days_old > 0:
         vremenska_granica = datetime.utcnow() - timedelta(days=days_old)
         statement = statement.where(ForumTopic.created_at >= vremenska_granica)
         count_statement = count_statement.where(ForumTopic.created_at >= vremenska_granica)
 
-
     if unanswered:
-        
         from app.models.forum import ForumComment
         subquery = select(ForumComment.topic_id).where(ForumComment.is_deleted == False).subquery()
         statement = statement.where(ForumTopic.id.not_in(subquery))
         count_statement = count_statement.where(ForumTopic.id.not_in(subquery))
-
 
     if sort_by == "najgledanije":
         statement = statement.order_by(ForumTopic.views_count.desc(), ForumTopic.id.desc())
@@ -128,7 +120,6 @@ def get_all_topics(
     else:  
         statement = statement.order_by(ForumTopic.created_at.desc())
 
-    
     total_topics = db.exec(count_statement).one()
     skip = (page - 1) * per_page
     statement = statement.offset(skip).limit(per_page)
@@ -140,9 +131,7 @@ def get_all_topics(
 
 @router.get("/suggestions")
 def get_suggestions(search: Optional[str] = None, db: Session = Depends(get_db)):
-   
     if not search or not search.strip():
-      
         popular_stmt = (
             select(ForumTopic)
             .where(ForumTopic.is_deleted == False)
@@ -151,7 +140,6 @@ def get_suggestions(search: Optional[str] = None, db: Session = Depends(get_db))
         )
         popular_topics = db.exec(popular_stmt).all()
         
-       
         active_stmt = (
             select(ForumTopic)
             .where(ForumTopic.is_deleted == False)
@@ -165,14 +153,10 @@ def get_suggestions(search: Optional[str] = None, db: Session = Depends(get_db))
             "active": [{"id": t.id, "title": t.title} for t in active_topics]
         }
     
-    
     search_term = search.strip()
-    
-  
     starts_with_value = f"{search_term}%"
     filtered_stmt = select(ForumTopic).where(ForumTopic.is_deleted == False).where(ForumTopic.title.ilike(starts_with_value)).limit(5)
     filtered_topics = db.exec(filtered_stmt).all()
-    
     
     if not filtered_topics:
         contains_value = f"%{search_term}%"
@@ -316,6 +300,49 @@ def handle_report_action(
     return {"success": True, "new_status": report.status}
 
 
+@router.get("/popular", response_model=List[Dict[str, Any]])
+def get_popular_sidebar_topics(db: Session = Depends(get_db)):
+    from app.models.forum import ForumComment, ForumLike
+    
+    # Vremenska granica od zadnjih 7 dana
+    vremenska_granica = datetime.utcnow() - timedelta(days=7)
+    
+    # Brojanje aktivnih komentara po temi
+    comments_sub = (
+        select(ForumComment.topic_id, func.count(ForumComment.id).label("c_count"))
+        .where(ForumComment.is_deleted == False)
+        .group_by(ForumComment.topic_id)
+        .subquery()
+    )
+    
+    # Brojanje lajkova po temi
+    likes_sub = (
+        select(ForumLike.topic_id, func.count(ForumLike.id).label("l_count"))
+        .group_by(ForumLike.topic_id)
+        .subquery()
+    )
+    
+    # Glavni upit sa formulom popularnosti: pregledi + lajkovi + komentari
+    statement = (
+        select(ForumTopic)
+        .where(ForumTopic.is_deleted == False)
+        .where(ForumTopic.created_at >= vremenska_granica)
+        .join(comments_sub, comments_sub.c.topic_id == ForumTopic.id, isouter=True)
+        .join(likes_sub, likes_sub.topic_id == ForumTopic.id, isouter=True)
+        .order_by(
+            (
+                ForumTopic.views_count + 
+                func.coalesce(likes_sub.c.l_count, 0) + 
+                func.coalesce(comments_sub.c.c_count, 0)
+            ).desc()
+        )
+        .limit(5)
+    )
+    
+    popular_topics = db.exec(statement).all()
+    return [build_topic_list_item(db, topic) for topic in popular_topics]
+
+
 @router.get("/{topic_id}")
 def get_topic_details(topic_id: int, db: Session = Depends(get_db)):
     topic = db.get(ForumTopic, topic_id)
@@ -374,9 +401,8 @@ def report_topic(topic_id: int, report_data: ReportCreate, db: Session = Depends
     return {"success": True}
 
 
-#Ruta za dohvatanje aktivnih obavještenja (koja nisu istekla)
 @router.get("/announcements/active")
-def get_active_announcements(db: Session = Depends(get_db)): #Ovo je public ruta da bi se obavjestenja prikazala svima
+def get_active_announcements(db: Session = Depends(get_db)):
     now = datetime.utcnow()
     statement = select(AdminAnnouncement).where(
         AdminAnnouncement.is_active == True,
@@ -385,4 +411,3 @@ def get_active_announcements(db: Session = Depends(get_db)): #Ovo je public ruta
     
     anns = db.exec(statement).all()
     return anns
-
