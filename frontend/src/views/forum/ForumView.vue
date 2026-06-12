@@ -135,14 +135,28 @@ const handleFiltersChanged = (noviFilteri) => {
 };
 
 async function podnesiNovoObavjestenje() {
-  if (!newAnnouncementTitle.value.trim() || !newAnnouncementContent.value.trim()) return;
+  if (!newAnnouncementTitle.value.trim() || !newAnnouncementContent.value.trim()) {
+    alert("Naslov i sadržaj obavještenja su obavezni!");
+    return;
+  }
   isSubmittingAnnouncement.value = true;
   try {
-    await createAnnouncement(newAnnouncementTitle.value.trim(), newAnnouncementContent.value.trim(), newAnnouncementDuration.value);
+    await createAnnouncement(
+      newAnnouncementTitle.value.trim(), 
+      newAnnouncementContent.value.trim(), 
+      newAnnouncementDuration.value
+    );
     showModalAnnouncement.value = false;
-    newAnnouncementTitle.value = ''; newAnnouncementContent.value = '';
+    newAnnouncementTitle.value = ''; 
+    newAnnouncementContent.value = '';
+    newAnnouncementDuration.value = 7;
     announcements.value = await getActiveAnnouncements();
-  } catch (error) { alert("Greška: " + error.message); } finally { isSubmittingAnnouncement.value = false; }
+    alert("Obavještenje uspješno objavljeno!");
+  } catch (error) { 
+    alert("Greška: " + error.message); 
+  } finally { 
+    isSubmittingAnnouncement.value = false; 
+  }
 }
 
 const obrisiTemu = async (temaId) => {
@@ -264,9 +278,9 @@ watch(currentMode, (newMode) => {
               </div>
             </div>
 
-            <div v-if="currentMode === 'topics' && teme.length > 0" class="mt-4 text-center text-[11px] text-slate-500">
+            <div class="mt-4 text-center text-[11px] text-slate-500">
               <div v-if="isLoadingMore" class="py-2 flex justify-center"><div class="w-6 h-6 border-3 border-gray-300 border-t-[#ff7a00] rounded-full animate-spin"></div></div>
-              <div v-else-if="!imaJosTema" class="py-1">Prikazane su sve teme.</div>
+              <div v-else-if="!imaJosTema && currentMode === 'topics' && teme.length > 0" class="py-1">Prikazane su sve teme.</div>
             </div>
           </div>
         </div>
@@ -278,8 +292,61 @@ watch(currentMode, (newMode) => {
       </div>
     </div>
 
-    <div v-if="showModalAnnouncement" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div v-if="showModalAnnouncement" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all">
+      <div class="bg-white dark:bg-slate-800 p-6 rounded-xl w-full max-w-md shadow-2xl border border-gray-100 dark:border-slate-700">
+        <h2 class="text-xl font-bold mb-4 flex gap-2 text-slate-800 dark:text-white">
+          <span>📢</span> Novo Admin Obavještenje
+        </h2>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block mb-1 text-xs font-bold text-slate-700 dark:text-slate-300">Naslov obavještenja</label>
+            <input 
+              v-model="newAnnouncementTitle" 
+              type="text" 
+              class="w-full border border-gray-300 dark:border-slate-600 rounded-lg p-2.5 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:outline-none" 
+              placeholder="Npr. Važno obavještenje za ispitne rokove" 
+            />
+          </div>
+          
+          <div>
+            <label class="block mb-1 text-xs font-bold text-slate-700 dark:text-slate-300">Sadržaj (Tekst poruke)</label>
+            <textarea 
+              v-model="newAnnouncementContent" 
+              class="w-full border border-gray-300 dark:border-slate-600 rounded-lg p-2.5 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white h-24 focus:ring-2 focus:ring-amber-500 focus:outline-none resize-none" 
+              placeholder="Unesite detalje koje će studenti vidjeti na vrhu foruma..."
+            ></textarea>
+          </div>
+          
+          <div>
+            <label class="block mb-1 text-xs font-bold text-slate-700 dark:text-slate-300">Trajanje prikaza (u danima)</label>
+            <input 
+              v-model.number="newAnnouncementDuration" 
+              type="number" 
+              min="1" 
+              class="w-full border border-gray-300 dark:border-slate-600 rounded-lg p-2.5 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:outline-none" 
+            />
+          </div>
+        </div>
+        
+        <div class="flex justify-end gap-3 mt-6">
+          <button 
+            @click="showModalAnnouncement = false" 
+            :disabled="isSubmittingAnnouncement"
+            class="px-4 py-2 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-lg text-xs font-medium transition-colors"
+          >
+            Otkaži
+          </button>
+          <button 
+            @click="podnesiNovoObavjestenje" 
+            :disabled="isSubmittingAnnouncement"
+            class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold shadow-md transition-colors disabled:opacity-50"
+          >
+            {{ isSubmittingAnnouncement ? 'Objavljivanje...' : 'Objavi obavještenje' }}
+          </button>
+        </div>
       </div>
+    </div>
 
   </div>
 </template>
