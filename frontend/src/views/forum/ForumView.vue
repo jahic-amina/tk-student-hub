@@ -30,15 +30,15 @@ const ukupnoTema = ref(0);
 const velicinaStranice = 5; 
 const search = ref("");
 const announcements = ref([]);
-const prikaziPrijave = ref(false); // Sinhronizovano sa currentMode zbog lazy loading-a
+const prikaziPrijave = ref(false); 
 const svePrijave = ref([]);
-const currentMode = ref('topics'); //'topics', 'active_reports', 'solved_reports'
+const currentMode = ref('topics'); 
 const isLoadingReports = ref(false);
 
 const showModalAnnouncement = ref(false);
 const newAnnouncementTitle = ref('');
 const newAnnouncementContent = ref('');
-const newAnnouncementDuration = ref(7); // Defaultno 7 dana
+const newAnnouncementDuration = ref(7); 
 const isSubmittingAnnouncement = ref(false);
 
 const aktivniFilteri = reactive({
@@ -55,14 +55,12 @@ const trenutnaKategorija = computed(() => {
   return sveKategorije.value.find(c => c.id === odabraniKategorijaId.value) || { name: 'Kategorija', color: '#ff7a00' };
 });
 
-// Pomoćna funkcija koja sprečava pucanje aplikacije ako backend ne pošalje validan datum
 const formatirajDatum = (datumString) => {
   if (!datumString) return 'Nedavno';
   const d = new Date(datumString);
   return isNaN(d.getTime()) ? 'Nedavno' : d.toLocaleDateString('bs');
 };
 
-// Klijentsko filtriranje prijava kako bi se ispravno razdvojile aktivne i riješene
 const filtriranePrijave = computed(() => {
   if (!Array.isArray(svePrijave.value)) return [];
   if (currentMode.value === 'active_reports') {
@@ -120,7 +118,6 @@ const ucitajPrijave = async (status) => {
   isLoadingReports.value = true;
   try {
     const data = await getAdminReports(status);
-    // Defanzivno mapiranje u zavisnosti od toga u kojem obliku backend vraća podatke
     if (data && data.reports) {
       svePrijave.value = data.reports;
     } else if (data && data.items) {
@@ -181,12 +178,10 @@ async function podnesiNovoObavjestenje() {
     alert("Obavještenje uspješno kreirano i aktivirano!");
     showModalAnnouncement.value = false;
     
-    // Resetuj formu unutar modala
     newAnnouncementTitle.value = '';
     newAnnouncementContent.value = '';
     newAnnouncementDuration.value = 7;
 
-    // Odmah reaktivno povuci nova obavještenja sa backenda
     announcements.value = await getActiveAnnouncements();
   } catch (error) {
     alert("Greška: " + error.message);
@@ -219,7 +214,6 @@ const obrisiTemu = async (temaId) => {
 const procesuirajPrijavu = async (reportId, akcija) => {
   try {
     await handleReportAction(reportId, akcija);
-    // Umjesto potpunog brisanja iz niza, ažuriramo lokalni status kako bi klijentski computed filter odradio svoje premještanje
     svePrijave.value = svePrijave.value.map(p => {
       if (p.report_id === reportId) {
         return { ...p, status: akcija === 'dismiss' ? 'dismissed' : 'resolved' };
@@ -244,7 +238,6 @@ const { isLoadingMore, imaJosTema } = useForumLazyLoading({
   ucitajTeme
 });
 
-// Watcher koji osigurava povlačenje ispravnih podataka i sinhronizaciju starih stanja
 watch(currentMode, (newMode) => {
   prikaziPrijave.value = (newMode === 'active_reports' || newMode === 'solved_reports');
   trenutnaStranica.value = 1;
@@ -260,20 +253,20 @@ watch(currentMode, (newMode) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-6 transition-colors duration-200">
+  <div class="min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-3 transition-colors duration-200">
     <div class="max-w-7xl mx-auto">
 
-      <div class="flex justify-between items-center mb-8 border-b border-gray-200 dark:border-slate-800 py-4 pt-6 -mt-2">
+      <div class="flex justify-between items-center mb-4 border-b border-gray-200 dark:border-slate-800 py-2 pt-4 -mt-2">
         <div>
-          <h1 class="text-3xl font-bold tracking-tight text-slate-800 dark:text-white">Studentski Forum</h1>
-          <p class="text-slate-500 dark:text-slate-400 mt-1">Postavi pitanje, podijeli ideju ili pomogni kolegama.</p>
+          <h1 class="text-2xl font-bold tracking-tight text-slate-800 dark:text-white">Studentski Forum</h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Postavi pitanje, podijeli ideju ili pomogni kolegama.</p>
         </div>
 
         <div>
           <button 
             v-if="isAdmin" 
             @click="showModalAnnouncement = true"
-            class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-2 rounded-lg text-xs shadow-md transition-all flex items-center gap-1.5"
+            class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow-md transition-all flex items-center gap-1.5"
           >
             📢 Admin obavještenje
           </button>
@@ -282,20 +275,20 @@ watch(currentMode, (newMode) => {
 
       <AdminAnnouncementBanner :announcements="announcements" />
 
-      <div class="sticky top-[72px] z-30 bg-gray-50 dark:bg-slate-900 pb-4 mb-6 border-b border-gray-200 dark:border-slate-800">
+      <div class="sticky top-[72px] z-30 bg-gray-50 dark:bg-slate-900 pb-2 mb-3 border-b border-gray-200 dark:border-slate-800">
 
-        <div v-if="isAdmin" class="flex gap-1 bg-gray-100 dark:bg-slate-800 p-1 rounded-xl max-w-lg mt-4 mb-4 border border-gray-200 dark:border-slate-700 select-none">
+        <div v-if="isAdmin" class="flex gap-1 bg-gray-100 dark:bg-slate-800 p-1 rounded-xl max-w-lg mt-2 mb-2 border border-gray-200 dark:border-slate-700 select-none">
           <button 
             @click="currentMode = 'topics'"
             :class="currentMode === 'topics' ? 'bg-white dark:bg-slate-700 shadow text-orange-600 dark:text-orange-400 font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'"
-            class="flex-1 py-2 text-xs rounded-lg transition-all"
+            class="flex-1 py-1.5 text-xs rounded-lg transition-all"
           >
             Sve teme
           </button>
           <button 
             @click="currentMode = 'active_reports'"
             :class="currentMode === 'active_reports' ? 'bg-white dark:bg-slate-700 shadow text-orange-600 dark:text-orange-400 font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'"
-            class="flex-1 py-2 text-xs rounded-lg transition-all relative"
+            class="flex-1 py-1.5 text-xs rounded-lg transition-all relative"
           >
             Aktivne prijave
             <span v-if="currentMode !== 'active_reports' && svePrijave.length > 0" class="absolute top-1.5 right-2 flex h-2 w-2">
@@ -306,21 +299,21 @@ watch(currentMode, (newMode) => {
           <button 
             @click="currentMode = 'solved_reports'"
             :class="currentMode === 'solved_reports' ? 'bg-white dark:bg-slate-700 shadow text-orange-600 dark:text-orange-400 font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'"
-            class="flex-1 py-2 text-xs rounded-lg transition-all"
+            class="flex-1 py-1.5 text-xs rounded-lg transition-all"
           >
             Riješene prijave
           </button>
         </div>
 
-        <div v-if="currentMode === 'topics'" class="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-4 w-full">
+        <div v-if="currentMode === 'topics'" class="flex flex-col md:flex-row md:items-center justify-between gap-2 mt-2 w-full">
           <div class="flex-shrink-0">
-            <span class="px-4 py-1.5 font-extrabold text-xs rounded-full border dark:border-slate-700 shadow-sm transition-all duration-300"
+            <span class="px-3 py-1 font-extrabold text-xs rounded-full border dark:border-slate-700 shadow-sm transition-all duration-300"
               :style="{ backgroundColor: trenutnaKategorija.color + '15', borderColor: trenutnaKategorija.color, color: trenutnaKategorija.color }">
               {{ trenutnaKategorija.name }}
             </span>
           </div>
 
-          <div class="flex-1 w-full max-w-xl mx-auto flex gap-2 items-center">
+          <div class="flex-1 w-full max-w-xl mx-auto flex gap-1.5 items-center">
             <ForumSearchDropdown @search-submitted="handleSearchSubmitted" />
             <ForumFilters @filters-changed="handleFiltersChanged" />
           </div>
@@ -329,43 +322,44 @@ watch(currentMode, (newMode) => {
             <router-link 
               v-if="!isAdmin" 
               to="/forum/nova-tema" 
-              class="bg-[#ff7a00] hover:bg-[#e66e00] text-white font-bold px-6 py-2.5 rounded-lg transition-colors shadow-md text-sm whitespace-nowrap"
+              class="bg-[#ff7a00] hover:bg-[#e66e00] text-white font-bold px-5 py-2 rounded-lg transition-colors shadow-md text-xs whitespace-nowrap"
             >
               Nova tema
             </router-link>
-            <div v-else class="hidden md:block w-10"></div>
+            <div v-else class="hidden md:block w-6"></div>
           </div>
         </div>
 
       </div>
-      <div class="grid grid-cols-12 gap-6 items-start w-full overflow-x-auto md:overflow-x-visible">
+      
+      <div class="grid grid-cols-12 gap-2 items-start w-full">
 
         <div 
-          class="col-span-3 min-w-[200px]"
-          style="position: sticky; top: 180px; align-self: flex-start; z-index: 20;"
+          class="col-span-12 md:col-span-3 lg:col-span-3 xl:col-span-3"
+          style="position: sticky; top: 140px; align-self: flex-start; z-index: 20;"
         >
           <ForumSidebar :aktivna-kategorija-id="odabraniKategorijaId" @kategorija-izabrana="filtrirajPoKategoriji" />
         </div>
 
-        <div class="col-span-6 min-w-[450px] w-full">
+        <div class="col-span-12 md:col-span-6 lg:col-span-6 xl:col-span-6 w-full">
           <div class="flex flex-col justify-between min-h-[500px]">
             <div>
 
               <div v-if="isLoading || isLoadingReports" class="flex flex-col items-center justify-center py-12">
-                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff7a00] mb-4"></div>
-                <p class="text-slate-500 dark:text-slate-400 italic text-sm">Učitavanje podataka...</p>
+                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-[#ff7a00] mb-3"></div>
+                <p class="text-slate-500 dark:text-slate-400 italic text-xs">Učitavanje podataka...</p>
               </div>
 
               <div v-else-if="currentMode === 'topics'">
-                <div v-if="teme.length === 0" class="text-center py-12 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-8 shadow-sm">
-                  <p class="text-slate-500 dark:text-slate-400 text-sm mb-4">Trenutno nema tema u ovoj kategoriji ili pretrazi. Započni temu!</p>
+                <div v-if="teme.length === 0" class="text-center py-8 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6 shadow-sm">
+                  <p class="text-slate-500 dark:text-slate-400 text-xs mb-3">Trenutno nema tema u ovoj kategoriji ili pretrazi. Započni temu!</p>
                   <router-link v-if="!isAdmin" :to="{ name: 'create-topic', query: odabraniKategorijaId ? { categoryId: odabraniKategorijaId } : {} }"
-                    class="bg-[#ff7a00] hover:bg-[#e66e00] text-white font-bold px-6 py-2 rounded-lg text-xs shadow-md">
+                    class="bg-[#ff7a00] hover:bg-[#e66e00] text-white font-bold px-5 py-1.5 rounded-lg text-xs shadow-md">
                     Započni temu
                   </router-link>
                 </div>
 
-                <div v-else class="space-y-4">
+                <div v-else class="space-y-2">
                   <ForumTopicCard
                     v-for="tema in teme"
                     :key="tema.id"
@@ -378,45 +372,45 @@ watch(currentMode, (newMode) => {
               </div>
 
               <div v-else-if="currentMode === 'active_reports' || currentMode === 'solved_reports'">
-                <div v-if="filtriranePrijave.length === 0" class="text-center py-12 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-8 shadow-sm">
-                  <p class="text-emerald-600 dark:text-emerald-400 font-medium text-sm">
+                <div v-if="filtriranePrijave.length === 0" class="text-center py-8 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6 shadow-sm">
+                  <p class="text-emerald-600 dark:text-emerald-400 font-medium text-xs">
                     {{ currentMode === 'active_reports' ? '🎉 Odlično! Trenutno nema neriješenih prijava korisnika.' : 'Nema riješenih prijava u arhivi.' }}
                   </p>
                 </div>
                 
-                <div v-else class="space-y-4">
+                <div v-else class="space-y-2">
                   <div 
                     v-for="prijava in filtriranePrijave" 
                     :key="prijava.report_id" 
-                    class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-all"
+                    class="bg-white dark:bg-slate-800 p-3 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-3 transition-all"
                   >
                     <div class="flex-1 w-full">
                       <div class="flex items-center gap-2 flex-wrap">
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider" 
+                        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider" 
                               :class="prijava.status === 'resolved' || prijava.status === 'dismissed' ? 'bg-green-50 text-green-600 dark:bg-green-950/30 dark:text-green-400' : 'bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400'">
                           {{ prijava.status === 'resolved' || prijava.status === 'dismissed' ? 'Arhivirano' : 'Čeka pregled' }}
                         </span>
-                        <span class="text-xs text-slate-400 dark:text-slate-500">{{ formatirajDatum(prijava.created_at) }}</span>
+                        <span class="text-[11px] text-slate-400 dark:text-slate-500">{{ formatirajDatum(prijava.created_at) }}</span>
                       </div>
-                      <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 mt-2">
+                      <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 mt-1">
                         Tema: <router-link v-if="prijava.topic" :to="`/forum/tema/${prijava.topic.id}`" class="text-orange-500 hover:underline">{{ prijava.topic.title }}</router-link>
                         <span v-else class="text-red-400 italic font-normal">(Tema je već izbrisana)</span>
                       </h4>
-                      <p class="text-xs text-slate-600 dark:text-slate-400 mt-1 italic bg-gray-50 dark:bg-slate-700/50 p-2 rounded-lg border border-gray-100 dark:border-slate-700">
+                      <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 italic bg-gray-50 dark:bg-slate-700/50 p-1.5 rounded-lg border border-gray-100 dark:border-slate-700">
                         Razlog prijave: "{{ prijava.reason }}" <span v-if="prijava.reporter_name" class="font-semibold text-slate-400 not-italic">(Prijavio: {{ prijava.reporter_name }})</span>
                       </p>
                     </div>
                     
-                    <div v-if="prijava.status !== 'resolved' && prijava.status !== 'dismissed'" class="flex items-center gap-2 w-full md:w-auto justify-end">
+                    <div v-if="prijava.status !== 'resolved' && prijava.status !== 'dismissed'" class="flex items-center gap-1.5 w-full md:w-auto justify-end">
                       <button 
                         @click="procesuirajPrijavu(prijava.report_id, 'dismiss')"
-                        class="bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 transition-colors shadow-sm"
+                        class="bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 transition-colors shadow-sm"
                       >
                         Zanemari
                       </button>
                       <button 
                         @click="procesuirajPrijavu(prijava.report_id, 'resolve')"
-                        class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors shadow-sm whitespace-nowrap"
+                        class="bg-emerald-500 hover:bg-emerald-600 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition-colors shadow-sm whitespace-nowrap"
                       >
                         Označi riješeno
                       </button>
@@ -427,11 +421,11 @@ watch(currentMode, (newMode) => {
 
             </div>
 
-            <div v-if="currentMode === 'topics' && teme.length > 0" class="mt-8 text-center text-xs text-slate-500 dark:text-slate-400">
-              <div v-if="isLoadingMore" class="py-6 flex justify-center">
-                <div class="w-8 h-8 border-4 border-gray-300 border-t-[#ff7a00] rounded-full animate-spin"></div>
+            <div v-if="currentMode === 'topics' && teme.length > 0" class="mt-4 text-center text-[11px] text-slate-500 dark:text-slate-400">
+              <div v-if="isLoadingMore" class="py-2 flex justify-center">
+                <div class="w-6 h-6 border-3 border-gray-300 border-t-[#ff7a00] rounded-full animate-spin"></div>
               </div>
-              <div v-else-if="!imaJosTema" class="py-4">
+              <div v-else-if="!imaJosTema" class="py-1">
                 Prikazane su sve teme.
               </div>
             </div>
@@ -440,8 +434,8 @@ watch(currentMode, (newMode) => {
         </div>
 
         <div 
-          class="col-span-3 min-w-[200px]"
-          style="position: sticky; top: 180px; align-self: flex-start; z-index: 20;"
+          class="col-span-12 md:col-span-3 lg:col-span-3 xl:col-span-3"
+          style="position: sticky; top: 140px; align-self: flex-start; z-index: 20;"
         >
           <ForumWidgets />
         </div>
@@ -452,40 +446,40 @@ watch(currentMode, (newMode) => {
     <div v-if="showModalAnnouncement" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity">
       <div class="bg-white dark:bg-slate-900 w-full max-w-xl rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-800 overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200">
         
-        <div class="px-6 py-4 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-gray-50/50 dark:bg-slate-800/40">
+        <div class="px-5 py-3 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-gray-50/50 dark:bg-slate-800/40">
           <div class="flex items-center gap-2">
-            <span class="text-xl select-none">📢</span>
-            <h3 class="text-base font-bold text-slate-800 dark:text-slate-100">Novo admin obavještenje</h3>
+            <span class="text-lg select-none">📢</span>
+            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">Novo admin obavještenje</h3>
           </div>
-          <button @click="showModalAnnouncement = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors text-sm font-bold">✕</button>
+          <button @click="showModalAnnouncement = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors text-xs font-bold">✕</button>
         </div>
         
-        <div class="p-6 space-y-4">
+        <div class="p-5 space-y-3">
           <div>
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Naslov obavještenja</label>
+            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Naslov obavještenja</label>
             <input 
               v-model="newAnnouncementTitle" 
               type="text" 
               placeholder="Npr. Obavještenje o održavanju servera..."
-              class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-slate-800 dark:text-slate-100"
+              class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-transparent text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-slate-800 dark:text-slate-100"
             />
           </div>
           
           <div>
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Sadržaj poruke</label>
+            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Sadržaj poruke</label>
             <textarea 
               v-model="newAnnouncementContent" 
-              rows="4" 
+              rows="3" 
               placeholder="Unesite detaljan tekst obavještenja..."
-              class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-slate-800 dark:text-slate-100 resize-none"
+              class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-transparent text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-slate-800 dark:text-slate-100 resize-none"
             ></textarea>
           </div>
           
           <div>
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Trajanje vidljivosti</label>
+            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Trajanje vidljivosti</label>
             <select 
               v-model="newAnnouncementDuration"
-              class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-slate-800 dark:text-slate-100"
+              class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-slate-800 dark:text-slate-100"
             >
               <option :value="1">1 Dan</option>
               <option :value="3">3 Dana</option>
@@ -497,16 +491,16 @@ watch(currentMode, (newMode) => {
           </div>
         </div>
         
-        <div class="px-6 py-4 bg-gray-50 dark:bg-slate-800/40 border-t border-gray-100 dark:border-slate-800 flex items-center justify-end gap-3">
-          <button @click="showModalAnnouncement = false" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all">
+        <div class="px-5 py-3 bg-gray-50 dark:bg-slate-800/40 border-t border-gray-100 dark:border-slate-800 flex items-center justify-end gap-2">
+          <button @click="showModalAnnouncement = false" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all">
             Otkaži
           </button>
           <button 
             @click="podnesiNovoObavjestenje"
             :disabled="isSubmittingAnnouncement"
-            class="px-5 py-2 rounded-xl text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 disabled:bg-orange-400 disabled:cursor-not-allowed shadow transition-all flex items-center gap-2"
+            class="px-4 py-1.5 rounded-xl text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 disabled:bg-orange-400 disabled:cursor-not-allowed shadow transition-all flex items-center gap-1.5"
           >
-            <span v-if="isSubmittingAnnouncement" class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+            <span v-if="isSubmittingAnnouncement" class="w-2.5 h-2.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
             Objavi
           </button>
         </div>
