@@ -364,6 +364,7 @@ def get_category_popular_topics(category_id: int, db: Session = Depends(get_db))
     category_topics = db.exec(statement).all()
     return [build_topic_list_item(db, topic) for topic in category_topics]
 
+
 @router.get("/{topic_id}")
 def get_topic_details(topic_id: int, db: Session = Depends(get_db)):
     topic = db.get(ForumTopic, topic_id)
@@ -447,7 +448,7 @@ def update_topic(
         raise HTTPException(status_code=404, detail="Tema nije pronađena.")
     
     if topic.user_id != current_user.id and getattr(current_user, 'role', 'member') != 'admin':
-        raise HTTPException(status_code=403, detail="Možete editovati samo vlastiti temu.")
+        raise HTTPException(status_code=403, detail="Možete editovati samo vlastitu temu.")
     
     if topic_data.title is not None:
         topic.title = topic_data.title
@@ -460,3 +461,46 @@ def update_topic(
     db.refresh(topic)
     
     return build_topic_list_item(db, topic)
+
+
+@router.get("/{topic_id}/related", response_model=List[Dict[str, Any]])
+def get_related_topics_api(topic_id: int, db: Session = Depends(get_db)):
+    trenutna_tema = db.get(ForumTopic, topic_id)
+    if not trenutna_tema or trenutna_tema.is_deleted:
+        raise HTTPException(status_code=404, detail="Tema nije pronađena.")
+
+    import re
+    cist_naslov = re.sub(r'[.,\/#!$%\^&\*;:{}=\-_`~()?]', '', trenutna_tema.title.lower())
+    sve_rijeci = cist_naslov.split()
+    kljucne_rijeci = [rijec.strip() for rijec in sve_rijeci if len(rijec.strip()) > 2]
+
+    if not kljucne_rijeci:
+        return []
+
+    from sqlmodel import or_
+    uvjeti_pretrage = [ForumTopic.title.ilike(f"%{rijec}%") for rijec in kljucne_rijeci]
+
+    from app.models.forum import ForumComment
+    comments_sub = (
+        select(ForumComment.topic_id, func.count(ForumComment.id).label("c_count"))
+        .where(ForumComment.is_deleted == False)
+        .group_by(ForumComment.topic_id)
+        .subquery()
+    )
+
+    statement = (
+        select(ForumTopic)
+        .where(ForumTopic.is_deleted == False)
+        .where(ForumTopic.category_id == trenutna_tema.category_id) 
+        .where(ForumTopic.id != trenutna_tema.id)                  
+        .where(or_(*uvjeti_pretrage))                               
+        .join(comments_sub, comments_sub.c.topic_id == ForumTopic.id, isouter=True)
+        .order_by(
+            (ForumTopic.views_count + func.coalesce(comments_sub.c.c_count, 0)).desc(),
+            ForumTopic.id.desc()
+        )
+        .limit(4) 
+    )
+
+    slicne_teme = db.exec(statement).all()
+    return [build_topic_list_item(db, topic) for topic in slicne_teme]
