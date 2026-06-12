@@ -108,7 +108,7 @@ const handleNewComment = async ({ content, clearForm }) => {
         
         <ForumTopicMainCard :topic="fullTopicData" :is-admin="isAdmin" />
 
-        <ForumTopicCommentsList :comments="sortedComments" :topic-author-id="topicAuthorId" @refresh="() => loadTopicAndComments(props.id)" />
+        <ForumTopicCommentsList :comments="sortedComments" :topic-author-id="topicAuthorId" :topic-id="parseInt(props.id)" @refresh="() => loadTopicAndComments(props.id)" />
 
         <div v-if="fullTopicData.is_locked" class="bg-gray-100 text-center text-gray-500 p-4 rounded-xl border border-gray-200 font-bold">
           🔒 Ova tema je zaključana za daljnje odgovore.

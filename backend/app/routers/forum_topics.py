@@ -23,6 +23,10 @@ class ForumTopicCreate(BaseModel):
 class ReportCreate(BaseModel):
     reason: str = Field(min_length=3, max_length=100)
 
+class ForumTopicUpdate(BaseModel):
+    title: Optional[str] = Field(None, min_length=3, max_length=200)
+    content: Optional[str] = Field(None, min_length=3)
+
 # Pomocne funkcije
 def make_summary(text: str, max_length: int = 150) -> str:
     clean_text = " ".join((text or "").split())
