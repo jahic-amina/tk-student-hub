@@ -1,10 +1,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { voteOnComment, toggleBestAnswer, deleteComment } from '../services/forum';
+import { voteOnComment, toggleBestAnswer, deleteComment, updateComment, createComment } from '../services/forum';
 
 const props = defineProps({
   comments: { type: Array, required: true },
   topicAuthorId: { type: Number, default: null },
+  topicId: { type: Number, default: null  }
 });
 
 const emit = defineEmits(['refresh']);
@@ -44,6 +45,60 @@ const localVotes = ref({});
 function getUserVote(comment) {
   if (localVotes.value[comment.id] !== undefined) return localVotes.value[comment.id];
   return comment.user_vote || 0;
+}
+
+// Edit komentar
+const editingCommentId = ref(null);
+const editContent = ref('');
+
+function startEdit(comment) {
+  editingCommentId.value = comment.id;
+  editContent.value = comment.content;
+}
+
+function cancelEdit() {
+  editingCommentId.value = null;
+  editContent.value = '';
+}
+
+async function submitEdit(comment) {
+  if (!editContent.value.trim()) return;
+  try {
+    await updateComment(comment.id, editContent.value);
+    editingCommentId.value = null;
+    emit('refresh');
+  } catch (e) {
+    alert('Greška pri editovanju komentara.');
+  }
+}
+
+// Reply
+const replyingToId = ref(null);
+const replyContent = ref('');
+
+function startReply(comment) {
+  replyingToId.value = comment.id;
+  replyContent.value = '';
+}
+
+function cancelReply() {
+  replyingToId.value = null;
+  replyContent.value = '';
+}
+
+async function submitReply(comment, topicId) {
+  if (!replyContent.value.trim()) return;
+  try {
+    await createComment({
+      content: replyContent.value,
+      topic_id: topicId,
+      parent_id: comment.id
+    });
+    replyingToId.value = null;
+    emit('refresh');
+  } catch (e) {
+    alert('Greška pri slanju odgovora.');
+  }
 }
 
 function getLikesCount(comment) {
@@ -123,94 +178,258 @@ function getInitials(name) {
     </h2>
 
     <div class="space-y-4">
-      <div
-        v-for="comment in comments"
-        :key="comment.id"
-        class="bg-white dark:bg-slate-800 rounded-xl border p-5 flex gap-4 transition-all shadow-sm"
-        :class="[
-          comment.is_admin_notice 
-            ? 'border-red-300 dark:border-red-900 bg-red-50/50 dark:bg-red-950/20 ring-1 ring-red-400/20' 
-            : comment.is_best_answer 
-              ? 'border-yellow-400 dark:border-yellow-600 bg-yellow-50/40 dark:bg-yellow-950/20 ring-1 ring-yellow-400/30' 
-              : 'border-gray-200 dark:border-slate-700'
-        ]"
-      >
-        <div class="flex flex-col items-center gap-0.5 flex-shrink-0 pt-1">
-          <button
-            @click="handleVote(comment, 1)"
-            class="w-7 h-7 flex items-center justify-center rounded-lg transition-all"
-            :class="getUserVote(comment) === 1 ? 'text-orange-500' : 'text-slate-300 dark:text-slate-600 hover:text-orange-400 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-slate-700'"
-            title="Upvote"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
-              <path d="M7.493 18.75c-.425 0-.82-.236-.975-.632A7.48 7.48 0 0 1 6 15.375c0-1.75.599-3.358 1.602-4.634.151-.192.373-.309.6-.397.473-.183.89-.514 1.212-.924a9.042 9.042 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V3a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H14.23c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23h-.777ZM2.331 10.727a11.969 11.969 0 0 0-.831 4.398 12 12 0 0 0 .52 3.507C2.28 19.482 3.105 20.25 4.105 20.25H4.5c.395 0 .786-.04 1.167-.114.098-.018.192-.074.252-.15.06-.076.088-.174.088-.274V9.75a.75.75 0 0 0-.75-.75h-.765c-.782 0-1.5.432-1.961 1.077-.107.148-.197.306-.27.47Z" />
-            </svg>
-          </button>
-          <span class="text-xs font-bold tabular-nums text-orange-500">{{ getLikesCount(comment) }}</span>
+      <template v-for="comment in comments" :key="comment.id">
+        
+        <!-- GLAVNI KOMENTAR -->
+        <div
+          class="bg-white dark:bg-slate-800 rounded-xl border p-5 flex gap-4 transition-all shadow-sm"
+          :class="[
+            comment.is_admin_notice 
+              ? 'border-red-300 dark:border-red-900 bg-red-50/50 dark:bg-red-950/20 ring-1 ring-red-400/20' 
+              : comment.is_best_answer 
+                ? 'border-yellow-400 dark:border-yellow-600 bg-yellow-50/40 dark:bg-yellow-950/20 ring-1 ring-yellow-400/30' 
+                : 'border-gray-200 dark:border-slate-700'
+          ]"
+        >
+          <!-- Voting -->
+          <div class="flex flex-col items-center gap-0.5 flex-shrink-0 pt-1">
+            <button
+              @click="handleVote(comment, 1)"
+              class="w-7 h-7 flex items-center justify-center rounded-lg transition-all"
+              :class="getUserVote(comment) === 1 ? 'text-orange-500' : 'text-slate-300 dark:text-slate-600 hover:text-orange-400 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-slate-700'"
+              title="Upvote"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                <path d="M7.493 18.75c-.425 0-.82-.236-.975-.632A7.48 7.48 0 0 1 6 15.375c0-1.75.599-3.358 1.602-4.634.151-.192.373-.309.6-.397.473-.183.89-.514 1.212-.924a9.042 9.042 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V3a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H14.23c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23h-.777ZM2.331 10.727a11.969 11.969 0 0 0-.831 4.398 12 12 0 0 0 .52 3.507C2.28 19.482 3.105 20.25 4.105 20.25H4.5c.395 0 .786-.04 1.167-.114.098-.018.192-.074.252-.15.06-.076.088-.174.088-.274V9.75a.75.75 0 0 0-.75-.75h-.765c-.782 0-1.5.432-1.961 1.077-.107.148-.197.306-.27.47Z" />
+              </svg>
+            </button>
+            <span class="text-xs font-bold tabular-nums text-orange-500">{{ getLikesCount(comment) }}</span>
+            <button
+              @click="handleVote(comment, -1)"
+              class="w-7 h-7 flex items-center justify-center rounded-lg transition-all"
+              :class="getUserVote(comment) === -1 ? 'text-slate-600 dark:text-slate-400' : 'text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'"
+              title="Downvote"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 rotate-180">
+                <path d="M7.493 18.75c-.425 0-.82-.236-.975-.632A7.48 7.48 0 0 1 6 15.375c0-1.75.599-3.358 1.602-4.634.151-.192.373-.309.6-.397.473-.183.89-.514 1.212-.924a9.042 9.042 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V3a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H14.23c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23h-.777ZM2.331 10.727a11.969 11.969 0 0 0-.831 4.398 12 12 0 0 0 .52 3.507C2.28 19.482 3.105 20.25 4.105 20.25H4.5c.395 0 .786-.04 1.167-.114.098-.018.192-.074.252-.15.06-.076.088-.174.088-.274V9.75a.75.75 0 0 0-.75-.75h-.765c-.782 0-1.5.432-1.961 1.077-.107.148-.197.306-.27.47Z" />
+              </svg>
+            </button>
+            <span class="text-xs font-bold tabular-nums text-slate-400 dark:text-slate-500">{{ getDislikesCount(comment) }}</span>
+          </div>
 
-          <button
-            @click="handleVote(comment, -1)"
-            class="w-7 h-7 flex items-center justify-center rounded-lg transition-all"
-            :class="getUserVote(comment) === -1 ? 'text-slate-600 dark:text-slate-400' : 'text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'"
-            title="Downvote"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 rotate-180">
-              <path d="M7.493 18.75c-.425 0-.82-.236-.975-.632A7.48 7.48 0 0 1 6 15.375c0-1.75.599-3.358 1.602-4.634.151-.192.373-.309.6-.397.473-.183.89-.514 1.212-.924a9.042 9.042 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V3a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H14.23c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23h-.777ZM2.331 10.727a11.969 11.969 0 0 0-.831 4.398 12 12 0 0 0 .52 3.507C2.28 19.482 3.105 20.25 4.105 20.25H4.5c.395 0 .786-.04 1.167-.114.098-.018.192-.074.252-.15.06-.076.088-.174.088-.274V9.75a.75.75 0 0 0-.75-.75h-.765c-.782 0-1.5.432-1.961 1.077-.107.148-.197.306-.27.47Z" />
-            </svg>
-          </button>
-          <span class="text-xs font-bold tabular-nums text-slate-400 dark:text-slate-500">{{ getDislikesCount(comment) }}</span>
-        </div>
+          <div class="flex-1 min-w-0">
+            <!-- Header komentara -->
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
+                <span class="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold text-[8px]">
+                  {{ getInitials(comment.author?.full_name) }}
+                </span>
+                <strong class="text-slate-600 dark:text-slate-300">{{ comment.author?.full_name || 'Kolega' }}</strong>
+                <span>•</span>
+                <span>{{ formatDate(comment.created_at) }}</span>
+                <span v-if="comment.is_admin_notice" class="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-full font-bold shadow-sm">
+                  🛡️ Admin Notice
+                </span>
+                <span v-if="comment.is_best_answer" class="text-[10px] bg-yellow-100 dark:bg-yellow-950/60 text-yellow-700 dark:text-yellow-400 px-2 py-0.5 rounded-full font-bold border border-yellow-300 dark:border-yellow-800">
+                  ✓ Najbolji odgovor
+                </span>
+              </div>
 
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center justify-between mb-2">
-            <div class="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
-              <span class="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold text-[8px]">
-                {{ getInitials(comment.author?.full_name) }}
-              </span>
-              <strong class="text-slate-600 dark:text-slate-300">{{ comment.author?.full_name || 'Kolega' }}</strong>
-              <span>•</span>
-              <span>{{ formatDate(comment.created_at) }}</span>
-              
-              <span v-if="comment.is_admin_notice" class="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-full font-bold shadow-sm flex items-center gap-1M">
-                🛡️ Admin Notice
-              </span>
-              
-              <span 
-                v-if="comment.is_best_answer"
-                class="text-[10px] bg-yellow-100 dark:bg-yellow-950/60 text-yellow-700 dark:text-yellow-400 px-2 py-0.5 rounded-full font-bold border border-yellow-300 dark:border-yellow-800"
-              >
-                ✓ Najbolji odgovor
-              </span>
+              <!-- Akcijska dugmad -->
+              <div class="flex items-center gap-1">
+                <button
+                  v-if="isTopicAuthor"
+                  @click="handleBestAnswer(comment)"
+                  class="w-7 h-7 flex items-center justify-center rounded-full transition-all"
+                  :class="comment.is_best_answer ? 'text-yellow-500 hover:text-red-400' : 'text-slate-300 dark:text-slate-600 hover:text-yellow-500 dark:hover:text-yellow-400'"
+                  :title="comment.is_best_answer ? 'Ukloni najbolji odgovor' : 'Označi kao najbolji odgovor'"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                    <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd" />
+                  </svg>
+                </button>
+
+                <!-- Edit dugme -->
+                <button
+                  v-if="(currentUserId === comment.author?.id || isAdmin) && !comment.is_deleted"
+                  @click="startEdit(comment)"
+                  class="w-7 h-7 flex items-center justify-center rounded-full transition-all text-slate-300 dark:text-slate-600 hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+                  title="Edituj komentar"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                    <path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-8.4 8.4a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32l8.4-8.4Z" />
+                    <path d="M5.25 5.25a3 3 0 0 0-3 3v10.5a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3V13.5a.75.75 0 0 0-1.5 0v5.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5V8.25a1.5 1.5 0 0 1 1.5-1.5h5.25a.75.75 0 0 0 0-1.5H5.25Z" />
+                  </svg>
+                </button>
+
+                <!-- Delete dugme -->
+                <button
+                  v-if="currentUserId === comment.author?.id || isAdmin"
+                  @click="handleDeleteComment(comment)"
+                  class="w-7 h-7 flex items-center justify-center rounded-full transition-all text-slate-300 dark:text-slate-600 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"
+                  :title="isAdmin ? 'Admin: Obriši komentar' : 'Obriši komentar'"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                    <path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z" clip-rule="evenodd" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
-            <div class="flex flex-col items-center gap-1">
-              <button
-                v-if="isTopicAuthor"
-                @click="handleBestAnswer(comment)"
-                class="w-7 h-7 flex items-center justify-center rounded-full transition-all"
-                :class="comment.is_best_answer ? 'text-yellow-500 hover:text-red-400' : 'text-slate-300 dark:text-slate-600 hover:text-yellow-500 dark:hover:text-yellow-400'"
-                :title="comment.is_best_answer ? 'Ukloni najbolji odgovor' : 'Označi kao najbolji odgovor'"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
-                  <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd" />
-                </svg>
-              </button>
+            <!-- Sadržaj komentara ili placeholder -->
+            <div v-if="comment.is_deleted" class="text-slate-400 dark:text-slate-500 text-sm italic">
+              deleted by user
+            </div>
 
+            <!-- Edit forma -->
+            <div v-else-if="editingCommentId === comment.id">
+              <textarea
+                v-model="editContent"
+                class="w-full text-sm border border-gray-200 dark:border-slate-600 rounded-lg p-3 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
+                rows="3"
+              />
+              <div class="flex gap-2 mt-2">
+                <button @click="submitEdit(comment)" class="px-3 py-1.5 bg-orange-500 hover:bg-orange-400 text-white text-xs font-bold rounded-lg transition-colors">
+                  Sačuvaj
+                </button>
+                <button @click="cancelEdit()" class="px-3 py-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 text-slate-500 text-xs rounded-lg hover:bg-gray-50 transition-colors">
+                  Otkaži
+                </button>
+              </div>
+            </div>
+
+            <!-- Normalan sadržaj -->
+            <p v-else class="text-slate-700 dark:text-slate-300 leading-relaxed text-sm whitespace-pre-line">{{ comment.content }}</p>
+
+            <!-- Dugme Odgovori -->
+            <div class="mt-2">
               <button
-                v-if="currentUserId === comment.author?.id || isAdmin"
-                @click="handleDeleteComment(comment)"
-                class="w-7 h-7 flex items-center justify-center rounded-full transition-all text-slate-300 dark:text-slate-600 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"
-                :title="isAdmin ? 'Admin: Obriši komentar' : 'Obriši komentar'"
+                v-if="currentUserId && !comment.is_deleted"
+                @click="startReply(comment)"
+                class="text-xs text-slate-400 hover:text-orange-500 transition-colors font-medium"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
-                  <path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z" clip-rule="evenodd" />
-                </svg>
+                ↩ Odgovori
               </button>
+            </div>
+
+            <!-- Inline reply forma -->
+            <div v-if="replyingToId === comment.id" class="mt-3">
+              <textarea
+                v-model="replyContent"
+                placeholder="Napišite odgovor..."
+                class="w-full text-sm border border-gray-200 dark:border-slate-600 rounded-lg p-3 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
+                rows="3"
+              />
+              <div class="flex gap-2 mt-2">
+                <button @click="submitReply(comment, props.topicId)" class="px-3 py-1.5 bg-orange-500 hover:bg-orange-400 text-white text-xs font-bold rounded-lg transition-colors">
+                  Pošalji
+                </button>
+                <button @click="cancelReply()" class="px-3 py-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 text-slate-500 text-xs rounded-lg hover:bg-gray-50 transition-colors">
+                  Otkaži
+                </button>
+              </div>
+            </div>
+
+            <!-- REPLIES -->
+            <div v-if="comment.replies && comment.replies.length > 0" class="mt-4 space-y-3 pl-6 border-l-2 border-gray-100 dark:border-slate-700">
+              <div
+                v-for="reply in comment.replies"
+                :key="reply.id"
+                class="bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-gray-200 dark:border-slate-600 p-4 flex gap-3"
+              >
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
+                      <span class="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold text-[8px]">
+                        {{ getInitials(reply.author?.full_name) }}
+                      </span>
+                      <strong class="text-slate-600 dark:text-slate-300">{{ reply.author?.full_name || 'Kolega' }}</strong>
+                      <span>•</span>
+                      <span>{{ formatDate(reply.created_at) }}</span>
+                    </div>
+
+                    <!-- Akcijska dugmad za reply -->
+                    <div class="flex items-center gap-1">
+                      <button
+                        v-if="(currentUserId === reply.author?.id || isAdmin) && !reply.is_deleted"
+                        @click="startEdit(reply)"
+                        class="w-6 h-6 flex items-center justify-center rounded-full transition-all text-slate-300 dark:text-slate-600 hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+                        title="Edituj"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3">
+                          <path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-8.4 8.4a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32l8.4-8.4Z" />
+                          <path d="M5.25 5.25a3 3 0 0 0-3 3v10.5a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3V13.5a.75.75 0 0 0-1.5 0v5.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5V8.25a1.5 1.5 0 0 1 1.5-1.5h5.25a.75.75 0 0 0 0-1.5H5.25Z" />
+                        </svg>
+                      </button>
+                      <button
+                        v-if="currentUserId === reply.author?.id || isAdmin"
+                        @click="handleDeleteComment(reply)"
+                        class="w-6 h-6 flex items-center justify-center rounded-full transition-all text-slate-300 dark:text-slate-600 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"
+                        title="Obriši"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3">
+                          <path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z" clip-rule="evenodd" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Sadržaj reply-a -->
+                  <div v-if="reply.is_deleted" class="text-slate-400 dark:text-slate-500 text-sm italic">
+                    deleted by user
+                  </div>
+                  <div v-else-if="editingCommentId === reply.id">
+                    <textarea
+                      v-model="editContent"
+                      class="w-full text-sm border border-gray-200 dark:border-slate-600 rounded-lg p-3 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
+                      rows="3"
+                    />
+                    <div class="flex gap-2 mt-2">
+                      <button @click="submitEdit(reply)" class="px-3 py-1.5 bg-orange-500 hover:bg-orange-400 text-white text-xs font-bold rounded-lg transition-colors">
+                        Sačuvaj
+                      </button>
+                      <button @click="cancelEdit()" class="px-3 py-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 text-slate-500 text-xs rounded-lg hover:bg-gray-50 transition-colors">
+                        Otkaži
+                      </button>
+                    </div>
+                  </div>
+                  <p v-else class="text-slate-700 dark:text-slate-300 leading-relaxed text-sm whitespace-pre-line">{{ reply.content }}</p>
+
+                  <!-- Dugme Odgovori na reply -->
+                  <div class="mt-2">
+                    <button
+                      v-if="currentUserId && !reply.is_deleted"
+                      @click="startReply(reply)"
+                      class="text-xs text-slate-400 hover:text-orange-500 transition-colors font-medium"
+                    >
+                      ↩ Odgovori
+                    </button>
+                  </div>
+
+                  <!-- Inline reply forma za reply -->
+                  <div v-if="replyingToId === reply.id" class="mt-3">
+                    <textarea
+                      v-model="replyContent"
+                      placeholder="Napišite odgovor..."
+                      class="w-full text-sm border border-gray-200 dark:border-slate-600 rounded-lg p-3 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
+                      rows="3"
+                    />
+                    <div class="flex gap-2 mt-2">
+                      <button @click="submitReply(reply, props.topicId)" class="px-3 py-1.5 bg-orange-500 hover:bg-orange-400 text-white text-xs font-bold rounded-lg transition-colors">
+                        Pošalji
+                      </button>
+                      <button @click="cancelReply()" class="px-3 py-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 text-slate-500 text-xs rounded-lg hover:bg-gray-50 transition-colors">
+                        Otkaži
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <p class="text-slate-700 dark:text-slate-300 leading-relaxed text-sm whitespace-pre-line">{{ comment.content }}</p>
         </div>
-      </div>
+
+      </template>
 
       <div v-if="comments.length === 0" class="text-center py-8 text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm">
         Još nema odgovora. Budite prvi!

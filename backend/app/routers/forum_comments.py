@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select, func
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
+from datetime import datetime
 
 from app.database import get_db
 from app.core.security import get_current_user
@@ -16,10 +17,13 @@ class ForumCommentCreate(BaseModel):
     content: str = Field(min_length=2)
     topic_id: int
     is_admin_notice: Optional[bool] = False
+    parent_id: Optional[int] = None
 
 class VoteInput(BaseModel):
     value: int = Field(..., description="1 za like, -1 za dislike")
 
+class ForumCommentUpdate(BaseModel):
+    content: str = Field(min_length=2)
     
 # Pomocne funkcije za komentare
 def get_comment_votes_count(db: Session, comment_id: int) -> int:
@@ -50,25 +54,60 @@ def get_topic_votes_count(db: Session, topic_id: int) -> int:
     return total
 
 def get_topic_comments(db: Session, topic_id: int) -> list[dict]:
-    
     from app.routers.forum_topics import get_author_data
     
-    comments = db.exec(select(ForumComment).where(ForumComment.topic_id == topic_id, ForumComment.is_deleted == False)).all()
-    comment_items = []
-    for comment in comments:
+    all_comments = db.exec(select(ForumComment).where(ForumComment.topic_id == topic_id)).all()
+    
+    def build_comment_dict(comment: ForumComment) -> dict:
         votes_count = get_comment_votes_count(db, comment.id)
         likes_count = get_comment_likes_count(db, comment.id)
         dislikes_count = get_comment_dislikes_count(db, comment.id)
-        comment_items.append({
-            "id": comment.id, "content": comment.content, "is_best_answer": comment.is_best_answer,
-            "created_at": comment.created_at, "updated_at": comment.updated_at, 
+        
+        if comment.is_deleted:
+            return {
+                "id": comment.id,
+                "content": "deleted by user",
+                "is_deleted": True,
+                "is_best_answer": False,
+                "parent_id": comment.parent_id,
+                "created_at": comment.created_at,
+                "updated_at": comment.updated_at,
+                "votes_count": 0,
+                "likes_count": 0,
+                "dislikes_count": 0,
+                "author": None,
+                "replies": []
+            }
+        
+        return {
+            "id": comment.id,
+            "content": comment.content,
+            "is_deleted": False,
+            "is_best_answer": comment.is_best_answer,
+            "parent_id": comment.parent_id,
+            "created_at": comment.created_at,
+            "updated_at": comment.updated_at,
             "votes_count": votes_count,
             "likes_count": likes_count,
             "dislikes_count": dislikes_count,
             "author": get_author_data(db, comment.user_id),
-        })
-    comment_items.sort(key=lambda item: (not item["is_best_answer"], -item["votes_count"], item["created_at"]))
-    return comment_items
+            "replies": []
+        }
+    
+    comment_dict = {comment.id: build_comment_dict(comment) for comment in all_comments}
+    
+    top_level = []
+    for comment in all_comments:
+        comment_data = comment_dict[comment.id]
+        if comment.parent_id is None:
+            top_level.append(comment_data)
+        else:
+            parent = comment_dict.get(comment.parent_id)
+            if parent:
+                parent["replies"].append(comment_data)
+    
+    top_level.sort(key=lambda item: (not item["is_best_answer"], -item["votes_count"], item["created_at"]))
+    return top_level
 
 # Rute za komentare
 
@@ -87,7 +126,7 @@ def create_forum_comment(
     if is_admin_notice and getattr(current_user, 'role', 'member') != 'admin':
         is_admin_notice = False
 
-    new_comment = ForumComment(content=comment_data.content, topic_id=comment_data.topic_id, user_id=current_user.id, is_admin_notice=is_admin_notice)
+    new_comment = ForumComment(content=comment_data.content, topic_id=comment_data.topic_id, user_id=current_user.id, is_admin_notice=is_admin_notice, parent_id=comment_data.parent_id)
     db.add(new_comment)
     db.commit()
     db.refresh(new_comment)
@@ -194,10 +233,44 @@ def delete_comment(
     if not comment or comment.is_deleted:
         raise HTTPException(status_code=404, detail="Komentar nije pronađen.")
     
-    if comment.user_id != current_user.id:
+    if comment.user_id != current_user.id and getattr(current_user, 'role', 'member') != 'admin':
         raise HTTPException(status_code=403, detail="Možete obrisati samo vlastiti komentar.")
     
-    comment.is_deleted = True
+    replies = db.exec(
+        select(ForumComment).where(
+            ForumComment.parent_id == comment_id,
+            ForumComment.is_deleted == False
+        )
+    ).all()
+
+    if replies:
+        comment.is_deleted = True
+        db.add(comment)
+        db.commit()
+    else:
+        db.delete(comment)
+        db.commit()
+    
+    return {"message": "Komentar je uspješno obrisan.", "comment_id": comment_id}
+
+@router.put("/{comment_id}", status_code=status.HTTP_200_OK)
+def update_comment(
+    comment_id: int,
+    comment_data: ForumCommentUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    comment = db.get(ForumComment, comment_id)
+    if not comment or comment.is_deleted:
+        raise HTTPException(status_code=404, detail="Komentar nije pronađen.")
+    
+    if comment.user_id != current_user.id and getattr(current_user, 'role', 'member') != 'admin':
+        raise HTTPException(status_code=403, detail="Možete editovati samo vlastiti komentar.")
+    
+    comment.content = comment_data.content
+    comment.updated_at = datetime.utcnow()
     db.add(comment)
     db.commit()
-    return {"message": "Komentar je uspješno obrisan.", "comment_id": comment_id}
+    db.refresh(comment)
+    
+    return {"id": comment.id, "content": comment.content, "updated_at": comment.updated_at}
