@@ -300,14 +300,13 @@ def handle_report_action(
     return {"success": True, "new_status": report.status}
 
 
+
 @router.get("/popular", response_model=List[Dict[str, Any]])
 def get_popular_sidebar_topics(db: Session = Depends(get_db)):
     from app.models.forum import ForumComment, ForumLike
     
-    # Vremenska granica od zadnjih 7 dana
     vremenska_granica = datetime.utcnow() - timedelta(days=7)
     
-    # Brojanje aktivnih komentara po temi
     comments_sub = (
         select(ForumComment.topic_id, func.count(ForumComment.id).label("c_count"))
         .where(ForumComment.is_deleted == False)
@@ -315,14 +314,12 @@ def get_popular_sidebar_topics(db: Session = Depends(get_db)):
         .subquery()
     )
     
-    # Brojanje lajkova po temi
     likes_sub = (
         select(ForumLike.topic_id, func.count(ForumLike.id).label("l_count"))
         .group_by(ForumLike.topic_id)
         .subquery()
     )
     
-    # Glavni upit sa formulom popularnosti: pregledi + lajkovi + komentari
     statement = (
         select(ForumTopic)
         .where(ForumTopic.is_deleted == False)
@@ -341,6 +338,36 @@ def get_popular_sidebar_topics(db: Session = Depends(get_db)):
     
     popular_topics = db.exec(statement).all()
     return [build_topic_list_item(db, topic) for topic in popular_topics]
+
+
+
+@router.get("/category-popular/{category_id}", response_model=List[Dict[str, Any]])
+def get_category_popular_topics(category_id: int, db: Session = Depends(get_db)):
+    from app.models.forum import ForumLike
+
+    likes_sub = (
+        select(ForumLike.topic_id, func.count(ForumLike.id).label("l_count"))
+        .group_by(ForumLike.topic_id)
+        .subquery()
+    )
+
+    statement = (
+        select(ForumTopic)
+        .where(ForumTopic.is_deleted == False)
+        .where(ForumTopic.category_id == category_id)
+        .join(likes_sub, likes_sub.topic_id == ForumTopic.id, isouter=True)
+        
+        .order_by(
+            (
+                ForumTopic.views_count + 
+                func.coalesce(likes_sub.c.l_count, 0)
+            ).desc()
+        )
+        .limit(5)
+    )
+
+    category_topics = db.exec(statement).all()
+    return [build_topic_list_item(db, topic) for topic in category_topics]
 
 
 @router.get("/{topic_id}")
