@@ -30,13 +30,13 @@ onMounted(() => {
 </script>
 
 <template>
- <div class="w-full bg-white dark:bg-slate-800 p-6 rounded-2xl border border-gray-100 dark:border-slate-700/50 shadow-sm transition-colors duration-200">
-    <h2 class="text-xl font-extrabold text-slate-800 dark:text-white mb-6 flex items-center">
+ <div class="w-full bg-transparent">
+    <h2 class="text-xl font-extrabold text-slate-800 dark:text-white mb-6 flex items-center px-2">
       <span class="w-1.5 h-6 bg-[#ff7a00] mr-3 rounded-full"></span>
       Kategorije
     </h2>
 
-    <div v-if="loading" class="space-y-4">
+    <div v-if="loading" class="space-y-4 px-2">
       <div v-for="i in 5" :key="i" class="h-10 bg-gray-100 dark:bg-slate-700 rounded-lg animate-pulse"></div>
     </div>
 
@@ -89,7 +89,7 @@ onMounted(() => {
       </li>
     </ul>
 
-    <div class="mt-8 pt-6 border-t border-gray-100 dark:border-slate-700">
+    <div class="mt-8 pt-6 px-2 border-t border-gray-100 dark:border-slate-700">
       <h3 class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">Popularni tagovi</h3>
       <div class="flex flex-wrap gap-2">
         <span class="text-[11px] font-bold bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-slate-500 dark:text-slate-300 px-3 py-1.5 rounded-full hover:border-[#ff7a00] hover:text-[#ff7a00] dark:hover:border-[#ff7a00] cursor-pointer transition-all">
