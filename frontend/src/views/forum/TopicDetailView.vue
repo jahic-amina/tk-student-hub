@@ -51,11 +51,7 @@ const loadTopicAndComments = async (topicId) => {
 
 // Ako korisnik klikne na kategoriju u sidebaru, vraćamo ga na forum
 const preusmjeriNaKategoriju = (kategorijaId) => {
-  if (kategorijaId === null) {
-    router.push('/forum');
-  } else {
-    router.push('/forum'); 
-  }
+  router.push('/forum');
 };
 
 onMounted(async () => {
@@ -175,7 +171,12 @@ const handleNewComment = async ({ content, clearForm }) => {
           class="col-span-12 md:col-span-3 lg:col-span-3 xl:col-span-3"
           style="position: sticky; top: 140px; align-self: flex-start; z-index: 20;"
         >
-          <ForumWidgets />
+          <ForumWidgets 
+            v-if="fullTopicData"
+            :current-topic-id="fullTopicData.id" 
+            :selected-category-id="fullTopicData.category_id || fullTopicData.category?.id"
+            :current-topic-title="fullTopicData.title" 
+          />
         </div>
 
       </div>
