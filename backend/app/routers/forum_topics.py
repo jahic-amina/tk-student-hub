@@ -300,13 +300,15 @@ def handle_report_action(
     return {"success": True, "new_status": report.status}
 
 
-
+# THT-162: Globalni widget za popularne teme (Zadnjih 7 dana, komentari + pregledi)
 @router.get("/popular", response_model=List[Dict[str, Any]])
 def get_popular_sidebar_topics(db: Session = Depends(get_db)):
-    from app.models.forum import ForumComment, ForumLike
+    from app.models.forum import ForumComment
     
+    # Vremenska granica od zadnjih 7 dana
     vremenska_granica = datetime.utcnow() - timedelta(days=7)
     
+    # Podupit koji broji komentare za svaku temu
     comments_sub = (
         select(ForumComment.topic_id, func.count(ForumComment.id).label("c_count"))
         .where(ForumComment.is_deleted == False)
@@ -314,24 +316,19 @@ def get_popular_sidebar_topics(db: Session = Depends(get_db)):
         .subquery()
     )
     
-    likes_sub = (
-        select(ForumLike.topic_id, func.count(ForumLike.id).label("l_count"))
-        .group_by(ForumLike.topic_id)
-        .subquery()
-    )
-    
+    # Glavni upit: spajamo teme sa brojem komentara
     statement = (
         select(ForumTopic)
         .where(ForumTopic.is_deleted == False)
         .where(ForumTopic.created_at >= vremenska_granica)
         .join(comments_sub, comments_sub.c.topic_id == ForumTopic.id, isouter=True)
-        .join(likes_sub, likes_sub.topic_id == ForumTopic.id, isouter=True)
+        # Sortiranje: pregledi + broj komentara (koristimo func.coalesce da NULL pretvorimo u 0)
         .order_by(
             (
                 ForumTopic.views_count + 
-                func.coalesce(likes_sub.c.l_count, 0) + 
                 func.coalesce(comments_sub.c.c_count, 0)
-            ).desc()
+            ).desc(),
+            ForumTopic.id.desc()
         )
         .limit(5)
     )
@@ -340,14 +337,16 @@ def get_popular_sidebar_topics(db: Session = Depends(get_db)):
     return [build_topic_list_item(db, topic) for topic in popular_topics]
 
 
-
+# THT-163: Kontekstualni widget za kategorije (Top 5 najčitanijih unutar specifične kategorije)
 @router.get("/category-popular/{category_id}", response_model=List[Dict[str, Any]])
 def get_category_popular_topics(category_id: int, db: Session = Depends(get_db)):
-    from app.models.forum import ForumLike
+    from app.models.forum import ForumComment
 
-    likes_sub = (
-        select(ForumLike.topic_id, func.count(ForumLike.id).label("l_count"))
-        .group_by(ForumLike.topic_id)
+    # Podupit koji broji komentare
+    comments_sub = (
+        select(ForumComment.topic_id, func.count(ForumComment.id).label("c_count"))
+        .where(ForumComment.is_deleted == False)
+        .group_by(ForumComment.topic_id)
         .subquery()
     )
 
@@ -355,20 +354,20 @@ def get_category_popular_topics(category_id: int, db: Session = Depends(get_db))
         select(ForumTopic)
         .where(ForumTopic.is_deleted == False)
         .where(ForumTopic.category_id == category_id)
-        .join(likes_sub, likes_sub.topic_id == ForumTopic.id, isouter=True)
-        
+        .join(comments_sub, comments_sub.c.topic_id == ForumTopic.id, isouter=True)
+        # Sortiranje: Najčitanije (views_count) + Broj odgovora
         .order_by(
             (
                 ForumTopic.views_count + 
-                func.coalesce(likes_sub.c.l_count, 0)
-            ).desc()
+                func.coalesce(comments_sub.c.c_count, 0)
+            ).desc(),
+            ForumTopic.id.desc()
         )
         .limit(5)
     )
 
     category_topics = db.exec(statement).all()
     return [build_topic_list_item(db, topic) for topic in category_topics]
-
 
 @router.get("/{topic_id}")
 def get_topic_details(topic_id: int, db: Session = Depends(get_db)):

@@ -286,7 +286,7 @@ watch(currentMode, (newMode) => {
         </div>
 
         <div class="col-span-12 md:col-span-3 lg:col-span-3 xl:col-span-3" style="position: sticky; top: 140px; align-self: flex-start; z-index: 20;">
-          <ForumWidgets />
+          <ForumWidgets :selected-category-id="odabraniKategorijaId" />
         </div>
 
       </div>
