@@ -115,42 +115,20 @@ export async function getSearchSuggestions(query = "", options = {}) {
   return handleResponse(response, 'Greška pri dohvatanju sugestija.');
 }
 
-// Globalni widget popularnih tema
+// Globalni widget popularnih tema (Zadnjih 7 dana)
 export async function getPopularTopics() {
   const response = await fetch(`${BASE_URL}/forum/topics/popular`, { headers: getHeaders() });
   return handleResponse(response, 'Greška pri dohvatanju popularnih tema.');
 }
 
-// Kontekstualni widget za kategorije
+// Kontekstualni widget popularnih tema u kategoriji
 export async function getCategoryPopularTopics(categoryId) {
   const response = await fetch(`${BASE_URL}/forum/topics/category-popular/${categoryId}`, { headers: getHeaders() });
   return handleResponse(response, 'Greška pri dohvatanju popularnih tema kategorije.');
 }
 
+// Widget za slične teme (unutar otvorene teme)
 export async function getRelatedTopics(topicId) {
   const response = await fetch(`${BASE_URL}/forum/topics/${topicId}/related`, { headers: getHeaders() });
-  return handleResponse(response, 'Greška pri dohvatanju sličnih tema.');
+  return handleResponse(response, 'Greška pri dohvatanju povezanih tema.');
 }
-
-export default {
-  getCategories,
-  getTopics,
-  getTopicById,
-  incrementTopicView,
-  deleteTopic,
-  createTopic,
-  createComment,
-  voteOnComment,
-  toggleBestAnswer,
-  getPopularTags,
-  deleteComment,
-  reportTopic,
-  getActiveAnnouncements,
-  getActiveReports,
-  handleReportAction,
-  getSearchSuggestions,
-  updateComment,
-  getPopularTopics,
-  getCategoryPopularTopics,
-  getRelatedTopics
-};
