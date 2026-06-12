@@ -70,48 +70,38 @@ def get_all_topics(
     search: Optional[str] = None,
     page: int = 1,
     per_page: int = 5,
-    
     sort_by: Optional[str] = "najnovije", 
     unanswered: Optional[bool] = False,   
     days_old: Optional[int] = None        
 ):
-    
     statement = select(ForumTopic).where(ForumTopic.is_deleted == False)
     count_statement = select(func.count(ForumTopic.id)).where(ForumTopic.is_deleted == False)
 
-   
     if category_id is not None:
         statement = statement.where(ForumTopic.category_id == category_id)
         count_statement = count_statement.where(ForumTopic.category_id == category_id)
         
-  
     if search and search.strip():
         search_value = f"%{search.strip()}%"
         condition = (ForumTopic.title.ilike(search_value)) | (ForumTopic.content.ilike(search_value))
         statement = statement.where(condition)
         count_statement = count_statement.where(condition)
 
-    
     if days_old is not None and days_old > 0:
         vremenska_granica = datetime.utcnow() - timedelta(days=days_old)
         statement = statement.where(ForumTopic.created_at >= vremenska_granica)
         count_statement = count_statement.where(ForumTopic.created_at >= vremenska_granica)
 
-
     if unanswered:
-        
         from app.models.forum import ForumComment
         subquery = select(ForumComment.topic_id).where(ForumComment.is_deleted == False).subquery()
         statement = statement.where(ForumTopic.id.not_in(subquery))
         count_statement = count_statement.where(ForumTopic.id.not_in(subquery))
 
-
     if sort_by == "najgledanije":
         statement = statement.order_by(ForumTopic.views_count.desc(), ForumTopic.id.desc())
     elif sort_by == "najaktivnije":
         from app.models.forum import ForumComment
-        # count_statement must be computed BEFORE we add the JOIN + GROUP BY to statement,
-        # otherwise the count would include the JOIN and return wrong totals.
         total_topics = db.exec(count_statement).one()
         statement = (
             statement
@@ -122,9 +112,10 @@ def get_all_topics(
     else:
         statement = statement.order_by(ForumTopic.created_at.desc())
 
-    # For non-najaktivnije paths, run the count query now
+    # Pokreni count upit za sve rute osim "najaktivnije" (gdje se računa ranije)
     if sort_by != "najaktivnije":
         total_topics = db.exec(count_statement).one()
+
     skip = (page - 1) * per_page
     statement = statement.offset(skip).limit(per_page)
     topics = db.exec(statement).all()
@@ -135,9 +126,7 @@ def get_all_topics(
 
 @router.get("/suggestions")
 def get_suggestions(search: Optional[str] = None, db: Session = Depends(get_db)):
-   
     if not search or not search.strip():
-      
         popular_stmt = (
             select(ForumTopic)
             .where(ForumTopic.is_deleted == False)
@@ -146,7 +135,6 @@ def get_suggestions(search: Optional[str] = None, db: Session = Depends(get_db))
         )
         popular_topics = db.exec(popular_stmt).all()
         
-       
         active_stmt = (
             select(ForumTopic)
             .where(ForumTopic.is_deleted == False)
@@ -160,14 +148,10 @@ def get_suggestions(search: Optional[str] = None, db: Session = Depends(get_db))
             "active": [{"id": t.id, "title": t.title} for t in active_topics]
         }
     
-    
     search_term = search.strip()
-    
-  
     starts_with_value = f"{search_term}%"
     filtered_stmt = select(ForumTopic).where(ForumTopic.is_deleted == False).where(ForumTopic.title.ilike(starts_with_value)).limit(5)
     filtered_topics = db.exec(filtered_stmt).all()
-    
     
     if not filtered_topics:
         contains_value = f"%{search_term}%"
@@ -311,6 +295,49 @@ def handle_report_action(
     return {"success": True, "new_status": report.status}
 
 
+@router.get("/popular", response_model=List[Dict[str, Any]])
+def get_popular_sidebar_topics(db: Session = Depends(get_db)):
+    from app.models.forum import ForumComment, ForumLike
+    
+    # Vremenska granica od zadnjih 7 dana
+    vremenska_granica = datetime.utcnow() - timedelta(days=7)
+    
+    # Brojanje aktivnih komentara po temi
+    comments_sub = (
+        select(ForumComment.topic_id, func.count(ForumComment.id).label("c_count"))
+        .where(ForumComment.is_deleted == False)
+        .group_by(ForumComment.topic_id)
+        .subquery()
+    )
+    
+    # Brojanje lajkova po temi
+    likes_sub = (
+        select(ForumLike.topic_id, func.count(ForumLike.id).label("l_count"))
+        .group_by(ForumLike.topic_id)
+        .subquery()
+    )
+    
+    # Glavni upit sa formulom popularnosti: pregledi + lajkovi + komentari
+    statement = (
+        select(ForumTopic)
+        .where(ForumTopic.is_deleted == False)
+        .where(ForumTopic.created_at >= vremenska_granica)
+        .join(comments_sub, comments_sub.c.topic_id == ForumTopic.id, isouter=True)
+        .join(likes_sub, likes_sub.topic_id == ForumTopic.id, isouter=True)
+        .order_by(
+            (
+                ForumTopic.views_count + 
+                func.coalesce(likes_sub.c.l_count, 0) + 
+                func.coalesce(comments_sub.c.c_count, 0)
+            ).desc()
+        )
+        .limit(5)
+    )
+    
+    popular_topics = db.exec(statement).all()
+    return [build_topic_list_item(db, topic) for topic in popular_topics]
+
+
 @router.get("/{topic_id}")
 def get_topic_details(topic_id: int, db: Session = Depends(get_db)):
     topic = db.get(ForumTopic, topic_id)
@@ -394,14 +421,14 @@ def update_topic(
         raise HTTPException(status_code=404, detail="Tema nije pronađena.")
     
     if topic.user_id != current_user.id and getattr(current_user, 'role', 'member') != 'admin':
-        raise HTTPException(status_code=403, detail="Možete editovati samo vlastitu temu.")
+        raise HTTPException(status_code=403, detail="Možete editovati samo vlastiti temu.")
     
     if topic_data.title is not None:
         topic.title = topic_data.title
     if topic_data.content is not None:
         topic.content = topic_data.content
     
-    topic.updated_at = datetime.utcnow() # Promijenjeno u utcnow radi konzistentnosti sa bazom
+    topic.updated_at = datetime.utcnow() 
     db.add(topic)
     db.commit()
     db.refresh(topic)
