@@ -5,6 +5,7 @@ import ForumTopicCard from '../../components/ForumTopicCard.vue';
 import { useForumLazyLoading, updateTopicLikeInList } from '../../composables/useForumExtras.js';
 import ForumSearchDropdown from '../../components/ForumSearchDropdown.vue';
 import ForumFilters from '../../components/ForumFilters.vue';
+import ForumWidgets from '../../components/ForumWidgets.vue';
 import { 
   getTopics, 
   getCategories, 
@@ -262,7 +263,6 @@ watch(currentMode, (newMode) => {
   <div class="min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-6 transition-colors duration-200">
     <div class="max-w-7xl mx-auto">
 
-      <!-- Header - NIJE sticky, normalno scrolla -->
       <div class="flex justify-between items-center mb-8 border-b border-gray-200 dark:border-slate-800 py-4 pt-6 -mt-2">
         <div>
           <h1 class="text-3xl font-bold tracking-tight text-slate-800 dark:text-white">Studentski Forum</h1>
@@ -282,7 +282,6 @@ watch(currentMode, (newMode) => {
 
       <AdminAnnouncementBanner :announcements="announcements" />
 
-      <!-- STICKY RED: admin tabovi + kategorija/search/filteri/nova tema -->
       <div class="sticky top-[72px] z-30 bg-gray-50 dark:bg-slate-900 pb-4 mb-6 border-b border-gray-200 dark:border-slate-800">
 
         <div v-if="isAdmin" class="flex gap-1 bg-gray-100 dark:bg-slate-800 p-1 rounded-xl max-w-lg mt-4 mb-4 border border-gray-200 dark:border-slate-700 select-none">
@@ -339,19 +338,16 @@ watch(currentMode, (newMode) => {
         </div>
 
       </div>
-      <!-- KRAJ STICKY REDA -->
+      <div class="grid grid-cols-12 gap-6 items-start w-full overflow-x-auto md:overflow-x-visible">
 
-      <div class="flex flex-col md:flex-row gap-8 items-start">
-
-        <!-- SIDEBAR: sticky, bez kartice/paddinga, ispod sticky reda -->
         <div 
-          class="w-full md:w-72 flex-shrink-0"
+          class="col-span-3 min-w-[200px]"
           style="position: sticky; top: 180px; align-self: flex-start; z-index: 20;"
         >
           <ForumSidebar :aktivna-kategorija-id="odabraniKategorijaId" @kategorija-izabrana="filtrirajPoKategoriji" />
         </div>
 
-        <div class="flex-1 w-full">
+        <div class="col-span-6 min-w-[450px] w-full">
           <div class="flex flex-col justify-between min-h-[500px]">
             <div>
 
@@ -442,6 +438,14 @@ watch(currentMode, (newMode) => {
 
           </div>
         </div>
+
+        <div 
+          class="col-span-3 min-w-[200px]"
+          style="position: sticky; top: 180px; align-self: flex-start; z-index: 20;"
+        >
+          <ForumWidgets />
+        </div>
+
       </div>
     </div>
 
