@@ -193,6 +193,14 @@ export async function getSearchSuggestions(query = "", options = {}) {
   return handleResponse(response, 'Greška pri dohvatanju sugestija.');
 }
 
+// Funkcija za preuzimanje top 5 popularnih tema u zadnjih 7 dana
+export async function getPopularTopics() {
+  const response = await fetch(`${BASE_URL}/forum/topics/popular`, {
+    headers: getHeaders()
+  });
+  return handleResponse(response, 'Greška pri dohvatanju popularnih tema.');
+}
+
 export default {
   getCategories,
   getTopics,
@@ -210,5 +218,6 @@ export default {
   getActiveReports,
   handleReportAction,
   getSearchSuggestions,
-  updateComment
+  updateComment,
+  getPopularTopics // Izvezeno za lakši import kroz default objekat
 };
