@@ -22,6 +22,12 @@ from app.routers.forum_helpers import (
 from app.services.activity_log_service import log_activity
 from app.enums.activity import ActivityType
 
+from app.services.forum_reputation import (
+    get_user_forum_identity,
+    register_answer_created,
+    register_best_answer,
+)
+
 router = APIRouter(prefix="/forum/comments", tags=["Forum Comments"])
 
 
@@ -49,7 +55,29 @@ class ForumCommentUpdate(BaseModel):
     content: str = Field(min_length=2)
 
 
-# --- Lokalne implementacije / Override pomoćnih funkcija za nested strukturu ---
+# --- Pomocne funkcije i lokalne implementacije ---
+
+def get_comment_author_data(db: Session, user_id: int) -> dict:
+    user = db.get(User, user_id)
+
+    if not user:
+        return {
+            "id": None,
+            "full_name": "Nepoznat korisnik",
+            "role": "Student",
+            "level": 1,
+            "title": "Novi član",
+            "reputation_points": 0,
+            "medals": [],
+        }
+
+    forum_identity = get_user_forum_identity(db, user)
+
+    return {
+        "id": user.id,
+        "full_name": user.full_name,
+        **forum_identity,
+    } 
 
 def local_get_comment_dislikes_count(db: Session, comment_id: int) -> int:
     result = db.exec(
@@ -102,9 +130,9 @@ def local_get_topic_comments(db: Session, topic_id: int) -> list[dict]:
                 "likes_count": 0,
                 "dislikes_count": 0,
                 "author": None,
-                "replies": []
+                "replies": [],
             }
-        
+
         return {
             "id": comment.id,
             "content": comment.content,
@@ -116,23 +144,35 @@ def local_get_topic_comments(db: Session, topic_id: int) -> list[dict]:
             "votes_count": votes_count,
             "likes_count": likes_count,
             "dislikes_count": dislikes_count,
-            "author": get_author_data(db, comment.user_id),
-            "replies": []
+            "author": get_comment_author_data(db, comment.user_id),
+            "replies": [],
         }
-    
-    comment_dict = {comment.id: build_comment_dict(comment) for comment in all_comments}
-    
+
+    comment_dict = {
+        comment.id: build_comment_dict(comment)
+        for comment in all_comments
+    }
+
     top_level = []
+
     for comment in all_comments:
         comment_data = comment_dict[comment.id]
+
         if comment.parent_id is None:
             top_level.append(comment_data)
         else:
             parent = comment_dict.get(comment.parent_id)
             if parent:
                 parent["replies"].append(comment_data)
-    
-    top_level.sort(key=lambda item: (not item["is_best_answer"], -item["votes_count"], item["created_at"]))
+
+    top_level.sort(
+        key=lambda item: (
+            not item["is_best_answer"],
+            -item["votes_count"],
+            item["created_at"],
+        )
+    )
+
     return top_level
 
 
@@ -151,7 +191,8 @@ def create_forum_comment(
         raise HTTPException(status_code=404, detail="Tema nije pronađena.")
 
     is_admin_notice = bool(comment_data.is_admin_notice)
-    if is_admin_notice and str(getattr(current_user, "role", "member")) != "admin":
+    current_role = getattr(current_user.role, "value", current_user.role)
+    if is_admin_notice and current_role != "admin":
         is_admin_notice = False
 
     new_comment = ForumComment(
@@ -162,6 +203,18 @@ def create_forum_comment(
         parent_id=comment_data.parent_id
     )
     db.add(new_comment)
+
+    # Dodjeljuje ID komentaru bez završavanja transakcije.
+    db.flush()
+
+    # Automatski dodaje bodove za napisani odgovor.
+    register_answer_created(
+        db,
+        user_id=current_user.id,
+        comment_id=new_comment.id,
+    )
+
+    # Komentar, bodovi i eventualne medalje spremaju se zajedno.
     db.commit()
     db.refresh(new_comment)
 
@@ -178,7 +231,7 @@ def create_forum_comment(
         "content": new_comment.content,
         "topic_id": new_comment.topic_id,
         "created_at": new_comment.created_at,
-        "author": get_author_data(db, new_comment.user_id),
+        "author": get_comment_author_data(db, new_comment.user_id),
     }
 
 
@@ -207,9 +260,11 @@ def toggle_best_answer(
     if topic.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Samo autor teme može označiti najbolji odgovor.")
 
+    # Ako je već najbolji odgovor, uklanja se oznaka.
     if comment.is_best_answer:
         comment.is_best_answer = False
     else:
+        # Na jednoj temi može postojati samo jedan najbolji odgovor.
         existing_best = db.exec(
             select(ForumComment).where(
                 ForumComment.topic_id == comment.topic_id,
@@ -217,10 +272,19 @@ def toggle_best_answer(
                 ForumComment.is_deleted == False,
             )
         ).first()
+
         if existing_best:
             existing_best.is_best_answer = False
             db.add(existing_best)
+
         comment.is_best_answer = True
+
+        # Dodjeljuje bodove autoru komentara.
+        register_best_answer(
+            db,
+            user_id=comment.user_id,
+            comment_id=comment.id,
+        )
 
     db.add(comment)
     db.commit()
