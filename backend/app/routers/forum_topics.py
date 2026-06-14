@@ -10,7 +10,13 @@ from app.core.security import get_current_user
 from app.models.user import User, UserRole
 from app.models.forum import ForumCategory, ForumTopic, ForumTag, ForumTopicTag, TopicReport, AdminAnnouncement
 
-# Uvoz funkcija za komentare iz njihovog matičnog ruter fajla
+# Servisi za reputaciju i identitet korisnika na forumu
+from app.services.forum_reputation import (
+    get_user_forum_identity,
+    register_topic_created,
+)
+
+# Uvoz funkcija za komentare, lajkove i kategorije
 from app.routers.forum_comments import get_comments_count, has_best_answer, get_topic_comments, get_topic_votes_count
 from app.routers.forum_helpers import get_category_data
 from app.routers.forum_likes import get_topic_likes_count
@@ -40,9 +46,25 @@ def make_summary(text: str, max_length: int = 150) -> str:
 
 def get_author_data(db: Session, user_id: int) -> dict:
     user = db.get(User, user_id)
+
     if not user:
-        return {"id": None, "full_name": "Nepoznat korisnik"}
-    return {"id": user.id, "full_name": user.full_name}
+        return {
+            "id": None,
+            "full_name": "Nepoznat korisnik",
+            "role": "Student",
+            "level": 1,
+            "title": "Novi član",
+            "reputation_points": 0,
+            "medals": [],
+        }
+
+    forum_identity = get_user_forum_identity(db, user)
+
+    return {
+        "id": user.id,
+        "full_name": user.full_name,
+        **forum_identity,
+    }
 
 def get_topic_tags(db: Session, topic_id: int) -> list[str]:
     # Optimizovano spajanje da izbjegnemo N+1 petlje u bazi
@@ -159,33 +181,66 @@ def get_suggestions(search: Optional[str] = None, db: Session = Depends(get_db))
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-def create_forum_topic(topic_data: ForumTopicCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def create_forum_topic(
+    topic_data: ForumTopicCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Provjeravamo postoji li odabrana kategorija.
     category = db.get(ForumCategory, topic_data.category_id)
     if not category:
         raise HTTPException(status_code=404, detail="Kategorija nije pronađena.")
 
-    new_topic = ForumTopic(title=topic_data.title, content=topic_data.content, category_id=topic_data.category_id, user_id=current_user.id)
-    db.add(new_topic)
-    db.commit()
-    db.refresh(new_topic)
+    # Pravimo novu forum temu.
+    new_topic = ForumTopic(
+        title=topic_data.title,
+        content=topic_data.content,
+        category_id=topic_data.category_id,
+        user_id=current_user.id
+    )
 
+    db.add(new_topic)
+
+    # flush dodjeljuje ID temi, ali još ne završava transakciju.
+    db.flush()
+
+    # Automatski dodjeljujemo bodove i provjeravamo medalje kroz servis.
+    register_topic_created(
+        db,
+        user_id=current_user.id,
+        topic_id=new_topic.id,
+        created_at=new_topic.created_at,
+    )
+
+    # Dodavanje tagova.
     if topic_data.tags:
         for tag_input in topic_data.tags:
+            # Ako frontend pošalje naziv taga kao tekst.
             if isinstance(tag_input, str):
-                tag = db.exec(select(ForumTag).where(ForumTag.name == tag_input.strip())).first()
+                clean_tag_name = tag_input.strip()
+                if not clean_tag_name:
+                    continue
+
+                # Provjeravamo postoji li već tag sa tim nazivom.
+                tag = db.exec(select(ForumTag).where(ForumTag.name == clean_tag_name)).first()
+
+                # Ako tag ne postoji, pravimo novi.
                 if not tag:
-                    tag = ForumTag(name=tag_input.strip())
+                    tag = ForumTag(name=clean_tag_name)
                     db.add(tag)
-                    db.commit()
-                    db.refresh(tag)
+                    db.flush()  # Potrebno da novi tag dobije ID.
+
                 tag_id = tag.id
+            # Ako frontend direktno pošalje ID postojećeg taga.
             else:
                 tag_id = tag_input
 
             topic_tag = ForumTopicTag(topic_id=new_topic.id, tag_id=tag_id)
             db.add(topic_tag)
-        db.commit()
-        db.refresh(new_topic)
+
+    # Tema, tagovi, reputacija i medalje spremaju se atomski u jednoj transakciji.
+    db.commit()
+    db.refresh(new_topic)
 
     return build_topic_list_item(db, new_topic)
 
