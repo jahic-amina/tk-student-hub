@@ -17,3 +17,9 @@ from app.models.forum import (
     AdminAnnouncement,
     TopicLike,
 )
+# Novi sistem reputacije, nivoa, titula i medalja
+from app.models.forum_reputation import (
+    ForumReputationEvent,
+    ForumUserMedal,
+    ForumUserStats,
+)

@@ -7,7 +7,14 @@ from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.database import create_db_and_tables
 from app.core.security import get_current_user
-from app.models.user import User                
+from app.models.user import User
+
+# Import je potreban da SQLModel registruje nove tabele reputacije.
+from app.models.forum_reputation import (
+    ForumReputationEvent,
+    ForumUserMedal,
+    ForumUserStats,
+)
 
 # Importovanje svih unikatnih rutera iz app.routers foldera
 from app.routers import (
