@@ -18,6 +18,7 @@ import app.models.application  # noqa: F401
 import app.models.notification  # noqa: F401
 import app.models.ad_bookmark  # noqa: F401
 import app.models.forum  # noqa: F401
+import app.models.forum_reputation  # noqa: F401
 
 config = context.config
 
