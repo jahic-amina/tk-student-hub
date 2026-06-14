@@ -13,6 +13,7 @@ from app.core.config import settings
 from sqlmodel import SQLModel
 import app.models.user  # noqa: F401
 import app.models.forum  # noqa: F401
+import app.models.forum_reputation  # noqa: F401
 
 config = context.config
 
