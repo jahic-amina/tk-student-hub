@@ -30,6 +30,9 @@ class ForumTopicUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=3, max_length=200)
     content: Optional[str] = Field(None, min_length=3)
 
+class ReportActionPayload(BaseModel):
+    explanation: str
+
 # --- HELPER FUNCTIONS ---
 def make_summary(text: str, max_length: int = 150) -> str:
     clean_text = " ".join((text or "").split())
@@ -309,20 +312,32 @@ def get_handled_reports(db: Session = Depends(get_db), current_user: User = Depe
     return output
 
 @router.patch("/reports/{report_id}/action")
-def handle_report_action(report_id: int, action: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def handle_report_action(report_id: int, action: str, payload: ReportActionPayload, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.role != UserRole.admin:
         raise HTTPException(status_code=403, detail="Nemate ovlaštenje.")
     report = db.get(TopicReport, report_id)
     if not report:
         raise HTTPException(status_code=404, detail="Prijava nije pronađena.")
     
-    if action == "dismiss": report.status = "dismissed"
-    elif action == "resolve": report.status = "resolved"
-    else: raise HTTPException(status_code=400, detail="Nevalidna akcija.")
+    report.status = "resolved"
+    report.action_taken = action 
+    report.admin_explanation = payload.explanation
+    
+    if action == "accept":
+        topic = db.get(ForumTopic, report.topic_id)
+        if topic:
+            topic.is_deleted = True 
+            db.add(topic)
+            
+    reporting_user = db.get(User, report.user_id)
+    if reporting_user:
+        reporting_user.reports_count += 1
+        db.add(reporting_user)
         
     db.add(report)
     db.commit()
-    return {"success": True, "new_status": report.status}
+    
+    return {"success": True, "message": "Prijava uspješno riješena."}
 
 @router.get("/announcements/active")
 def get_active_announcements(db: Session = Depends(get_db)):
