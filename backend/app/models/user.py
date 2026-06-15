@@ -23,6 +23,7 @@ class User(SQLModel, table=True):
     profilna_slika_url: Optional[str] = Field(default=None)
     biografija: Optional[str] = Field(default=None)
     godina_studija: Optional[int] = Field(default=None)
+    reports_count: int = Field(default=0)
     activity_logs: list["ActivityLog"] = Relationship(back_populates="user")
     deactivated_at: Optional[datetime] = Field(
         default=None,
