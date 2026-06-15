@@ -103,9 +103,21 @@ export async function getActiveReports() {
   return handleResponse(response, 'Neuspješno učitavanje prijava za moderaciju.');
 }
 
-export async function handleReportAction(reportId, action) {
-  const response = await fetch(`${BASE_URL}/forum/topics/reports/${reportId}/action?action=${action}`, { method: 'PATCH', headers: getHeaders() });
-  return handleResponse(response, 'Greška pri izvršavanju akcije nad prijavom.');
+export async function handleReportAction(reportId, action, explanation) {
+  const response = await fetch(`${BASE_URL}/forum/topics/reports/${reportId}/action?action=${action}`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ explanation: explanation }) });
+  if (response.ok) {
+    return response.json();
+  } else {
+    // Pomoćni blok koji parsira grešku kako vam više nikad ne bi izbacilo [object Object]
+    const errorData = await response.json();
+    let errorMsg = 'Greška pri izvršavanju akcije nad prijavom.';
+    if (errorData?.detail) {
+      errorMsg = Array.isArray(errorData.detail) 
+        ? errorData.detail.map(e => e.msg).join(', ') 
+        : errorData.detail;
+    }
+    throw new Error(errorMsg);
+  }
 }
 
 export async function getSearchSuggestions(query = "", options = {}) {
