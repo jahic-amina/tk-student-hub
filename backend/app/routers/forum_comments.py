@@ -119,12 +119,14 @@ def local_get_topic_comments(db: Session, topic_id: int) -> list[dict]:
         if comment.is_deleted:
             return {
                 "id": comment.id, "content": "deleted by user", "is_deleted": True, "is_best_answer": False,
+                "is_admin_notice": comment.is_admin_notice,
                 "parent_id": comment.parent_id, "created_at": comment.created_at, "updated_at": comment.updated_at,
                 "votes_count": 0, "likes_count": 0, "dislikes_count": 0, "author": None, "replies": [],
             }
 
         return {
             "id": comment.id, "content": comment.content, "is_deleted": False, "is_best_answer": comment.is_best_answer,
+            "is_admin_notice": comment.is_admin_notice,
             "parent_id": comment.parent_id, "created_at": comment.created_at, "updated_at": comment.updated_at,
             "votes_count": votes_count, "likes_count": likes_count, "dislikes_count": dislikes_count,
             "author": get_comment_author_data(db, comment.user_id), "replies": [],
@@ -142,7 +144,21 @@ def local_get_topic_comments(db: Session, topic_id: int) -> list[dict]:
             if parent:
                 parent["replies"].append(comment_data)
 
-    top_level.sort(key=lambda item: (not item["is_best_answer"], -item["votes_count"], item["created_at"]))
+    def sort_replies_recursive(comment_data):
+        if comment_data["replies"]:
+            comment_data["replies"].sort(key=lambda c: (not c.get("is_admin_notice", False), c["created_at"]))
+            for reply in comment_data["replies"]:
+                sort_replies_recursive(reply)
+
+    for root_comment in top_level:
+        sort_replies_recursive(root_comment)
+
+    top_level.sort(key=lambda item: (
+        not item.get("is_admin_notice", False),
+        not item.get("is_best_answer", False),
+        -item["votes_count"],
+        item["created_at"]
+    ))
     return top_level
 
 
@@ -160,8 +176,26 @@ def create_forum_comment(
 
     is_admin_notice = bool(comment_data.is_admin_notice)
     current_role = getattr(current_user.role, "value", current_user.role)
+
     if is_admin_notice and current_role != "admin":
         is_admin_notice = False
+
+    if is_admin_notice and comment_data.parent_id is not None:
+        raise HTTPException(
+            status_code=400, 
+            detail="Administratorsko obavještenje mora biti glavni komentar i ne može biti odgovor."
+        )
+
+    if comment_data.parent_id is not None:
+        parent_comment = db.get(ForumComment, comment_data.parent_id)
+        if not parent_comment or parent_comment.is_deleted:
+            raise HTTPException(status_code=404, detail="Komentar na koji odgovarate ne postoji.")
+        
+        if parent_comment.is_admin_notice:
+            raise HTTPException(
+                status_code=400, 
+                detail="Nije dozvoljeno odgovarati na zvanična administratorska obavještenja."
+            )
 
     new_comment = ForumComment(
         content=comment_data.content, 
@@ -173,7 +207,7 @@ def create_forum_comment(
     db.add(new_comment)
     db.flush()
 
-    # Automatski dodjeljuje bodove za napisani odgovor
+    # Automatski dodjeljuje bodove za napisani odgovor (Reputation sistem)
     register_answer_created(db, user_id=current_user.id, comment_id=new_comment.id)
 
     db.commit()
@@ -191,6 +225,8 @@ def create_forum_comment(
         "id": new_comment.id,
         "content": new_comment.content,
         "topic_id": new_comment.topic_id,
+        "parent_id": new_comment.parent_id,
+        "is_admin_notice": new_comment.is_admin_notice,
         "created_at": new_comment.created_at,
         "author": get_comment_author_data(db, new_comment.user_id),
     }
@@ -361,7 +397,8 @@ def delete_comment(
     if not comment or comment.is_deleted:
         raise HTTPException(status_code=404, detail="Komentar nije pronađen.")
     
-    if comment.user_id != current_user.id and getattr(current_user, 'role', 'member') != 'admin':
+    current_role = getattr(current_user.role, "value", current_user.role)
+    if comment.user_id != current_user.id and current_role != "admin":
         raise HTTPException(status_code=403, detail="Možete obrisati samo vlastiti komentar.")
     
     replies = db.exec(select(ForumComment).where(ForumComment.parent_id == comment_id, ForumComment.is_deleted == False)).all()
@@ -369,11 +406,10 @@ def delete_comment(
     if replies:
         comment.is_deleted = True
         db.add(comment)
-        db.commit()
     else:
         db.delete(comment)
-        db.commit()
-    
+        
+    db.commit()
     return {"message": "Komentar je uspješno obrisan.", "comment_id": comment_id}
 
 
@@ -388,9 +424,10 @@ def update_comment(
     if not comment or comment.is_deleted:
         raise HTTPException(status_code=404, detail="Komentar nije pronađen.")
     
-    if comment.user_id != current_user.id and getattr(current_user, 'role', 'member') != 'admin':
+    current_role = getattr(current_user.role, "value", current_user.role)
+    if comment.user_id != current_user.id and current_role != "admin":
         raise HTTPException(status_code=403, detail="Možete editovati samo vlastiti komentar.")
-    
+
     comment.content = comment_data.content
     comment.updated_at = datetime.utcnow()
     db.add(comment)
@@ -398,3 +435,31 @@ def update_comment(
     db.refresh(comment)
     
     return {"id": comment.id, "content": comment.content, "updated_at": comment.updated_at}
+
+
+@router.post("/{topic_id}/admin-notice", status_code=status.HTTP_201_CREATED)
+def create_admin_notice(
+    topic_id: int,
+    data: ForumCommentCreate,  # Zamijenjeno radi sprečavanja NameError-a
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    current_role = getattr(current_user.role, "value", current_user.role)
+    if current_role != "admin":
+        raise HTTPException(status_code=403, detail="Nemate ovlaštenje.")
+
+    topic = db.get(ForumTopic, topic_id)
+    if not topic or topic.is_deleted:
+        raise HTTPException(status_code=404, detail="Tema nije pronađena.")
+
+    notice = ForumComment(
+        content=data.content,
+        topic_id=topic_id,
+        user_id=current_user.id,
+        is_admin_notice=True,
+        parent_id=None
+    )
+    db.add(notice)
+    db.commit()
+    db.refresh(notice)
+    return {"success": True, "id": notice.id}
