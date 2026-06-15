@@ -45,6 +45,11 @@ const aktivniFilteri = reactive({
   days_old: null
 });
 
+const showReportModal = ref(false);
+const handlingReportId = ref(null);
+const handlingAction = ref(''); 
+const adminExplanation = ref('');
+
 const isAdmin = computed(() => localStorage.getItem('role') === 'admin');
 
 const trenutnaKategorija = computed(() => {
@@ -176,11 +181,40 @@ const obrisiTemu = async (temaId) => {
   } catch (error) { alert(error.message); }
 };
 
-const procesuirajPrijavu = async (reportId, akcija) => {
+const openReportModal = (reportId, action) => {
+  handlingReportId.value = reportId;
+  handlingAction.value = action;
+  adminExplanation.value = '';
+  showReportModal.value = true;
+};
+
+const closeReportModal = () => {
+  showReportModal.value = false;
+  handlingReportId.value = null;
+  handlingAction.value = '';
+  adminExplanation.value = '';
+};
+
+const submitReportAction = async () => {
+  if (!adminExplanation.value.trim()) {
+    alert('Morate unijeti obrazloženje akcije.');
+    return;
+  }
+  
   try {
-    await handleReportAction(reportId, akcija);
-    svePrijave.value = svePrijave.value.map(p => p.report_id === reportId ? { ...p, status: akcija === 'dismiss' ? 'dismissed' : 'resolved' } : p);
-  } catch (error) { alert("Greška: " + error.message); }
+    await handleReportAction(handlingReportId.value, handlingAction.value, adminExplanation.value);
+    
+    svePrijave.value = svePrijave.value.map(p => 
+      (p.report_id || p.id) === handlingReportId.value 
+        ? { ...p, status: handlingAction.value === 'dismiss' ? 'dismissed' : 'resolved' } 
+        : p
+    );
+    
+    closeReportModal();
+    alert('Prijava je uspješno riješena.');
+  } catch (error) {
+    alert('Došlo je do greške: ' + error.message);
+  }
 };
 
 const handleLikeUpdated = (payload) => { updateTopicLikeInList(teme, payload); };
@@ -270,8 +304,8 @@ watch(currentMode, (newMode) => {
                       <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-1 italic bg-gray-50 dark:bg-slate-700/50 p-2 rounded-lg">Razlog: "{{ prijava.reason }}"</p>
                     </div>
                     <div v-if="prijava.status !== 'resolved' && prijava.status !== 'dismissed'" class="flex items-center gap-1.5 justify-end w-full md:w-auto">
-                      <button @click="procesuirajPrijavu(prijava.report_id, 'dismiss')" class="bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600">Zanemari</button>
-                      <button @click="procesuirajPrijavu(prijava.report_id, 'resolve')" class="bg-emerald-500 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg">Označi riješeno</button>
+                      <button @click="openReportModal(prijava.report_id || prijava.id, 'accept')" class="bg-green-500 text-white px-3 py-1 rounded">Prihvati</button>
+                      <button @click="openReportModal(prijava.report_id || prijava.id, 'dismiss')" class="bg-red-500 text-white px-3 py-1 rounded">Zanemari</button>
                     </div>
                   </div>
                 </div>
@@ -346,6 +380,38 @@ watch(currentMode, (newMode) => {
           </button>
         </div>
       </div>
+    </div>
+    <div v-if="showReportModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+        <div class="bg-white p-6 rounded-xl w-full max-w-md shadow-2xl">
+            <h2 class="text-xl font-bold mb-4">
+                {{ handlingAction === 'accept' ? '✅ Prihvati prijavu' : '❌ Zanemari prijavu' }}
+            </h2>
+            
+            <p class="text-sm text-gray-600 mb-4">
+                Molimo vas da unesete obrazloženje zašto ste odlučili da {{ handlingAction === 'accept' ? 'prihvatite (i obrišete temu)' : 'zanemarite' }} ovu prijavu. Ovo će biti sačuvano u evidenciji.
+            </p>
+
+            <label class="block mb-2 text-sm font-bold text-gray-700">Obrazloženje</label>
+            <textarea 
+                v-model="adminExplanation" 
+                class="w-full border rounded p-3 mb-6 h-32 focus:ring focus:ring-orange-300 outline-none" 
+                placeholder="Unesite vaše obrazloženje ovdje..."
+            ></textarea>
+            
+            <div class="flex justify-end gap-3">
+                <button 
+                    @click="closeReportModal" 
+                    class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded font-medium transition-colors">
+                    Otkaži
+                </button>
+                <button 
+                    @click="submitReportAction" 
+                    class="px-5 py-2 text-white rounded font-bold transition-colors"
+                    :class="handlingAction === 'accept' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'">
+                    Završi
+                </button>
+            </div>
+        </div>
     </div>
 
   </div>
