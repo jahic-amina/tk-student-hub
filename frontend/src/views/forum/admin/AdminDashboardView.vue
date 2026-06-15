@@ -151,8 +151,13 @@ const submitReportAction = async () => {
     <div v-if="activeTab === 'reports'">
        <div v-for="report in filteredReports" :key="report.report_id" class="p-4 bg-white shadow rounded mb-4 border-l-4 border-red-500">
            <h3 class="font-bold text-lg">{{ report.topic?.title }}</h3>
-           <p class="text-sm text-gray-600 mt-1"><b>Razlog:</b> {{ report.reason }} | <b>Prijavio:</b> {{ report.reporter_name }}</p>
-           
+           <p class="text-sm text-gray-600 mt-1"><b>Razlog:</b> {{ report.reason }}</p>
+           <div class="flex items-center gap-2 mt-2 text-xs text-gray-500">
+              <span>⚠️ Prijavio/la korisnik:</span>
+              <span class="font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded">
+                  {{ report.reporter_name }}
+              </span>
+            </div>
            <div class="mt-3 flex gap-2">
               <button @click="openReportModal(report.report_id, 'accept')" class="font-inherit text-sm font-medium border border-green-500 bg-green-50 text-green-700 hover:bg-green-100 px-4 py-1.5 rounded-lg transition-colors">Prihvati</button>
               <button @click="openReportModal(report.report_id, 'dismiss')" class="font-inherit text-sm font-medium border border-red-500 bg-red-50 text-red-700 hover:bg-red-100 px-4 py-1.5 rounded-lg transition-colors">Zanemari</button>
@@ -162,14 +167,18 @@ const submitReportAction = async () => {
 
     <div v-if="activeTab === 'handled_reports'">
        <div v-for="report in filteredHandledReports" :key="report.id" class="p-4 border rounded shadow-sm mb-4">
-    <h3 class="font-bold">Tema: {{ report.topic?.title }}</h3>
+          <h3 class="font-bold">Tema: {{ report.topic?.title }}</h3>
+          <p class="text-xs text-green-700"><strong>Odluka:</strong> {{ report.status === 'accepted' ? 'Prihvaćeno' : 'Zanemareno' }}</p>
     
-    <p class="text-sm text-gray-700 mt-2">
-        <strong>Prijavio korisnik:</strong> {{ report.user?.full_name || report.user?.username || 'Nepoznat' }}
-    </p>
-    <p class="text-sm text-gray-700 mt-1">
-        <strong>Razlog prijave:</strong> {{ report.reason }}
-    </p>
+          <div class="flex items-center gap-2 mt-2 text-xs text-gray-500">
+            <span>👤 Temu prijavio/la:</span>
+            <span class="font-medium text-slate-700 bg-gray-200 px-2 py-0.5 rounded">
+                {{ report.reporter_name }}
+            </span>
+          </div>
+          <p class="text-sm text-gray-700 mt-1">
+              <strong>Razlog prijave:</strong> {{ report.reason }}
+          </p>
     
     <div class="mt-3 p-3 rounded" :class="report.action_taken === 'accept' ? 'bg-green-50' : 'bg-red-50'">
         <p class="text-sm font-semibold" :class="report.action_taken === 'accept' ? 'text-green-700' : 'text-red-700'">

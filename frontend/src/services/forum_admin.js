@@ -19,7 +19,7 @@ export async function changeUserRole(userId, role) {
 }
 
 export async function getReports(status = 'pending') {
-  const res = await fetch(`${BASE_URL}/admin/reports?status=${status}`, { headers: getHeaders() });
+  const res = await fetch(`${BASE_URL}/forum/topics/reports/active`, { headers: getHeaders() });
   return res.json();
 }
 
