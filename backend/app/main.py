@@ -6,6 +6,13 @@ from app.database import create_db_and_tables
 from app.routers import auth, forum_categories, forum_topics, forum_comments, prakse, profiles, forum_tags, forum_admin, forum_likes 
 from app.core.security import get_current_user
 from app.models.user import User
+# Import je potreban da SQLModel registruje nove tabele.
+from app.models.forum_reputation import (
+    ForumReputationEvent,
+    ForumUserMedal,
+    ForumUserStats,
+)
+
 
 create_db_and_tables()
 
