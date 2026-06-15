@@ -9,6 +9,15 @@ from app.database import create_db_and_tables
 from app.core.security import get_current_user
 from app.models.user import User                
 
+# FORUM IMPORTI
+
+from app.models.forum_reputation import (
+    ForumReputationEvent,
+    ForumUserMedal,
+    ForumUserStats,
+)
+
+# IMPORTI OD KOLEGA 
 # Importovanje svih unikatnih rutera iz app.routers foldera
 from app.routers import (
     auth, dashboard, activity, admin, profiles, account, company, applications, materials,
@@ -21,6 +30,7 @@ from app.routers.notification import router as notification_router
 from app.routers.ad import router as ads_router
 from app.routers.prakse import router as prakse_router
 from app.routers.workshops import router as workshops_router
+
 
 # Inicijalizacija baze podataka
 create_db_and_tables()

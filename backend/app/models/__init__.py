@@ -17,3 +17,9 @@ from app.models.forum import (
     AdminAnnouncement,
     TopicLike,
 )
+
+from app.models.forum_reputation import (
+    ForumReputationEvent,
+    ForumUserMedal,
+    ForumUserStats,
+)
