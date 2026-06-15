@@ -386,7 +386,7 @@ def rate_material(
     db.refresh(new_rating)
     return new_rating
 
-"""Promijeni ocijenu materijala endpoint"""
+"""Promijeni ocjenu materijala endpoint"""
 
 @router.patch("/{id}/rate", status_code=200)
 def update_rating(
@@ -480,12 +480,7 @@ def delete_comment(
     session.delete(komentar)
     session.commit()
     return None
-<<<<<<< HEAD
-
-
-
-
-#toggle bookmarka
+# Toggle bookmarka
 @router.post("/{material_id}/bookmark")
 def toggle_bookmark(
     material_id: int, 
@@ -510,5 +505,3 @@ def toggle_bookmark(
         session.add(new_bookmark)
         session.commit()
         return {"is_bookmarked": True}
-=======
->>>>>>> origin/tim2/dev

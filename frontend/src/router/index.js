@@ -70,7 +70,7 @@ const routes = [
   {
     path: "/prakse-i-edukacije",
     name: "prakse",
-    component: () => import("../views/prakse/PrakseView.vue"),
+    component: () => import("../views/application/ApplicationView.vue"),
     meta: { requiresAuth: true },
   },
   {
