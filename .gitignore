@@ -1,24 +1,29 @@
-# Python
-venv/
-__pycache__/
+# Python & Backend
+backend/venv/
+**/__pycache__/
 *.pyc
 *.pyo
+backend/.env
 .env
 
-# Database
-*.db
+# Ako seed.py sadrži kod koji i kolege trebaju pokrenuti, 
+# obrišite donju liniju kako bi je Git pratio:
+backend/seed.py
 
-# Node
-node_modules/
-dist/
+# Database
+backend/sql_app.db
+*.db
+*.sqlite3
+
+# Node & Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
 .DS_Store
 
-# Vite
-frontend/.vite/
-
-# IDE
+# IDE & Editori
 .vscode/
 .idea/
 
 # Superpowers internal docs
-docs/superpowers/
+docs/superpowers/venv/
