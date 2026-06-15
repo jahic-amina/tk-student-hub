@@ -39,7 +39,7 @@ const isTopicAuthor = computed(() => {
   return currentUserId.value && props.topicAuthorId && currentUserId.value === props.topicAuthorId;
 });
 
-// Reaktivno skladište za stanja glasova koja nam backend vrati nakon klika
+// REAKTIVNO SKLADIŠTE ZA GLASOVE
 const serverVoteState = ref({});
 
 function getUserVote(comment) {
@@ -57,17 +57,84 @@ function getDislikesCount(comment) {
   return comment.dislikes_count || 0;
 }
 
-// Funkcija za dinamičko bojenje titula na osnovu ranga
+// KODIRANJE I PARSIRANJE MEDALJA ZA KOMENTARE
+const medalIcons = { gold: '🥇', silver: '🥈', bronze: '🥉' };
+const medalThresholds = {
+  best_answers: { bronze: 1, silver: 5, gold: 15 },
+  topics_started: { bronze: 3, silver: 10, gold: 25 },
+  reputation: { bronze: 100, silver: 500, gold: 1000 },
+  night_owl: { bronze: 1, silver: 3, gold: 10 }
+};
+const medalDetails = {
+  best_answers: {
+    name: 'Najbolji odgovori',
+    desc: (n) => `Dobijate kada vaš odgovor bude označen kao najbolji ${n} ${n === 1 ? 'put' : 'puta'}.`
+  },
+  topics_started: {
+    name: 'Pokrenute teme',
+    desc: (n) => `Dobijate kada pokrenete ${n} ${n === 1 ? 'temu' : 'tema'} na forumu.`
+  },
+  reputation: {
+    name: 'Ukupna reputacija',
+    desc: (n) => `Dobijate kada skupite ukupno ${n} XP reputacije.`
+  },
+  night_owl: {
+    name: 'Noćna ptica',
+    desc: (n) => `Tajna medalja — dobijate kada pokrenete ${n} ${n === 1 ? 'temu' : 'tema'} između 03:00 i 05:00h.`
+  }
+};
+
+function parseMedal(medal) {
+  if (!medal) return { icon: '🏅', name: 'Medalja', tierName: '', tooltip: 'Medalja' };
+  if (typeof medal !== 'object') return { icon: medal, name: 'Medalja', tierName: '', tooltip: 'Medalja' };
+  const icon = medalIcons[medal.tier] || '🏅';
+  const details = medalDetails[medal.category] || { name: medal.category_name || 'Priznanje', desc: () => '' };
+  const tierPrefix = medal.tier === 'gold' ? 'Zlatna' : medal.tier === 'silver' ? 'Srebrna' : 'Bronzana';
+  const threshold = medalThresholds[medal.category]?.[medal.tier];
+  const fullName = `${tierPrefix} – ${details.name}`;
+  const description = threshold != null ? details.desc(threshold) : '';
+  return {
+    icon,
+    name: details.name,
+    tierName: tierPrefix,
+    isSecret: medal.is_secret,
+    tooltip: description ? `${fullName}\n${description}` : fullName
+  };
+}
+
 function getTierClass(title) {
   if (!title) return 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600';
   const t = title.toLowerCase();
-  if (t.includes('zlatni') || t.includes('expert')) {
+  if (t.includes('zlatni') || t.includes('expert') || t.includes('legenda')) {
     return 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800 font-bold';
   }
-  if (t.includes('srebrni') || t.includes('napredni')) {
+  if (t.includes('srebrni') || t.includes('napredni') || t.includes('mentor')) {
     return 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600';
   }
   return 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-900';
+}
+
+function getRoleBadgeClass(role) {
+  if (!role) return 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600';
+  const r = role.toLowerCase();
+  if (r === 'admin') {
+    return 'bg-red-50 text-red-700 border-red-300 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800 font-bold';
+  }
+  if (r === 'autor' || r === 'mentor') {
+    return 'bg-indigo-50 text-indigo-700 border-indigo-300 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-800';
+  }
+  return 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900';
+}
+
+// DROPDOWN ZA MEDALJE
+const openMedalDropdown = ref(null);
+
+function toggleMedalDropdown(key) {
+  openMedalDropdown.value = openMedalDropdown.value === key ? null : key;
+}
+
+function closeMedalDropdown() {
+  openMedalDropdown.value = null;
 }
 
 // Edit komentar
@@ -124,28 +191,18 @@ async function submitReply(comment, topicId) {
   }
 }
 
-// RUKOVANJE GLASANJEM PREMA REPUTACIJSKOM MODELU
 async function handleVote(comment, value) {
   if (!currentUserId.value) return alert('Morate biti prijavljeni da biste glasali.');
-  
-  // Anti-Abuse: Klijentska blokada glasanja za svoj komentar
   if (currentUserId.value === comment.author?.id) {
     return alert('Ne možete glasati za vlastiti komentar.');
   }
-
   try {
-    // Šaljemo glas na backend i čekamo provjeru dnevnog limita i pravila
     const result = await voteOnComment(comment.id, value);
-    
-    // Čuvamo tačne podatke direktno iz baze (backend rute vraćaju svježe brojače)
     serverVoteState.value[comment.id] = {
       user_vote: result.user_vote,
-      // Ako backend vraća `likes_count` i `dislikes_count` koristimo ih, u suprotnom osvježavamo listu preko emit-a
       likes_count: result.likes_count !== undefined ? result.likes_count : (comment.likes_count + (result.user_vote === 1 ? 1 : 0)),
       dislikes_count: result.dislikes_count !== undefined ? result.dislikes_count : (comment.dislikes_count + (result.user_vote === -1 ? 1 : 0))
     };
-    
-    // Kompletno osvježavanje roditeljske komponente kako bi se ažurirali XP i titule autora
     emit('refresh');
   } catch (e) {
     alert(e.response?.data?.detail || 'Greška pri glasanju ili je dostignut dnevni limit.');
@@ -190,21 +247,21 @@ function getInitials(name) {
 </script>
 
 <template>
-  <div class="mb-6">
+  <div class="mb-6" @click="closeMedalDropdown">
     <h2 class="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-4">
       {{ comments.length }} {{ comments.length === 1 ? 'Odgovor' : 'Odgovora' }}
     </h2>
 
     <div class="space-y-4">
       <template v-for="comment in comments" :key="comment.id">
-        
+
         <div
           class="bg-white dark:bg-slate-800 rounded-xl border p-5 flex gap-4 transition-all shadow-sm"
           :class="[
-            comment.is_admin_notice 
-              ? 'border-red-300 dark:border-red-900 bg-red-50/50 dark:bg-red-950/20 ring-1 ring-red-400/20' 
-              : comment.is_best_answer 
-                ? 'border-yellow-400 dark:border-yellow-600 bg-yellow-50/40 dark:bg-yellow-950/20 ring-1 ring-yellow-400/30' 
+            comment.is_admin_notice
+              ? 'border-red-300 dark:border-red-900 bg-red-50/50 dark:bg-red-950/20 ring-1 ring-red-400/20'
+              : comment.is_best_answer
+                ? 'border-yellow-400 dark:border-yellow-600 bg-yellow-50/40 dark:bg-yellow-950/20 ring-1 ring-yellow-400/30'
                 : 'border-gray-200 dark:border-slate-700'
           ]"
         >
@@ -224,7 +281,7 @@ function getInitials(name) {
               </svg>
             </button>
             <span class="text-xs font-bold tabular-nums text-orange-500">{{ getLikesCount(comment) }}</span>
-            
+
             <button
               @click="handleVote(comment, -1)"
               :disabled="currentUserId === comment.author?.id"
@@ -249,24 +306,63 @@ function getInitials(name) {
                   {{ getInitials(comment.author?.full_name) }}
                 </span>
                 <strong class="text-slate-600 dark:text-slate-300">{{ comment.author?.full_name || 'Kolega' }}</strong>
-                
-                <span 
-                  v-if="comment.author?.title" 
+
+                <!-- Status: Student / Autor / Admin -->
+                <span
+                  v-if="comment.author?.role"
+                  class="text-[10px] px-2 py-0.5 rounded border"
+                  :class="getRoleBadgeClass(comment.author.role)"
+                >
+                  {{ comment.author.role }}
+                </span>
+
+                <!-- Level + titula + XP -->
+                <span
+                  v-if="comment.author?.title"
                   class="text-[10px] px-2 py-0.5 rounded border"
                   :class="getTierClass(comment.author.title)"
                 >
-                  {{ comment.author.title }} ({{ comment.author.reputation_points }} XP)
+                  Nivo {{ comment.author.level }} · {{ comment.author.title }} · {{ comment.author.reputation_points }} XP
                 </span>
 
-                <div v-if="comment.author?.medals && comment.author.medals.length" class="flex gap-0.5 items-center">
-                  <span 
-                    v-for="medal in comment.author.medals" 
-                    :key="medal.medal_code"
-                    class="text-sm cursor-help"
-                    :title="`Medalja: ${medal.medal_code} (${medal.category})`"
+                <!-- Dropdown medalja (stil kao na TopicMainCard) -->
+                <div v-if="comment.author?.medals && comment.author.medals.length" class="flex items-center gap-1 relative medals-dropdown-container">
+                  <span
+                    v-for="medal in comment.author.medals.slice(0, 3)"
+                    :key="medal.code || medal.id"
+                    class="text-base cursor-help transition-transform hover:scale-125 leading-none"
+                    :title="parseMedal(medal).tooltip"
                   >
-                    🏅
+                    {{ parseMedal(medal).icon }}
                   </span>
+
+                  <button
+                    v-if="comment.author.medals.length > 3"
+                    @click.stop="toggleMedalDropdown('c-' + comment.id)"
+                    class="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-600 hover:bg-slate-200 dark:hover:bg-slate-500 transition-colors text-[10px] px-1.5 py-0.5 rounded font-bold text-slate-600 dark:text-slate-200 ml-0.5 bg-transparent border-none cursor-pointer"
+                  >
+                    +{{ comment.author.medals.length - 3 }} <span>{{ openMedalDropdown === 'c-' + comment.id ? '▲' : '▼' }}</span>
+                  </button>
+
+                  <div
+                    v-if="openMedalDropdown === 'c-' + comment.id && comment.author.medals.length > 3"
+                    @click.stop
+                    class="absolute top-full left-0 mt-1 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 shadow-xl rounded-lg p-2.5 w-44 z-30"
+                  >
+                    <p class="text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-2 border-b pb-1 border-slate-100 dark:border-slate-600">
+                      Ostala priznanja
+                    </p>
+                    <div class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+                      <span
+                        v-for="medal in comment.author.medals.slice(3)"
+                        :key="medal.code || medal.id"
+                        class="text-base cursor-help transition-transform hover:scale-125 p-1 rounded hover:bg-slate-50 dark:hover:bg-slate-600 leading-none"
+                        :title="parseMedal(medal).tooltip"
+                      >
+                        {{ parseMedal(medal).icon }}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
                 <span>•</span>
@@ -379,24 +475,63 @@ function getInitials(name) {
                         {{ getInitials(reply.author?.full_name) }}
                       </span>
                       <strong class="text-slate-600 dark:text-slate-300">{{ reply.author?.full_name || 'Kolega' }}</strong>
-                      
-                      <span 
-                        v-if="reply.author?.title" 
+
+                      <!-- Status: Student / Autor / Admin -->
+                      <span
+                        v-if="reply.author?.role"
+                        class="text-[10px] px-2 py-0.5 rounded border"
+                        :class="getRoleBadgeClass(reply.author.role)"
+                      >
+                        {{ reply.author.role }}
+                      </span>
+
+                      <!-- Level + titula + XP -->
+                      <span
+                        v-if="reply.author?.title"
                         class="text-[10px] px-2 py-0.5 rounded border"
                         :class="getTierClass(reply.author.title)"
                       >
-                        {{ reply.author.title }} ({{ reply.author.reputation_points }} XP)
+                        Nivo {{ reply.author.level }} · {{ reply.author.title }} · {{ reply.author.reputation_points }} XP
                       </span>
 
-                      <div v-if="reply.author?.medals && reply.author.medals.length" class="flex gap-0.5 items-center">
-                        <span 
-                          v-for="medal in reply.author.medals" 
-                          :key="medal.medal_code"
-                          class="text-sm cursor-help"
-                          :title="`Medalja: ${medal.medal_code} (${medal.category})`"
+                      <!-- Dropdown medalja (stil kao na TopicMainCard) -->
+                      <div v-if="reply.author?.medals && reply.author.medals.length" class="flex items-center gap-1 relative medals-dropdown-container">
+                        <span
+                          v-for="medal in reply.author.medals.slice(0, 3)"
+                          :key="medal.code || medal.id"
+                          class="text-base cursor-help transition-transform hover:scale-125 leading-none"
+                          :title="parseMedal(medal).tooltip"
                         >
-                          🏅
+                          {{ parseMedal(medal).icon }}
                         </span>
+
+                        <button
+                          v-if="reply.author.medals.length > 3"
+                          @click.stop="toggleMedalDropdown('r-' + reply.id)"
+                          class="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-600 hover:bg-slate-200 dark:hover:bg-slate-500 transition-colors text-[10px] px-1.5 py-0.5 rounded font-bold text-slate-600 dark:text-slate-200 ml-0.5 bg-transparent border-none cursor-pointer"
+                        >
+                          +{{ reply.author.medals.length - 3 }} <span>{{ openMedalDropdown === 'r-' + reply.id ? '▲' : '▼' }}</span>
+                        </button>
+
+                        <div
+                          v-if="openMedalDropdown === 'r-' + reply.id && reply.author.medals.length > 3"
+                          @click.stop
+                          class="absolute top-full left-0 mt-1 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 shadow-xl rounded-lg p-2.5 w-44 z-30"
+                        >
+                          <p class="text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-2 border-b pb-1 border-slate-100 dark:border-slate-600">
+                            Ostala priznanja
+                          </p>
+                          <div class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+                            <span
+                              v-for="medal in reply.author.medals.slice(3)"
+                              :key="medal.code || medal.id"
+                              class="text-base cursor-help transition-transform hover:scale-125 p-1 rounded hover:bg-slate-50 dark:hover:bg-slate-600 leading-none"
+                              :title="parseMedal(medal).tooltip"
+                            >
+                              {{ parseMedal(medal).icon }}
+                            </span>
+                          </div>
+                        </div>
                       </div>
 
                       <span>•</span>
