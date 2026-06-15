@@ -207,7 +207,7 @@ def get_platform_statistics(
     total_users = db.exec(select(func.count()).select_from(User)).one()
 
     # 2. Broj aktivnih korisnika (trenutno bazirano na is_active statusu)
-    # Napomena: Ako želiš pratiti "online" aktivnost, ovdje bi išla provjera po 'last_login' polju
+  
     active_users = db.exec(
         select(func.count()).select_from(User).where(User.is_active == True)
     ).one()
@@ -222,8 +222,7 @@ def get_platform_statistics(
         start_date = now - timedelta(days=30)
 
     # 4. Broj novih registracija u odabranom periodu
-    # VAŽNO: Ovaj upit pretpostavlja da tvoj User model ima polje 'created_at'.
-    # Ako se polje zove drugačije (npr. 'date_joined'), zamijeni User.created_at sa tim nazivom.
+   
     new_registrations = db.exec(
         select(func.count()).select_from(User).where(User.created_at >= start_date)
     ).one()

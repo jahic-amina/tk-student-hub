@@ -483,6 +483,7 @@ async confirmStatusToggle() {
     } else {
       await activateUser(token, user.id);
     }
+    this.fetchStats();
   } catch (error) {
     user.is_active = oldIsActive; // Vrati na staro ako je greška
     this.showError(ERROR_MESSAGES.DEACTIVATE_ERROR);
