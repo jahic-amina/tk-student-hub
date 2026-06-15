@@ -9,23 +9,16 @@ from app.core.security import hash_password, verify_password, create_access_toke
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-
-# --- Schemas ---
-
 class RegisterRequest(BaseModel):
     email: EmailStr
     full_name: str
     password: str
-
 
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str
     company_name: str = None
     company_id: int = None
-
-
-# --- User endpoints ---
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 def register(data: RegisterRequest, db: Session = Depends(get_db)):
@@ -42,11 +35,9 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
 
-    # forum tim dodan i role prilikom registracije (sigurnija konverzija iz HEAD-a)
     role_str = str(user.role.value) if hasattr(getattr(user, 'role', None), 'value') else str(getattr(user, 'role', 'student'))
     token = create_access_token({"sub": str(user.id), "role": role_str})
     return {"access_token": token, "token_type": "bearer"}
-
 
 @router.post("/login", response_model=TokenResponse)
 def login(data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
@@ -54,21 +45,15 @@ def login(data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
     if not user or not verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password.")
     
-    # Dodano iz main brancha: Provjera da li je profil deaktiviran
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Vaš profil je deaktiviran. Obratite se administratoru."
         )
 
-    # Dodano ubacivanje stvarne uloge iz baze podataka u token prilikom logina (sigurnija konverzija iz HEAD-a)
     role_str = str(user.role.value) if hasattr(getattr(user, 'role', None), 'value') else str(getattr(user, 'role', 'student'))
     token = create_access_token({"sub": str(user.id), "role": role_str})
     return {"access_token": token, "token_type": "bearer"}
-
-
-# --- Company endpoints ---
-# (Sačuvano iz HEAD brancha)
 
 @router.post("/company/login", response_model=TokenResponse)
 def company_login(data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
@@ -80,6 +65,5 @@ def company_login(data: OAuth2PasswordRequestForm = Depends(), db: Session = Dep
     if company.status != "approved":
         raise HTTPException(status_code=403, detail="Company account is not approved yet.")
 
-   
     token = create_access_token({"sub": str(company.id), "role": "company"})
     return {"access_token": token, "token_type": "bearer", "company_name": company.company_name, "company_id": company.id}
