@@ -1,14 +1,17 @@
-# Python & Backend
+# Python
+.venv/
+venv/
+.venv/
 backend/venv/
-**/__pycache__/
+backend/.venv/
+backend/uploads/
+__pycache__/
 *.pyc
 *.pyo
 backend/.env
 .env
-
-# Ako seed.py sadrži kod koji i kolege trebaju pokrenuti, 
-# obrišite donju liniju kako bi je Git pratio:
-backend/seed.py
+backend/.env
+backend/.venv/
 
 # Database
 backend/sql_app.db
@@ -26,4 +29,8 @@ frontend/.vite/
 .idea/
 
 # Superpowers internal docs
+docs/superpowers/
+
+uploads/
+
 docs/superpowers/venv/

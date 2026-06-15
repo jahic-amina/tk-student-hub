@@ -9,7 +9,7 @@ router = APIRouter(prefix="/workshops", tags=["workshops"])
 # -------------------------------------------------------
 # Team 1 — Workshops
 # This is your router. All your endpoints go here.
-# 
+#
 # Example protected endpoint:
 #
 # @router.get("/")

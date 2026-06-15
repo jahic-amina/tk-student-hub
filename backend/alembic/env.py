@@ -12,6 +12,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from app.core.config import settings
 from sqlmodel import SQLModel
 import app.models.user  # noqa: F401
+import app.models.ad  # noqa: F401
+import app.models.company  # noqa: F401
+import app.models.application  # noqa: F401
+import app.models.notification  # noqa: F401
+import app.models.ad_bookmark  # noqa: F401
 
 config = context.config
 

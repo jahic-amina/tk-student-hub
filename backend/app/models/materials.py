@@ -3,7 +3,6 @@ from typing import Optional
 from datetime import datetime
 from app.models.user import User 
 
-
 class Subject(SQLModel, table=True):
     __tablename__ = "subjects"
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -31,7 +30,6 @@ class Material(SQLModel, table=True):
     ratings: list["Rating"] = Relationship(back_populates="material")
     user: Optional["User"] = Relationship()
 
-
 class Rating(SQLModel, table=True):
     __tablename__ = "ratings"
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -41,7 +39,6 @@ class Rating(SQLModel, table=True):
     user_id: int = Field(foreign_key="users.id")
 
     material: Optional[Material] = Relationship(back_populates="ratings")
-
 
 class Comment(SQLModel, table=True):
     __tablename__ = "comments"
@@ -60,6 +57,7 @@ class MaterialCreate(SQLModel):
     description: Optional[str] = None
     file_type: str
     subject_id: int  
+
 class CommentCreate(SQLModel):
     content: str
     material_id: int
@@ -67,8 +65,6 @@ class CommentCreate(SQLModel):
 class RatingCreate(SQLModel):
     rating: int = Field(ge=1, le=5)
     material_id: int
-    
-    
 
 class UserResponse(SQLModel):
     id: int
@@ -94,7 +90,13 @@ class MaterialsResponse(SQLModel):
     average_rating: Optional[float] = None
     rating_count: Optional[int] = None
     is_bookmarked: bool = False
-    
+
+# POPRAVLJENO: Čista tabela bez zalutalih polja koja su zbunjivala bazu
+class Bookmark(SQLModel, table=True):
+    __tablename__ = "bookmarks"
+    user_id: int = Field(foreign_key="users.id", primary_key=True)
+    material_id: int = Field(foreign_key="materials.id", primary_key=True)
+
 class MaterialDetailResponse(SQLModel):
     id: int
     title: str
@@ -107,21 +109,7 @@ class MaterialDetailResponse(SQLModel):
     user: UserResponse
     comments: list[CommentResponse] = []
     ratings: list[Rating] = []
-    
-<<<<<<< HEAD
 
-
-class Bookmark(SQLModel, table=True):
-    __tablename__ = "bookmarks"
-    user_id: int = Field(foreign_key="users.id", primary_key=True)
-    material_id: int = Field(foreign_key="materials.id", primary_key=True)
-
-
-=======
-    average_rating: Optional[float] = None
-    rating_count: Optional[int] = None
-    
->>>>>>> origin/tim2/dev
 def get_default_subjects():
     return [
         Subject(name="Matematika 1", study_year=1),
@@ -159,8 +147,3 @@ def get_default_subjects():
         Subject(name="Projektovanje telekomunikacionih mreža", study_year=4),
         Subject(name="Multimedijski sistemi i komunikacije", study_year=4),
     ]
-
-
-
-
-
