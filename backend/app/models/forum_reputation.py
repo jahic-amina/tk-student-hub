@@ -159,7 +159,7 @@ class ForumReputationEvent(SQLModel, table=True):
         nullable=False
     )
 
-    class ForumReputationDailyLog(SQLModel, table=True):
+class ForumReputationDailyLog(SQLModel, table=True):
     """Prati bodove koje je Korisnik A dao Korisniku B u zadnjih 24h (Tiket 2 - Anti-Abuse)"""
     __tablename__ = "forum_reputation_daily_logs"
     
