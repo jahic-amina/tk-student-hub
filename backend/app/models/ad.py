@@ -2,7 +2,7 @@ from typing import Optional
 from datetime import datetime, date, timezone
 from enum import Enum
 from sqlmodel import SQLModel, Field, Relationship
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, field_validator, model_validator, ConfigDict
 from app.models.company import Company
 from app.models.user import User
 
@@ -226,8 +226,8 @@ class AdRead(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    # Modernizovano za Pydantic V2
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Validation helpers ---
