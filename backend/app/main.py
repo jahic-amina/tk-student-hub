@@ -2,7 +2,6 @@ import os
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer
-<<<<<<< HEAD
 from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.database import create_db_and_tables
@@ -14,9 +13,6 @@ from app.routers.notification import router as notification_router
 from app.routers.ad import router as ads_router 
 from app.database import engine, Session
 from app.routers import company
-
-=======
-from fastapi.staticfiles import StaticFiles  
 import os                                    
 from app.core.config import settings
 from app.database import create_db_and_tables
@@ -24,7 +20,6 @@ from app.routers import auth, dashboard, activity, admin, forum_categories, foru
 from app.core.security import get_current_user
 from app.models.user import User
 from app.routers import account
->>>>>>> main
 
 create_db_and_tables()
 
@@ -40,18 +35,12 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-<<<<<<< HEAD
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
-    allow_credentials=True,
-=======
     allow_origins=["*"],
-    allow_credentials=False,
->>>>>>> main
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-<<<<<<< HEAD
 LOCAL_UPLOAD_DIR = os.path.join(os.getcwd(), "uploads")
 os.makedirs(LOCAL_UPLOAD_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=LOCAL_UPLOAD_DIR), name="uploads")
@@ -62,7 +51,6 @@ app.include_router(company.router)
 app.include_router(notification_router)  
 app.include_router(ads_router)
 app.include_router(ad_bookmark_router) 
-=======
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 app.include_router(auth.router)
@@ -79,7 +67,6 @@ app.include_router(materials.router)
 app.include_router(forum_tags.router)
 app.include_router(forum_admin.router)
 app.include_router(forum_likes.router)
->>>>>>> main
 
 @app.get("/")
 def root():
