@@ -55,15 +55,6 @@
               Registracija
             </router-link>
           </div>
-          
-          <div class="w-px h-6 bg-gray-200"></div>
-          
-          <div class="flex items-center gap-3">
-            <router-link to="/company/login" class="text-gray-600 hover:text-primary font-medium">Prijava kompanije</router-link>
-            <router-link to="/company/register" class="border border-primary text-primary px-4 py-1.5 rounded-lg hover:bg-primary hover:text-white transition">
-              Registracija kompanija
-            </router-link>
-          </div>
         </template>
       </div>
 
