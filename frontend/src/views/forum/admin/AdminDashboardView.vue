@@ -28,6 +28,25 @@ const durationDays = ref(0);
 
 const editingAnn = ref(null);  
 
+const showReportModal = ref(false);
+const handlingReportId = ref(null);
+const handlingAction = ref(''); 
+const adminExplanation = ref('');
+
+const openReportModal = (reportId, action) => {
+  handlingReportId.value = reportId;
+  handlingAction.value = action;
+  adminExplanation.value = '';
+  showReportModal.value = true;
+};
+
+const closeReportModal = () => {
+  showReportModal.value = false;
+  handlingReportId.value = null;
+  handlingAction.value = '';
+  adminExplanation.value = '';
+};
+
 // Search query
 const searchQuery = ref('');
 
@@ -82,10 +101,24 @@ const postAnnouncement = async () => {
   await loadData();
 };
 
-const resolveReport = async (reportId, action) => {
-  await handleReportAction(reportId, action);
-  await loadData(); 
+
+const submitReportAction = async () => {
+  if (!adminExplanation.value.trim()) {
+    alert('Morate unijeti obrazloženje akcije.');
+    return;
+  }
+  
+  try {
+    await handleReportAction(handlingReportId.value, handlingAction.value, adminExplanation.value);
+    
+    closeReportModal();
+    alert('Prijava je uspješno riješena.');
+    await loadData(); 
+  } catch (error) {
+    alert('Došlo je do greške: ' + error.message);
+  }
 };
+
 </script>
 
 
@@ -118,20 +151,44 @@ const resolveReport = async (reportId, action) => {
     <div v-if="activeTab === 'reports'">
        <div v-for="report in filteredReports" :key="report.report_id" class="p-4 bg-white shadow rounded mb-4 border-l-4 border-red-500">
            <h3 class="font-bold text-lg">{{ report.topic?.title }}</h3>
-           <p class="text-sm text-gray-600 mt-1"><b>Razlog:</b> {{ report.reason }} | <b>Prijavio:</b> {{ report.reporter_name }}</p>
+           <p class="text-sm text-gray-600 mt-1"><b>Razlog:</b> {{ report.reason }}</p>
+           <div class="flex items-center gap-2 mt-2 text-xs text-gray-500">
+              <span>⚠️ Prijavio/la korisnik:</span>
+              <span class="font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded">
+                  {{ report.reporter_name }}
+              </span>
+            </div>
            <div class="mt-3 flex gap-2">
-              <button @click="resolveReport(report.report_id, 'resolve')" class="bg-green-500 text-white px-4 py-1 rounded text-sm">Prihvati (Obrisat će/Sankcionisati)</button>
-              <button @click="resolveReport(report.report_id, 'dismiss')" class="bg-gray-500 text-white px-4 py-1 rounded text-sm">Odbaci</button>
+              <button @click="openReportModal(report.report_id, 'accept')" class="font-inherit text-sm font-medium border border-green-500 bg-green-50 text-green-700 hover:bg-green-100 px-4 py-1.5 rounded-lg transition-colors">Prihvati</button>
+              <button @click="openReportModal(report.report_id, 'dismiss')" class="font-inherit text-sm font-medium border border-red-500 bg-red-50 text-red-700 hover:bg-red-100 px-4 py-1.5 rounded-lg transition-colors">Zanemari</button>
            </div>
        </div>
     </div>
 
     <div v-if="activeTab === 'handled_reports'">
-       <div v-for="report in filteredHandledReports" :key="report.report_id" class="p-4 bg-gray-50 shadow rounded mb-4 border-l-4 border-gray-400">
-           <h3 class="font-bold text-lg text-gray-700">{{ report.topic?.title }}</h3>
-           <p class="text-sm text-gray-600 mt-1"><b>Razlog:</b> {{ report.reason }}</p>
-           <p class="text-xs font-bold mt-2 uppercase" :class="report.status === 'resolved' ? 'text-green-600' : 'text-gray-500'">Status: {{ report.status }}</p>
-       </div>
+       <div v-for="report in filteredHandledReports" :key="report.id" class="p-4 border rounded shadow-sm mb-4">
+          <h3 class="font-bold">Tema: {{ report.topic?.title }}</h3>
+          <p class="text-xs text-green-700"><strong>Odluka:</strong> {{ report.status === 'accepted' ? 'Prihvaćeno' : 'Zanemareno' }}</p>
+    
+          <div class="flex items-center gap-2 mt-2 text-xs text-gray-500">
+            <span>👤 Temu prijavio/la:</span>
+            <span class="font-medium text-slate-700 bg-gray-200 px-2 py-0.5 rounded">
+                {{ report.reporter_name }}
+            </span>
+          </div>
+          <p class="text-sm text-gray-700 mt-1">
+              <strong>Razlog prijave:</strong> {{ report.reason }}
+          </p>
+    
+    <div class="mt-3 p-3 rounded" :class="report.action_taken === 'accept' ? 'bg-green-50' : 'bg-red-50'">
+        <p class="text-sm font-semibold" :class="report.action_taken === 'accept' ? 'text-green-700' : 'text-red-700'">
+            Status: {{ report.action_taken === 'accept' ? 'Prihvaćeno (Tema obrisana)' : 'Odbijeno (Zanemareno)' }}
+        </p>
+        <p class="text-sm italic mt-1 text-gray-800">
+            <strong>Adminovo obrazloženje:</strong> {{ report.admin_explanation }}
+        </p>
+    </div>
+</div>
     </div>
 
     <div v-if="showAnnouncementModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
@@ -150,6 +207,38 @@ const resolveReport = async (reportId, action) => {
         <div class="flex justify-end gap-3">
           <button @click="showAnnouncementModal = false" class="px-4 py-2 bg-gray-200 rounded text-gray-800">Otkaži</button>
           <button @click="postAnnouncement" class="px-4 py-2 bg-orange-500 text-white rounded font-bold hover:bg-orange-600">Objavi</button>
+        </div>
+      </div>
+    </div>
+    <div v-if="showReportModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+    <div class="bg-white p-6 rounded-xl w-full max-w-md shadow-2xl">
+        <h2 class="text-xl font-bold mb-4">
+            {{ handlingAction === 'accept' ? '✅ Prihvati prijavu' : '❌ Zanemari prijavu' }}
+        </h2>
+        
+        <p class="text-sm text-gray-600 mb-4">
+            Molimo vas da unesete obrazloženje zašto ste odlučili da {{ handlingAction === 'accept' ? 'prihvatite (i obrišete temu)' : 'zanemarite' }} ovu prijavu. Ovo će biti sačuvano u evidenciji.
+        </p>
+
+        <label class="block mb-2 text-sm font-bold text-gray-700">Obrazloženje</label>
+        <textarea 
+            v-model="adminExplanation" 
+            class="w-full border rounded p-3 mb-6 h-32 focus:ring focus:ring-orange-300 outline-none" 
+            placeholder="Unesite vaše obrazloženje ovdje..."
+        ></textarea>
+        
+        <div class="flex justify-end gap-3">
+            <button 
+                @click="closeReportModal" 
+                class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded font-medium transition-colors">
+                Otkaži
+            </button>
+            <button 
+                @click="submitReportAction" 
+                class="px-5 py-2 text-white rounded font-bold transition-colors"
+                :class="handlingAction === 'accept' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'">
+                Završi
+            </button>
         </div>
       </div>
     </div>
