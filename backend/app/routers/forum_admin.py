@@ -40,16 +40,24 @@ def get_reports(status: str = "pending", db: Session = Depends(get_db), admin: U
     if status not in ["pending", "resolved"]:
         raise HTTPException(status_code=400, detail="Nevažeći status prijave. Dozvoljeno je 'pending' ili 'resolved'.")
         
-    statement = select(TopicReport, ForumTopic).join(ForumTopic, TopicReport.topic_id == ForumTopic.id).where(TopicReport.status == status)
+    statement = select(TopicReport, ForumTopic).join(ForumTopic, TopicReport.topic_id == ForumTopic.id, isouter=True).where(TopicReport.status == status)
     results = db.exec(statement).all()
+
     output = []
     for report, topic in results:
         output.append({
+            "id": report.id,
             "report_id": report.id,
             "reason": report.reason,
             "created_at": report.created_at,
             "status": report.status,
-            "topic": {"id": topic.id, "title": topic.title, "content": topic.content}
+            "action_taken": getattr(report, "action_taken", None),
+            "admin_explanation": getattr(report, "admin_explanation", None),
+            "topic": {
+                "id": topic.id if topic else None,
+                "title": topic.title if topic else "Obrisana tema",
+                "content": topic.content if topic else ""
+            }
         })
     return output
 
@@ -61,6 +69,67 @@ def dismiss_report(report_id: int, db: Session = Depends(get_db), admin: User = 
         db.add(report)
         db.commit()
     return {"success": True}
+
+@router.patch("/reports/{report_id}/resolve")
+def resolve_report(
+    report_id: int,
+    payload: dict = Body(...),
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+):
+    report = db.get(TopicReport, report_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Prijava nije pronađena.")
+    if report.status == "resolved":
+        raise HTTPException(status_code=400, detail="Prijava je već riješena.")
+
+    action = payload.get("action")
+    explanation = payload.get("explanation", "")
+
+    if action not in ["accept", "dismiss"]:
+        raise HTTPException(status_code=400, detail="Nevažeća akcija.")
+
+    report.status = "resolved"
+    report.action_taken = action
+    report.admin_explanation = explanation
+    db.add(report)
+
+    if action == "accept":
+        topic = db.get(ForumTopic, report.topic_id)
+        if topic:
+            topic.is_deleted = True
+            db.add(topic)
+
+    db.commit()
+    db.refresh(report)
+    return {"success": True}
+
+
+@router.patch("/reports/{report_id}/reopen")
+def reopen_report(
+    report_id: int,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+):
+    report = db.get(TopicReport, report_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Prijava nije pronađena.")
+    if report.status == "pending":
+        raise HTTPException(status_code=400, detail="Prijava je već aktivna.")
+
+    report.status = "pending"
+    report.action_taken = None
+    report.admin_explanation = None
+    db.add(report)
+
+    if getattr(report, "topic", None) and getattr(report.topic, "is_deleted", False):
+        report.topic.is_deleted = False
+        db.add(report.topic)
+
+    db.commit()
+    db.refresh(report)
+    return {"success": True, "report_id": report.id}
+
 
 #Zaključavanje teme
 @router.patch("/topics/{topic_id}/lock")
@@ -146,3 +215,34 @@ def delete_announcement(ann_id: int, db: Session = Depends(get_db), admin: User 
         db.add(ann)
         db.commit()
     return {"success": True}
+
+@router.post("/topics/{topic_id}/pull-to-reports", status_code=status.HTTP_201_CREATED)
+def admin_pull_to_reports(
+    topic_id: int,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+):
+    topic = db.get(ForumTopic, topic_id)
+    if not topic or getattr(topic, "is_deleted", False):
+        raise HTTPException(status_code=404, detail="Tema nije pronađena ili je obrisana.")
+
+    existing = db.exec(
+        select(TopicReport).where(
+            TopicReport.topic_id == topic_id,
+            TopicReport.status == "pending"
+        )
+    ).first()
+
+    if existing:
+        raise HTTPException(status_code=400, detail="Ova tema već ima aktivnu prijavu u toku.")
+
+    report = TopicReport(
+        topic_id=topic_id,
+        user_id=admin.id,
+        reason="Admin – povučeno u prijave na pregled",
+        status="pending"
+    )
+    db.add(report)
+    db.commit()
+    db.refresh(report)
+    return {"success": True, "report_id": report.id}
