@@ -79,21 +79,28 @@ def create_announcement(content: dict = Body(...), db: Session = Depends(get_db)
     content_text = content.get("content", "")
     title = content.get("title")
     duration_days = content.get("duration_days", 0)  
+
+    existing_active = db.exec(
+        select(AdminAnnouncement).where(AdminAnnouncement.is_active == True)
+    ).all()
+    for old_ann in existing_active:
+        old_ann.is_active = False
+        db.add(old_ann)
     
     expires_at = None
     if duration_days and duration_days > 0:
         expires_at = datetime.utcnow() + timedelta(days=int(duration_days))
         
-    ann = AdminAnnouncement(
+    new_ann = AdminAnnouncement(
         admin_id=admin.id, 
         title=title,
         content=content_text,
         expires_at=expires_at,
         is_active=True
     )
-    db.add(ann)
+    db.add(new_ann)
     db.commit()
-    return {"success": True}
+    return {"success": True, "announcement": new_ann}
 
 
 
@@ -110,6 +117,9 @@ def update_announcement(ann_id: int, payload: dict = Body(...), db: Session = De
     if not ann:
         raise HTTPException(status_code=404, detail="Obavještenje nije pronađeno.")
     
+    if "title" in payload:
+        ann.title = payload["title"]
+
     if "content" in payload:
         ann.content = payload["content"]
         
