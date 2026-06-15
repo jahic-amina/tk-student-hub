@@ -130,3 +130,10 @@ def get_current_actor(token: str = Depends(oauth2_scheme), db: Session = Depends
         return company
 
     raise credentials_exception
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Vaš profil je deaktiviran. Kontaktirajte administratora."
+        )
+    
+    return user

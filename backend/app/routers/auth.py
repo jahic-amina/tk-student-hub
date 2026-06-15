@@ -42,8 +42,13 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
 
+<<<<<<< HEAD
     role_str = str(user.role.value) if hasattr(getattr(user, 'role', None), 'value') else str(getattr(user, 'role', 'student'))
     token = create_access_token({"sub": str(user.id), "role": role_str})
+=======
+    #forum tim dodan i role prilikom registracije
+    token = create_access_token({"sub": str(user.id), "role": user.role})
+>>>>>>> main
     return {"access_token": token, "token_type": "bearer"}
 
 
@@ -51,6 +56,7 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
 def login(data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.exec(select(User).where(User.email == data.username)).first()
     if not user or not verify_password(data.password, user.password_hash):
+<<<<<<< HEAD
         raise HTTPException(status_code=401, detail="Invalid email or password.")
 
     role_str = str(user.role.value) if hasattr(getattr(user, 'role', None), 'value') else str(getattr(user, 'role', 'student'))
@@ -73,3 +79,16 @@ def company_login(data: OAuth2PasswordRequestForm = Depends(), db: Session = Dep
    
     token = create_access_token({"sub": str(company.id), "role": "company"})
     return {"access_token": token, "token_type": "bearer", "company_name": company.company_name, "company_id": company.id}
+=======
+       raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Vaš profil je deaktiviran. Obratite se administratoru."
+        )
+    
+    #Dodano ubacivanje stvarne uloge iz baze podataka u token prilikom logina
+    token = create_access_token({"sub": str(user.id), "role": user.role})
+    return {"access_token": token, "token_type": "bearer"}
+>>>>>>> main

@@ -66,8 +66,11 @@ export default {
       this.loading = true
       this.error = null
 
-      const response = await loginUser(this.email, this.password)
+      try {
+        // 1. Pozivamo backend za login
+        const response = await loginUser(this.email, this.password)
 
+<<<<<<< HEAD
       if (response.access_token) {
         localStorage.setItem('token', response.access_token)
         const user = await getMe(response.access_token)
@@ -76,9 +79,45 @@ export default {
         window.location.href = '/'
       } else {
         this.error = 'Pogrešan email ili lozinka.'
-      }
+=======
+        // 2. Ako nam je backend dao token, lozinka je tačna
+        if (response && response.access_token) {
+          
+          localStorage.setItem('token', response.access_token)
+          
+          // 3. Pokušavamo dohvatiti podatke
+          const user = await getMe(response.access_token)
+          
+          // --- Provjeravamo da li je backend vratio 'detail' (grešku) ---
+          if ((user && user.detail) || (user && user.is_active === false)) {
+             // Znači da je backend blokirao pristup (403) i vratio poruku o deaktivaciji!
+             localStorage.removeItem('token') // Odmah brišemo token
+             this.error = 'Vaš nalog je deaktiviran. Molimo obratite se administratoru.'
+             this.loading = false
+             return 
+          }
+          // Ako nema greške, snimi korisnika i prebaci ga na dashboard
+          if (user && user.full_name) {
+             localStorage.setItem('username', user.full_name)
+             localStorage.setItem('role', user.role)
+          }
+          
+          window.dispatchEvent(new Event('user-login'))
+          this.$router.push('/dashboard')
+          
+        } else {
+          // Ako odmah u startu nema tokena (pogrešna lozinka)
+          // `fetch` vraća grešku kao 'detail'
+          this.error = response.detail || 'Pogrešan email ili lozinka.'
+        }
 
-      this.loading = false
+      } catch (err) {
+        // Kod fetch-a, ovo hvata samo situacije kad padne server ili nema interneta
+        this.error = 'Došlo je do greške. Provjerite konekciju i pokušajte ponovo.'
+      } finally {
+        this.loading = false
+>>>>>>> main
+      }
     }
   }
 }

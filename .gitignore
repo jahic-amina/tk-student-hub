@@ -1,25 +1,30 @@
 # Python
 .venv/
 venv/
+.venv/
+backend/venv/
+backend/.venv/
+backend/uploads/
 __pycache__/
 *.pyc
 *.pyo
+backend/.env
 .env
 backend/.env
 backend/.venv/
 
 # Database
+backend/sql_app.db
 *.db
+*.sqlite3
 
-# Node
-node_modules/
-dist/
+# Node & Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
 .DS_Store
 
-# Vite
-frontend/.vite/
-
-# IDE
+# IDE & Editori
 .vscode/
 .idea/
 
@@ -27,3 +32,5 @@ frontend/.vite/
 docs/superpowers/
 
 uploads/
+
+docs/superpowers/venv/

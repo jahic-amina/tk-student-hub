@@ -79,6 +79,7 @@ export default {
 
 			const response = await registerUser(this.email, this.fullName, this.password)
 
+<<<<<<< HEAD
 			if (response.access_token) {
 				localStorage.setItem('token', response.access_token)
 				const user = await getMe(response.access_token)
@@ -87,6 +88,17 @@ export default {
 			} else {
 				this.error = response.detail || 'Greška pri registraciji.'
 			}
+=======
+      if (response.access_token) {
+        localStorage.setItem('token', response.access_token)
+        const user = await getMe(response.access_token)
+        localStorage.setItem('username', user.full_name)
+        localStorage.setItem('role', user.role)
+        window.location.href = '/'
+      } else {
+        this.error = response.detail || 'Greška pri registraciji.'
+      }
+>>>>>>> main
 
 			this.loading = false
 		}

@@ -1,5 +1,5 @@
 <template>
-  <div id="app">
+  <div id="app" class="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-800 dark:text-slate-100 transition-colors duration-300">
     <NavBar />
     <main class="main-content">
       <router-view />
@@ -30,8 +30,6 @@ export default {
 
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f9f9f9;
-  color: #333;
 }
 
 .main-content {
