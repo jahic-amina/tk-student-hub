@@ -87,8 +87,10 @@ def get_all_topics(
     unanswered: Optional[bool] = False,   
     days_old: Optional[int] = None        
 ):
-    statement = select(ForumTopic).where(ForumTopic.is_deleted == False)
-    count_statement = select(func.count(ForumTopic.id)).where(ForumTopic.is_deleted == False)
+    excluded_topics = select(TopicReport.topic_id).where(TopicReport.status.in_(["pending", "accepted"])).subquery()
+
+    statement = select(ForumTopic).where(ForumTopic.is_deleted == False).where(ForumTopic.id.not_in(excluded_topics))
+    count_statement = select(func.count(ForumTopic.id)).where(ForumTopic.is_deleted == False).where(ForumTopic.id.not_in(excluded_topics))
 
     if category_id is not None:
         statement = statement.where(ForumTopic.category_id == category_id)
@@ -324,7 +326,7 @@ def get_handled_reports(db: Session = Depends(get_db), current_user: User = Depe
     if current_user.role != UserRole.admin:
         raise HTTPException(status_code=403, detail="Nemate ovlaštenje.")
     
-    reports = db.exec(select(TopicReport).where(TopicReport.status.in_(["resolved", "dismissed"])).order_by(TopicReport.created_at.desc())).all()
+    reports = db.exec(select(TopicReport).where(TopicReport.status.in_(["accepted", "dismissed"])).order_by(TopicReport.created_at.desc())).all()
     output = []
     for report in reports:
         topic = db.get(ForumTopic, report.topic_id)
@@ -344,16 +346,16 @@ def handle_report_action(report_id: int, action: str, payload: ReportActionPaylo
     if not report:
         raise HTTPException(status_code=404, detail="Prijava nije pronađena.")
     
-    report.status = "resolved"
+    if action == "accept":
+        report.status = "accepted"
+    elif action == "dismiss":
+        report.status = "dismissed"
+    else:
+        report.status = "resolved"
+        
     report.action_taken = action 
     report.admin_explanation = payload.explanation
     
-    if action == "accept":
-        topic = db.get(ForumTopic, report.topic_id)
-        if topic:
-            topic.is_deleted = True 
-            db.add(topic)
-            
     reporting_user = db.get(User, report.user_id)
     if reporting_user:
         reporting_user.reports_count += 1
@@ -362,7 +364,7 @@ def handle_report_action(report_id: int, action: str, payload: ReportActionPaylo
     db.add(report)
     db.commit()
     
-    return {"success": True, "message": "Prijava uspješno riješena."}
+    return {"success": True, "message": f"Prijava uspješno riješena sa statusom: {report.status}."}
 
 @router.get("/announcements/active")
 def get_active_announcements(db: Session = Depends(get_db)):
