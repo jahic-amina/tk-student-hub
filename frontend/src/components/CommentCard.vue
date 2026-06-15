@@ -51,7 +51,7 @@
         </div>
         <!-- Oznaka izmijenjeno -->
         <p v-if="comment.updated_at" class="text-xs text-gray-400 mt-1">
-            izmijenjeno · {{ formatirajDatum(comment.updated_at) }}
+            uređeno · {{ formatirajDatum(comment.updated_at) }}
         </p>
 
         <!-- Toast -->
