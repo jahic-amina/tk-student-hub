@@ -61,6 +61,11 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/dashboard',
+    name: 'dashboard',
+    component: () => import('../views/profiles/DashboardView.vue'),
+    meta: { requiresAuth: true }
+  },
     path: '/forum/tema/:id', 
     name: 'topic-detail',
     component: () => import('../views/forum/TopicDetailView.vue'),
@@ -75,6 +80,13 @@ const routes = [
     component: () => import('../views/profiles/ProfilesView.vue'),
     meta: { requiresAuth: true }
   },
+  {
+    path: '/admin',
+    name: 'admin',
+    component: () => import('../views/admin/AdminKorisniciView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+]
 
   // =========================================================
 
@@ -107,13 +119,19 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const isLoggedIn = !!localStorage.getItem('token')
-  const userRole = localStorage.getItem('role')
+  const role = localStorage.getItem('role')
+  const isAdmin = role === 'admin'
+
+  if (to.meta.requiresAuth && !isLoggedIn) {
+    next('/login')
+  } else if (to.meta.requiresAdmin && !isAdmin) {
+    next('/')
 
   if (to.meta.requiresAuth && !isLoggedIn) {
     next("/login");
   } else if (to.meta.guestOnly && isLoggedIn) {
     next('/')
-  } else if (to.meta.requiresAdmin && userRole !== 'admin') {
+  } else if (to.meta.requiresAdmin && role !== 'admin') {
     next('/') // Ako nije admin, baci ga na pocetnu
   } else {
     next();

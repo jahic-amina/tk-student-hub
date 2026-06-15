@@ -52,18 +52,31 @@ export default {
   name: 'NavBar',
   data() {
     return {
+      token: localStorage.getItem('token'),
+      username: localStorage.getItem('username') || 'Profil',
+      role: localStorage.getItem('role') || ''
       isDarkMode: localStorage.getItem('theme') === 'dark'
     }
   },
   computed: {
     isLoggedIn() {
-      return !!localStorage.getItem('token')
+      return !!this.token
     },
-    username() {
-      return localStorage.getItem('username') || 'Profil'
+    isAdmin() {
+      return this.role === 'admin'
     }
   },
   mounted() {
+    window.addEventListener('user-login', this.updateUser)
+  },
+  beforeUnmount() {
+    window.removeEventListener('user-login', this.updateUser)
+  },
+  methods: {
+    updateUser() {
+      this.token = localStorage.getItem('token')
+      this.username = localStorage.getItem('username') || 'Profil'
+      this.role = localStorage.getItem('role') || ''
     if (this.isDarkMode) {
       document.documentElement.classList.add('dark');
     } else {
@@ -86,6 +99,10 @@ export default {
       localStorage.removeItem('token')
       localStorage.removeItem('username')
       localStorage.removeItem('role')
+      this.token = null
+      this.username = 'Profil'
+      this.role = ''
+      window.dispatchEvent(new Event('user-logout'))
       this.$router.push('/login')
     }
   }
