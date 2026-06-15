@@ -36,7 +36,8 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
 
-    token = create_access_token({"sub": str(user.id)})
+    #forum tim dodan i role prilikom registracije
+    token = create_access_token({"sub": str(user.id), "role": user.role})
     return {"access_token": token, "token_type": "bearer"}
 
 
@@ -52,5 +53,6 @@ def login(data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
             detail="Vaš profil je deaktiviran. Obratite se administratoru."
         )
     
-    token = create_access_token({"sub": str(user.id)})
+    #Dodano ubacivanje stvarne uloge iz baze podataka u token prilikom logina
+    token = create_access_token({"sub": str(user.id), "role": user.role})
     return {"access_token": token, "token_type": "bearer"}
