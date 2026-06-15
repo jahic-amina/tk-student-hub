@@ -128,3 +128,13 @@ class AdminAnnouncement(SQLModel, table=True):
     is_active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     expires_at: Optional[datetime] = Field(default=None, nullable=True)
+
+class ForumGuideline(SQLModel, table=True):
+    __tablename__ = "forum_guidelines" # Ovdje sam dodao tablename radi konzistentnosti
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    title: str
+    content: str
+    order: int = Field(default=0)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
