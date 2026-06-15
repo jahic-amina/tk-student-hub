@@ -480,7 +480,6 @@ def delete_comment(
     session.delete(komentar)
     session.commit()
     return None
-<<<<<<< HEAD
 
 
 
@@ -510,5 +509,4 @@ def toggle_bookmark(
         session.add(new_bookmark)
         session.commit()
         return {"is_bookmarked": True}
-=======
->>>>>>> origin/tim2/dev
+
