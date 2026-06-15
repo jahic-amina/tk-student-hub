@@ -1,7 +1,15 @@
-import { createRouter, createWebHistory } from "vue-router";
-import HomeView from "../views/HomeView.vue";
-import LoginView from "../views/LoginView.vue";
-import RegisterView from "../views/RegisterView.vue";
+import { createRouter, createWebHistory } from 'vue-router'
+import HomeView from '../views/HomeView.vue'
+import LoginView from '../views/LoginView.vue'
+import RegisterView from '../views/RegisterView.vue'
+import AdsView from '../views/ads/AdsView.vue'
+import AdView from '../views/ads/AdView.vue'
+import ApplicationView from '../views/application/ApplicationView.vue'
+import CompanyRegisterView from '../views/company/CompanyRegisterView.vue'
+import CompanyLoginView from '../views/company/CompanyLoginView.vue'
+import AdminCompanyApprovalView from '../views/company/AdminCompanyApprovalView.vue'
+import CompanyView from '../views/company/CompanyView.vue'
+import AdminAdsView from '../views/ads/AdminAdsApprovalView.vue'
 
 const routes = [
   {
@@ -20,6 +28,44 @@ const routes = [
     name: "register",
     component: RegisterView,
     meta: { guestOnly: true },
+  },
+  {
+    path: '/ads',
+    name: 'ads',
+    component: AdsView
+  },
+  {
+    path: '/ads/:id',
+    name: 'ad-detail',
+    component: AdView
+  },
+  {
+    path: '/ads/:id/apply',
+    name: 'application',
+    component: ApplicationView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/companies/:id',
+    name: 'company',
+    component: CompanyView
+  },
+  {
+    path: '/company/register',
+    name: 'company-register',
+    component: CompanyRegisterView
+  },
+  {
+    path: '/company/login',
+    name: 'company-login',
+    component: CompanyLoginView,
+    meta: { guestOnly: true }
+  },
+  {
+    path: '/admin/companies',
+    name: 'admin-companies',
+    component: AdminCompanyApprovalView,
+    meta: { requiresAuth: true }
   },
   {
     path: "/prakse-i-edukacije",
@@ -49,6 +95,12 @@ const routes = [
 
   
   {
+    path: '/admin/ads',
+    name: 'admin-ads',
+    component: AdminAdsView,
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/forum',
     name: 'forum',
     component: () => import('../views/forum/ForumView.vue'),
@@ -66,6 +118,7 @@ const routes = [
     component: () => import('../views/profiles/DashboardView.vue'),
     meta: { requiresAuth: true }
   },
+  {
     path: '/forum/tema/:id', 
     name: 'topic-detail',
     component: () => import('../views/forum/TopicDetailView.vue'),
@@ -86,7 +139,7 @@ const routes = [
     component: () => import('../views/admin/AdminKorisniciView.vue'),
     meta: { requiresAuth: true, requiresAdmin: true }
   },
-]
+
 
   // =========================================================
 
@@ -136,6 +189,6 @@ router.beforeEach((to, from, next) => {
   } else {
     next();
   }
-});
+}});
 
 export default router;

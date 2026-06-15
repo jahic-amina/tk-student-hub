@@ -6,7 +6,6 @@ from sqlalchemy import Column, Enum, DateTime
 
 class UserRole(str, enum.Enum):
     member = "member"
-    mentor = "mentor"
     admin = "admin"
 
 
