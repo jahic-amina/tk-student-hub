@@ -23,7 +23,7 @@ onMounted(async () => {
       if (res.ok) {
         const data = await res.json();
         currentUserId.value = data.id;
-        currentUserRole.value = data.role; // Kolegina izmjena za povlačenje role iz tokena
+        currentUserRole.value = data.role;
       }
     }
   } catch (e) {
@@ -31,7 +31,6 @@ onMounted(async () => {
   }
 });
 
-// Provjera da li je trenutni korisnik admin
 const isAdmin = computed(() => {
   return currentUserRole.value === 'admin';
 });
@@ -40,11 +39,35 @@ const isTopicAuthor = computed(() => {
   return currentUserId.value && props.topicAuthorId && currentUserId.value === props.topicAuthorId;
 });
 
-const localVotes = ref({});
+// Reaktivno skladište za stanja glasova koja nam backend vrati nakon klika
+const serverVoteState = ref({});
 
 function getUserVote(comment) {
-  if (localVotes.value[comment.id] !== undefined) return localVotes.value[comment.id];
+  if (serverVoteState.value[comment.id] !== undefined) return serverVoteState.value[comment.id].user_vote;
   return comment.user_vote || 0;
+}
+
+function getLikesCount(comment) {
+  if (serverVoteState.value[comment.id] !== undefined) return serverVoteState.value[comment.id].likes_count;
+  return comment.likes_count || 0;
+}
+
+function getDislikesCount(comment) {
+  if (serverVoteState.value[comment.id] !== undefined) return serverVoteState.value[comment.id].dislikes_count;
+  return comment.dislikes_count || 0;
+}
+
+// Funkcija za dinamičko bojenje titula na osnovu ranga
+function getTierClass(title) {
+  if (!title) return 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600';
+  const t = title.toLowerCase();
+  if (t.includes('zlatni') || t.includes('expert')) {
+    return 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800 font-bold';
+  }
+  if (t.includes('srebrni') || t.includes('napredni')) {
+    return 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600';
+  }
+  return 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-900';
 }
 
 // Edit komentar
@@ -101,36 +124,31 @@ async function submitReply(comment, topicId) {
   }
 }
 
-function getLikesCount(comment) {
-  const currentVote = localVotes.value[comment.id];
-  if (currentVote === undefined) return comment.likes_count || 0;
-  const previousVote = comment.user_vote || 0;
-  let count = comment.likes_count || 0;
-  if (previousVote === 1 && currentVote !== 1) count--;
-  if (previousVote !== 1 && currentVote === 1) count++;
-  return Math.max(0, count);
-}
-
-function getDislikesCount(comment) {
-  const currentVote = localVotes.value[comment.id];
-  if (currentVote === undefined) return comment.dislikes_count || 0;
-  const previousVote = comment.user_vote || 0;
-  let count = comment.dislikes_count || 0;
-  if (previousVote === -1 && currentVote !== -1) count--;
-  if (previousVote !== -1 && currentVote === -1) count++;
-  return Math.max(0, count);
-}
-
+// RUKOVANJE GLASANJEM PREMA REPUTACIJSKOM MODELU
 async function handleVote(comment, value) {
   if (!currentUserId.value) return alert('Morate biti prijavljeni da biste glasali.');
-  const previousVote = getUserVote(comment);
-  localVotes.value[comment.id] = previousVote === value ? 0 : value;
+  
+  // Anti-Abuse: Klijentska blokada glasanja za svoj komentar
+  if (currentUserId.value === comment.author?.id) {
+    return alert('Ne možete glasati za vlastiti komentar.');
+  }
+
   try {
+    // Šaljemo glas na backend i čekamo provjeru dnevnog limita i pravila
     const result = await voteOnComment(comment.id, value);
-    localVotes.value[comment.id] = result.user_vote;
+    
+    // Čuvamo tačne podatke direktno iz baze (backend rute vraćaju svježe brojače)
+    serverVoteState.value[comment.id] = {
+      user_vote: result.user_vote,
+      // Ako backend vraća `likes_count` i `dislikes_count` koristimo ih, u suprotnom osvježavamo listu preko emit-a
+      likes_count: result.likes_count !== undefined ? result.likes_count : (comment.likes_count + (result.user_vote === 1 ? 1 : 0)),
+      dislikes_count: result.dislikes_count !== undefined ? result.dislikes_count : (comment.dislikes_count + (result.user_vote === -1 ? 1 : 0))
+    };
+    
+    // Kompletno osvježavanje roditeljske komponente kako bi se ažurirali XP i titule autora
+    emit('refresh');
   } catch (e) {
-    localVotes.value[comment.id] = previousVote;
-    alert('Greška pri glasanju.');
+    alert(e.response?.data?.detail || 'Greška pri glasanju ili je dostignut dnevni limit.');
   }
 }
 
@@ -180,7 +198,6 @@ function getInitials(name) {
     <div class="space-y-4">
       <template v-for="comment in comments" :key="comment.id">
         
-        <!-- GLAVNI KOMENTAR -->
         <div
           class="bg-white dark:bg-slate-800 rounded-xl border p-5 flex gap-4 transition-all shadow-sm"
           :class="[
@@ -191,24 +208,32 @@ function getInitials(name) {
                 : 'border-gray-200 dark:border-slate-700'
           ]"
         >
-          <!-- Voting -->
           <div class="flex flex-col items-center gap-0.5 flex-shrink-0 pt-1">
             <button
               @click="handleVote(comment, 1)"
+              :disabled="currentUserId === comment.author?.id"
               class="w-7 h-7 flex items-center justify-center rounded-lg transition-all"
-              :class="getUserVote(comment) === 1 ? 'text-orange-500' : 'text-slate-300 dark:text-slate-600 hover:text-orange-400 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-slate-700'"
-              title="Upvote"
+              :class="[
+                getUserVote(comment) === 1 ? 'text-orange-500' : 'text-slate-300 dark:text-slate-600 hover:text-orange-400 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-slate-700',
+                currentUserId === comment.author?.id ? 'opacity-40 cursor-not-allowed' : ''
+              ]"
+              :title="currentUserId === comment.author?.id ? 'Ne možete glasati za sebe' : 'Upvote'"
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
                 <path d="M7.493 18.75c-.425 0-.82-.236-.975-.632A7.48 7.48 0 0 1 6 15.375c0-1.75.599-3.358 1.602-4.634.151-.192.373-.309.6-.397.473-.183.89-.514 1.212-.924a9.042 9.042 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V3a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H14.23c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23h-.777ZM2.331 10.727a11.969 11.969 0 0 0-.831 4.398 12 12 0 0 0 .52 3.507C2.28 19.482 3.105 20.25 4.105 20.25H4.5c.395 0 .786-.04 1.167-.114.098-.018.192-.074.252-.15.06-.076.088-.174.088-.274V9.75a.75.75 0 0 0-.75-.75h-.765c-.782 0-1.5.432-1.961 1.077-.107.148-.197.306-.27.47Z" />
               </svg>
             </button>
             <span class="text-xs font-bold tabular-nums text-orange-500">{{ getLikesCount(comment) }}</span>
+            
             <button
               @click="handleVote(comment, -1)"
+              :disabled="currentUserId === comment.author?.id"
               class="w-7 h-7 flex items-center justify-center rounded-lg transition-all"
-              :class="getUserVote(comment) === -1 ? 'text-slate-600 dark:text-slate-400' : 'text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'"
-              title="Downvote"
+              :class="[
+                getUserVote(comment) === -1 ? 'text-slate-600 dark:text-slate-400' : 'text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700',
+                currentUserId === comment.author?.id ? 'opacity-40 cursor-not-allowed' : ''
+              ]"
+              :title="currentUserId === comment.author?.id ? 'Ne možete glasati za sebe' : 'Downvote'"
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 rotate-180">
                 <path d="M7.493 18.75c-.425 0-.82-.236-.975-.632A7.48 7.48 0 0 1 6 15.375c0-1.75.599-3.358 1.602-4.634.151-.192.373-.309.6-.397.473-.183.89-.514 1.212-.924a9.042 9.042 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V3a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H14.23c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23h-.777ZM2.331 10.727a11.969 11.969 0 0 0-.831 4.398 12 12 0 0 0 .52 3.507C2.28 19.482 3.105 20.25 4.105 20.25H4.5c.395 0 .786-.04 1.167-.114.098-.018.192-.074.252-.15.06-.076.088-.174.088-.274V9.75a.75.75 0 0 0-.75-.75h-.765c-.782 0-1.5.432-1.961 1.077-.107.148-.197.306-.27.47Z" />
@@ -218,13 +243,32 @@ function getInitials(name) {
           </div>
 
           <div class="flex-1 min-w-0">
-            <!-- Header komentara -->
             <div class="flex items-center justify-between mb-2">
-              <div class="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
+              <div class="flex items-center flex-wrap gap-2 text-xs text-slate-400 dark:text-slate-500">
                 <span class="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold text-[8px]">
                   {{ getInitials(comment.author?.full_name) }}
                 </span>
                 <strong class="text-slate-600 dark:text-slate-300">{{ comment.author?.full_name || 'Kolega' }}</strong>
+                
+                <span 
+                  v-if="comment.author?.title" 
+                  class="text-[10px] px-2 py-0.5 rounded border"
+                  :class="getTierClass(comment.author.title)"
+                >
+                  {{ comment.author.title }} ({{ comment.author.reputation_points }} XP)
+                </span>
+
+                <div v-if="comment.author?.medals && comment.author.medals.length" class="flex gap-0.5 items-center">
+                  <span 
+                    v-for="medal in comment.author.medals" 
+                    :key="medal.medal_code"
+                    class="text-sm cursor-help"
+                    :title="`Medalja: ${medal.medal_code} (${medal.category})`"
+                  >
+                    🏅
+                  </span>
+                </div>
+
                 <span>•</span>
                 <span>{{ formatDate(comment.created_at) }}</span>
                 <span v-if="comment.is_admin_notice" class="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-full font-bold shadow-sm">
@@ -235,7 +279,6 @@ function getInitials(name) {
                 </span>
               </div>
 
-              <!-- Akcijska dugmad -->
               <div class="flex items-center gap-1">
                 <button
                   v-if="isTopicAuthor"
@@ -249,7 +292,6 @@ function getInitials(name) {
                   </svg>
                 </button>
 
-                <!-- Edit dugme -->
                 <button
                   v-if="(currentUserId === comment.author?.id || isAdmin) && !comment.is_deleted"
                   @click="startEdit(comment)"
@@ -262,7 +304,6 @@ function getInitials(name) {
                   </svg>
                 </button>
 
-                <!-- Delete dugme -->
                 <button
                   v-if="currentUserId === comment.author?.id || isAdmin"
                   @click="handleDeleteComment(comment)"
@@ -276,12 +317,10 @@ function getInitials(name) {
               </div>
             </div>
 
-            <!-- Sadržaj komentara ili placeholder -->
             <div v-if="comment.is_deleted" class="text-slate-400 dark:text-slate-500 text-sm italic">
               deleted by user
             </div>
 
-            <!-- Edit forma -->
             <div v-else-if="editingCommentId === comment.id">
               <textarea
                 v-model="editContent"
@@ -298,10 +337,8 @@ function getInitials(name) {
               </div>
             </div>
 
-            <!-- Normalan sadržaj -->
             <p v-else class="text-slate-700 dark:text-slate-300 leading-relaxed text-sm whitespace-pre-line">{{ comment.content }}</p>
 
-            <!-- Dugme Odgovori -->
             <div class="mt-2">
               <button
                 v-if="currentUserId && !comment.is_deleted"
@@ -312,7 +349,6 @@ function getInitials(name) {
               </button>
             </div>
 
-            <!-- Inline reply forma -->
             <div v-if="replyingToId === comment.id" class="mt-3">
               <textarea
                 v-model="replyContent"
@@ -330,7 +366,6 @@ function getInitials(name) {
               </div>
             </div>
 
-            <!-- REPLIES -->
             <div v-if="comment.replies && comment.replies.length > 0" class="mt-4 space-y-3 pl-6 border-l-2 border-gray-100 dark:border-slate-700">
               <div
                 v-for="reply in comment.replies"
@@ -339,16 +374,35 @@ function getInitials(name) {
               >
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between mb-2">
-                    <div class="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
+                    <div class="flex items-center flex-wrap gap-2 text-xs text-slate-400 dark:text-slate-500">
                       <span class="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold text-[8px]">
                         {{ getInitials(reply.author?.full_name) }}
                       </span>
                       <strong class="text-slate-600 dark:text-slate-300">{{ reply.author?.full_name || 'Kolega' }}</strong>
+                      
+                      <span 
+                        v-if="reply.author?.title" 
+                        class="text-[10px] px-2 py-0.5 rounded border"
+                        :class="getTierClass(reply.author.title)"
+                      >
+                        {{ reply.author.title }} ({{ reply.author.reputation_points }} XP)
+                      </span>
+
+                      <div v-if="reply.author?.medals && reply.author.medals.length" class="flex gap-0.5 items-center">
+                        <span 
+                          v-for="medal in reply.author.medals" 
+                          :key="medal.medal_code"
+                          class="text-sm cursor-help"
+                          :title="`Medalja: ${medal.medal_code} (${medal.category})`"
+                        >
+                          🏅
+                        </span>
+                      </div>
+
                       <span>•</span>
                       <span>{{ formatDate(reply.created_at) }}</span>
                     </div>
 
-                    <!-- Akcijska dugmad za reply -->
                     <div class="flex items-center gap-1">
                       <button
                         v-if="(currentUserId === reply.author?.id || isAdmin) && !reply.is_deleted"
@@ -374,7 +428,6 @@ function getInitials(name) {
                     </div>
                   </div>
 
-                  <!-- Sadržaj reply-a -->
                   <div v-if="reply.is_deleted" class="text-slate-400 dark:text-slate-500 text-sm italic">
                     deleted by user
                   </div>
@@ -395,7 +448,6 @@ function getInitials(name) {
                   </div>
                   <p v-else class="text-slate-700 dark:text-slate-300 leading-relaxed text-sm whitespace-pre-line">{{ reply.content }}</p>
 
-                  <!-- Dugme Odgovori na reply -->
                   <div class="mt-2">
                     <button
                       v-if="currentUserId && !reply.is_deleted"
@@ -406,7 +458,6 @@ function getInitials(name) {
                     </button>
                   </div>
 
-                  <!-- Inline reply forma za reply -->
                   <div v-if="replyingToId === reply.id" class="mt-3">
                     <textarea
                       v-model="replyContent"
