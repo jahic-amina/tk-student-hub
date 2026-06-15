@@ -5,6 +5,13 @@
             <div class="flex items-center gap-3">
                 <span class="text-xs text-gray-400">{{ relativnoVrijeme(comment.created_at) }}</span>
                 <button
+                    v-if="mozeUrediti"
+                    @click="otvoriUredi"
+                    class="text-xs text-blue-400 hover:text-blue-600 transition"
+                >
+                    Uredi
+                </button>
+                <button
                     v-if="mozeBrisati"
                     @click="otvoriModal"
                     class="text-xs text-red-400 hover:text-red-600 transition"
@@ -13,7 +20,39 @@
                 </button>
             </div>
         </div>
-        <p class="text-gray-600 text-sm leading-relaxed">{{ comment.content }}</p>
+        <div v-if="!ureduje">
+            <p class="text-gray-600 text-sm leading-relaxed">{{ comment.content }}</p>
+        </div>
+        <div v-else>
+            <textarea
+                v-model="noviTekst"
+                rows="3"
+                maxlength="500"
+                class="w-full border rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            <div class="flex justify-between items-center mt-1">
+                <span class="text-xs text-gray-400">{{ noviTekst.length }} / 500</span>
+                <div class="flex gap-2">
+                    <button
+                        @click="odustaniUredi"
+                        class="text-xs text-gray-400 hover:text-gray-600 transition"
+                    >
+                        Odustani
+                    </button>
+                    <button
+                        @click="spremi"
+                        :disabled="!validanUredi"
+                        class="text-xs bg-primary text-white px-3 py-1 rounded-lg disabled:opacity-50"
+                    >
+                        Spremi
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Oznaka izmijenjeno -->
+        <p v-if="comment.updated_at" class="text-xs text-gray-400 mt-1">
+            izmijenjeno · {{ formatirajDatum(comment.updated_at) }}
+        </p>
 
         <!-- Toast -->
         <div v-if="toastPoruka" class="mt-2 text-xs text-green-500">{{ toastPoruka }}</div>
@@ -32,7 +71,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import ConfirmModal from './ConfirmModal.vue'
-import { deleteComment } from '../services/api.js'
+import { deleteComment,updateComment } from '../services/api.js'
 
 const props = defineProps({
     comment: {
@@ -41,10 +80,21 @@ const props = defineProps({
     }
 })
 
-const emit = defineEmits(['obrisan'])
+
 
 const prikaziModal = ref(false)
 const toastPoruka = ref('')
+const ureduje = ref(false)
+const noviTekst = ref('')
+const emit = defineEmits(['obrisan', 'ureden'])
+
+const mozeUrediti = computed(() => {
+    return props.comment.user_id === trenutniUserId
+})
+
+const validanUredi = computed(() => {
+    return noviTekst.value.trim().length >= 1 && noviTekst.value.trim().length <= 500
+})
 
 function getUserIdIzTokena() {
     const token = localStorage.getItem('token')
@@ -81,6 +131,36 @@ function otvoriModal() {
 
 function zatvoriModal() {
     prikaziModal.value = false
+}
+
+function otvoriUredi() {
+    noviTekst.value = props.comment.content
+    ureduje.value = true
+}
+
+function formatirajDatum(dateStr) {
+    if (!dateStr) return ''
+    const utcStr = dateStr.endsWith('Z') ? dateStr : dateStr + 'Z'
+    const datum = new Date(utcStr)
+    return datum.toLocaleDateString('bs-BA') + ' u ' + datum.toLocaleTimeString('bs-BA', { hour: '2-digit', minute: '2-digit' })
+}
+
+function odustaniUredi() {
+    ureduje.value = false
+    noviTekst.value = ''
+}
+
+async function spremi() {
+    if (!validanUredi.value) return
+    try {
+        const azuriran = await updateComment(props.comment.material_id, props.comment.id, noviTekst.value.trim())
+        emit('ureden', azuriran)
+        ureduje.value = false
+        toastPoruka.value = 'Komentar uspješno uređen.'
+        setTimeout(() => toastPoruka.value = '', 2000)
+    } catch (e) {
+        toastPoruka.value = 'Greška pri uređivanju komentara.'
+    }
 }
 
 async function obrisi() {
