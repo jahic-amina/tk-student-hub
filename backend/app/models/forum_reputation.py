@@ -158,3 +158,13 @@ class ForumReputationEvent(SQLModel, table=True):
         default_factory=utc_now,
         nullable=False
     )
+
+    class ForumReputationDailyLog(SQLModel, table=True):
+    """Prati bodove koje je Korisnik A dao Korisniku B u zadnjih 24h (Tiket 2 - Anti-Abuse)"""
+    __tablename__ = "forum_reputation_daily_logs"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    giver_id: int = Field(foreign_key="users.id")
+    receiver_id: int = Field(foreign_key="users.id")
+    points_given: int = Field(nullable=False)
+    created_at: datetime = Field(default_factory=utc_now, nullable=False)
