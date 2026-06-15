@@ -1,5 +1,5 @@
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlmodel import SQLModel, Field, Relationship
 from sqlalchemy import UniqueConstraint
@@ -58,11 +58,12 @@ class ForumComment(SQLModel, table=True):
     topic: Optional[ForumTopic] = Relationship(back_populates="comments")
     votes: List["ForumCommentVote"] = Relationship(back_populates="comment")
     replies: List["ForumComment"] = Relationship(
-    sa_relationship_kwargs={
-        "primaryjoin": "ForumComment.parent_id == foreign(ForumComment.id)",
-        "lazy": "select"
-    }
-)
+        sa_relationship_kwargs={
+            "primaryjoin": "ForumComment.parent_id == foreign(ForumComment.id)",
+            "lazy": "select"
+        }
+    )
+
 
 class ForumCommentVote(SQLModel, table=True):
     __tablename__ = "forum_comment_votes"
@@ -141,3 +142,14 @@ class TopicLike(SQLModel, table=True):
     topic_id: int = Field(foreign_key="forum_topics.id", index=True)
     user_id: int = Field(foreign_key="users.id", index=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class ForumGuideline(SQLModel, table=True):
+    __tablename__ = "forum_guidelines"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    title: str
+    content: str
+    order: int = Field(default=0)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
