@@ -114,6 +114,8 @@ class TopicReport(SQLModel, table=True):
     reason: str = Field(max_length=100)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     status: str = Field(default="pending") 
+    action_taken: Optional[str] = None 
+    admin_explanation: Optional[str] = None 
     
 
 class AdminAnnouncement(SQLModel, table=True):
