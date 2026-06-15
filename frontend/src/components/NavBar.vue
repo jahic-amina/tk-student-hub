@@ -8,7 +8,7 @@
 
       <div class="flex gap-6">
         <router-link to="/ads" class="text-gray-600 dark:text-slate-300 hover:text-primary dark:hover:text-orange-400 font-medium transition">Prakse i edukacije</router-link>
-        <router-link to="/mentoring" class="text-gray-600 dark:text-slate-300 hover:text-primary dark:hover:text-orange-400 font-medium transition">Materijali</router-link>
+        <router-link to="/materials" class="text-gray-600 dark:text-slate-300 hover:text-primary dark:hover:text-orange-400 font-medium transition">Materijali</router-link>
         <router-link to="/forum" class="text-gray-600 dark:text-slate-300 hover:text-primary dark:hover:text-orange-400 font-medium transition">Forum</router-link>
         <router-link to="/profiles" class="text-gray-600 dark:text-slate-300 hover:text-primary dark:hover:text-orange-400 font-medium transition">Profili</router-link>
       </div>

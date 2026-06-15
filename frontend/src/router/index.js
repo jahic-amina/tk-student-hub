@@ -145,7 +145,19 @@ const routes = [
     name: 'admin-forum-dashboard',
     component: () => import('../views/forum/admin/AdminDashboardView.vue'),
     meta: { requiresAuth: true, requiresAdmin: true }
-  }
+  },
+  {
+    path: '/prakse',
+    name: 'prakse',
+    component: () => import('../views/prakse/PrakseView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/workshops',
+    name: 'workshops',
+    component: () => import('../views/workshops/WorkshopsView.vue'),
+    meta: { requiresAuth: true }
+  },
 ];
 
 const router = createRouter({

@@ -18,7 +18,9 @@ from app.routers import (
 # Importovanje specifičnih rutera sa aliasima
 from app.routers.ad_bookmark import router as ad_bookmark_router
 from app.routers.notification import router as notification_router  
-from app.routers.ad import router as ads_router 
+from app.routers.ad import router as ads_router
+from app.routers.prakse import router as prakse_router
+from app.routers.workshops import router as workshops_router
 
 # Inicijalizacija baze podataka
 create_db_and_tables()
@@ -73,7 +75,9 @@ app.include_router(activity.router)
 app.include_router(admin.router)
 app.include_router(forum_admin.router)
 app.include_router(materials.router)
-app.include_router(notification_router)  
+app.include_router(notification_router)
+app.include_router(prakse_router)
+app.include_router(workshops_router)
 
 # --- OSNOVNI ENDPOINTI ---
 

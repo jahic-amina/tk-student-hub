@@ -3,32 +3,32 @@ from sqlmodel import Session, select
 from typing import List, Dict, Any
 from app.database import get_db
 from app.core.security import get_current_user
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.forum import TopicReport, AdminAnnouncement, ForumTopic, ForumCategory
 
-router = APIRouter(prefix="/admin", tags=["Admin"])
+router = APIRouter(prefix="/forum/admin", tags=["Forum Admin"])
 
-#Pomoćna funkcija za verifikaciju admina
+# Pomocna funkcija za verifikaciju admina
 def get_current_admin(current_user: User = Depends(get_current_user)):
-    if getattr(current_user, "role", None) != "admin":
-         raise HTTPException(status_code=403, detail="Pristup dozvoljen samo administratorima.")
+    if current_user.role != UserRole.admin:
+        raise HTTPException(status_code=403, detail="Pristup dozvoljen samo administratorima.")
     return current_user
 
 #Korisnici (Lista i promjena uloge)
 @router.get("/users")
 def get_all_users(db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
     users = db.exec(select(User)).all()
-    return [{"id": u.id, "email": u.email, "full_name": u.full_name, "role": getattr(u, "role", "member")} for u in users]
+    return [{"id": u.id, "email": u.email, "full_name": u.full_name, "role": u.role} for u in users]
 
 #Promjena uloge korisnika
 @router.patch("/users/{user_id}/role")
 def change_user_role(user_id: int, role: str, db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
-    if role not in ["admin", "member"]:
+    if role not in [r.value for r in UserRole]:
         raise HTTPException(status_code=400, detail="Nevažeća uloga.")
     user = db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="Korisnik nije pronađen.")
-    user.role = role
+    user.role = UserRole(role)
     db.add(user)
     db.commit()
     return {"message": f"Uloga promijenjena u {role}"}

@@ -79,6 +79,7 @@ def get_ads(
         )
 
     ads = db.exec(query).all()
+    # Run expiry check after fetching — committed lazily per-ad
     for ad in ads:
         expire_if_deadline_passed(ad, db)
     return [ad_to_read(ad) for ad in ads]
@@ -160,10 +161,14 @@ def update_ad(
     ad_id: int,
     data: AdUpdate,
     db: Session = Depends(get_db),
+    current_company: Company = Depends(get_current_company),
 ):
     ad = db.get(Ad, ad_id)
     if not ad or ad.is_deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ad not found.")
+
+    if ad.company_id != current_company.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied.")
 
     for field, value in data.model_dump().items():
         setattr(ad, field, value)
@@ -180,10 +185,14 @@ def patch_ad(
     ad_id: int,
     data: AdPatch,
     db: Session = Depends(get_db),
+    current_company: Company = Depends(get_current_company),
 ):
     ad = db.get(Ad, ad_id)
     if not ad or ad.is_deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ad not found.")
+
+    if ad.company_id != current_company.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied.")
 
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -237,10 +246,17 @@ def update_status(
 
 
 @router.delete("/{ad_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_ad(ad_id: int, db: Session = Depends(get_db)):
+def delete_ad(
+    ad_id: int,
+    db: Session = Depends(get_db),
+    current_company: Company = Depends(get_current_company),
+):
     ad = db.get(Ad, ad_id)
     if not ad or ad.is_deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ad not found.")
+
+    if ad.company_id != current_company.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied.")
 
     ad.is_deleted = True
     ad.updated_at = datetime.now(timezone.utc)
