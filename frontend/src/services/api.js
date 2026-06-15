@@ -174,6 +174,9 @@ export async function rejectMaterial(id) {
   return response.json();
 }
 
+<<<<<<< HEAD
+
+=======
 // Ocjenjivanje materijala 
 export async function rateMaterial(materialId, rating) {
   const token = localStorage.getItem('token')
@@ -206,3 +209,4 @@ export async function downloadMaterial(materialId) {
   const response = await fetch(`${BASE_URL}/materials/${materialId}/download`)
   return response
 }
+>>>>>>> origin/tim2/dev
