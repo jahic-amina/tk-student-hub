@@ -1,8 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { deleteTopic } from '../services/forum';
-import { reportTopic } from '../services/forum';
+import { deleteTopic, reportTopic } from '../services/forum';
 import { toggleTopicLock } from '../services/forum_admin';
 
 const router = useRouter();
@@ -42,6 +41,19 @@ const formatDate = (dateValue) => {
 const getInitials = (name) => {
   if (!name) return "?";
   return name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+}
+
+// Funkcija za dinamičko bojenje titula na osnovu ranga
+function getTierClass(title) {
+  if (!title) return 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600';
+  const t = title.toLowerCase();
+  if (t.includes('zlatni') || t.includes('expert')) {
+    return 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800 font-bold';
+  }
+  if (t.includes('srebrni') || t.includes('napredni')) {
+    return 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600';
+  }
+  return 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-900';
 }
 
 const showShareBox = ref(false);
@@ -110,25 +122,47 @@ async function handleReport(reason) {
 }
 
 async function handleLockTopic() {
-  await toggleTopicLock(props.topic.id);
-  props.topic.is_locked = !props.topic.is_locked;
+  try {
+    await toggleTopicLock(props.topic.id);
+    // Direktno mutiramo reaktivni prop objekat (Vue 3 dopušta mutaciju unutrašnjih propertija objekta)
+    props.topic.is_locked = !props.topic.is_locked;
+  } catch (e) {
+    alert('Greška pri promjeni statusa zaključavanja.');
+  }
 }
-
 </script>
 
 <template>
-  <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm p-6 mb-6 transition-colors duration-200">
-    <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4">{{ topic.title }}</h1>
+  <div 
+    class="bg-white dark:bg-slate-800 rounded-xl border shadow-sm p-6 mb-6 transition-colors duration-200"
+    :class="topic.is_locked ? 'border-amber-300 dark:border-amber-900 bg-amber-50/10' : 'border-gray-200 dark:border-slate-700'"
+  >
+    <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+      <span v-if="topic.is_locked" title="Tema je zaključana">🔒</span>
+      {{ topic.title }}
+    </h1>
     
-    <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-4 bg-slate-50 dark:bg-slate-700 p-2 rounded-lg w-fit">
+    <div class="flex items-center flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400 mb-4 bg-slate-50 dark:bg-slate-700 p-2 rounded-lg w-fit">
       <span class="w-6 h-6 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold text-[10px]">
         {{ getInitials(topic.author?.full_name) }}
       </span>
       <span class="font-semibold text-slate-700 dark:text-slate-200">{{ topic.author?.full_name || 'Student' }}</span>
+      
+      <span 
+        v-if="topic.author?.title" 
+        class="text-[10px] px-2 py-0.5 rounded border scale-95 origin-left"
+        :class="getTierClass(topic.author.title)"
+      >
+        {{ topic.author.title }} ({{ topic.author.reputation_points }} XP)
+      </span>
+
       <span>•</span>
       <span>{{ formatDate(topic.created_at) }}</span>
       <span>•</span>
       <span>👁️ {{ topic.views_count || 0 }} pregleda</span>
+      <span v-if="topic.is_locked" class="ml-2 bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full font-bold text-[10px]">
+        Zaključano
+      </span>
     </div>
 
     <p class="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">{{ topic.content }}</p>
@@ -141,22 +175,24 @@ async function handleLockTopic() {
         >
           🔗 Dijeli
         </button>
-        <div v-if="!isAdmin" class="relative">
-          <button @click="showReportOptions = !showReportOptions" class="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors font-medium px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50">
+
+        <div v-if="!isAdmin && !topic.is_locked" class="relative">
+          <button @click="showReportOptions = !showReportOptions" class="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors font-medium px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 bg-transparent">
             🚩 Prijavi
           </button>
-          <div v-if="showReportOptions" class="absolute top-full mt-1 left-0 bg-white border shadow-lg rounded-lg w-48 z-10 text-xs">
-            <button v-for="reason in reportReasons" :key="reason" @click="handleReport(reason)" class="block w-full text-left px-4 py-2 hover:bg-gray-50 text-slate-600">
+          <div v-if="showReportOptions" class="absolute top-full mt-1 left-0 bg-white dark:bg-slate-700 border dark:border-slate-600 shadow-lg rounded-lg w-48 z-10 text-xs overflow-hidden">
+            <button v-for="reason in reportReasons" :key="reason" @click="handleReport(reason)" class="block w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-200 bg-transparent">
               {{ reason }}
             </button>
           </div>
         </div>
 
-        <button v-if="isAdmin" @click="handleLockTopic" class="flex items-center gap-1.5 text-xs text-orange-500 hover:text-orange-700 transition-colors font-medium px-3 py-1.5 rounded-lg border border-orange-200 hover:bg-orange-50">
+        <button v-if="isAdmin" @click="handleLockTopic" class="flex items-center gap-1.5 text-xs text-orange-500 hover:text-orange-700 transition-colors font-medium px-3 py-1.5 rounded-lg border border-orange-200 hover:bg-orange-50 bg-transparent">
           🔒 {{ topic.is_locked ? 'Otključaj temu' : 'Zaključaj temu' }}
         </button>
+
         <button
-          v-if="currentUserId === topic.author?.id"
+          v-if="currentUserId === topic.author?.id || isAdmin"
           @click="handleDeleteTopic"
           class="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors font-medium px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/20 bg-transparent"
         >
@@ -171,19 +207,13 @@ async function handleLockTopic() {
         <p class="text-xs text-slate-500 dark:text-slate-400 font-semibold px-1">Podijeli temu</p>
         
         <div class="flex items-center gap-2">
-          <!-- Kopiraj link -->
-          <button
-            @click="copyToClipboard"
-            class="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-            title="Kopiraj link"
-          >
+          <button @click="copyToClipboard" class="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" title="Kopiraj link">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
             </svg>
             <span class="text-[10px] text-slate-500">{{ copySuccess ? 'Kopirano!' : 'Kopiraj' }}</span>
           </button>
 
-          <!-- Facebook -->
           <button @click="shareOnFacebook" class="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" title="Facebook">
             <svg class="w-8 h-8" viewBox="0 0 24 24" fill="#1877F2">
               <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
@@ -191,7 +221,6 @@ async function handleLockTopic() {
             <span class="text-[10px] text-slate-500">Facebook</span>
           </button>
 
-          <!-- Messenger -->
           <button @click="shareOnMessenger" class="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" title="Messenger">
             <svg class="w-8 h-8" viewBox="0 0 24 24" fill="#0099FF">
               <path d="M12 0C5.373 0 0 4.974 0 11.111c0 3.498 1.744 6.614 4.469 8.654V24l4.088-2.242c1.092.3 2.246.464 3.443.464 6.627 0 12-4.974 12-11.111C24 4.974 18.627 0 12 0zm1.191 14.963l-3.055-3.26-5.963 3.26L10.732 8.1l3.131 3.26L19.752 8.1l-6.561 6.863z"/>
@@ -199,7 +228,6 @@ async function handleLockTopic() {
             <span class="text-[10px] text-slate-500">Messenger</span>
           </button>
 
-          <!-- WhatsApp -->
           <button @click="shareOnWhatsApp" class="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" title="WhatsApp">
             <svg class="w-8 h-8" viewBox="0 0 24 24" fill="#25D366">
               <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
@@ -207,7 +235,6 @@ async function handleLockTopic() {
             <span class="text-[10px] text-slate-500">WhatsApp</span>
           </button>
 
-          <!-- Viber -->
           <button @click="shareOnViber" class="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" title="Viber">
             <img src="https://cdn.simpleicons.org/viber/7360F2" class="w-8 h-8" alt="Viber" />
             <span class="text-[10px] text-slate-500">Viber</span>
