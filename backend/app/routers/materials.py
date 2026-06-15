@@ -304,6 +304,34 @@ def delete_comment(
     session.commit()
     return None
 
+@router.patch("/{material_id}/comments/{comment_id}", response_model=CommentResponse)
+def update_comment(
+    material_id: int,
+    comment_id: int,
+    comment_data: CommentCreate,
+    session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    comment = session.get(Comment, comment_id)
+    if not comment or comment.material_id != material_id:
+        raise HTTPException(status_code=404, detail="Komentar nije pronađen.")
+
+    if comment.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Nemate dozvolu za uređivanje ovog komentara.")
+
+    content = comment_data.content.strip()
+    if not content:
+        raise HTTPException(status_code=400, detail="Komentar ne može biti prazan.")
+    if len(content) > 500:
+        raise HTTPException(status_code=400, detail="Komentar ne može biti duži od 500 karaktera.")
+
+    comment.content = content
+    comment.updated_at = datetime.utcnow()
+    session.add(comment)
+    session.commit()
+    session.refresh(comment)
+    comment.user = current_user
+    return comment
 
 @router.post("/{id}/rate", status_code=201)
 def rate_material(
