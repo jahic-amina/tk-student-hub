@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { toggleTopicLike } from '../composables/useForumExtras.js';
 
 const props = defineProps({
@@ -11,6 +11,7 @@ const emit = defineEmits(['obrisi', 'like-updated']);
 
 const currentUserId = ref(null);
 const likeLoading = ref(false);
+const showAllMedalsDropdown = ref(false);
 
 onMounted(async () => {
   try {
@@ -27,19 +28,91 @@ onMounted(async () => {
   } catch (e) {}
 });
 
+// MAPIRANJE MEDALJA (isti pattern kao TopicMainCard / ForumComments)
+const medalIcons = { gold: '🥇', silver: '🥈', bronze: '🥉' };
+
+const medalThresholds = {
+  best_answers: { bronze: 1, silver: 5, gold: 15 },
+  topics_started: { bronze: 3, silver: 10, gold: 25 },
+  reputation: { bronze: 100, silver: 500, gold: 1000 },
+  night_owl: { bronze: 1, silver: 3, gold: 10 }
+};
+
+const medalDetails = {
+  best_answers: {
+    name: 'Najbolji odgovori',
+    desc: (n) => `Dobija se kada vaš odgovor bude označen kao najbolji ${n} ${n === 1 ? 'put' : 'puta'}.`
+  },
+  topics_started: {
+    name: 'Pokrenute teme',
+    desc: (n) => `Dobija se kada pokrenete ${n} ${n === 1 ? 'temu' : 'tema'} na forumu.`
+  },
+  reputation: {
+    name: 'Ukupna reputacija',
+    desc: (n) => `Dobija se kada skupite ukupno ${n} XP reputacije.`
+  },
+  night_owl: {
+    name: 'Noćna ptica',
+    desc: (n) => `Tajna medalja — dobija se kada pokrenete ${n} ${n === 1 ? 'temu' : 'tema'} između 03:00 i 05:00h.`
+  }
+};
+
+function parseMedal(medal) {
+  if (!medal) return { icon: '🏅', name: 'Medalja', description: '', tooltip: 'Medalja' };
+  if (typeof medal !== 'object') return { icon: medal, name: 'Medalja', description: '', tooltip: 'Medalja' };
+
+  const icon = medalIcons[medal.tier] || '🏅';
+  const details = medalDetails[medal.category] || { name: medal.category_name || 'Priznanje', desc: () => '' };
+  const tierPrefix = medal.tier === 'gold' ? 'Zlatna' : medal.tier === 'silver' ? 'Srebrna' : 'Bronzana';
+  const threshold = medalThresholds[medal.category]?.[medal.tier];
+  const fullName = `${tierPrefix} ${details.name}`;
+  const description = threshold != null ? details.desc(threshold) : '';
+
+  return {
+    icon: icon,
+    name: fullName,
+    description: description,
+    tooltip: description ? `${fullName}\n${description}` : fullName
+  };
+}
+
+function getTierClass(title) {
+  if (!title) return 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600';
+  const t = title.toLowerCase();
+  if (t.includes('legenda') || t.includes('zlatni') || t.includes('expert')) {
+    return 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800 font-bold';
+  }
+  if (t.includes('srebrni') || t.includes('napredni')) {
+    return 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600';
+  }
+  return 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-900';
+}
+
+function getRoleBadgeClass(role) {
+  if (!role) return 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600';
+  const r = role.toLowerCase();
+  if (r === 'admin') {
+    return 'bg-red-50 text-red-700 border-red-300 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800 font-bold';
+  }
+  if (r === 'autor' || r === 'mentor') {
+    return 'bg-indigo-50 text-indigo-700 border-indigo-300 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-800';
+  }
+  return 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900';
+}
+
+const authorMedals = computed(() => props.tema?.author?.medals || []);
+const featuredMedals = computed(() => authorMedals.value.slice(0, 3));
+const remainingMedals = computed(() => authorMedals.value.slice(3));
+
 async function handleLike(tema) {
   if (likeLoading.value) return;
-  
-  // Anti-Abuse: Klijentska blokada lajkovanja sopstvene teme
   if (currentUserId.value === tema.author?.id) {
     alert('Ne možete lajkovati sopstvenu temu.');
     return;
   }
-
   try {
     likeLoading.value = true;
     const result = await toggleTopicLike(tema.id);
-
     emit('like-updated', {
       topicId: tema.id,
       likesCount: result.likes_count,
@@ -100,11 +173,70 @@ function getInitials(name) {
     </p>
     
     <div class="flex items-center justify-between mt-5 pt-4 border-t border-gray-100 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400">
-      <div class="flex items-center gap-2.5 font-medium">
+      <div class="flex items-center gap-2 font-medium flex-wrap">
         <span class="w-5.5 h-5.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold text-[10px]">
           {{ getInitials(tema.author?.full_name) }}
         </span>
         <span class="text-slate-700 dark:text-slate-200 font-semibold">{{ tema.author?.full_name || 'Korisnik' }}</span>
+
+        <span
+          class="font-bold uppercase text-[10px] px-1.5 py-0.5 rounded border"
+          :class="getRoleBadgeClass(tema.author?.role)"
+        >
+          {{ tema.author?.role || 'Student' }}
+        </span>
+
+        <span class="text-[10px] font-medium text-slate-400 dark:text-slate-500">
+          Lvl {{ tema.author?.level || 1 }}
+        </span>
+
+        <span
+          v-if="tema.author?.title"
+          class="text-[10px] px-2 py-0.5 rounded border scale-95 origin-left"
+          :class="getTierClass(tema.author.title)"
+        >
+          {{ tema.author.title }} ({{ tema.author.reputation_points }} XP)
+        </span>
+
+        <div v-if="authorMedals.length > 0" class="flex items-center gap-1 border-l pl-2 border-slate-200 dark:border-slate-700 relative medals-dropdown-container">
+          <span
+            v-for="m in featuredMedals"
+            :key="m.code || m.id"
+            class="text-base cursor-help transition-transform hover:scale-125 leading-none"
+            :title="parseMedal(m).tooltip"
+          >
+            {{ parseMedal(m).icon }}
+          </span>
+
+          <button
+            v-if="remainingMedals.length > 0"
+            @click.prevent.stop="showAllMedalsDropdown = !showAllMedalsDropdown"
+            class="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-600 hover:bg-slate-200 dark:hover:bg-slate-500 transition-colors text-[10px] px-1.5 py-0.5 rounded font-bold text-slate-600 dark:text-slate-200 ml-0.5 bg-transparent border-none cursor-pointer"
+          >
+            +{{ remainingMedals.length }} <span>{{ showAllMedalsDropdown ? '▲' : '▼' }}</span>
+          </button>
+
+          <div
+            v-if="showAllMedalsDropdown && remainingMedals.length > 0"
+            @click.prevent.stop
+            class="absolute top-full left-0 mt-1 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 shadow-xl rounded-lg p-2.5 w-44 z-30"
+          >
+            <p class="text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-2 border-b pb-1 border-slate-100 dark:border-slate-600">
+              Ostala priznanja
+            </p>
+            <div class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+              <span
+                v-for="m in remainingMedals"
+                :key="m.code || m.id"
+                class="text-base cursor-help transition-transform hover:scale-125 p-1 rounded hover:bg-slate-50 dark:hover:bg-slate-600 leading-none"
+                :title="parseMedal(m).tooltip"
+              >
+                {{ parseMedal(m).icon }}
+              </span>
+            </div>
+          </div>
+        </div>
+
         <span class="text-slate-300 dark:text-slate-600">•</span>
         <span>{{ formatDate(tema.created_at) }}</span>
       </div>
