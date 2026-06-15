@@ -1,17 +1,40 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { toggleTopicLike } from '../composables/useForumExtras.js';
-defineProps({
+
+const props = defineProps({
   tema: { type: Object, required: true },
   isAdmin: { type: Boolean, default: false }
 });
 
 const emit = defineEmits(['obrisi', 'like-updated']);
 
+const currentUserId = ref(null);
 const likeLoading = ref(false);
+
+onMounted(async () => {
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    if (token) {
+      const res = await fetch('http://127.0.0.1:8000/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        currentUserId.value = data.id;
+      }
+    }
+  } catch (e) {}
+});
 
 async function handleLike(tema) {
   if (likeLoading.value) return;
+  
+  // Anti-Abuse: Klijentska blokada lajkovanja sopstvene teme
+  if (currentUserId.value === tema.author?.id) {
+    alert('Ne možete lajkovati sopstvenu temu.');
+    return;
+  }
 
   try {
     likeLoading.value = true;
@@ -23,7 +46,7 @@ async function handleLike(tema) {
       liked: result.liked
     });
   } catch (error) {
-    alert(error.message || 'Lajkovanje nije uspjelo.');
+    alert(error.message || 'Lajkovanje nije uspjelo ili je dostignut limit.');
   } finally {
     likeLoading.value = false;
   }
@@ -47,10 +70,12 @@ function getInitials(name) {
 <template>
   <router-link 
     :to="`/forum/tema/${tema.id}`"
-    class="block px-5 py-5 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700/60 shadow-sm hover:shadow-md dark:hover:border-slate-600 transition-all cursor-pointer group"
+    class="block px-5 py-5 bg-white dark:bg-slate-800 rounded-xl border shadow-sm hover:shadow-md dark:hover:border-slate-600 transition-all cursor-pointer group"
+    :class="tema.is_locked ? 'border-amber-200 dark:border-amber-900 bg-amber-50/5' : 'border-gray-200 dark:border-slate-700/60'"
   >
     <div class="flex justify-between items-start">
-      <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#ff7a00] dark:group-hover:text-orange-400 transition-colors line-clamp-1 flex-1">
+      <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#ff7a00] dark:group-hover:text-orange-400 transition-colors line-clamp-1 flex-1 flex items-center gap-1.5">
+        <span v-if="tema.is_locked" title="Zaključano">🔒</span>
         {{ tema.title }}
       </h2>
       
@@ -62,7 +87,7 @@ function getInitials(name) {
         <button
           v-if="isAdmin"
           @click.prevent="emit('obrisi', tema.id)"
-          class="w-7 h-7 flex items-center justify-center rounded-full text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-800 dark:hover:text-red-300 transition-colors text-xs"
+          class="w-7 h-7 flex items-center justify-center rounded-full text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-800 dark:hover:text-red-300 transition-colors text-xs bg-transparent"
           title="Obriši temu"
         >
           🗑️
@@ -88,9 +113,10 @@ function getInitials(name) {
         <button
           v-if="!isAdmin"
           @click.prevent.stop="handleLike(tema)"
-          :disabled="likeLoading"
-          class="text-red-500 hover:text-red-600 disabled:opacity-50 transition-colors flex items-center gap-1"
-          title="Lajkuj temu"
+          :disabled="likeLoading || currentUserId === tema.author?.id"
+          class="text-red-500 hover:text-red-600 disabled:opacity-40 transition-colors flex items-center gap-1 bg-transparent"
+          :class="currentUserId === tema.author?.id ? 'cursor-not-allowed' : ''"
+          :title="currentUserId === tema.author?.id ? 'Ne možete lajkovati sopstvenu temu' : 'Lajkuj temu'"
         >
           ❤️ <span class="font-semibold">{{ tema.likes_count || 0 }}</span>
         </button>
