@@ -351,13 +351,12 @@ export async function getMaterials(filters = {}) {
     : `${BASE_URL}/materials/`;
 
   const token = localStorage.getItem("token");
+  const headers = authHeaders(token);
 
   try {
     const response = await fetch(url, {
       method: "GET",
-      headers: { 
-        "Authorization": `Bearer ${token}` // POŠALJI TOKEN
-      },
+      headers,
     });
     
     if (response.status === 401) {

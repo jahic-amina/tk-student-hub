@@ -55,7 +55,6 @@ class Ad(SQLModel, table=True):
 
 
 class AdCreate(BaseModel):
-    company_id: int
     title: str
     type: AdType
     field: str

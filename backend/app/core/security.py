@@ -55,6 +55,13 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if user is None:
         raise credentials_exception
 
+    # Check that the account is still active
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Vaš profil je deaktiviran. Kontaktirajte administratora.",
+        )
+
     return user
 
 
@@ -82,8 +89,8 @@ def get_current_company(token: str = Depends(oauth2_scheme_company), db: Session
 
 def get_current_actor(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     """
-    PAMETNA I SIGURNA FUNKCIJA koja dekodira token pomoću jose biblioteke.
-    Precizno razlikuje Admina, Studenta i Kompaniju na osnovu 'role' polja.
+    Decodes the token and returns either a User or a Company instance,
+    based on the 'role' claim in the JWT payload.
     """
     from app.models.user import User
     from app.models.company import Company
@@ -115,14 +122,25 @@ def get_current_actor(token: str = Depends(oauth2_scheme), db: Session = Depends
             return company
         raise credentials_exception
 
-    if role and ("admin" in str(role).lower() or "student" in str(role).lower()):
+    if role and ("admin" in str(role).lower() or "member" in str(role).lower()):
         user = db.exec(select(User).where(User.id == actor_id_int)).first()
         if user:
+            if not user.is_active:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Vaš profil je deaktiviran. Kontaktirajte administratora.",
+                )
             return user
         raise credentials_exception
 
+    # Fallback: try user first, then company
     user = db.exec(select(User).where(User.id == actor_id_int)).first()
     if user:
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Vaš profil je deaktiviran. Kontaktirajte administratora.",
+            )
         return user
 
     company = db.exec(select(Company).where(Company.id == actor_id_int)).first()
@@ -130,10 +148,3 @@ def get_current_actor(token: str = Depends(oauth2_scheme), db: Session = Depends
         return company
 
     raise credentials_exception
-    if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Vaš profil je deaktiviran. Kontaktirajte administratora."
-        )
-    
-    return user

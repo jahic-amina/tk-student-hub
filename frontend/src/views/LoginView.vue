@@ -2,8 +2,8 @@
   <div class="min-h-screen flex items-center justify-center">
     <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
       
-  <h1 class="text-2xl font-bold text-primary mb-2">Prijava</h1>
-  <p class="text-gray-500 mb-6">Dobrodošli nazad!</p>
+      <h1 class="text-2xl font-bold text-primary mb-2">Prijava</h1>
+      <p class="text-gray-500 mb-6">Dobrodošli nazad!</p>
 
       <div v-if="error" class="bg-red-50 text-red-600 px-4 py-3 rounded-lg mb-4 text-sm">
         {{ error }}
@@ -33,7 +33,7 @@
         <button
           @click="handleLogin"
           :disabled="loading"
-    class="bg-primary text-white py-2 rounded-lg hover:bg-primary/90 transition font-medium disabled:opacity-50"
+          class="bg-primary text-white py-2 rounded-lg hover:bg-primary/90 transition font-medium disabled:opacity-50"
         >
           {{ loading ? 'Prijava...' : 'Prijavi se' }}
         </button>
@@ -70,16 +70,6 @@ export default {
         // 1. Pozivamo backend za login
         const response = await loginUser(this.email, this.password)
 
-<<<<<<< HEAD
-      if (response.access_token) {
-        localStorage.setItem('token', response.access_token)
-        const user = await getMe(response.access_token)
-        localStorage.setItem('username', user.full_name)
-        localStorage.setItem('role', user.role)
-        window.location.href = '/'
-      } else {
-        this.error = 'Pogrešan email ili lozinka.'
-=======
         // 2. Ako nam je backend dao token, lozinka je tačna
         if (response && response.access_token) {
           
@@ -107,16 +97,13 @@ export default {
           
         } else {
           // Ako odmah u startu nema tokena (pogrešna lozinka)
-          // `fetch` vraća grešku kao 'detail'
           this.error = response.detail || 'Pogrešan email ili lozinka.'
         }
 
       } catch (err) {
-        // Kod fetch-a, ovo hvata samo situacije kad padne server ili nema interneta
         this.error = 'Došlo je do greške. Provjerite konekciju i pokušajte ponovo.'
       } finally {
         this.loading = false
->>>>>>> main
       }
     }
   }

@@ -65,12 +65,18 @@ const routes = [
     path: '/admin/companies',
     name: 'admin-companies',
     component: AdminCompanyApprovalView,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/ads',
+    name: 'admin-ads',
+    component: AdminAdsView,
+    meta: { requiresAuth: true, requiresAdmin: true }
   },
   {
     path: "/prakse-i-edukacije",
     name: "prakse",
-    component: () => import("../views/prakse/PrakseView.vue"),
+    component: AdsView, // POPRAVLJENO: Koristi AdsView umjesto ApplicationView
     meta: { requiresAuth: true },
   },
   {
@@ -79,7 +85,6 @@ const routes = [
     component: () => import("../views/materials/MaterialsView.vue"),
     meta: { requiresAuth: false },
   },
-
   {
     path: "/materials/upload",   
     name: "material-upload",
@@ -90,15 +95,13 @@ const routes = [
     path: "/materials/pending", 
     name: "pending-materials",
     component: () => import("../views/materials/MaterialsView.vue"),
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
-
-  
   {
-    path: '/admin/ads',
-    name: 'admin-ads',
-    component: AdminAdsView,
-    meta: { requiresAuth: true }
+    path: "/materials/:id",
+    name: "material-details",
+    component: () => import("../views/materials/MaterialDetailView.vue"),
+    meta: { requiresAuth: false },
   },
   {
     path: '/forum',
@@ -113,20 +116,18 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
-    path: '/dashboard',
-    name: 'dashboard',
-    component: () => import('../views/profiles/DashboardView.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
     path: '/forum/tema/:id', 
     name: 'topic-detail',
     component: () => import('../views/forum/TopicDetailView.vue'),
     props: true,
     meta: { requiresAuth: true }
   },
-  // =========================================================
-
+  {
+    path: '/dashboard',
+    name: 'dashboard',
+    component: () => import('../views/profiles/DashboardView.vue'),
+    meta: { requiresAuth: true }
+  },
   {
     path: '/profiles',
     name: 'profiles',
@@ -139,30 +140,24 @@ const routes = [
     component: () => import('../views/admin/AdminKorisniciView.vue'),
     meta: { requiresAuth: true, requiresAdmin: true }
   },
-
-
-  // =========================================================
-
   {
-    path: '/admin',
-    name: 'admin-dashboard',
+    path: '/admin/forum',
+    name: 'admin-forum-dashboard',
     component: () => import('../views/forum/admin/AdminDashboardView.vue'),
     meta: { requiresAuth: true, requiresAdmin: true }
   },
-    
   {
-    path: "/profiles",
-    name: "profiles",
-    component: () => import("../views/profiles/ProfilesView.vue"),
-    meta: { requiresAuth: true },
+    path: '/prakse',
+    name: 'prakse',
+    component: () => import('../views/prakse/PrakseView.vue'),
+    meta: { requiresAuth: true }
   },
   {
-    path: "/materials/:id",
-    name: "material-details",
-    component: () => import("../views/materials/MaterialDetailView.vue"),
-    meta: { requiresAuth: false },
+    path: '/workshops',
+    name: 'workshops',
+    component: () => import('../views/workshops/WorkshopsView.vue'),
+    meta: { requiresAuth: true }
   },
-
 ];
 
 const router = createRouter({
@@ -170,6 +165,7 @@ const router = createRouter({
   routes,
 });
 
+// POPRAVLJENO: Očišćena i ispravljena navigacijska zaštita (Guards)
 router.beforeEach((to, from, next) => {
   const isLoggedIn = !!localStorage.getItem('token')
   const role = localStorage.getItem('role')
@@ -179,16 +175,11 @@ router.beforeEach((to, from, next) => {
     next('/login')
   } else if (to.meta.requiresAdmin && !isAdmin) {
     next('/')
-
-  if (to.meta.requiresAuth && !isLoggedIn) {
-    next("/login");
   } else if (to.meta.guestOnly && isLoggedIn) {
     next('/')
-  } else if (to.meta.requiresAdmin && role !== 'admin') {
-    next('/') // Ako nije admin, baci ga na pocetnu
   } else {
-    next();
+    next()
   }
-}});
+})
 
 export default router;

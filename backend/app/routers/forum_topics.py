@@ -2,13 +2,21 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select, func
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta # DODATO: timedelta za računanje starosti tema
+from datetime import datetime, timedelta
 
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User, UserRole
 from app.models.forum import ForumCategory, ForumTopic, ForumTag, ForumTopicTag, TopicReport
-from app.routers.forum_categories import get_category_data 
+from app.routers.forum_helpers import (
+    get_author_data,
+    get_category_data,
+    get_topic_tags,
+    get_comments_count,
+    has_best_answer,
+    get_topic_comments,
+    get_topic_votes_count,
+)
 from app.routers.forum_likes import get_topic_likes_count
 
 router = APIRouter(prefix="/forum/topics", tags=["Forum Topics"])
@@ -29,24 +37,6 @@ def make_summary(text: str, max_length: int = 150) -> str:
     if len(clean_text) <= max_length:
         return clean_text
     return clean_text[:max_length].rsplit(" ", 1)[0] + "..."
-
-def get_author_data(db: Session, user_id: int) -> dict:
-    user = db.get(User, user_id)
-    if not user:
-        return {"id": None, "full_name": "Nepoznat korisnik"}
-    return {"id": user.id, "full_name": user.full_name}
-
-def get_topic_tags(db: Session, topic_id: int) -> list[str]:
-    links = db.exec(select(ForumTopicTag).where(ForumTopicTag.topic_id == topic_id)).all()
-    tag_names = []
-    for link in links:
-        tag = db.get(ForumTag, link.tag_id)
-        if tag:
-            tag_names.append(tag.name)
-    return tag_names
-
-# Uvozi funkcija kolega za komentare
-from app.routers.forum_comments import get_comments_count, has_best_answer, get_topic_comments, get_topic_votes_count
 
 def build_topic_list_item(db: Session, topic: ForumTopic) -> dict:
     comments_count = get_comments_count(db, topic.id)
@@ -116,16 +106,21 @@ def get_all_topics(
         statement = statement.order_by(ForumTopic.views_count.desc(), ForumTopic.id.desc())
     elif sort_by == "najaktivnije":
         from app.models.forum import ForumComment
+        # count_statement must be computed BEFORE we add the JOIN + GROUP BY to statement,
+        # otherwise the count would include the JOIN and return wrong totals.
+        total_topics = db.exec(count_statement).one()
         statement = (
-            statement.join(ForumComment, ForumComment.topic_id == ForumTopic.id, isouter=True)
+            statement
+            .join(ForumComment, ForumComment.topic_id == ForumTopic.id, isouter=True)
             .group_by(ForumTopic.id)
             .order_by(func.count(ForumComment.id).desc(), ForumTopic.created_at.desc())
         )
-    else:  
+    else:
         statement = statement.order_by(ForumTopic.created_at.desc())
 
-    
-    total_topics = db.exec(count_statement).one()
+    # For non-najaktivnije paths, run the count query now
+    if sort_by != "najaktivnije":
+        total_topics = db.exec(count_statement).one()
     skip = (page - 1) * per_page
     statement = statement.offset(skip).limit(per_page)
     topics = db.exec(statement).all()
