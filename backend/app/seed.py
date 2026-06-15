@@ -1,5 +1,4 @@
 from datetime import date, datetime, timedelta, timezone
-
 from sqlmodel import SQLModel, Session, select
 
 from app.core.security import hash_password
@@ -18,43 +17,23 @@ from app.models.forum import (
     ForumTopicTag,
     ForumCommentVote,
 )
-
+from app.models.forum_reputation import (
+    ForumUserStats,
+    ForumUserMedal,
+    ForumReputationEvent
+)
 
 # ---------------------------------------------------------------------------
-# Forum seed data
+# Forum seed data & categories
 # ---------------------------------------------------------------------------
 
 FORUM_CATEGORIES = [
-    {
-        "name": "Opšta diskusija",
-        "color": "#ff7a00",
-        "description": "Opšte teme vezane za studij i studentski život.",
-    },
-    {
-        "name": "Pomoć sa predmetima",
-        "color": "#2563eb",
-        "description": "Pitanja, objašnjenja i pomoć oko predmeta.",
-    },
-    {
-        "name": "Studijske grupe",
-        "color": "#16a34a",
-        "description": "Organizacija grupa za učenje i pripremu ispita.",
-    },
-    {
-        "name": "Praksa i posao",
-        "color": "#9333ea",
-        "description": "Diskusije o praksama, poslovima i karijeri.",
-    },
-    {
-        "name": "Projekti",
-        "color": "#dc2626",
-        "description": "Ideje, pitanja i pomoć oko studentskih projekata.",
-    },
-    {
-        "name": "Off-Topic",
-        "color": "#6b7280",
-        "description": "Neformalne teme i razgovori van nastave.",
-    },
+    {"name": "Opšta diskusija", "color": "#ff7a00", "description": "Opšte teme vezane za studij i studentski život."},
+    {"name": "Pomoć sa predmetima", "color": "#2563eb", "description": "Pitanja, objašnjenja i pomoć oko predmeta."},
+    {"name": "Studijske grupe", "color": "#16a34a", "description": "Organizacija grupa za učenje i pripremu ispita."},
+    {"name": "Praksa i posao", "color": "#9333ea", "description": "Diskusije o praksama, poslovima i karijeri."},
+    {"name": "Projekti", "color": "#dc2626", "description": "Ideje, pitanja i pomoć oko studentskih projekata."},
+    {"name": "Off-Topic", "color": "#6b7280", "description": "Neformalne teme i razgovori van nastave."},
 ]
 
 
@@ -64,16 +43,23 @@ def seed_forum_categories(session: Session) -> None:
         existing = session.exec(
             select(ForumCategory).where(ForumCategory.name == category_data["name"])
         ).first()
+
         if existing:
             existing.color = category_data["color"]
             existing.description = category_data["description"]
             session.add(existing)
-        else:
-            session.add(ForumCategory(**category_data))
+            continue
+
+        category = ForumCategory(
+            name=category_data["name"],
+            color=category_data["color"],
+            description=category_data["description"]
+        )
+        session.add(category)
     session.commit()
 
 
-def _get_or_create_forum_users(session: Session) -> list[User]:
+def get_or_create_test_users(session: Session) -> list[User]:
     emails = ["forum.test@student.ba", "amra.begic@student.ba", "zijad.lekic@student.ba"]
     names = ["Forum Test Student", "Amra Begić", "Zijad Lekić"]
     users = []
@@ -92,8 +78,7 @@ def _get_or_create_forum_users(session: Session) -> list[User]:
     return users
 
 
-def _get_or_create_tags(session: Session) -> dict:
-    # Note: removed leading space from " hardware"
+def get_or_create_tags(session: Session) -> dict[str, ForumTag]:
     tag_names = ["matematika", "programiranje", "fourier", "ispit", "hardware", "kafa"]
     tags_dict = {}
     for name in tag_names:
@@ -107,24 +92,29 @@ def _get_or_create_tags(session: Session) -> dict:
     return tags_dict
 
 
-def seed_forum_topics_and_comments(session: Session) -> None:
-    users = _get_or_create_forum_users(session)
-    main_user, student_user_1, student_user_2 = users[0], users[1], users[2]
-
-    tags = _get_or_create_tags(session)
+def seed_topics_and_comments(session: Session) -> None:
+    users = get_or_create_test_users(session)
+    main_user = users[0]       
+    student_user_1 = users[1]  
+    student_user_2 = users[2]  
+    
+    tags = get_or_create_tags(session)
     categories = session.exec(select(ForumCategory)).all()
 
     if not categories:
         print("Kategorije nisu pronađene. Prvo pokrenite seed_forum_categories.")
         return
 
-    print("Punjenje baze forum podacima (teme, tagovi, komentari, glasovi)...")
-
+    print("Započeto masovno punjenje baze (seed) sa podrškom za komentare i tagove...")
+    
+    total_topics_created_by_main = 0
+    total_answers_by_user1 = 0
+    total_answers_by_user2 = 0
+    
     for category in categories:
-        # "Praksa i posao" ostaje prazna za testiranje UI stanja
         if category.name == "Praksa i posao":
             continue
-
+            
         for i in range(1, 21):
             title_text = f"Tema broj {i} u kategoriji {category.name}"
             existing_topic = session.exec(
@@ -132,7 +122,8 @@ def seed_forum_topics_and_comments(session: Session) -> None:
             ).first()
 
             if not existing_topic:
-                time_offset = datetime.utcnow() - timedelta(days=21 - i, hours=i)
+                time_offset = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=21-i, hours=i)
+                
                 topic = ForumTopic(
                     title=title_text,
                     content=(
@@ -149,9 +140,9 @@ def seed_forum_topics_and_comments(session: Session) -> None:
                 session.add(topic)
                 session.commit()
                 session.refresh(topic)
-
+                total_topics_created_by_main += 1
+                
                 if i == 1:
-                    # Add tags
                     if category.name == "Pomoć sa predmetima":
                         session.add(ForumTopicTag(topic_id=topic.id, tag_id=tags["fourier"].id))
                         session.add(ForumTopicTag(topic_id=topic.id, tag_id=tags["matematika"].id))
@@ -159,36 +150,88 @@ def seed_forum_topics_and_comments(session: Session) -> None:
                         session.add(ForumTopicTag(topic_id=topic.id, tag_id=tags["programiranje"].id))
                     else:
                         session.add(ForumTopicTag(topic_id=topic.id, tag_id=tags["ispit"].id))
-
+                    
                     komentar_1 = ForumComment(
                         content=f"Ovo je prvi odgovor na temu '{topic.title}'. Slažem se sa postavljenim pitanjem.",
                         topic_id=topic.id,
                         user_id=student_user_1.id,
                         is_best_answer=False,
                         is_deleted=False,
-                        created_at=time_offset + timedelta(minutes=30),
+                        created_at=time_offset + timedelta(minutes=30)
                     )
                     komentar_2 = ForumComment(
-                        content="⚠️ EVE REŠENJA: Ovo je službeno proglašeno kao NAJBOLJI ODGOVOR. "
-                                "Koristite Eulerovu formulu kako biste transformaciju sveli na jednostavne integrale.",
+                        content="⚠️ EVE REŠENJA: Ovo je službeno proglašeno kao NAJBOLJI ODGOVOR. Koristite Eulerovu formulu kako biste transformaciju sveli na jednostavne integrale.",
                         topic_id=topic.id,
                         user_id=student_user_2.id,
-                        is_best_answer=True,
+                        is_best_answer=True, 
                         is_deleted=False,
-                        created_at=time_offset + timedelta(hours=1),
+                        created_at=time_offset + timedelta(hours=1)
                     )
                     session.add(komentar_1)
                     session.add(komentar_2)
                     session.commit()
                     session.refresh(komentar_1)
                     session.refresh(komentar_2)
-
+                    
+                    total_answers_by_user1 += 1
+                    total_answers_by_user2 += 1
+                    
                     session.add(ForumCommentVote(comment_id=komentar_1.id, user_id=main_user.id, value=1))
                     session.add(ForumCommentVote(comment_id=komentar_2.id, user_id=main_user.id, value=1))
                     session.add(ForumCommentVote(comment_id=komentar_2.id, user_id=student_user_1.id, value=1))
+                    
+    session.commit()
+
+    print("🏅 Seeding sistema reputacije, statistike i medalja...")
+    
+    main_stats = session.exec(select(ForumUserStats).where(ForumUserStats.user_id == main_user.id)).first()
+    if not main_stats:
+        main_stats = ForumUserStats(
+            user_id=main_user.id,
+            reputation_points=total_topics_created_by_main * 10,
+            topics_started_count=total_topics_created_by_main,
+            answers_count=0,
+            best_answers_count=0,
+            night_topics_count=5 
+        )
+        session.add(main_stats)
+
+    amra_stats = session.exec(select(ForumUserStats).where(ForumUserStats.user_id == student_user_1.id)).first()
+    if not amra_stats:
+        amra_stats = ForumUserStats(
+            user_id=student_user_1.id,
+            reputation_points=total_answers_by_user1 * 3,
+            topics_started_count=0,
+            answers_count=total_answers_by_user1,
+            best_answers_count=0
+        )
+        session.add(amra_stats)
+
+    zijad_reputation = (total_answers_by_user2 * 3) + (5 * 25)
+    zijad_stats = session.exec(select(ForumUserStats).where(ForumUserStats.user_id == student_user_2.id)).first()
+    if not zijad_stats:
+        zijad_stats = ForumUserStats(
+            user_id=student_user_2.id,
+            reputation_points=zijad_reputation,
+            topics_started_count=0,
+            answers_count=total_answers_by_user2,
+            best_answers_count=5
+        )
+        session.add(zijad_stats)
+    
+    session.commit()
+
+    if not session.exec(select(ForumUserMedal).where(ForumUserMedal.user_id == main_user.id, ForumUserMedal.medal_code == "topics_gold")).first():
+        session.add(ForumUserMedal(user_id=main_user.id, medal_code="topics_gold", category="topics_started", tier="gold"))
+    
+    if not session.exec(select(ForumUserMedal).where(ForumUserMedal.user_id == student_user_2.id, ForumUserMedal.medal_code == "best_answers_bronze")).first():
+        session.add(ForumUserMedal(user_id=student_user_2.id, medal_code="best_answers_bronze", category="best_answers", tier="bronze"))
+        
+    if not session.exec(select(ForumUserMedal).where(ForumUserMedal.user_id == student_user_1.id, ForumUserMedal.medal_code == "night_owl")).first():
+        session.add(ForumUserMedal(user_id=student_user_1.id, medal_code="night_owl", category="secret", tier="bronze", is_secret=True))
 
     session.commit()
-    print("Forum podaci uspješno dodani!")
+    print("Baza je uspješno napumpana i reputacija je izračunata!")
 
 
 # ---------------------------------------------------------------------------
@@ -255,7 +298,7 @@ def _build_ads(companies: list[Company], users: list[User]) -> list[Ad]:
         {"title": "Web Development Kurs", "type": AdType.education, "field": "Web Development", "location": "Tuzla", "description": "Naučite HTML, CSS i JavaScript od nule.", "deadline": 35, "duration_months": 3, "compensation": None, "spots": 15},
         {"title": "Data Science Radionica", "type": AdType.education, "field": "Data Science", "location": "Mostar", "description": "Uvod u analizu podataka i machine learning.", "deadline": 40, "duration_months": 1, "compensation": None, "spots": 10},
         {"title": "Stipendija za IT studente", "type": AdType.scholarship, "field": "Informacione tehnologije", "location": "Sarajevo", "description": "Stipendija namijenjena studentima IT fakulteta.", "deadline": 45, "duration_months": None, "compensation": 500.0, "spots": 5},
-        {"title": "STEM Stipendija", "type": AdType.scholarship, "field": "STEM", "location": "Banja Luka", "description": "Stipendija za studente prirodnih i tehničkih nauka.", "deadline": 50,("title"): AdType.scholarship,("field"): "STEM",("location"): "Banja Luka",("description"): "Stipendija za studente prirodnih i tehničkih nauka.",("deadline"): 50,("duration_months"): None,("compensation"): 400.0,("spots"): 3},
+        {"title": "STEM Stipendija", "type": AdType.scholarship, "field": "STEM", "location": "Banja Luka", "description": "Stipendija za studente prirodnih i tehničkih nauka.", "deadline": 50, "duration_months": None, "compensation": 400.0, "spots": 3},
     ]
     ads = []
     for index, template in enumerate(ad_templates):
@@ -437,16 +480,15 @@ def seed_demo_data(session: Session) -> dict[str, int]:
     }
 
 
-def main() -> None:
-    create_db_and_tables()
-
+def seed_database() -> None:
+    SQLModel.metadata.create_all(engine)
     with Session(engine) as session:
         result = seed_demo_data(session)
         seed_forum_categories(session)
-        seed_forum_topics_and_comments(session)
-
+        seed_topics_and_comments(session)
+        
     print(
-        f"Seed zavrsen:\n"
+        f"Glavni seed završen:\n"
         f"  - {result['users']} korisnika\n"
         f"  - {result['companies']} kompanija\n"
         f"  - {result['ads']} oglasa\n"
@@ -455,7 +497,8 @@ def main() -> None:
         f"  - {result['bookmarks']} bookmarkova\n"
         f"  - ukupno {result['created']} novih redova"
     )
+    print("Svi seed podaci za forum, aplikaciju i reputaciju su spremni.")
 
 
 if __name__ == "__main__":
-    main()
+    seed_database()
