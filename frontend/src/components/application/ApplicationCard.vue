@@ -35,29 +35,25 @@
       </div>
       <div v-if="application.cv_path" class="flex items-center gap-2 text-sm">
         <span class="text-gray-400">📄</span>
-        <a
-          :href="cvUrl"
-          target="_blank"
-          rel="noopener"
+        <button
+          @click="openPdf(cvUrl, 'CV')"
           class="text-orange-600 hover:text-orange-700 font-semibold hover:underline"
         >
           Preuzmi CV
-        </a>
+        </button>
       </div>
       <div v-if="application.motivational_letter_path" class="flex items-center gap-2 text-sm">
         <span class="text-gray-400">✉️</span>
-        <a
-          :href="motivationalLetterUrl"
-          target="_blank"
-          rel="noopener"
+        <button
+          @click="openPdf(motivationalLetterUrl, 'Propratno pismo')"
           class="text-orange-600 hover:text-orange-700 font-semibold hover:underline"
         >
           Propratno pismo
-        </a>
+        </button>
       </div>
     </div>
 
-    <!-- Existing admin feedback (if rejected with message) -->
+    <!-- Existing admin feedback -->
     <div
       v-if="application.admin_feedback && application.status === 'rejected'"
       class="mb-4 rounded-xl bg-red-50 border border-red-100 p-3 text-xs text-red-700"
@@ -76,7 +72,7 @@
       />
     </div>
 
-    <!-- Actions — shown only when pending -->
+    <!-- Actions -->
     <div v-if="application.status === 'pending'" class="space-y-2">
       <div class="flex gap-2">
         <button
@@ -109,10 +105,56 @@
       </button>
     </div>
 
-    <!-- Already decided -->
     <div v-else class="text-xs text-gray-400 text-center pt-1">
       Odluka je već donesena za ovu prijavu.
     </div>
+
+    <!-- PDF Modal -->
+    <Teleport to="body">
+      <div
+        v-if="pdfModal.open"
+        class="fixed inset-0 z-50 flex items-center justify-center"
+        @click.self="closePdf"
+      >
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="closePdf" />
+
+        <!-- Modal -->
+        <div class="relative z-10 flex flex-col bg-white rounded-2xl shadow-2xl w-[90vw] max-w-4xl h-[90vh]">
+          
+          <!-- Modal header -->
+          <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
+            <p class="font-bold text-gray-900 text-sm">{{ pdfModal.title }}</p>
+            <div class="flex items-center gap-3">
+              <a
+                :href="pdfModal.url"
+                target="_blank"
+                rel="noopener"
+                class="text-xs font-semibold text-orange-600 hover:text-orange-700 transition"
+              >
+                Otvori u novom tabu ↗
+              </a>
+              <button
+                @click="closePdf"
+                class="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-800 transition"
+                title="Zatvori"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- PDF iframe -->
+          <iframe
+            :src="pdfModal.url"
+            class="flex-1 w-full rounded-b-2xl"
+            frameborder="0"
+          />
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -124,18 +166,9 @@ const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 export default {
   name: 'ApplicationCard',
   props: {
-    application: {
-      type: Object,
-      required: true
-    },
-    token: {
-      type: String,
-      required: true
-    },
-    isCompany: {
-      type: Boolean,
-      default: true
-    }
+    application: { type: Object, required: true },
+    token: { type: String, required: true },
+    isCompany: { type: Boolean, default: true }
   },
   emits: ['updated'],
   data() {
@@ -143,7 +176,12 @@ export default {
       loading: false,
       accepting: false,
       showRejectForm: false,
-      feedback: ''
+      feedback: '',
+      pdfModal: {
+        open: false,
+        url: '',
+        title: ''
+      }
     }
   },
   computed: {
@@ -185,10 +223,16 @@ export default {
     formatDate(dateStr) {
       if (!dateStr) return ''
       return new Date(dateStr).toLocaleDateString('bs-BA', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
+        day: '2-digit', month: '2-digit', year: 'numeric'
       })
+    },
+    openPdf(url, title) {
+      this.pdfModal = { open: true, url, title }
+      document.body.style.overflow = 'hidden'
+    },
+    closePdf() {
+      this.pdfModal = { open: false, url: '', title: '' }
+      document.body.style.overflow = ''
     },
     toggleRejectForm() {
       this.showRejectForm = !this.showRejectForm
@@ -213,11 +257,8 @@ export default {
       this.accepting = false
       try {
         await updateApplicationStatus(
-          this.application.id,
-          'rejected',
-          this.feedback || null,
-          this.token,
-          this.isCompany
+          this.application.id, 'rejected',
+          this.feedback || null, this.token, this.isCompany
         )
         this.$emit('updated', this.application.id, 'rejected')
         this.showRejectForm = false
@@ -229,6 +270,10 @@ export default {
         this.loading = false
       }
     }
+  },
+  beforeUnmount() {
+    // Osiguraj da se scroll vrati ako se komponenta uništi dok je modal otvoren
+    document.body.style.overflow = ''
   }
 }
 </script>
