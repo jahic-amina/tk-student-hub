@@ -19,6 +19,8 @@ class User(SQLModel, table=True):
     password_hash: str
     role: UserRole = Field(default=UserRole.member)
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    
+    # --- POLJA OD KOLEGA (Profil i status) ---
     is_active: bool = Field(default=True)
     profilna_slika_url: Optional[str] = Field(default=None)
     biografija: Optional[str] = Field(default=None)
@@ -28,3 +30,6 @@ class User(SQLModel, table=True):
         default=None,
         sa_column=Column(DateTime, nullable=True)
     )
+    
+    # --- TVOJE POLJE (Forum prijave) ---
+    reports_count: int = Field(default=0)

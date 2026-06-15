@@ -47,6 +47,7 @@ class ForumComment(SQLModel, table=True):
 
     is_best_answer: bool = Field(default=False)
     is_deleted: bool = Field(default=False)
+    parent_id: Optional[int] = Field(default=None, foreign_key="forum_comments.id")
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: Optional[datetime] = None
@@ -56,7 +57,12 @@ class ForumComment(SQLModel, table=True):
 
     topic: Optional[ForumTopic] = Relationship(back_populates="comments")
     votes: List["ForumCommentVote"] = Relationship(back_populates="comment")
-
+    replies: List["ForumComment"] = Relationship(
+    sa_relationship_kwargs={
+        "primaryjoin": "ForumComment.parent_id == foreign(ForumComment.id)",
+        "lazy": "select"
+    }
+)
 
 class ForumCommentVote(SQLModel, table=True):
     __tablename__ = "forum_comment_votes"
@@ -108,6 +114,8 @@ class TopicReport(SQLModel, table=True):
     reason: str = Field(max_length=100)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     status: str = Field(default="pending") 
+    action_taken: Optional[str] = None 
+    admin_explanation: Optional[str] = None 
     
 
 class AdminAnnouncement(SQLModel, table=True):
@@ -115,11 +123,16 @@ class AdminAnnouncement(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     admin_id: int = Field(foreign_key="users.id")
+    title: str = Field(max_length=150)
     content: str
     is_active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # --- TVOJE POLJE DODANO OVDJE ---
+    expires_at: Optional[datetime] = Field(default=None, nullable=True)
 
 
+# --- NOVI MODEL OD KOLEGA DODAN OVDJE ---
 class TopicLike(SQLModel, table=True):
     __tablename__ = "topic_likes"
 

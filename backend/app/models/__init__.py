@@ -6,6 +6,8 @@ from app.models.application import Application
 from app.models.notification import Notification
 from app.models.activity_log import ActivityLog
 from app.models.materials import Subject, Material, Rating, Comment, Bookmark
+
+# Osnovni modeli foruma
 from app.models.forum import (
     ForumCategory,
     ForumTopic,
@@ -16,4 +18,11 @@ from app.models.forum import (
     TopicReport,
     AdminAnnouncement,
     TopicLike,
+)
+
+# Tvoji modeli za reputaciju na forumu
+from app.models.forum_reputation import (
+    ForumReputationEvent,
+    ForumUserMedal,
+    ForumUserStats,
 )

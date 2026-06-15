@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router'; 
 import { createTopic, getCategories } from '../../services/forum';
 import ForumTopicTagManager from '../../components/ForumTopicTagManager.vue'; // Nova komponenta
@@ -15,7 +15,14 @@ const isSubmitting = ref(false);
 const errors = ref({});
 const categories = ref([]);
 
+const isAdmin = computed(() => localStorage.getItem('role') === 'admin');
+
 onMounted(async () => {
+  if (isAdmin.value) {
+     alert("Administratori ne mogu praviti redovne teme.");
+     router.push('/forum'); 
+     return;
+  }
   try {
     categories.value = await getCategories();
     if (route.query.categoryId) {
