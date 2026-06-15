@@ -6,6 +6,43 @@
       <p class="text-sm text-primary mt-1">Pregled i upravljanje svim korisnicima sistema</p>
     </div>
 
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col justify-center">
+        <span class="text-sm text-gray-500 font-medium">Ukupan broj registrovanih</span>
+        <div class="mt-2 flex items-center gap-2">
+          <span v-if="statsLoading" class="text-2xl font-bold text-gray-300">...</span>
+          <span v-else class="text-3xl font-bold text-gray-800">{{ stats.total_users }}</span>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col justify-center">
+        <span class="text-sm text-gray-500 font-medium">Trenutno aktivni nalozi</span>
+        <div class="mt-2 flex items-center gap-2">
+          <span v-if="statsLoading" class="text-2xl font-bold text-gray-300">...</span>
+          <span v-else class="text-3xl font-bold text-green-600">{{ stats.active_users }}</span>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col justify-between">
+        <div class="flex justify-between items-start">
+          <span class="text-sm text-gray-500 font-medium">Nove registracije</span>
+          <select 
+            v-model="statsPeriod" 
+            @change="fetchStats"
+            class="text-xs bg-gray-50 border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary/50 cursor-pointer"
+          >
+            <option value="day">Danas</option>
+            <option value="week">Ove sedmice</option>
+            <option value="month">Ovog mjeseca</option>
+          </select>
+        </div>
+        <div class="mt-2 flex items-center gap-2">
+          <span v-if="statsLoading" class="text-2xl font-bold text-gray-300">...</span>
+          <span v-else class="text-3xl font-bold text-blue-600">+{{ stats.new_registrations }}</span>
+        </div>
+      </div>
+    </div>
+
     <div class="flex flex-col sm:flex-row gap-3 mb-6">
 
       <div class="relative flex-1">
@@ -219,7 +256,7 @@
 
 
 <script>
-import { getAllUsers, activateUser, deactivateUser, deleteUser, getMyProfile } from '../../services/api.js'
+import { getAllUsers, activateUser, deactivateUser, deleteUser, getMyProfile, getPlatformStats } from '../../services/api.js'
 
 // ERROR PORUKE - CENTRALIZOVANE
 const ERROR_MESSAGES = {
@@ -249,13 +286,22 @@ export default {
       actionToPerform: '',
       showErrorModal: false,
       errorMessage: '',
-      currentUserId: null
+      currentUserId: null,
+      stats: {
+        total_users: 0,
+        active_users: 0,
+        new_registrations: 0
+      },
+      statsPeriod: 'month',
+      statsLoading: false,
+    
     }
   },
 
   mounted() {
     this.loadCurrentUser()
     this.fetchUsers()
+    this.fetchStats()
   },
 
   methods: {
@@ -331,6 +377,23 @@ export default {
         user.is_active = oldIsActive
         this.showError(ERROR_MESSAGES.DEACTIVATE_ERROR)
         console.error(error)
+      }
+    },
+
+    // DODANA METODA ZA STATISTIKU
+    async fetchStats() {
+      this.statsLoading = true
+      try {
+        const token = localStorage.getItem('token')
+        const data = await getPlatformStats(token, this.statsPeriod)
+        
+        if (data) {
+          this.stats = data
+        }
+      } catch (error) {
+        console.error('Greška pri dohvatanju statistike:', error)
+      } finally {
+        this.statsLoading = false
       }
     },
     // Metode za upravljanje brisanjem
