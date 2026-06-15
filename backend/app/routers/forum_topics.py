@@ -15,7 +15,6 @@ from app.services.forum_reputation import (
     get_user_forum_identity,
     register_topic_created,
 )
-# Uvoz funkcija za komentare
 from app.routers.forum_comments import get_comments_count, has_best_answer, get_topic_comments, get_topic_votes_count
 
 router = APIRouter(prefix="/forum/topics", tags=["Forum Topics"])
@@ -43,20 +42,12 @@ def make_summary(text: str, max_length: int = 150) -> str:
 
 def get_author_data(db: Session, user_id: int) -> dict:
     user = db.get(User, user_id)
-
     if not user:
         return {
-            "id": None,
-            "full_name": "Nepoznat korisnik",
-            "role": "Student",
-            "level": 1,
-            "title": "Novi član",
-            "reputation_points": 0,
-            "medals": [],
+            "id": None, "full_name": "Nepoznat korisnik", "role": "Student",
+            "level": 1, "title": "Novi član", "reputation_points": 0, "medals": [],
         }
-
     forum_identity = get_user_forum_identity(db, user)
-
     return {
         "id": user.id,
         "full_name": user.full_name,
@@ -64,27 +55,17 @@ def get_author_data(db: Session, user_id: int) -> dict:
     }
 
 def get_topic_tags(db: Session, topic_id: int) -> list[str]:
-    # Optimizovano spajanje da izbjegnemo N+1 petlje u bazi
     statement = select(ForumTag.name).join(ForumTopicTag, ForumTopicTag.tag_id == ForumTag.id).where(ForumTopicTag.topic_id == topic_id)
     return list(db.exec(statement).all())
 
 def build_topic_list_item(db: Session, topic: ForumTopic) -> dict:
     comments_count = get_comments_count(db, topic.id)
     return {
-        "id": topic.id,
-        "title": topic.title,
-        "summary": make_summary(topic.content),
-        "content": topic.content,
-        "views_count": topic.views_count,
-        "likes_count": get_topic_likes_count(db, topic.id),
-        "comments_count": comments_count,
-        "answers_count": comments_count,
-        "created_at": topic.created_at,
-        "updated_at": topic.updated_at,
-        "author": get_author_data(db, topic.user_id),
-        "category": get_category_data(db, topic.category_id),
-        "tags": get_topic_tags(db, topic.id),
-        "has_best_answer": has_best_answer(db, topic.id),
+        "id": topic.id, "title": topic.title, "summary": make_summary(topic.content), "content": topic.content,
+        "views_count": topic.views_count, "likes_count": get_topic_likes_count(db, topic.id), "comments_count": comments_count,
+        "answers_count": comments_count, "created_at": topic.created_at, "updated_at": topic.updated_at,
+        "author": get_author_data(db, topic.user_id), "category": get_category_data(db, topic.category_id),
+        "tags": get_topic_tags(db, topic.id), "has_best_answer": has_best_answer(db, topic.id),
     }
 
 # --- ROUTES ---
@@ -178,19 +159,10 @@ def create_forum_topic(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Provjeravamo postoji li odabrana kategorija.
-    category = db.get(
-        ForumCategory,
-        topic_data.category_id
-    )
-
+    category = db.get(ForumCategory, topic_data.category_id)
     if not category:
-        raise HTTPException(
-            status_code=404,
-            detail="Kategorija nije pronađena."
-        )
+        raise HTTPException(status_code=404, detail="Kategorija nije pronađena.")
 
-    # Pravimo novu forum temu.
     new_topic = ForumTopic(
         title=topic_data.title,
         content=topic_data.content,
@@ -199,11 +171,9 @@ def create_forum_topic(
     )
 
     db.add(new_topic)
-
-    # flush dodjeljuje ID temi, ali još ne završava transakciju.
     db.flush()
 
-    # Automatski dodjeljujemo bodove i provjeravamo medalje.
+    # Automatski dodjeljuje bodove i provjerava medalje (giver_id je ovdje interno 0 jer je kreiranje teme)
     register_topic_created(
         db,
         user_id=current_user.id,
@@ -211,60 +181,29 @@ def create_forum_topic(
         created_at=new_topic.created_at,
     )
 
-    # Dodavanje tagova.
     if topic_data.tags:
         for tag_input in topic_data.tags:
-
-            # Ako frontend pošalje naziv taga kao tekst.
             if isinstance(tag_input, str):
                 clean_tag_name = tag_input.strip()
+                if not clean_tag_name: continue
 
-                # Preskačemo prazan tag.
-                if not clean_tag_name:
-                    continue
-
-                # Provjeravamo postoji li već tag sa tim nazivom.
-                tag = db.exec(
-                    select(ForumTag).where(
-                        ForumTag.name == clean_tag_name
-                    )
-                ).first()
-
-                # Ako tag ne postoji, pravimo novi.
+                tag = db.exec(select(ForumTag).where(ForumTag.name == clean_tag_name)).first()
                 if not tag:
-                    tag = ForumTag(
-                        name=clean_tag_name
-                    )
-
+                    tag = ForumTag(name=clean_tag_name)
                     db.add(tag)
-
-                    # Potrebno da novi tag dobije ID.
                     db.flush()
-
                 tag_id = tag.id
-
-            # Ako frontend direktno pošalje ID postojećeg taga.
             else:
                 tag_id = tag_input
 
-            topic_tag = ForumTopicTag(
-                topic_id=new_topic.id,
-                tag_id=tag_id
-            )
-
+            topic_tag = ForumTopicTag(topic_id=new_topic.id, tag_id=tag_id)
             db.add(topic_tag)
 
-    # Tema, tagovi, reputacija i medalje spremaju se zajedno.
     db.commit()
     db.refresh(new_topic)
 
-    return build_topic_list_item(
-        db,
-        new_topic
-    )
+    return build_topic_list_item(db, new_topic)
 
-
-# --- WIDGET API ENDPOINTS ---
 
 @router.get("/popular", response_model=List[Dict[str, Any]])
 def get_popular_sidebar_topics(db: Session = Depends(get_db)):
@@ -294,7 +233,6 @@ def get_popular_sidebar_topics(db: Session = Depends(get_db)):
 @router.get("/category-popular/{category_id}", response_model=List[Dict[str, Any]])
 def get_category_popular_topics(category_id: int, db: Session = Depends(get_db)):
     from app.models.forum import ForumComment
-
     comments_sub = (
         select(ForumComment.topic_id, func.count(ForumComment.id).label("c_count"))
         .where(ForumComment.is_deleted == False)
@@ -325,8 +263,7 @@ def get_related_topics_api(topic_id: int, db: Session = Depends(get_db)):
     sve_rijeci = cist_naslov.split()
     kljucne_rijeci = [rijec.strip() for rijec in sve_rijeci if len(rijec.strip()) > 2]
 
-    if not kljucne_rijeci:
-        return []
+    if not kljucne_rijeci: return []
 
     uvjeti_pretrage = [ForumTopic.title.ilike(f"%{rijec}%") for rijec in kljucne_rijeci]
 
@@ -437,12 +374,10 @@ def increment_topic_view(topic_id: int, db: Session = Depends(get_db)):
     if not topic or topic.is_deleted:
         raise HTTPException(status_code=404, detail="Tema nije pronađena.")
     
-
     topic.views_count += 1
     db.add(topic)
     db.commit()
     db.refresh(topic) 
-    
     return {"id": topic.id, "views_count": topic.views_count}
 
 @router.delete("/{id}", status_code=status.HTTP_200_OK)
