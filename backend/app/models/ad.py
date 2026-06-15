@@ -180,16 +180,22 @@ class AdPatch(BaseModel):
     @field_validator("duration_months")
     @classmethod
     def duration_must_be_positive(cls, v):
+        if v is None:
+            return v
         return _validate_duration(v)
 
     @field_validator("compensation")
     @classmethod
     def compensation_must_be_non_negative(cls, v):
+        if v is None:
+            return v
         return _validate_compensation(v)
 
     @field_validator("spots")
     @classmethod
     def spots_must_be_positive(cls, v):
+        if v is None:
+            return v
         return _validate_spots(v)
 
 
