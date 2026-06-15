@@ -145,3 +145,19 @@ export async function deleteUser(token, userId) {
   return handleAdminFetch(response, 'Greška pri brisanju korisnika');
 }
 
+export async function getPlatformStats(token, period = 'month') {
+  try {
+    const response = await fetch(`http://localhost:8000/admin/stats?period=${period}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!response.ok) throw new Error('Greška pri dohvatu statistike');
+    return await response.json();
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
