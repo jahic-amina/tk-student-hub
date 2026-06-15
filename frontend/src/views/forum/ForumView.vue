@@ -304,8 +304,8 @@ watch(currentMode, (newMode) => {
                       <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-1 italic bg-gray-50 dark:bg-slate-700/50 p-2 rounded-lg">Razlog: "{{ prijava.reason }}"</p>
                     </div>
                     <div v-if="prijava.status !== 'resolved' && prijava.status !== 'dismissed'" class="flex items-center gap-1.5 justify-end w-full md:w-auto">
-                      <button @click="openReportModal(prijava.report_id || prijava.id, 'accept')" class="bg-green-500 text-white px-3 py-1 rounded">Prihvati</button>
-                      <button @click="openReportModal(prijava.report_id || prijava.id, 'dismiss')" class="bg-red-500 text-white px-3 py-1 rounded">Zanemari</button>
+                      <button @click="openReportModal(prijava.report_id || prijava.id, 'accept')" class="font-inherit text-sm font-medium border border-green-500 bg-green-50 text-green-700 hover:bg-green-100 px-4 py-1.5 rounded-lg transition-colors">Prihvati</button>
+                      <button @click="openReportModal(prijava.report_id || prijava.id, 'dismiss')" class="font-inherit text-sm font-medium border border-red-500 bg-red-50 text-red-700 hover:bg-red-100 px-4 py-1.5 rounded-lg transition-colors">Zanemari</button>
                     </div>
                   </div>
                 </div>
