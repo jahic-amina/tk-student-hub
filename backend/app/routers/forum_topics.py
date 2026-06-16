@@ -57,9 +57,16 @@ def get_author_data(db: Session, user_id: int) -> dict:
         **forum_identity,
     }
 
-def get_topic_tags(db: Session, topic_id: int) -> list[str]:
-    statement = select(ForumTag.name).join(ForumTopicTag, ForumTopicTag.tag_id == ForumTag.id).where(ForumTopicTag.topic_id == topic_id)
-    return list(db.exec(statement).all())
+def get_topic_tags(db: Session, topic_id: int) -> list[dict]:
+    # IZMIJENJENO: Selektujemo cijeli objekat taga, a ne samo naziv stringa
+    statement = (
+        select(ForumTag)
+        .join(ForumTopicTag, ForumTopicTag.tag_id == ForumTag.id)
+        .where(ForumTopicTag.topic_id == topic_id)
+    )
+    tags = db.exec(statement).all()
+    # Vraćamo listu rječnika (ID i Name) koje Vue očekuje
+    return [{"id": tag.id, "name": tag.name} for tag in tags]
 
 def build_topic_list_item(db: Session, topic: ForumTopic) -> dict:
     comments_count = get_comments_count(db, topic.id)
@@ -114,8 +121,6 @@ def get_all_topics(
         statement = statement.order_by(ForumTopic.views_count.desc(), ForumTopic.id.desc())
     elif sort_by == "najaktivnije":
         from app.models.forum import ForumComment
-        # count_statement must be computed BEFORE we add the JOIN + GROUP BY to statement,
-        # otherwise the count would include the JOIN and return wrong totals.
         total_topics = db.exec(count_statement).one()
         statement = (
             statement
@@ -126,7 +131,6 @@ def get_all_topics(
     else:
         statement = statement.order_by(ForumTopic.created_at.desc())
 
-    # Pokreni upit za broj tema samo ako to već nismo uradili u 'najaktivnije' uslovu
     if sort_by != "najaktivnije":
         total_topics = db.exec(count_statement).one()
         
@@ -185,7 +189,6 @@ def create_forum_topic(
     db.add(new_topic)
     db.flush()
 
-    # Automatski dodjeljuje bodove i provjerava medalje (giver_id je ovdje interno 0 jer je kreiranje teme)
     register_topic_created(
         db,
         user_id=current_user.id,
