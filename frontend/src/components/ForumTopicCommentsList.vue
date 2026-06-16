@@ -1,6 +1,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { voteOnComment, toggleBestAnswer, deleteComment, updateComment, createComment } from '../services/forum';
+// 1. Uvozimo ForumAvatar komponentu
+import ForumAvatar from './ForumAvatar.vue';
 
 const props = defineProps({
   comments: { type: Array, required: true },
@@ -241,11 +243,6 @@ function formatDate(dateValue) {
     minute: "2-digit",
   }).format(new Date(dateValue));
 }
-
-function getInitials(name) {
-  if (!name) return "?";
-  return name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
-}
 </script>
 
 <template>
@@ -386,9 +383,9 @@ function getInitials(name) {
           <div class="flex-1 min-w-0">
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center flex-wrap gap-2 text-xs text-slate-400 dark:text-slate-500">
-                <span class="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold text-[8px]">
-                  {{ getInitials(comment.author?.full_name) }}
-                </span>
+                
+                <ForumAvatar :author="comment.author" class="w-5 h-5 text-[8px]" />
+                
                 <strong class="text-slate-600 dark:text-slate-300">{{ comment.author?.full_name || 'Kolega' }}</strong>
 
                 <span
@@ -551,9 +548,9 @@ function getInitials(name) {
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between mb-2">
                     <div class="flex items-center flex-wrap gap-2 text-xs text-slate-400 dark:text-slate-500">
-                      <span class="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold text-[8px]">
-                        {{ getInitials(reply.author?.full_name) }}
-                      </span>
+                      
+                      <ForumAvatar :author="reply.author" class="w-5 h-5 text-[8px]" />
+
                       <strong class="text-slate-600 dark:text-slate-300">{{ reply.author?.full_name || 'Kolega' }}</strong>
 
                       <span
@@ -690,6 +687,7 @@ function getInitials(name) {
                 </div>
               </div>
             </div>
+
           </div>
         </div>
 
