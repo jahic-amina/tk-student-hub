@@ -607,9 +607,10 @@ export async function updateRating(materialId, rating) {
 // Download materijala sa bilježenjem korisnika  
 export async function downloadMaterial(materialId) {
     const token = localStorage.getItem('token')
+   const timestamp = Date.now()
     const url = token && token !== 'null' && token !== 'undefined'
-        ? `${BASE_URL}/materials/${materialId}/download?token=${token}`
-        : `${BASE_URL}/materials/${materialId}/download`
+        ? `${BASE_URL}/materials/${materialId}/download?token=${token}&t=${timestamp}`
+        : `${BASE_URL}/materials/${materialId}/download?t=${timestamp}`
     const response = await fetch(url)
     return response
 }
