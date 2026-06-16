@@ -24,7 +24,8 @@
     <div v-else class="flex flex-col gap-3">
       <div v-for="praksa in prakse" :key="praksa.id">
         <p class="font-medium text-gray-800">{{ praksa.naziv }}</p>
-        <p class="text-sm text-gray-400">{{ praksa.kompanija }} · <span class="text-orange-500">{{ praksa.status }}</span></p>
+        <p class="text-sm text-gray-400">{{ praksa.kompanija }} · 
+          <span class="text-orange-500">{{ praksa.status  === 'accepted' ? 'Prihvaćena' : 'Na čekanju' }}</span></p>
       </div>
     </div>
   </div>
