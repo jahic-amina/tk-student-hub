@@ -45,7 +45,10 @@
 
       <div class="flex flex-wrap gap-x-3 gap-y-1.5 text-gray-500 text-[11px] sm:text-xs font-medium mb-4">
         <span class="whitespace-nowrap">📍 {{ ad.location }}</span>
-        <span v-if="ad.duration" class="whitespace-nowrap">🕒 {{ ad.duration }}</span>
+        <span v-if="ad.duration" class="whitespace-nowrap">🕒 {{ ad.duration }} mjeseca</span>
+        <span v-if="ad.spots" class="whitespace-nowrap" :class="ad.applicants_count >= ad.spots ? 'text-red-400' : 'text-gray-500'">
+          👥 {{ ad.applicants_count }}/{{ ad.spots }} prijava
+        </span>
         <span v-if="ad.compensation" class="bg-gray-50 px-1.5 py-0.5 rounded text-gray-600 font-semibold text-[10px] sm:text-xs">
           {{ ad.compensation }}
         </span>

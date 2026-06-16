@@ -9,6 +9,8 @@ from app.database import get_db
 from app.models.company import Company 
 from app.core.security import get_current_company
 from app.models.notification import Notification, NotificationType
+from app.models.application import Application
+from sqlmodel import func 
 
 router = APIRouter(prefix="/ads", tags=["Ads"])
 
@@ -21,8 +23,12 @@ def expire_if_deadline_passed(ad: Ad, db: Session) -> None:
         db.add(ad)
         db.commit()
 
-def ad_to_read(ad: Ad) -> AdRead:
+def ad_to_read(ad: Ad, db: Session) -> AdRead:
     """Helper function to convert Ad to AdRead with company_name and approver_name."""
+    applicants_count = db.exec(
+        select(func.count()).where(Application.ad_id == ad.id)
+    ).one()
+
     return AdRead(
         id=ad.id,
         company_id=ad.company_id,
@@ -39,6 +45,7 @@ def ad_to_read(ad: Ad) -> AdRead:
         compensation=ad.compensation,
         currency=ad.currency,
         spots=ad.spots,
+        applicants_count=applicants_count,
         requirements=ad.requirements,
         benefits=ad.benefits,
         admin_comment=ad.admin_comment,
@@ -82,7 +89,7 @@ def get_ads(
     # Run expiry check after fetching — committed lazily per-ad
     for ad in ads:
         expire_if_deadline_passed(ad, db)
-    return [ad_to_read(ad) for ad in ads]
+    return [ad_to_read(ad, db) for ad in ads]
 
 
 @router.get("/admin/list", response_model=List[AdRead])
@@ -121,7 +128,7 @@ def get_ads_admin(
         )
 
     ads = db.exec(query).all()
-    return [ad_to_read(ad) for ad in ads]
+    return [ad_to_read(ad, db) for ad in ads]
 
 
 @router.get("/{ad_id}", response_model=AdRead)
@@ -130,7 +137,7 @@ def get_ad(ad_id: int, db: Session = Depends(get_db)):
     if not ad or ad.is_deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ad not found.")
     expire_if_deadline_passed(ad, db)
-    return ad_to_read(ad)
+    return ad_to_read(ad, db)
 
 
 @router.post("/", response_model=AdRead, status_code=status.HTTP_201_CREATED)
@@ -153,7 +160,7 @@ def create_ad(
 
     db.commit()
     db.refresh(ad)
-    return ad_to_read(ad)
+    return ad_to_read(ad, db)
 
 
 @router.put("/{ad_id}", response_model=AdRead)
@@ -177,7 +184,7 @@ def update_ad(
     db.add(ad)
     db.commit()
     db.refresh(ad)
-    return ad_to_read(ad)
+    return ad_to_read(ad, db)
 
 
 @router.patch("/{ad_id}", response_model=AdRead)
@@ -202,7 +209,7 @@ def patch_ad(
     db.add(ad)
     db.commit()
     db.refresh(ad)
-    return ad_to_read(ad)
+    return ad_to_read(ad, db)
 
 
 @router.patch("/{ad_id}/status", response_model=AdRead)
@@ -242,7 +249,7 @@ def update_status(
 
     db.commit()
     db.refresh(ad)
-    return ad_to_read(ad)
+    return ad_to_read(ad, db)
 
 
 @router.delete("/{ad_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -284,4 +291,4 @@ def restore_ad(
     db.add(ad)
     db.commit()
     db.refresh(ad)
-    return ad_to_read(ad)
+    return ad_to_read(ad, db)
