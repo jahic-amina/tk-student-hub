@@ -246,6 +246,27 @@ def reject_material(
     session.commit()
     return {"message": "Materijal odbijen."}
 
+@router.patch("/{material_id}/update")
+def update_material(
+    material_id: int,
+    title: Optional[str] = Form(None),
+    description: Optional[str] = Form(None),
+    session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    material = session.get(Material, material_id)
+    if not material:
+        raise HTTPException(status_code=404, detail="Materijal nije pronađen.")
+    if material.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Nemate dozvolu za ažuriranje ovog materijala.")
+    if title:
+        material.title = title
+    if description:
+        material.description = description
+    session.add(material)
+    session.commit()
+    session.refresh(material)
+    return {"message": "Materijal ažuriran."}
 
 @router.get("/{material_id}/comments", response_model=list[CommentResponse])
 def get_comments(material_id: int, session: Session = Depends(get_db)):
