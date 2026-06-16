@@ -378,9 +378,17 @@ def get_active_announcements(db: Session = Depends(get_db)):
     return db.exec(statement).all()
 
 @router.get("/{topic_id}")
-def get_topic_details(topic_id: int, db: Session = Depends(get_db)):
+def get_topic_details(
+    topic_id: int, 
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user) # DODANO: Potreban korisnik
+):
     topic = db.get(ForumTopic, topic_id)
-    if not topic or topic.is_deleted:
+    
+    if not topic:
+        raise HTTPException(status_code=404, detail="Tema nije pronađena.")
+
+    if getattr(topic, "is_deleted", False) and current_user.role != UserRole.admin:
         raise HTTPException(status_code=404, detail="Tema nije pronađena.")
 
     comments = get_topic_comments(db, topic.id)
@@ -392,15 +400,19 @@ def get_topic_details(topic_id: int, db: Session = Depends(get_db)):
         "is_locked": getattr(topic, "is_locked", False), "created_at": topic.created_at, "updated_at": topic.updated_at,
         "author": get_author_data(db, topic.user_id), "category": get_category_data(db, topic.category_id),
         "tags": get_topic_tags(db, topic.id), "comments": comments,
-        "stats": {"comments_count": comments_count, "answers_count": comments_count, "views_count": topic.views_count, "votes_count": votes_count, "has_best_answer": any(comment["is_best_answer"] for comment in comments)}
+        "stats": {"comments_count": comments_count, "answers_count": comments_count, "views_count": topic.views_count, "votes_count": votes_count, "has_best_answer": any(comment["is_best_answer"] for comment in comments)},
+        "is_deleted": getattr(topic, "is_deleted", False) # DODANO: Signal frontendu da prikaže crveno upozorenje
     }
 
 @router.patch("/{topic_id}/view")
 def increment_topic_view(topic_id: int, db: Session = Depends(get_db)):
     topic = db.get(ForumTopic, topic_id)
-    if not topic or topic.is_deleted:
+    if not topic or getattr(topic, "is_deleted", False):
         raise HTTPException(status_code=404, detail="Tema nije pronađena.")
     
+    if getattr(topic, "is_deleted", False):
+        return {"id": topic.id, "views_count": topic.views_count}
+
     topic.views_count += 1
     db.add(topic)
     db.commit()
@@ -410,7 +422,7 @@ def increment_topic_view(topic_id: int, db: Session = Depends(get_db)):
 @router.delete("/{id}", status_code=status.HTTP_200_OK)
 def delete_topic(id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     topic = db.get(ForumTopic, id)
-    if not topic or topic.is_deleted:
+    if not topic or getattr(topic, "is_deleted", False):
         raise HTTPException(status_code=404, detail="Tema nije pronađena.")
     if current_user.role != UserRole.admin and topic.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Možete obrisati samo vlastitu temu.")
@@ -422,7 +434,7 @@ def delete_topic(id: int, db: Session = Depends(get_db), current_user: User = De
 @router.post("/{topic_id}/report")
 def report_topic(topic_id: int, report_data: ReportCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     topic = db.get(ForumTopic, topic_id)
-    if not topic or topic.is_deleted:
+    if not topic or getattr(topic, "is_deleted", False):
         raise HTTPException(status_code=404, detail="Tema ne postoji.")
     report = TopicReport(topic_id=topic_id, user_id=current_user.id, reason=report_data.reason)
     db.add(report)

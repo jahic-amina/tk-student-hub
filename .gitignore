@@ -1,7 +1,6 @@
 # Python
 .venv/
 venv/
-.venv/
 backend/venv/
 backend/.venv/
 backend/uploads/
@@ -10,8 +9,10 @@ __pycache__/
 *.pyo
 backend/.env
 .env
-backend/.env
-backend/.venv/
+
+# Skripte za bazu / lokalno testiranje
+backend/app/seed.py
+backend/app/create_tables.py
 
 # Database
 backend/sql_app.db
@@ -30,7 +31,6 @@ frontend/.vite/
 
 # Superpowers internal docs
 docs/superpowers/
+docs/superpowers/venv/
 
 uploads/
-
-docs/superpowers/venv/

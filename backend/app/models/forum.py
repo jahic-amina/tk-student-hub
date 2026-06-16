@@ -1,5 +1,5 @@
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlmodel import SQLModel, Field, Relationship
 from sqlalchemy import UniqueConstraint
@@ -58,11 +58,12 @@ class ForumComment(SQLModel, table=True):
     topic: Optional[ForumTopic] = Relationship(back_populates="comments")
     votes: List["ForumCommentVote"] = Relationship(back_populates="comment")
     replies: List["ForumComment"] = Relationship(
-    sa_relationship_kwargs={
-        "primaryjoin": "ForumComment.parent_id == foreign(ForumComment.id)",
-        "lazy": "select"
-    }
-)
+        sa_relationship_kwargs={
+            "primaryjoin": "ForumComment.parent_id == foreign(ForumComment.id)",
+            "lazy": "select"
+        }
+    )
+
 
 class ForumCommentVote(SQLModel, table=True):
     __tablename__ = "forum_comment_votes"
@@ -127,12 +128,21 @@ class AdminAnnouncement(SQLModel, table=True):
     content: str
     is_active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    
-    # --- TVOJE POLJE DODANO OVDJE ---
     expires_at: Optional[datetime] = Field(default=None, nullable=True)
 
 
-# --- NOVI MODEL OD KOLEGA DODAN OVDJE ---
+class ForumGuideline(SQLModel, table=True):
+    __tablename__ = "forum_guidelines"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    title: str
+    content: str
+    order: int = Field(default=0)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+# --- NOVI MODEL OD KOLEGA ZA LAJKOVANJE TEME ---
 class TopicLike(SQLModel, table=True):
     __tablename__ = "topic_likes"
 

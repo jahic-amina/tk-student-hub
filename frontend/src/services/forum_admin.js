@@ -19,7 +19,7 @@ export async function changeUserRole(userId, role) {
 }
 
 export async function getReports(status = 'pending') {
-  const res = await fetch(`${BASE_URL}/forum/topics/reports/active`, { headers: getHeaders() });
+  const res = await fetch(`${BASE_URL}/admin/reports?status=${status}`, { headers: getHeaders() });
   return res.json();
 }
 
@@ -62,6 +62,83 @@ export async function deleteAnnouncement(annId) {
 }
 
 export async function getHandledReports() {
-  const res = await fetch(`${BASE_URL}/forum/topics/reports/handled`, { headers: getHeaders() });
+  const res = await fetch(`${BASE_URL}/admin/reports?status=resolved`, { headers: getHeaders() });
+  return res.json();
+}
+
+export async function getGuidelines() {
+  const res = await fetch(`${BASE_URL}/forum/guidelines/`, { headers: getHeaders() });
+  return res.json();
+}
+
+export async function createGuideline(title, content, order = 0) {
+  const res = await fetch(`${BASE_URL}/forum/guidelines/`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ title, content, order })
+  });
+  return res.json();
+}
+
+export async function updateGuideline(id, data) {
+  const res = await fetch(`${BASE_URL}/forum/guidelines/${id}`, {
+    method: 'PATCH',
+    headers: getHeaders(),
+    body: JSON.stringify(data)
+  });
+  return res.json();
+}
+
+export async function deleteGuideline(id) {
+  const res = await fetch(`${BASE_URL}/forum/guidelines/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders()
+  });
+  return res.json();
+}
+
+export async function postAdminNotice(topicId, content) {
+  const res = await fetch(`${BASE_URL}/forum/comments/${topicId}/admin-notice`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ content })
+  });
+  return res.json();
+}
+
+export async function adminPullToReports(topicId) {
+  const res = await fetch(`${BASE_URL}/admin/topics/${topicId}/pull-to-reports`, {
+    method: 'POST',
+    headers: getHeaders()
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || 'Greška pri povlačenju u prijave.');
+  }
+  return res.json();
+}
+
+export async function reopenReport(reportId) {
+  const res = await fetch(`${BASE_URL}/admin/reports/${reportId}/reopen`, {
+    method: 'PATCH',
+    headers: getHeaders()
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || 'Greška pri vraćanju prijave.');
+  }
+  return res.json();
+}
+
+export async function resolveReport(reportId, action, explanation) {
+  const res = await fetch(`${BASE_URL}/admin/reports/${reportId}/resolve`, {
+    method: 'PATCH',
+    headers: getHeaders(),
+    body: JSON.stringify({ action, explanation })
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || 'Greška pri rješavanju prijave.');
+  }
   return res.json();
 }

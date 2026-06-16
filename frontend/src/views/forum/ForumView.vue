@@ -10,12 +10,12 @@ import {
   getTopics, 
   getCategories, 
   deleteTopic as deleteTopicApi, 
-  getActiveAnnouncements, 
-  handleReportAction 
+  getActiveAnnouncements
 } from '../../services/forum.js';
 import {
   getReports as getAdminReports,
-  createAnnouncement
+  createAnnouncement,
+  resolveReport
 } from '../../services/forum_admin.js';
 import AdminAnnouncementBanner from '../../components/ForumAdminAnnouncementBanner.vue';
 
@@ -171,7 +171,7 @@ const obrisiTemu = async (temaId) => {
     if (currentMode.value === 'active_reports' || currentMode.value === 'solved_reports') {
       const uvezanaPrijava = svePrijave.value.find(p => p.topic?.id === temaId);
       if (uvezanaPrijava) {
-        await handleReportAction(uvezanaPrijava.report_id, 'resolve');
+        await resolveReport(uvezanaPrijava.report_id || uvezanaPrijava.id, 'accept', 'Tema obrisana direktno iz foruma.');
         svePrijave.value = svePrijave.value.filter(p => p.topic?.id !== temaId);
       }
     } else {
@@ -202,7 +202,7 @@ const submitReportAction = async () => {
   }
   
   try {
-    await handleReportAction(handlingReportId.value, handlingAction.value, adminExplanation.value);
+    await resolveReport(handlingReportId.value, handlingAction.value, adminExplanation.value);
     
     svePrijave.value = svePrijave.value.map(p => 
       (p.report_id || p.id) === handlingReportId.value 
@@ -381,6 +381,7 @@ watch(currentMode, (newMode) => {
         </div>
       </div>
     </div>
+    
     <div v-if="showReportModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
         <div class="bg-white p-6 rounded-xl w-full max-w-md shadow-2xl">
             <h2 class="text-xl font-bold mb-4">
