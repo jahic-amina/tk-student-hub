@@ -141,6 +141,19 @@ const successIcon = ref('')
 const isEditing = ref(false)
 const originalTitle = ref('')
 const originalDescription = ref('')
+const isDragging = ref(false)
+const selectedFile = ref(null)
+const fileInput = ref(null)
+
+function onFileChange(event) {
+    selectedFile.value = event.target.files[0] || null
+}
+
+function onFileDrop(event) {
+    isDragging.value = false
+    const files = event.dataTransfer.files
+    if (files.length > 0) selectedFile.value = files[0]
+}
 
 function toggleEdit() {
     if (!isEditing.value) {
@@ -155,15 +168,17 @@ function cancelEdit() {
     material.value.title = originalTitle.value
     material.value.description = originalDescription.value
     isEditing.value = false
+    selectedFile.value = null
 }
 
 async function saveChanges() {
     try {
-        await updateMaterial(material.value.id, material.value.title, material.value.description)
+        await updateMaterial(material.value.id, material.value.title, material.value.description, selectedFile.value)
         successMessage.value = 'Promjene su sačuvane!'
         successTitle.value = 'Uspjeh!'
         successIcon.value = '✅'
         isEditing.value = false
+        selectedFile.value = null
     } catch (error) {
         console.error('Greška prilikom spremanja promjena:', error)
     }
