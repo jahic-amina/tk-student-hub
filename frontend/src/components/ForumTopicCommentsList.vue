@@ -201,7 +201,7 @@ function getInitials(fullName) {
       <h2 class="text-lg font-semibold text-slate-700 dark:text-slate-200 whitespace-nowrap">
         {{ filteredComments.length }} {{ filteredComments.length === 1 ? 'Odgovor' : 'Odgovora' }}
       </h2>
-      
+
       <div class="relative w-full max-w-xs">
         <input
           v-model="searchQuery"
