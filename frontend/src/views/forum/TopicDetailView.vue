@@ -3,7 +3,6 @@ import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import ForumTopicMainCard from '../../components/ForumTopicMainCard.vue';
 import ForumTopicCommentsList from '../../components/ForumTopicCommentsList.vue';
-import ForumTopicCommentForm from '../../components/ForumTopicCommentForm.vue';
 import ForumSidebar from '../../components/ForumSidebar.vue'; 
 import ForumWidgets from '../../components/ForumWidgets.vue'; 
 import ForumGuidelines from '../../components/ForumGuidelines.vue'; 
@@ -28,7 +27,6 @@ const noticeError = ref('');
 
 const isAdmin = computed(() => localStorage.getItem('role') === 'admin');
 
-// Izvuci ID kategorije iz učitane teme kako bi sidebar znao šta da označi kao aktivno
 const odabraniKategorijaId = computed(() => fullTopicData.value?.category?.id || null);
 
 const sortedComments = computed(() => {
@@ -72,12 +70,13 @@ watch(
   }
 );
 
-const handleNewComment = async ({ content, clearForm }) => {
+// ---- PRILAGOĐENO ZA RAD SA KARTICOM ----
+const handleNewComment = async ({ content, onSuccess, onError }) => {
   commentError.value = '';
   successMessage.value = '';
 
   if (!content.trim()) {
-    commentError.value = 'Odgovor ne može biti prazan.';
+    if (onError) onError('Odgovor ne može biti prazan.');
     return;
   }
 
@@ -90,10 +89,13 @@ const handleNewComment = async ({ content, clearForm }) => {
     });
     
     successMessage.value = 'Odgovor uspješno objavljen!';
-    clearForm(); 
+    
+    // Ako je podkomponenta (kartica) poslala callback za uspjeh, okini ga
+    if (onSuccess) onSuccess(); 
+    
     await loadTopicAndComments(props.id); 
   } catch (error) {
-    commentError.value = 'Došlo je do greške. Pokušajte ponovo.';
+    if (onError) onError('Došlo je do greške. Pokušajte ponovo.');
   } finally {
     isSubmitting.value = false;
   }
@@ -108,15 +110,14 @@ const handleAdminNotice = async () => {
   noticeError.value = '';
   try {
     await postAdminNotice(props.id, adminNoticeContent.value);
-    adminNoticeContent.value = ''; // Očisti formu nakon slanja
-    await loadTopicAndComments(props.id); // Osvježi sve (obavještenje će skočiti na vrh)
+    adminNoticeContent.value = ''; 
+    await loadTopicAndComments(props.id); 
   } catch (error) {
     noticeError.value = 'Greška pri objavi obavještenja.';
   } finally {
     isSubmittingNotice.value = false;
   }
 };
-
 </script>
 
 <template>
@@ -148,7 +149,11 @@ const handleAdminNotice = async () => {
           </div>
 
           <template v-else-if="fullTopicData">
-            <ForumTopicMainCard :topic="fullTopicData" :is-admin="isAdmin" />
+            <ForumTopicMainCard 
+              :topic="fullTopicData" 
+              :is-admin="isAdmin" 
+              @submit-topic-reply="handleNewComment"
+            />
 
             <ForumTopicCommentsList 
               :comments="sortedComments" 
@@ -157,23 +162,15 @@ const handleAdminNotice = async () => {
               @refresh="() => loadTopicAndComments(props.id)" 
             />
 
-            <div v-if="fullTopicData.is_locked" class="bg-gray-100 dark:bg-slate-800 text-center text-gray-500 p-4 rounded-xl font-bold">
+            <div v-if="fullTopicData.is_locked" class="bg-gray-100 dark:bg-slate-800 text-center text-gray-500 p-4 rounded-xl font-bold mt-4">
               🔒 Ova tema je zaključana za daljnje odgovore.
             </div>
 
-            <div v-else-if="isAdmin" class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-center p-4 rounded-xl border border-indigo-200 dark:border-indigo-800 font-bold text-[13px]">
+            <div v-else-if="isAdmin" class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-center p-4 rounded-xl border border-indigo-200 dark:border-indigo-800 font-bold text-[13px] mt-4">
               👑 Prijavljeni ste kao administrator. Koristite formu sa desne strane za postavljanje službenih obavještenja.
             </div>
-
-            <div v-else>
-              <ForumTopicCommentForm 
-                :is-submitting="isSubmitting"
-                :comment-error="commentError"
-                :success-message="successMessage"
-                @posaljiKomentar="handleNewComment"
-              />
-            </div>
-          </template>
+            
+            </template>
         </div>
 
         <div v-if="fullTopicData" class="col-span-12 md:col-span-3 lg:col-span-3 xl:col-span-3 flex flex-col gap-4" style="position: sticky; top: 140px; align-self: flex-start; z-index: 20;">
