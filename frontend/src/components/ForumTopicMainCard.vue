@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { deleteTopic, reportTopic } from '../services/forum';
 import { toggleTopicLock } from '../services/forum_admin';
+import ForumAvatar from './ForumAvatar.vue'; // Prilagodi putanju ako je u drugom folderu
 
 const router = useRouter();
 const currentUserId = ref(null);
@@ -54,7 +55,7 @@ const remainingMedals = computed(() => {
   return authorMedals.value.slice(3);
 });
 
-// MAPIRANJE BACKEND KODOVA U PRAVE EMOHIJE, NAZIVE I OPISE (KAKO SE DOBIJA)
+// MAPIRANJE BACKEND KODOVA U PRAVE EMOHIJE, NAZIVE I OPISE
 const medalIcons = {
   gold: '🥇',
   silver: '🥈',
@@ -115,11 +116,6 @@ const formatDate = (dateValue) => {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(dateValue));
-}
-
-const getInitials = (name) => {
-  if (!name) return "?";
-  return name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
 }
 
 function getTierClass(title) {
@@ -232,9 +228,8 @@ async function handleLockTopic() {
     </h1>
     
     <div class="flex items-center flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400 mb-4 bg-slate-50 dark:bg-slate-700 p-2 rounded-lg w-fit">
-      <span class="w-6 h-6 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold text-[10px]">
-        {{ getInitials(topic.author?.full_name) }}
-      </span>
+      
+      <ForumAvatar :author="topic.topic_author || topic.author" />
       
       <span class="font-semibold text-slate-700 dark:text-slate-200">
         {{ topic.author?.full_name || 'Korisnik' }}
@@ -260,9 +255,7 @@ async function handleLockTopic() {
         Zaključano
       </span>
 
-
       <div v-if="authorMedals.length > 0" class="flex items-center gap-1 ml-2 border-l pl-2 border-slate-200 dark:border-slate-600 relative medals-dropdown-container">
-
         <span
           v-for="rawMedal in featuredMedals"
           :key="rawMedal.code || rawMedal.id"
@@ -299,11 +292,20 @@ async function handleLockTopic() {
             </span>
           </div>
         </div>
-
       </div>
     </div>
 
-    <p class="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">{{ topic.content }}</p>
+    <p class="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line mb-4">{{ topic.content }}</p>
+
+    <div v-if="topic.tags && topic.tags.length > 0" class="flex flex-wrap gap-1.5 mb-4">
+      <span 
+        v-for="tag in topic.tags" 
+        :key="tag.id" 
+        class="text-[11px] font-medium px-2.5 py-1 bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 rounded-md shadow-sm"
+      >
+        #{{ tag.name }}
+      </span>
+    </div>
 
     <div class="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700 flex flex-col gap-2">
       <div class="flex items-center w-full gap-2">
@@ -343,7 +345,6 @@ async function handleLockTopic() {
           <span class="text-slate-300 dark:text-slate-600">•</span>
           <span>📅 Objavljeno: {{ formatDate(topic.created_at) }}</span>
         </div>
-
       </div>
 
       <div v-if="showShareBox" class="p-3 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-lg flex flex-col gap-2">

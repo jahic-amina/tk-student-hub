@@ -57,9 +57,16 @@ def get_author_data(db: Session, user_id: int) -> dict:
         **forum_identity,
     }
 
-def get_topic_tags(db: Session, topic_id: int) -> list[str]:
-    statement = select(ForumTag.name).join(ForumTopicTag, ForumTopicTag.tag_id == ForumTag.id).where(ForumTopicTag.topic_id == topic_id)
-    return list(db.exec(statement).all())
+def get_topic_tags(db: Session, topic_id: int) -> list[dict]:
+    # IZMIJENJENO: Selektujemo cijeli objekat taga, a ne samo naziv stringa
+    statement = (
+        select(ForumTag)
+        .join(ForumTopicTag, ForumTopicTag.tag_id == ForumTag.id)
+        .where(ForumTopicTag.topic_id == topic_id)
+    )
+    tags = db.exec(statement).all()
+    # Vraćamo listu rječnika (ID i Name) koje Vue očekuje
+    return [{"id": tag.id, "name": tag.name} for tag in tags]
 
 def build_topic_list_item(db: Session, topic: ForumTopic) -> dict:
     comments_count = get_comments_count(db, topic.id)
@@ -114,15 +121,19 @@ def get_all_topics(
         statement = statement.order_by(ForumTopic.views_count.desc(), ForumTopic.id.desc())
     elif sort_by == "najaktivnije":
         from app.models.forum import ForumComment
+        total_topics = db.exec(count_statement).one()
         statement = (
-            statement.join(ForumComment, ForumComment.topic_id == ForumTopic.id, isouter=True)
+            statement
+            .join(ForumComment, ForumComment.topic_id == ForumTopic.id, isouter=True)
             .group_by(ForumTopic.id)
             .order_by(func.count(ForumComment.id).desc(), ForumTopic.created_at.desc())
         )
-    else:  
+    else:
         statement = statement.order_by(ForumTopic.created_at.desc())
 
-    total_topics = db.exec(count_statement).one()
+    if sort_by != "najaktivnije":
+        total_topics = db.exec(count_statement).one()
+        
     skip = (page - 1) * per_page
     statement = statement.offset(skip).limit(per_page)
     topics = db.exec(statement).all()
@@ -178,7 +189,6 @@ def create_forum_topic(
     db.add(new_topic)
     db.flush()
 
-    # Automatski dodjeljuje bodove i provjerava medalje (giver_id je ovdje interno 0 jer je kreiranje teme)
     register_topic_created(
         db,
         user_id=current_user.id,

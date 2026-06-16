@@ -1,20 +1,41 @@
+import os  
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer
+from fastapi.staticfiles import StaticFiles
+
 from app.core.config import settings
 from app.database import create_db_and_tables
-from app.routers import auth, forum_categories, forum_guidelines, forum_topics, forum_comments, prakse, profiles, forum_tags, forum_admin, forum_likes 
 from app.core.security import get_current_user
-from app.models.user import User
-# Import je potreban da SQLModel registruje nove tabele.
+from app.models.user import User                
+
+
 from app.models.forum_reputation import (
     ForumReputationEvent,
     ForumUserMedal,
     ForumUserStats,
 )
 
+from app.routers import (
+    auth, dashboard, activity, admin, profiles, account, company, applications, materials,
+    forum_categories, forum_topics, forum_comments, forum_tags, forum_admin, forum_likes,
+    forum_guidelines  # Dodano iz tim3/forum-main grane da ništa ne fali
+)
 
+
+from app.routers.ad_bookmark import router as ad_bookmark_router
+from app.routers.notification import router as notification_router  
+from app.routers.ad import router as ads_router
+from app.routers.prakse import router as prakse_router
+from app.routers.workshops import router as workshops_router
+
+
+# Inicijalizacija baze podataka
 create_db_and_tables()
+
+# Kreiranje foldera za upload ako ne postoji
+LOCAL_UPLOAD_DIR = os.path.join(os.getcwd(), "uploads")
+os.makedirs(LOCAL_UPLOAD_DIR, exist_ok=True)
 
 security = HTTPBearer()
 
@@ -23,6 +44,8 @@ app = FastAPI(
     description="Backend platforme za TK Student Hub - studentski centar za telekomunikacije",
     version="1.0.0"
 )
+
+# CORS konfiguracija (Zadržan allow_credentials=False jer "*" origin ne dopušta True)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -31,16 +54,41 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Montiranje statičkih fajlova za upload
+app.mount("/uploads", StaticFiles(directory=LOCAL_UPLOAD_DIR), name="uploads")
+
+# --- REGISTRACIJA SVIH RUTERA ---
+
+# Autentifikacija i korisnički nalozi
 app.include_router(auth.router)
-app.include_router(prakse.router)
+app.include_router(account.router)
+app.include_router(profiles.router)
+app.include_router(company.router)
+
+# Prakse, oglasi i prijave
+app.include_router(ads_router)
+app.include_router(applications.router)
+app.include_router(ad_bookmark_router) 
+
+# Forum i zajednica
 app.include_router(forum_categories.router)
 app.include_router(forum_topics.router)
 app.include_router(forum_comments.router)
-app.include_router(profiles.router)
 app.include_router(forum_tags.router)
-app.include_router(forum_admin.router)
 app.include_router(forum_likes.router)
 app.include_router(forum_guidelines.router)
+
+# Sistem, administracija i ostalo
+app.include_router(dashboard.router)
+app.include_router(activity.router)
+app.include_router(admin.router)
+app.include_router(forum_admin.router)
+app.include_router(materials.router)
+app.include_router(notification_router)
+app.include_router(prakse_router)
+app.include_router(workshops_router)
+
+# --- OSNOVNI ENDPOINTI ---
 
 @app.get("/")
 def root():

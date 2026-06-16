@@ -1,6 +1,8 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { toggleTopicLike } from '../composables/useForumExtras.js';
+// 1. Uvozimo tvoju novu ForumAvatar komponentu (prilagodi putanju ako je potrebno)
+import ForumAvatar from './ForumAvatar.vue'; 
 
 const props = defineProps({
   tema: { type: Object, required: true },
@@ -133,11 +135,6 @@ function formatDate(dateValue) {
     year: "numeric"
   }).format(new Date(dateValue));
 }
-
-function getInitials(name) {
-  if (!name) return "?";
-  return name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
-}
 </script>
 
 <template>
@@ -171,12 +168,23 @@ function getInitials(name) {
     <p class="text-slate-600 dark:text-slate-300 mt-3 text-sm leading-relaxed font-normal line-clamp-3">
       {{ tema.content }}
     </p>
+
+    <div v-if="tema.tags && tema.tags.length > 0" class="flex flex-wrap gap-1.5 mt-3.5">
+      <span 
+        v-for="tag in tema.tags" 
+        :key="tag.id" 
+        @click.prevent
+        class="text-[10px] font-medium px-2 py-0.5 bg-slate-50 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400 border border-slate-100 dark:border-slate-600 rounded-md"
+      >
+        #{{ tag.name }}
+      </span>
+    </div>
     
     <div class="flex items-center justify-between mt-5 pt-4 border-t border-gray-100 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400">
       <div class="flex items-center gap-2 font-medium flex-wrap">
-        <span class="w-5.5 h-5.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold text-[10px]">
-          {{ getInitials(tema.author?.full_name) }}
-        </span>
+        
+        <ForumAvatar :author="tema.author" class="w-5.5 h-5.5 text-[9px]" />
+
         <span class="text-slate-700 dark:text-slate-200 font-semibold">{{ tema.author?.full_name || 'Korisnik' }}</span>
 
         <span

@@ -8,6 +8,16 @@ from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
 from app.models.forum import ForumTopic, ForumComment, ForumCommentVote
+from app.routers.forum_helpers import (
+    get_author_data,
+    get_comment_votes_count,
+    get_comment_likes_count,
+    get_comment_dislikes_count,
+    get_comments_count,
+    has_best_answer,
+    get_topic_votes_count,
+    get_topic_comments,
+)
 
 from app.services.forum_reputation import (
     get_user_forum_identity,
@@ -18,6 +28,15 @@ from app.services.forum_reputation import (
 )
 
 router = APIRouter(prefix="/forum/comments", tags=["Forum Comments"])
+
+# Re-export helpers so existing imports from this module keep working
+__all__ = [
+    "get_comments_count",
+    "has_best_answer",
+    "get_topic_comments",
+    "get_topic_votes_count",
+]
+
 
 # --- SHEME ---
 class ForumCommentCreate(BaseModel):
@@ -36,7 +55,7 @@ class AdminNoticeCreate(BaseModel):
     content: str = Field(min_length=3)
 
 
-# --- POMOĆNE FUNKCIJE ZA KOMENTARE ---
+# --- POMOĆNE FUNKCIJE (Sa integracijom reputacije) ---
 def get_comment_author_data(db: Session, user_id: int) -> dict:
     user = db.get(User, user_id)
     if not user:
@@ -140,13 +159,15 @@ def get_topic_comments(db: Session, topic_id: int) -> list[dict]:
     return top_level
 
 
-# --- RUTE ZA KOMENTARE ---
+# ---------------------------------------------------------------------------
+# RUTE ZA KOMENTARE
+# ---------------------------------------------------------------------------
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def create_forum_comment(
     comment_data: ForumCommentCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     topic = db.get(ForumTopic, comment_data.topic_id)
     if not topic or topic.is_deleted:
@@ -211,11 +232,12 @@ def get_comments(topic_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Tema nije pronađena.")
     return get_topic_comments(db, topic_id)
 
+
 @router.patch("/{comment_id}/best-answer", status_code=status.HTTP_200_OK)
 def toggle_best_answer(
     comment_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     comment = db.get(ForumComment, comment_id)
     if not comment or comment.is_deleted:
@@ -235,7 +257,7 @@ def toggle_best_answer(
             select(ForumComment).where(
                 ForumComment.topic_id == comment.topic_id,
                 ForumComment.is_best_answer == True,
-                ForumComment.is_deleted == False
+                ForumComment.is_deleted == False,
             )
         ).first()
 
@@ -264,7 +286,7 @@ def vote_on_comment(
     comment_id: int,
     vote_data: VoteInput,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     if vote_data.value not in (1, -1):
         raise HTTPException(status_code=400, detail="Vrijednost glasa mora biti 1 ili -1.")
@@ -276,7 +298,7 @@ def vote_on_comment(
     existing_vote = db.exec(
         select(ForumCommentVote).where(
             ForumCommentVote.comment_id == comment_id,
-            ForumCommentVote.user_id == current_user.id
+            ForumCommentVote.user_id == current_user.id,
         )
     ).first()
 
@@ -310,7 +332,7 @@ def vote_on_comment(
         new_vote = ForumCommentVote(
             comment_id=comment_id,
             user_id=current_user.id,
-            value=vote_data.value
+            value=vote_data.value,
         )
         db.add(new_vote)
         db.flush()
@@ -328,11 +350,12 @@ def vote_on_comment(
     total_votes = get_comment_votes_count(db, comment_id)
     return {"comment_id": comment_id, "votes_count": total_votes, "user_vote": user_vote}
 
+
 @router.delete("/{comment_id}", status_code=status.HTTP_200_OK)
 def delete_comment(
     comment_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     comment = db.get(ForumComment, comment_id)
     if not comment or comment.is_deleted:

@@ -1,5 +1,62 @@
 <template>
-  <div class="py-8">
-    Ovo radi tim 2.
+  <div class="py-8 px-4 max-w-4xl mx-auto">
+    <!-- Tabovi samo za admina -->
+    <div v-if="isAdmin" class="flex gap-6 border-b mb-6">
+      <button @click="activeTab = 'pregled'"
+        :class="activeTab === 'pregled' ? 'border-b-2 border-black font-medium text-black' : 'text-gray-400'"
+        class="pb-2">Pregled materijala</button>
+      <button @click="activeTab = 'odobravanje'"
+        :class="activeTab === 'odobravanje' ? 'border-b-2 border-black font-medium text-black' : 'text-gray-400'"
+        class="pb-2">Odobri materijal</button>
+    </div>
+    <MaterialUploadForm @submit="refreshList" />
+    <div class="flex gap-6">
+      <MaterialList v-if="activeTab === 'pregled'" :key="listKey" @open="openMaterial" />
+      <PendingMaterialList v-if="activeTab === 'odobravanje' && isAdmin" :key="listKey" @open="openMaterial" />
+      <MaterialDetail v-if="selectedMaterialId" :material="selectedMaterialId" @close="selectedMaterialId = null"
+        @rated="refreshMaterial" />
+    </div>
   </div>
 </template>
+
+<script setup>
+import MaterialUploadForm from '../../components/MaterialUploadForm.vue'
+import { ref, computed, watch } from 'vue'
+import MaterialList from '../../components/MaterialList.vue'
+import PendingMaterialList from '../../components/PendingMaterialList.vue'
+import { useRouter } from 'vue-router'
+import MaterialDetail from '../../components/MaterialDetail.vue'
+import { getMaterial } from '../../services/api'
+const selectedMaterialId = ref(null)
+
+const router = useRouter()
+
+const activeTab = ref(router.currentRoute.value.path.includes('pending') ? 'odobravanje' : 'pregled')
+const isAdmin = localStorage.getItem('role') === 'admin'
+
+const listKey = ref(0);
+
+watch(activeTab, (newTab) => {
+  if (newTab === 'odobravanje') {
+    router.push('/materials/pending');
+  } else {
+    router.push('/materials');
+  }
+})
+
+function refreshList() {
+  listKey.value += 1;
+
+}
+
+async function openMaterial(id) {
+  router.push({ path: `/materials/${id}` })
+}
+//----------------------------------------------------
+// Osvježavanje liste i ocjene nakon ocjenjivanja - Marinela
+async function refreshMaterial(id) {
+  selectedMaterialId.value = await getMaterial(id)
+  listKey.value += 1  // osvježava kartice na listi
+}
+//----------------------------------------------------
+</script>

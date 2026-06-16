@@ -5,27 +5,33 @@ Izgrađeno sa FastAPI, SQLModel i SQLite.
 ## Postavljanje projekta
 
 1. Kreiraj i aktiviraj virtualno okruženje:
+
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
 
 2. Instaliraj zavisnosti:
+
 ```bash
 pip install -r requirements.txt
 ```
+
 3. Pokreni server:
+
 ```bash
 cd backend
 uvicorn app.main:app --reload
 ```
 
 4. Otvori API dokumentaciju:
+
 ```bash
 http://127.0.0.1:8000/docs
 ```
 
 ## Struktura projekta
+
 ```
 app/
   core/
@@ -42,12 +48,15 @@ app/
   main.py           — ulazna tačka aplikacije
   database.py       — konekcija na bazu podataka
 ```
+
 ## Autentifikacija
 
 Svi zaštićeni endpointi zahtijevaju Bearer token u headeru:
+
 ```
 Authorization: Bearer YOUR_TOKEN_HERE
 ```
+
 Token se dobija pozivom `POST /auth/login`
 
 ## Migracije baze podataka (Alembic)
@@ -68,6 +77,7 @@ alembic upgrade head
 ```
 
 Primjer:
+
 ```bash
 alembic revision --autogenerate -m "dodaj tabelu prakse"
 alembic upgrade head
@@ -81,3 +91,13 @@ alembic upgrade head
 4. Dodajte svoje endpointe u vaš router fajl
 5. Koristite `Depends(get_current_user)` da dobijete prijavljenog korisnika
 6. Kreirajte vlastite `.env` varijable ako je potrebno
+
+## Seed podaci
+
+Ako želiš da napuniš bazu sa demo podacima, pokreni:
+
+```bash
+python -m app.seed
+```
+
+To će ubaciti 10 kompanija i 10 praksi za lokalno testiranje.
