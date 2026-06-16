@@ -275,6 +275,7 @@ function handleFormSubmit({ content, clearForm }) {
         </div>
         <button v-if="isAdmin" @click="handleLockTopic" class="flex items-center gap-1.5 text-xs text-orange-500 hover:text-orange-700 transition-colors font-medium px-3 py-1.5 rounded-lg border border-orange-200 hover:bg-orange-50 bg-transparent">🔒 {{ topic.is_locked ? 'Otključaj temu' : 'Zaključaj temu' }}</button>
         <button v-if="currentUserId === topic.author?.id || isAdmin" @click="handleDeleteTopic" class="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors font-medium px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/20 bg-transparent">🗑️ Obriši temu</button>
+        <button v-if="currentUserId === topic.author?.id || isAdmin" @click="startEditTopic" class="flex items-center gap-1.5 text-xs text-blue-500 hover:text-blue-700 transition-colors font-medium px-3 py-1.5 rounded-lg border border-blue-200 hover:bg-blue-50 bg-transparent">✏️ Uredi temu</button>
 
         <div class="ml-auto flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500 font-medium">
           <span title="Ukupan broj pregleda ove teme">👁️ {{ topic.views_count || 0 }} pregleda</span>
