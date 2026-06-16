@@ -57,9 +57,16 @@ def get_author_data(db: Session, user_id: int) -> dict:
         **forum_identity,
     }
 
-def get_topic_tags(db: Session, topic_id: int) -> list[str]:
-    statement = select(ForumTag.name).join(ForumTopicTag, ForumTopicTag.tag_id == ForumTag.id).where(ForumTopicTag.topic_id == topic_id)
-    return list(db.exec(statement).all())
+def get_topic_tags(db: Session, topic_id: int) -> list[dict]:
+    # Selektujemo cijeli objekat taga, a ne samo naziv stringa
+    statement = (
+        select(ForumTag)
+        .join(ForumTopicTag, ForumTopicTag.tag_id == ForumTag.id)
+        .where(ForumTopicTag.topic_id == topic_id)
+    )
+    tags = db.exec(statement).all()
+    # Vraćamo listu rječnika (ID i Name) koje Vue očekuje
+    return [{"id": tag.id, "name": tag.name} for tag in tags]
 
 def build_topic_list_item(db: Session, topic: ForumTopic) -> dict:
     comments_count = get_comments_count(db, topic.id)
@@ -91,7 +98,7 @@ def get_all_topics(
 
     if category_id is not None:
         statement = statement.where(ForumTopic.category_id == category_id)
-        count_statement = count_statement.where(ForumCategory.id == category_id) # popravljeno uparivanje sa count tabele
+        count_statement = count_statement.where(ForumCategory.id == category_id)
         
     if search and search.strip():
         search_value = f"%{search.strip()}%"

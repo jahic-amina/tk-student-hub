@@ -171,6 +171,17 @@ function getInitials(name) {
     <p class="text-slate-600 dark:text-slate-300 mt-3 text-sm leading-relaxed font-normal line-clamp-3">
       {{ tema.content }}
     </p>
+
+    <div v-if="tema.tags && tema.tags.length > 0" class="flex flex-wrap gap-1.5 mt-3.5">
+      <span 
+        v-for="tag in tema.tags" 
+        :key="tag.id" 
+        @click.prevent
+        class="text-[10px] font-medium px-2 py-0.5 bg-slate-50 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400 border border-slate-100 dark:border-slate-600 rounded-md"
+      >
+        #{{ tag.name }}
+      </span>
+    </div>
     
     <div class="flex items-center justify-between mt-5 pt-4 border-t border-gray-100 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400">
       <div class="flex items-center gap-2 font-medium flex-wrap">
