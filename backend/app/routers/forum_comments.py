@@ -601,15 +601,31 @@ def delete_comment(
     if comment.user_id != current_user.id and current_role != "admin":
         raise HTTPException(status_code=403, detail="Možete obrisati samo vlastiti komentar.")
     
-    replies = db.exec(select(ForumComment).where(ForumComment.parent_id == comment_id, ForumComment.is_deleted == False)).all()
+    replies = db.exec(
+        select(ForumComment).where(
+            ForumComment.parent_id == comment_id,
+            ForumComment.is_deleted == False
+        )
+    ).all()
 
     if replies:
         comment.is_deleted = True
         db.add(comment)
+        db.commit()
     else:
-        db.delete(comment)
-        
-    db.commit()
+        # Direktni SQL — zaobiđi ORM dependency resolver
+        db.exec(
+            ForumComment.__table__.update()
+            .where(ForumComment.__table__.c.parent_id == comment_id)
+            .values(parent_id=None)
+        )
+        db.flush()
+        db.exec(
+            ForumComment.__table__.delete()
+            .where(ForumComment.__table__.c.id == comment_id)
+        )
+        db.commit()
+    
     return {"message": "Komentar je uspješno obrisan.", "comment_id": comment_id}
 
 
