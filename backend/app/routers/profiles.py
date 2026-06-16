@@ -24,7 +24,7 @@ class UserResponse(BaseModel):
     id: int
     full_name: Optional[str]
     biografija: Optional[str]
-    godina_studija: Optional[str]
+    godina_studija: Optional[int]
 
     class Config:
         from_attributes = True
