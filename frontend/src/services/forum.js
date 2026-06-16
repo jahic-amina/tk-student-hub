@@ -108,7 +108,6 @@ export async function handleReportAction(reportId, action, explanation) {
   if (response.ok) {
     return response.json();
   } else {
-    // Pomoćni blok koji parsira grešku kako vam više nikad ne bi izbacilo [object Object]
     const errorData = await response.json();
     let errorMsg = 'Greška pri izvršavanju akcije nad prijavom.';
     if (errorData?.detail) {

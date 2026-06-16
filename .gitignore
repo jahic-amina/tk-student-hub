@@ -6,9 +6,8 @@ backend/venv/
 backend/.env
 .env
 
-# Ako seed.py sadrži kod koji i kolege trebaju pokrenuti, 
-# obrišite donju liniju kako bi je Git pratio:
-backend/seed.py
+backend/app/seed.py
+backend/app/create_tables.py
 
 # Database
 backend/sql_app.db
