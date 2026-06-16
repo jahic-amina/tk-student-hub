@@ -166,3 +166,27 @@ class ForumGuideline(SQLModel, table=True):
     order: int = Field(default=0)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+
+
+class TopicAttachment(SQLModel, table=True):
+    __tablename__ = "topic_attachments"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    topic_id: int = Field(foreign_key="forum_topics.id", index=True)
+    filename: str = Field(max_length=255)
+    file_path: str = Field(max_length=500)
+    file_size: int  # u bajtovima
+    mime_type: str = Field(max_length=100)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class CommentAttachment(SQLModel, table=True):
+    __tablename__ = "comment_attachments"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    comment_id: int = Field(foreign_key="forum_comments.id", index=True)
+    filename: str = Field(max_length=255)
+    file_path: str = Field(max_length=500)
+    file_size: int
+    mime_type: str = Field(max_length=100)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
