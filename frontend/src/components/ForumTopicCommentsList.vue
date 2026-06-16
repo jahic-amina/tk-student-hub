@@ -12,6 +12,20 @@ const props = defineProps({
 
 const emit = defineEmits(['refresh']);
 
+// ── Search ────────────────────────────────────────────────────────────────────
+const searchQuery = ref('');
+
+const filteredComments = computed(() => {
+  if (!searchQuery.value.trim()) return props.comments;
+  
+  const query = searchQuery.value.toLowerCase().trim();
+  
+  return props.comments.filter(comment => {
+    const contentMatch = comment.content?.toLowerCase().includes(query);
+    return contentMatch;
+  });
+}); 
+
 // ─── Trenutni korisnik ────────────────────────────────────────────────────────
 const currentUserId = ref(null);
 const currentUserRole = ref(null);
