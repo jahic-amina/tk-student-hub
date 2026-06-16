@@ -170,12 +170,25 @@ const handleAdminNotice = async () => {
               @submit-topic-reply="handleNewComment"
             />
 
-            <ForumTopicCommentsList 
-              :comments="sortedComments" 
-              :topic-author-id="topicAuthorId" 
-              :topic-id="parseInt(props.id)" 
-              @refresh="() => loadTopicAndComments(props.id)" 
-            />
+            <!-- Sort dropdown -->
+             <div class="flex items-center justify-end gap-2 mb-3">
+              <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Sortiraj:</span>
+              <select
+              v-model="sortCriteria"
+              class="text-xs font-semibold bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-orange-400 cursor-pointer transition-colors"
+              >
+              <option value="top">⬆ Najbolje ocijenjeni</option>
+              <option value="newest">🕐 Najnoviji</option>
+              <option value="oldest">🕓 Najstariji</option>
+            </select>
+          </div>
+
+          <ForumTopicCommentsList 
+            :comments="sortedComments" 
+            :topic-author-id="topicAuthorId" 
+            :topic-id="parseInt(props.id)" 
+            @refresh="() => loadTopicAndComments(props.id)" 
+          />
 
             <div v-if="fullTopicData.is_locked" class="bg-gray-100 dark:bg-slate-800 text-center text-gray-500 p-4 rounded-xl font-bold mt-4">
               🔒 Ova tema je zaključana za daljnje odgovore.
