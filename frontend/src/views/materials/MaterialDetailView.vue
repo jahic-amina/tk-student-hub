@@ -65,6 +65,28 @@
                 <template v-if="isEditing">
                     <textarea v-model="material.description" rows="4"
                         class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-600 focus:outline-none focus:border-primary resize-none" />
+                    <div class="mb-6">
+                        <h3 class="font-semibold mb-2">Zamijeni fajl (opcionalno)</h3>
+                        <div @click="fileInput.click()" @dragover.prevent="isDragging = true"
+                            @dragleave.prevent="isDragging = false" @drop.prevent="onFileDrop" :class="[
+                                'border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors',
+                                isDragging ? 'border-primary bg-orange-50' : 'border-gray-300 bg-gray-50'
+                            ]">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 mx-auto mb-2 text-gray-400"
+                                fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5 5 5M12 5v10" />
+                            </svg>
+                            <p class="text-gray-700 font-medium">Prevucite fajl ovdje ili kliknite da odaberete</p>
+                            <p class="text-sm text-gray-500 mt-1">Podržani formati: PDF, DOC, DOCX, TXT, PPT, PPTX, ZIP
+                            </p>
+                            <p v-if="selectedFile" class="text-sm text-primary font-medium mt-3">
+                                Odabran: {{ selectedFile.name }}
+                            </p>
+                        </div>
+                        <input ref="fileInput" type="file" @change="onFileChange"
+                            accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.txt" class="hidden" />
+                    </div>
                 </template>
                 <template v-else>
                     <p class="text-gray-600 text-sm">{{ material.description }}</p>
