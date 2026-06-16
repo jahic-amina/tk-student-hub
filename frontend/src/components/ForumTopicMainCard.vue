@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { deleteTopic, reportTopic } from '../services/forum';
 import { toggleTopicLock } from '../services/forum_admin';
+import ForumAvatar from './ForumAvatar.vue'; // Prilagodi putanju ako je u drugom folderu
 
 const router = useRouter();
 const currentUserId = ref(null);
@@ -117,11 +118,6 @@ const formatDate = (dateValue) => {
   }).format(new Date(dateValue));
 }
 
-const getInitials = (name) => {
-  if (!name) return "?";
-  return name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
-}
-
 function getTierClass(title) {
   if (!title) return 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600';
   const t = title.toLowerCase();
@@ -232,9 +228,8 @@ async function handleLockTopic() {
     </h1>
     
     <div class="flex items-center flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400 mb-4 bg-slate-50 dark:bg-slate-700 p-2 rounded-lg w-fit">
-      <span class="w-6 h-6 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold text-[10px]">
-        {{ getInitials(topic.author?.full_name) }}
-      </span>
+      
+      <ForumAvatar :author="topic.topic_author || topic.author" />
       
       <span class="font-semibold text-slate-700 dark:text-slate-200">
         {{ topic.author?.full_name || 'Korisnik' }}
