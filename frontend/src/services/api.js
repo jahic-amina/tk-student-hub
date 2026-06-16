@@ -576,11 +576,14 @@ export async function rejectMaterial(id) {
   return response.json();
 }
 
-export async function updateMaterial(id, title, description) {
+export async function updateMaterial(id, title, description, file) {
   const token = localStorage.getItem("token");
   const formData = new FormData();
   formData.append('title', title);
   formData.append('description', description);
+  if (file) {
+    formData.append('file', file);
+  }
   const response = await fetch(`${BASE_URL}/materials/${id}/update`, {
     method: "PATCH",
     headers: {
