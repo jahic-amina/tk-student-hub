@@ -130,6 +130,17 @@ def toggle_best_answer(
     db.commit()
     db.refresh(comment)
     db.expire_all()
+
+    if comment.is_best_answer:
+        log_activity(
+            db,
+            comment.user_id,
+            ActivityType.forum_answer,
+            topic.title,
+            "Označeno kao korisno",
+            topic.id
+        )
+
     return {"id": comment.id, "is_best_answer": comment.is_best_answer}
 
 
