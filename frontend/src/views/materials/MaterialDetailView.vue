@@ -11,7 +11,7 @@
                 </svg>
                 <span>NAZAD</span>
             </button>
-            <button v-if="material?.user?.id === currentUserId" @click="toggleEdit()"
+            <button v-if="material?.user?.id === currentUserId" @click="isEditing ? saveChanges() : toggleEdit()"
                 class="inline-flex items-center gap-2 bg-white border border-gray-300 text-gray-700 font-medium px-4 py-2 rounded-lg hover:bg-gray-50 active:scale-[0.98] transition text-sm">
                 <svg v-if="!isEditing" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -102,7 +102,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DownloadButton from '../../components/DownloadButton.vue'
-import { getMaterial, approveMaterial, rejectMaterial } from '../../services/api'
+import { getMaterial, approveMaterial, rejectMaterial, updateMaterial } from '../../services/api'
 import SuccessMessage from '../../components/SuccessMessage.vue'
 import CommentList from '../../components/CommentList.vue'
 import MaterialRating from '../../components/MaterialRating.vue'
@@ -135,6 +135,17 @@ function cancelEdit() {
     isEditing.value = false
 }
 
+async function saveChanges() {
+    try {
+        await updateMaterial(material.value.id, material.value.title, material.value.description)
+        successMessage.value = 'Promjene su sačuvane!'
+        successTitle.value = 'Uspjeh!'
+        successIcon.value = '✅'
+        isEditing.value = false
+    } catch (error) {
+        console.error('Greška prilikom spremanja promjena:', error)
+    }
+}
 
 onMounted(async () => {
     material.value = await getMaterial(route.params.id)
