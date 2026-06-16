@@ -2,17 +2,19 @@
 import { ref, computed } from 'vue';
 import ForumAvatar from './ForumAvatar.vue';
 
+defineOptions({ name: 'ForumCommentNode' })
+
 const props = defineProps({
   comment:          { type: Object,   required: true },
   currentUserId:    { type: Number,   default: null },
   isAdmin:          { type: Boolean,  default: false },
   isTopicAuthor:    { type: Boolean,  default: false },
+  canReply:         { type: Boolean,  default: false },
   topicId:          { type: Number,   default: null },
   openMedalDropdown:{ type: String,   default: null },
   editingCommentId: { type: Number,   default: null },
   replyingToId:     { type: Number,   default: null },
   depth:            { type: Number,   default: 0 },
-  // Funkcije za reaktivne vote vrijednosti (dolaze iz List-a)
   getUserVote:      { type: Function, required: true },
   getLikesCount:    { type: Function, required: true },
   getDislikesCount: { type: Function, required: true },
@@ -25,15 +27,13 @@ const emit = defineEmits([
   'toggle-medals'
 ]);
 
-// ─── Lokalni proxy za textarea (ne mutiramo props) ────────────────────────────
 const replyContentLocal = ref('');
 const editContentLocal  = ref('');
 
-// ─── Vizualno uvlačenje — max 3 nivoa, dalje ostaje poravnato ────────────────
+// Vizualno uvlačenje do MAX_VISUAL_DEPTH, dalje ostaje na istom nivou
 const MAX_VISUAL_DEPTH = 3;
 const shouldIndent = computed(() => props.depth > 0 && props.depth <= MAX_VISUAL_DEPTH);
 
-// ─── Medalje ──────────────────────────────────────────────────────────────────
 const medalIcons = { gold: '🥇', silver: '🥈', bronze: '🥉' };
 const medalThresholds = {
   best_answers:   { bronze: 1,   silver: 5,   gold: 15   },
@@ -86,15 +86,10 @@ function formatDate(dateValue) {
   }).format(new Date(dateValue));
 }
 
-// Dropdown key za ovaj komentar
 const medalKey = computed(() => `c-${props.comment.id}`);
 </script>
 
 <template>
-  <!--
-    Svaki nivo se uvlači za pl-6 + border-l do MAX_VISUAL_DEPTH.
-    Nakon toga komentari ostaju na istom nivou (beskonačno stablo bez UX problema).
-  -->
   <div
     :class="[
       shouldIndent
@@ -102,19 +97,16 @@ const medalKey = computed(() => `c-${props.comment.id}`);
         : 'mt-3'
     ]"
   >
-    <!-- ── Komentar kartica ──────────────────────────────────────────────── -->
     <div
       class="bg-white dark:bg-slate-800 rounded-xl border p-4 flex gap-3 shadow-sm transition-all"
       :class="[
-        comment.is_admin_notice
-          ? 'border-red-300 dark:border-red-900 bg-red-50/50 dark:bg-red-950/20 ring-1 ring-red-400/20'
-          : comment.is_best_answer
-            ? 'border-yellow-400 dark:border-yellow-600 bg-yellow-50/40 dark:bg-yellow-950/20 ring-1 ring-yellow-400/30'
-            : 'border-gray-200 dark:border-slate-700'
+        comment.is_best_answer
+          ? 'border-yellow-400 dark:border-yellow-600 bg-yellow-50/40 dark:bg-yellow-950/20 ring-1 ring-yellow-400/30'
+          : 'border-gray-200 dark:border-slate-700'
       ]"
     >
-      <!-- Vote kolona (samo za depth=0, replies nemaju voting) -->
-      <div v-if="depth === 0" class="flex flex-col items-center gap-0.5 flex-shrink-0 pt-1">
+      <!-- Vote kolona — prikazuje se na svim nivoima -->
+      <div class="flex flex-col items-center gap-0.5 flex-shrink-0 pt-1">
         <button
           @click="emit('vote', comment, 1)"
           :disabled="currentUserId === comment.author?.id"
@@ -152,14 +144,16 @@ const medalKey = computed(() => `c-${props.comment.id}`);
         <span class="text-xs font-bold tabular-nums text-slate-400 dark:text-slate-500">{{ getDislikesCount(comment) }}</span>
       </div>
 
-      <!-- Sadržaj komentara -->
       <div class="flex-1 min-w-0">
-
-        <!-- Header: autor + akcije -->
+        <!-- Header -->
         <div class="flex items-center justify-between mb-2">
           <div class="flex items-center flex-wrap gap-2 text-xs text-slate-400 dark:text-slate-500">
             <ForumAvatar :author="comment.author" class="w-5 h-5 text-[8px]" />
             <strong class="text-slate-600 dark:text-slate-300">{{ comment.author?.full_name || 'Kolega' }}</strong>
+
+            <span v-if="depth > 0 && comment.parent_author" class="text-slate-400 dark:text-slate-500">
+              → <span class="text-orange-500 font-medium">@{{ comment.parent_author.full_name }}</span>
+            </span>
 
             <span v-if="comment.author?.role" class="text-[10px] px-2 py-0.5 rounded border" :class="getRoleBadgeClass(comment.author.role)">
               {{ comment.author.role }}
@@ -168,7 +162,6 @@ const medalKey = computed(() => `c-${props.comment.id}`);
               Nivo {{ comment.author.level }} · {{ comment.author.title }} · {{ comment.author.reputation_points }} XP
             </span>
 
-            <!-- Medalje -->
             <div v-if="comment.author?.medals?.length" class="flex items-center gap-1 relative medals-dropdown-container">
               <span
                 v-for="medal in comment.author.medals.slice(0, 3)"
@@ -203,17 +196,12 @@ const medalKey = computed(() => `c-${props.comment.id}`);
             <span>•</span>
             <span>{{ formatDate(comment.created_at) }}</span>
 
-            <span v-if="comment.is_admin_notice" class="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-full font-bold shadow-sm">
-              🛡️ Admin Notice
-            </span>
             <span v-if="comment.is_best_answer" class="text-[10px] bg-yellow-100 dark:bg-yellow-950/60 text-yellow-700 dark:text-yellow-400 px-2 py-0.5 rounded-full font-bold border border-yellow-300 dark:border-yellow-800">
               ✓ Najbolji odgovor
             </span>
           </div>
 
-          <!-- Akcijski gumbi -->
           <div class="flex items-center gap-1">
-            <!-- Best answer: samo autor teme, samo na depth=0 -->
             <button
               v-if="isTopicAuthor && depth === 0"
               @click="emit('best-answer', comment)"
@@ -251,12 +239,10 @@ const medalKey = computed(() => `c-${props.comment.id}`);
           </div>
         </div>
 
-        <!-- Obrisan komentar -->
         <div v-if="comment.is_deleted" class="text-slate-400 dark:text-slate-500 text-sm italic">
           deleted by user
         </div>
 
-        <!-- Edit forma -->
         <div v-else-if="editingCommentId === comment.id" class="mt-1">
           <textarea
             v-model="editContentLocal"
@@ -264,32 +250,23 @@ const medalKey = computed(() => `c-${props.comment.id}`);
             rows="3"
           />
           <div class="flex gap-2 mt-2">
-            <button
-              @click="emit('submit-edit', comment.id, editContentLocal)"
-              class="px-3 py-1.5 bg-orange-500 hover:bg-orange-400 text-white text-xs font-bold rounded-lg transition-colors"
-            >Sačuvaj</button>
-            <button
-              @click="emit('cancel-edit')"
-              class="px-3 py-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 text-slate-500 text-xs rounded-lg hover:bg-gray-50 transition-colors"
-            >Otkaži</button>
+            <button @click="emit('submit-edit', comment.id, editContentLocal)" class="px-3 py-1.5 bg-orange-500 hover:bg-orange-400 text-white text-xs font-bold rounded-lg transition-colors">Sačuvaj</button>
+            <button @click="emit('cancel-edit')" class="px-3 py-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 text-slate-500 text-xs rounded-lg hover:bg-gray-50 transition-colors">Otkaži</button>
           </div>
         </div>
 
-        <!-- Sadržaj -->
         <p v-else class="text-slate-700 dark:text-slate-300 leading-relaxed text-sm whitespace-pre-line">
           {{ comment.content }}
         </p>
 
-        <!-- Reply dugme -->
         <div class="mt-2">
           <button
-            v-if="currentUserId && !comment.is_deleted"
+            v-if="canReply && !comment.is_deleted"
             @click="replyContentLocal = ''; emit('start-reply', comment.id)"
             class="text-xs text-slate-400 hover:text-orange-500 transition-colors font-medium"
           >↩ Odgovori</button>
         </div>
 
-        <!-- Reply forma -->
         <div v-if="replyingToId === comment.id" class="mt-3">
           <textarea
             v-model="replyContentLocal"
@@ -298,21 +275,14 @@ const medalKey = computed(() => `c-${props.comment.id}`);
             rows="3"
           />
           <div class="flex gap-2 mt-2">
-            <button
-              @click="emit('submit-reply', comment, replyContentLocal); replyContentLocal = ''"
-              class="px-3 py-1.5 bg-orange-500 hover:bg-orange-400 text-white text-xs font-bold rounded-lg transition-colors"
-            >Pošalji</button>
-            <button
-              @click="emit('cancel-reply')"
-              class="px-3 py-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 text-slate-500 text-xs rounded-lg hover:bg-gray-50 transition-colors"
-            >Otkaži</button>
+            <button @click="emit('submit-reply', comment, replyContentLocal); replyContentLocal = ''" class="px-3 py-1.5 bg-orange-500 hover:bg-orange-400 text-white text-xs font-bold rounded-lg transition-colors">Pošalji</button>
+            <button @click="emit('cancel-reply')" class="px-3 py-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 text-slate-500 text-xs rounded-lg hover:bg-gray-50 transition-colors">Otkaži</button>
           </div>
         </div>
-
       </div>
     </div>
 
-    <!-- ── Rekurzivni replies ─────────────────────────────────────────────── -->
+    <!-- Rekurzivni replies -->
     <div v-if="comment.replies?.length">
       <ForumCommentNode
         v-for="reply in comment.replies"
@@ -321,6 +291,7 @@ const medalKey = computed(() => `c-${props.comment.id}`);
         :current-user-id="currentUserId"
         :is-admin="isAdmin"
         :is-topic-author="isTopicAuthor"
+        :can-reply="canReply"
         :topic-id="topicId"
         :open-medal-dropdown="openMedalDropdown"
         :editing-comment-id="editingCommentId"

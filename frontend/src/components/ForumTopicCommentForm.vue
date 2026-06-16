@@ -7,7 +7,8 @@ defineProps({
   successMessage: { type: String, default: '' }
 });
 
-const emit = defineEmits(['posaljiKomentar']);
+// Dodajemo 'otkazi' u emit događaje
+const emit = defineEmits(['posaljiKomentar', 'otkazi']);
 const text = ref('');
 
 const handleSubmit = () => {
@@ -35,15 +36,26 @@ const handleSubmit = () => {
     />
     <p v-if="commentError" class="text-red-500 text-xs mt-1">{{ commentError }}</p>
 
-    <div class="flex justify-end mt-4">
+    <div class="flex justify-end items-center gap-3 mt-4">
+      
+      <button 
+        type="button"
+        @click="emit('otkazi')" 
+        :disabled="isSubmitting"
+        class="px-4 py-2.5 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors bg-transparent border-none cursor-pointer disabled:opacity-50"
+      >
+        Otkaži
+      </button>
+
       <button
         @click="handleSubmit"
         :disabled="isSubmitting"
-        class="flex items-center gap-2 px-6 py-2.5 bg-orange-500 hover:bg-orange-400 text-white font-medium rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
+        class="flex items-center gap-2 px-6 py-2.5 bg-orange-500 hover:bg-orange-400 text-white font-medium rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed shadow-sm border-none cursor-pointer"
       >
         <span v-if="isSubmitting" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
         <span>{{ isSubmitting ? 'Slanje...' : 'Objavi odgovor' }}</span>
       </button>
+
     </div>
   </div>
 </template>
