@@ -347,11 +347,12 @@ def rate_material(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # Provjera da li materijal postoji
     material = db.exec(select(Material).where(Material.id == id)).first()
     if not material:
         raise HTTPException(status_code=404, detail="Materijal nije pronađen.")
     
-    # Provjera preuzimanja
+    # Provjera da li je korisnik preuzeo materijal prije ocjenjivanja
     download = db.exec(
         select(Download).where(
             Download.material_id == id,
@@ -361,12 +362,14 @@ def rate_material(
     if not download:
         raise HTTPException(status_code=403, detail="Morate preuzeti materijal prije ocjenjivanja.")
 
+    # Provjera da li je korisnik već ocijenio ovaj materijal
     existing = db.exec(
         select(Rating).where(Rating.material_id == id, Rating.user_id == current_user.id)
     ).first()
     if existing:
         raise HTTPException(status_code=409, detail="Već ste ocijenili ovaj materijal.")
 
+    # Sačuvaj novu ocjenu
     new_rating = Rating(rating=rating_data.rating, material_id=id, user_id=current_user.id)
     db.add(new_rating)
     db.commit()
@@ -381,7 +384,7 @@ def update_rating(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    # Provjera preuzimanja
+    # Provjera da li je korisnik preuzeo materijal prije izmjene ocjene
     download = db.exec(
         select(Download).where(
             Download.material_id == id,
@@ -391,11 +394,14 @@ def update_rating(
     if not download:
         raise HTTPException(status_code=403, detail="Morate preuzeti materijal prije ocjenjivanja.")
 
+    # Provjera da li korisnik ima postojeću ocjenu koju mijenja
     existing = db.exec(
         select(Rating).where(Rating.material_id == id, Rating.user_id == current_user.id)
     ).first()
     if not existing:
         raise HTTPException(status_code=404, detail="Niste ocijenili ovaj materijal.")
+    
+    # Ažuriraj ocjenu
     existing.rating = rating_data.rating
     db.add(existing)
     db.commit()
