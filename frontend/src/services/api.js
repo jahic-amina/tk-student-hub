@@ -578,12 +578,15 @@ export async function rejectMaterial(id) {
 
 export async function updateMaterial(id, title, description) {
   const token = localStorage.getItem("token");
+  const formData = new FormData();
+  formData.append('title', title);
+  formData.append('description', description);
   const response = await fetch(`${BASE_URL}/materials/${id}/update`, {
     method: "PATCH",
     headers: {
-      'Authorization': `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ title, description }),
+    body: formData,
   });
   if(!response.ok) {
     throw new Error('Greška pri ažuriranju materijala.')
