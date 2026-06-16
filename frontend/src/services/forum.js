@@ -161,3 +161,13 @@ export async function getRelatedTopics(topicId) {
   const response = await fetch(`${BASE_URL}/forum/topics/${topicId}/related`, { headers: getHeaders() });
   return handleResponse(response, 'Greška pri dohvatanju povezanih tema.');
 }
+
+// Endpoint za uređivanje teme (dostupan samo originalnom autoru i adminima)
+export async function updateTopic(topicId, data) {
+  const response = await fetch(`${BASE_URL}/forum/topics/${topicId}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(data)
+  });
+  return handleResponse(response, 'Editovanje teme nije uspjelo.');
+}
