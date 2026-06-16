@@ -205,7 +205,7 @@ import UserProfileCard from '../../components/UserProfileCard.vue'
 import AvatarUploadModal from '../../components/AvatarUploadModal.vue'
 import { getMyProfile, uploadAvatar, removeAvatar } from '../../services/api.js'
 import ActivityFeed from '../../components/ActivityFeed.vue'
-import { getMyActivity } from '../../services/api.js'
+import { getMyActivity, getMyApplications} from '../../services/api.js'
 
 
 const activities = ref([])
@@ -359,6 +359,7 @@ const fetchProfileData = async () => {
 onMounted(() => {
   fetchProfileData()
   loadPreview()
+   loadPrakse()
 })
 
 const handleSubmit = async () => {
@@ -425,20 +426,16 @@ async function onRemove() {
     Object.assign(status, { message: 'Greska pri uklanjanju slike.', isError: true })
   }
 }
-const prakse = ref([
-  {
-    id: 1,
-    naziv: "Full Stack Developer",
-    kompanija: "Tech Corp",
-    status: "U toku"
-  },
-  {
-    id: 2,
-    naziv: "AI Research Assistant",
-    kompanija: "University Lab",
-    status: "U toku"
+const prakse = ref([])
+
+async function loadPrakse() {
+  try {
+    const data = await getMyApplications(getToken())
+    prakse.value = data
+  } catch (error) {
+    console.error('Greška pri dohvatanju praksi:', error)
   }
-])
+}
 
 // --- Funkcija za deaktivaciju ---
 const handleDeactivate = async () => {
