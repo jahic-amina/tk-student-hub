@@ -59,6 +59,7 @@ app.include_router(company.router)
 
 # Prakse, oglasi i prijave
 app.include_router(ads_router)
+app.include_router(my_applications.router)
 app.include_router(applications.router)
 app.include_router(ad_bookmark_router) 
 
@@ -78,7 +79,6 @@ app.include_router(materials.router)
 app.include_router(notification_router)
 app.include_router(prakse_router)
 app.include_router(workshops_router)
-app.include_router(my_applications.router)
 
 # --- OSNOVNI ENDPOINTI ---
 
