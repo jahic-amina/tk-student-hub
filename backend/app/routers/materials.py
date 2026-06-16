@@ -381,6 +381,16 @@ def update_rating(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # Provjera preuzimanja
+    download = db.exec(
+        select(Download).where(
+            Download.material_id == id,
+            Download.user_id == current_user.id
+        )
+    ).first()
+    if not download:
+        raise HTTPException(status_code=403, detail="Morate preuzeti materijal prije ocjenjivanja.")
+
     existing = db.exec(
         select(Rating).where(Rating.material_id == id, Rating.user_id == current_user.id)
     ).first()
