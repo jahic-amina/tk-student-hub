@@ -29,13 +29,28 @@ const isAdmin = computed(() => localStorage.getItem('role') === 'admin');
 
 const odabraniKategorijaId = computed(() => fullTopicData.value?.category?.id || null);
 
+const sortCriteria = ref('top'); // 'top' | 'newest' | 'oldest'
+
 const sortedComments = computed(() => {
   const komentari = fullTopicData.value?.comments || [];
-  return [...komentari].sort((a, b) => {
-    if (a.is_best_answer && !b.is_best_answer) return -1;
-    if (!a.is_best_answer && b.is_best_answer) return 1;
+  const sorted = [...komentari];
+
+  // Admin notice i best answer uvijek ostaju na vrhu bez obzira na sort
+  sorted.sort((a, b) => {
+    if (a.is_admin_notice !== b.is_admin_notice) return a.is_admin_notice ? -1 : 1;
+    if (a.is_best_answer !== b.is_best_answer) return a.is_best_answer ? -1 : 1;
+
+    if (sortCriteria.value === 'top') {
+      return (b.votes_count ?? 0) - (a.votes_count ?? 0);
+    } else if (sortCriteria.value === 'newest') {
+      return new Date(b.created_at) - new Date(a.created_at);
+    } else if (sortCriteria.value === 'oldest') {
+      return new Date(a.created_at) - new Date(b.created_at);
+    }
     return 0;
   });
+
+  return sorted;
 });
 
 const topicAuthorId = computed(() => fullTopicData.value?.author?.id || null);
