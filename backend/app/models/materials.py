@@ -61,6 +61,11 @@ class Download(SQLModel, table=True):
     material_id: int = Field(foreign_key="materials.id")
     user_id: int = Field(foreign_key="users.id")
     downloaded_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
+class Bookmark(SQLModel, table=True):
+    __tablename__ = "bookmarks"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    material_id: int = Field(foreign_key="materials.id")
+    user_id: int = Field(foreign_key="users.id")
 
 class MaterialCreate(SQLModel):
     title: str

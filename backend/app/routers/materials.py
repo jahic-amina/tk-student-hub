@@ -350,6 +350,16 @@ def rate_material(
     material = db.exec(select(Material).where(Material.id == id)).first()
     if not material:
         raise HTTPException(status_code=404, detail="Materijal nije pronađen.")
+    
+    # Provjera preuzimanja
+    download = db.exec(
+        select(Download).where(
+            Download.material_id == id,
+            Download.user_id == current_user.id
+        )
+    ).first()
+    if not download:
+        raise HTTPException(status_code=403, detail="Morate preuzeti materijal prije ocjenjivanja.")
 
     existing = db.exec(
         select(Rating).where(Rating.material_id == id, Rating.user_id == current_user.id)
