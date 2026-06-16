@@ -212,7 +212,25 @@ function handleFormSubmit({ content, clearForm }) {
     class="bg-white dark:bg-slate-800 rounded-xl border shadow-sm p-6 mb-6 transition-colors duration-200"
     :class="topic.is_locked ? 'border-amber-300 dark:border-amber-900 bg-amber-50/10' : 'border-gray-200 dark:border-slate-700'"
   >
-    <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+    <div v-if="isEditingTopic" class="mb-4">
+      <input
+      v-model="editTitle"
+      class="w-full text-xl font-bold border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-2 mb-3 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
+      placeholder="Naslov teme"
+      />
+      <textarea
+        v-model="editContent"
+        class="w-full text-sm border border-gray-200 dark:border-slate-600 rounded-lg p-3 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
+        rows="6"
+        placeholder="Sadržaj teme"
+      ></textarea>
+      <div class="flex gap-2 mt-2">
+        <button @click="submitEditTopic" class="px-3 py-1.5 bg-orange-500 hover:bg-orange-400 text-white text-xs font-bold rounded-lg transition-colors">Sačuvaj</button>
+        <button @click="cancelEditTopic" class="px-3 py-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 text-slate-500 text-xs rounded-lg hover:bg-gray-50 transition-colors">Otkaži</button>
+      </div>
+    </div>
+    
+    <h1 v-else class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
       <span v-if="topic.is_locked" title="Tema je zaključana">🔒</span>
       {{ topic.title }}
     </h1>
