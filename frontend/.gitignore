@@ -27,7 +27,30 @@ venv/
 .venv/
 __pycache__/
 *.pyc
+*.pyo
 .env
 node_modules/
 dist/
 .DS_Store
+backend/.env
+.env
+
+backend/sql_app.db
+*.db
+*.sqlite3
+
+# Node & Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+.DS_Store
+
+# IDE & Editori
+.vscode/
+.idea/
+
+# Superpowers internal docs
+docs/superpowers/venv/
+
+backend/create_tables.py
+backend/app/seed.py
