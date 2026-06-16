@@ -113,11 +113,13 @@ def get_all_topics(
         statement = statement.where(ForumTopic.id.not_in(subquery))
         count_statement = count_statement.where(ForumTopic.id.not_in(subquery))
 
+    # Prvo izvučemo ukupan broj topika za paginaciju
+    total_topics = db.exec(count_statement).one()
+
     if sort_by == "najgledanije":
         statement = statement.order_by(ForumTopic.views_count.desc(), ForumTopic.id.desc())
     elif sort_by == "najaktivnije":
         from app.models.forum import ForumComment
-        total_topics = db.exec(count_statement).one()
         statement = (
             statement
             .join(ForumComment, ForumComment.topic_id == ForumTopic.id, isouter=True)
@@ -126,9 +128,6 @@ def get_all_topics(
         )
     else:
         statement = statement.order_by(ForumTopic.created_at.desc())
-
-    if sort_by != "najaktivnije":
-        total_topics = db.exec(count_statement).one()
 
     skip = (page - 1) * per_page
     statement = statement.offset(skip).limit(per_page)
@@ -185,7 +184,7 @@ def create_forum_topic(
     db.add(new_topic)
     db.flush()
 
-    # Automatski dodjeljuje bodove i provjerava medalje (giver_id je ovdje interno 0 jer je kreiranje teme)
+    # Automatski dodjeljuje bodove i provjerava medalje
     register_topic_created(
         db,
         user_id=current_user.id,
@@ -381,7 +380,7 @@ def get_active_announcements(db: Session = Depends(get_db)):
 def get_topic_details(
     topic_id: int, 
     db: Session = Depends(get_db), 
-    current_user: User = Depends(get_current_user) # DODANO: Potreban korisnik
+    current_user: User = Depends(get_current_user)
 ):
     topic = db.get(ForumTopic, topic_id)
     
@@ -401,7 +400,7 @@ def get_topic_details(
         "author": get_author_data(db, topic.user_id), "category": get_category_data(db, topic.category_id),
         "tags": get_topic_tags(db, topic.id), "comments": comments,
         "stats": {"comments_count": comments_count, "answers_count": comments_count, "views_count": topic.views_count, "votes_count": votes_count, "has_best_answer": any(comment["is_best_answer"] for comment in comments)},
-        "is_deleted": getattr(topic, "is_deleted", False) # DODANO: Signal frontendu da prikaže crveno upozorenje
+        "is_deleted": getattr(topic, "is_deleted", False)
     }
 
 @router.patch("/{topic_id}/view")
@@ -410,9 +409,6 @@ def increment_topic_view(topic_id: int, db: Session = Depends(get_db)):
     if not topic or getattr(topic, "is_deleted", False):
         raise HTTPException(status_code=404, detail="Tema nije pronađena.")
     
-     if getattr(topic, "is_deleted", False):
-        return {"id": topic.id, "views_count": topic.views_count}
-
     topic.views_count += 1
     db.add(topic)
     db.commit()

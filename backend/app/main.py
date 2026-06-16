@@ -16,10 +16,11 @@ from app.models.forum_reputation import (
     ForumUserStats,
 )
 
-# Importovanje svih unikatnih rutera iz app.routers foldera
+# Importovanje svih unikatnih rutera iz app.routers foldera (Dodan forum_guidelines)
 from app.routers import (
     auth, dashboard, activity, admin, profiles, account, company, applications, materials,
-    forum_categories, forum_topics, forum_comments, forum_tags, forum_admin, forum_likes, my_applications
+    forum_categories, forum_topics, forum_comments, forum_tags, forum_admin, forum_likes, 
+    forum_guidelines, my_applications
 )
 
 # Importovanje specifičnih rutera sa aliasima
@@ -81,6 +82,7 @@ app.include_router(forum_topics.router)
 app.include_router(forum_comments.router)
 app.include_router(forum_tags.router)
 app.include_router(forum_likes.router)
+app.include_router(forum_guidelines.router)
 
 # Sistem, administracija i ostalo
 app.include_router(dashboard.router)
