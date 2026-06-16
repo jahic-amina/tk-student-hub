@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, s
 from fastapi.responses import FileResponse
 from sqlmodel import Session, select, func
 from app.database import get_db
-from app.core.security import get_current_user
+from app.core.security import get_current_user, decode_access_token
 from app.models.user import User, UserRole
 from app.models.materials import (
     Material, MaterialsResponse, MaterialDetailResponse,
@@ -186,7 +186,7 @@ def get_materials(
 def download_material(
     id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user),
+    token: Optional[str] = Query(None),
 ):
     # Provjera da li materijal postoji
     material = db.exec(select(Material).where(Material.id == id)).first()
@@ -213,17 +213,21 @@ def download_material(
     material.number_of_downloads += 1
     db.add(material)
 
-    # Bilježi koji korisnik je preuzeo (potrebno za ograničenje ocjenjivanja)
-    # Samo za prijavljene korisnike, i samo ako već nije zabilježeno
-    if current_user:
-        already = db.exec(
-            select(Download).where(
-                Download.material_id == id,
-                Download.user_id == current_user.id
-            )
-        ).first()
-        if not already:
-            db.add(Download(material_id=id, user_id=current_user.id))
+   # Bilježi ko je preuzeo koristeći query token
+    if token:
+        payload = decode_access_token(token)
+        if payload:
+            user_id = payload.get("sub")
+            if user_id:
+                already = db.exec(
+                    select(Download).where(
+                        Download.material_id == id,
+                        Download.user_id == int(user_id)
+                    )
+                ).first()
+                if not already:
+                    db.add(Download(material_id=id, user_id=int(user_id)))
+
     db.commit()
 
     return FileResponse(
