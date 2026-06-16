@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { deleteTopic, reportTopic } from '../services/forum';
 import { toggleTopicLock } from '../services/forum_admin';
+import { updateTopic } from '../services/forum';
 import ForumAvatar from './ForumAvatar.vue';
 import ForumCommentForm from './ForumTopicCommentForm.vue'; 
 
@@ -15,6 +16,10 @@ const isReplyingToTopic = ref(false);
 const isSubmittingReply = ref(false);
 const replyError = ref('');
 const replySuccess = ref('');
+
+const isEditingTopic = ref(false);
+const editTitle = ref('');
+const editContent = ref('');
 
 const closeDropdown = (e) => {
   if (!e.target.closest('.medals-dropdown-container')) {
@@ -145,6 +150,33 @@ async function handleReport(reason) {
 
 async function handleLockTopic() {
   try { await toggleTopicLock(props.topic.id); props.topic.is_locked = !props.topic.is_locked; } catch (e) { alert('Greška pri promjeni statusa zaključavanja.'); }
+}
+
+function startEditTopic() {
+  isEditingTopic.value = true;
+  editTitle.value = props.topic.title;
+  editContent.value = props.topic.content;
+}
+
+function cancelEditTopic() {
+  isEditingTopic.value = false;
+  editTitle.value = '';
+  editContent.value = '';
+}
+
+async function submitEditTopic() {
+  if (!editTitle.value.trim() || !editContent.value.trim()) return;
+  try {
+    const updated = await updateTopic(props.topic.id, {
+      title: editTitle.value,
+      content: editContent.value
+    });
+    props.topic.title = updated.title;
+    props.topic.content = updated.content;
+    isEditingTopic.value = false;
+  } catch (e) {
+    alert('Greška pri editovanju teme.');
+  }
 }
 
 function handleFormSubmit({ content, clearForm }) {
