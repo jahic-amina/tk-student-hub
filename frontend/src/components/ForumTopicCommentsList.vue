@@ -202,33 +202,33 @@ function formatDate(dateValue) {
       <h2 class="text-lg font-semibold text-slate-700 dark:text-slate-200 whitespace-nowrap">
         {{ filteredComments.length }} {{ filteredComments.length === 1 ? 'Odgovor' : 'Odgovora' }}
       </h2>
-      
+
       <div class="relative w-full max-w-xs">
         <input
-        v-model="searchQuery"
-        type="text"
-        placeholder="Pretraži odgovore..."
-        class="w-full text-xs bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg pl-8 pr-8 py-1.5 focus:outline-none focus:ring-2 focus:ring-orange-400 transition-colors"
+          v-model="searchQuery"
+          type="text"
+          placeholder="Pretraži odgovore..."
+          class="w-full text-xs bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg pl-8 pr-8 py-1.5 focus:outline-none focus:ring-2 focus:ring-orange-400 transition-colors"
         />
         <svg xmlns="http://www.w3.org/2000/svg" class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
         </svg>
         <button
-        v-if="searchQuery"
-        @click="searchQuery = ''"
-        class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+          v-if="searchQuery"
+          @click="searchQuery = ''"
+          class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
         >
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
     </div>
-  </div>
 
     <div class="space-y-1">
       <template v-for="comment in filteredComments" :key="comment.id">
 
-        <!-- ── Admin Notice (iz forum-main, zadržano) ───────────────────── -->
+        <!-- ── Admin Notice ───────────────────── -->
         <div
           v-if="comment.is_admin_notice"
           class="rounded-xl border-2 border-red-400 dark:border-red-700 bg-red-50 dark:bg-red-950/30 p-5 flex gap-4 shadow-md ring-2 ring-red-300/30 dark:ring-red-800/30"
@@ -304,7 +304,7 @@ function formatDate(dateValue) {
           </div>
         </div>
 
-        <!-- ── Obični komentar → ForumCommentNode (iz dev) ──────────────── -->
+        <!-- ── Obični komentar → ForumCommentNode ──────────────── -->
         <ForumCommentNode
           v-else
           :comment="comment"
@@ -335,11 +335,12 @@ function formatDate(dateValue) {
       </template>
 
       <div
-      v-if="filteredComments.length === 0"
-      class="text-center py-8 text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm"
+        v-if="filteredComments.length === 0"
+        class="text-center py-8 text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm"
       >
-      <span v-if="searchQuery">Nema komentara koji odgovaraju pretrazi "{{ searchQuery }}".</span>
-      <span v-else>Još nema odgovora. Budite prvi!</span>
+        <span v-if="searchQuery">Nema komentara koji odgovaraju pretrazi "{{ searchQuery }}".</span>
+        <span v-else>Još nema odgovora. Budite prvi!</span>
+      </div>
     </div>
   </div>
 </template>
