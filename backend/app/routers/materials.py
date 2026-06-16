@@ -10,7 +10,7 @@ from app.core.security import get_current_user
 from app.models.user import User, UserRole
 from app.models.materials import (
     Material, MaterialsResponse, MaterialDetailResponse,
-    Rating, Comment, Subject, RatingCreate, CommentResponse, CommentCreate, Bookmark,
+    Rating, Comment, Subject, RatingCreate, CommentResponse, CommentCreate, Bookmark, Download,  # dodano: Download
 )
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
@@ -181,29 +181,49 @@ def get_materials(
     )
 
 
-# ---------------------------------------------------------------------------
-# Parameterized routes below — order matters for /download vs /{material_id}
-# ---------------------------------------------------------------------------
 
 @router.get("/{id}/download")
-def download_material(id: int, db: Session = Depends(get_db)):
+def download_material(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
+):
+    # Provjera da li materijal postoji
     material = db.exec(select(Material).where(Material.id == id)).first()
     if material is None:
         raise HTTPException(status_code=404, detail="Materijal sa tim ID-em ne postoji.")
+    
+    # Provjera da li je materijal obrisan ili nije odobren
     if material.status == "deleted":
         raise HTTPException(status_code=404, detail="Materijal je uklonjen.")
     if material.status != "approved":
         raise HTTPException(status_code=403, detail="Materijal nije odobren i ne može se preuzeti.")
+    
+    # Provjera da fajl fizički postoji na serveru
     if not os.path.exists(material.file_path):
         raise HTTPException(status_code=404, detail="Fajl nije pronađen na serveru.")
 
+    # Odrediti tip fajla za FileResponse header
     media_type = material.file_type
     if not media_type or "/" not in media_type:
         guessed, _ = mimetypes.guess_type(material.file_path)
         media_type = guessed or "application/octet-stream"
 
+    # Povećaj broj preuzimanja
     material.number_of_downloads += 1
     db.add(material)
+
+    # Bilježi koji korisnik je preuzeo (potrebno za ograničenje ocjenjivanja)
+    # Samo za prijavljene korisnike, i samo ako već nije zabilježeno
+    if current_user:
+        already = db.exec(
+            select(Download).where(
+                Download.material_id == id,
+                Download.user_id == current_user.id
+            )
+        ).first()
+        if not already:
+            db.add(Download(material_id=id, user_id=current_user.id))
     db.commit()
 
     return FileResponse(
@@ -212,6 +232,21 @@ def download_material(id: int, db: Session = Depends(get_db)):
         media_type=media_type,
     )
 
+# Vraća true/false — da li je prijavljeni korisnik preuzeo ovaj materijal
+# Koristi se u frontendu da odluči da li prikazati zvjezdice kao aktivne
+@router.get("/{id}/has-downloaded")
+def has_downloaded(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),  # mora biti prijavljen
+):
+    result = db.exec(
+        select(Download).where(
+            Download.material_id == id,
+            Download.user_id == current_user.id
+        )
+    ).first()
+    return {"has_downloaded": result is not None}
 
 @router.patch("/{material_id}/approve")
 def approve_material(
