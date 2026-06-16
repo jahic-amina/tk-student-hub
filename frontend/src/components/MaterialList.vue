@@ -20,6 +20,7 @@
             @click="$router.push(`/materials/${$event}`)"
             @deleted="handleDelete"
             @toggle-bookmark="handleToggleBookmark"
+            @downloaded="handleDownloaded"
           />
         </div>
 
@@ -113,6 +114,13 @@ async function handleToggleBookmark(materialId) {
         }
     } catch (error) {
         console.error("Greška kod bookmarka:", error);
+    }
+}
+
+async function handleDownloaded(materialId) {
+    const material = materials.value.find(m => m.id === materialId)
+    if (material) {
+        material.number_of_downloads += 1
     }
 }
 </script>
