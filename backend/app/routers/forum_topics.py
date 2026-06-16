@@ -36,9 +36,6 @@ class ForumTopicUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=3, max_length=200)
     content: Optional[str] = Field(None, min_length=3)
 
-class ReportActionPayload(BaseModel):
-    explanation: str
-
 # --- HELPER FUNCTIONS ---
 def make_summary(text: str, max_length: int = 150) -> str:
     clean_text = " ".join((text or "").split())
@@ -94,7 +91,7 @@ def get_all_topics(
 
     if category_id is not None:
         statement = statement.where(ForumTopic.category_id == category_id)
-        count_statement = count_statement.where(ForumTopic.category_id == category_id)
+        count_statement = count_statement.where(ForumCategory.id == category_id) # popravljeno uparivanje sa count tabele
         
     if search and search.strip():
         search_value = f"%{search.strip()}%"
@@ -113,7 +110,6 @@ def get_all_topics(
         statement = statement.where(ForumTopic.id.not_in(subquery))
         count_statement = count_statement.where(ForumTopic.id.not_in(subquery))
 
-    # Prvo izvučemo ukupan broj topika za paginaciju
     total_topics = db.exec(count_statement).one()
 
     if sort_by == "najgledanije":
@@ -184,7 +180,6 @@ def create_forum_topic(
     db.add(new_topic)
     db.flush()
 
-    # Automatski dodjeljuje bodove i provjerava medalje
     register_topic_created(
         db,
         user_id=current_user.id,
@@ -301,69 +296,6 @@ def get_related_topics_api(topic_id: int, db: Session = Depends(get_db)):
     slicne_teme = db.exec(statement).all()
     return [build_topic_list_item(db, topic) for topic in slicne_teme]
 
-
-# --- REPORTS & ANNOUNCEMENTS ---
-@router.get("/reports/active", response_model=List[Dict[str, Any]])
-def get_active_reports(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if current_user.role != UserRole.admin:
-        raise HTTPException(status_code=403, detail="Nemate ovlaštenje.")
-    
-    reports = db.exec(select(TopicReport).where(TopicReport.status == "pending").order_by(TopicReport.created_at.desc())).all()
-    output = []
-    for report in reports:
-        topic = db.get(ForumTopic, report.topic_id)
-        if not topic or topic.is_deleted: continue
-        reporter = db.get(User, report.user_id)
-        output.append({
-            "report_id": report.id, "reason": report.reason, "created_at": report.created_at, "status": report.status,
-            "reporter_name": reporter.full_name if reporter else "Nepoznat korisnik", "topic": build_topic_list_item(db, topic) 
-        })
-    return output
-
-@router.get("/reports/handled", response_model=List[Dict[str, Any]])
-def get_handled_reports(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if current_user.role != UserRole.admin:
-        raise HTTPException(status_code=403, detail="Nemate ovlaštenje.")
-    
-    reports = db.exec(select(TopicReport).where(TopicReport.status.in_(["accepted", "dismissed"])).order_by(TopicReport.created_at.desc())).all()
-    output = []
-    for report in reports:
-        topic = db.get(ForumTopic, report.topic_id)
-        if not topic or topic.is_deleted: continue
-        reporter = db.get(User, report.user_id)
-        output.append({
-            "report_id": report.id, "reason": report.reason, "created_at": report.created_at, "status": report.status,
-            "reporter_name": reporter.full_name if reporter else "Nepoznat korisnik", "topic": build_topic_list_item(db, topic) 
-        })
-    return output
-
-@router.patch("/reports/{report_id}/action")
-def handle_report_action(report_id: int, action: str, payload: ReportActionPayload, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if current_user.role != UserRole.admin:
-        raise HTTPException(status_code=403, detail="Nemate ovlaštenje.")
-    report = db.get(TopicReport, report_id)
-    if not report:
-        raise HTTPException(status_code=404, detail="Prijava nije pronađena.")
-    
-    if action == "accept":
-        report.status = "accepted"
-    elif action == "dismiss":
-        report.status = "dismissed"
-    else:
-        report.status = "resolved"
-        
-    report.action_taken = action 
-    report.admin_explanation = payload.explanation
-    
-    reporting_user = db.get(User, report.user_id)
-    if reporting_user:
-        reporting_user.reports_count += 1
-        db.add(reporting_user)
-        
-    db.add(report)
-    db.commit()
-    
-    return {"success": True, "message": f"Prijava uspješno riješena sa statusom: {report.status}."}
 
 @router.get("/announcements/active")
 def get_active_announcements(db: Session = Depends(get_db)):
