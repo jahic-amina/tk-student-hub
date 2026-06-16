@@ -17,7 +17,8 @@ from app.routers.forum_helpers import (
     get_topic_votes_count,
     get_topic_comments,
 )
-
+from app.services.activity_log_service import log_activity
+from app.enums.activity import ActivityType
 router = APIRouter(prefix="/forum/comments", tags=["Forum Comments"])
 
 
@@ -68,6 +69,14 @@ def create_forum_comment(
     db.commit()
     db.refresh(new_comment)
 
+    comments_count = get_comments_count(db, topic.id)
+    log_activity(
+        db,
+        current_user.id,
+        ActivityType.forum_comment,
+        f"Diskusija · {comments_count} odgovora",
+        topic.id
+    )
     return {
         "id": new_comment.id,
         "content": new_comment.content,
