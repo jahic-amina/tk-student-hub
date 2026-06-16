@@ -251,6 +251,7 @@ def update_material(
     material_id: int,
     title: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None),
     session: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -263,6 +264,13 @@ def update_material(
         material.title = title
     if description:
         material.description = description
+    if file:
+        validate_file_format(file)
+        if os.path.exists(material.file_path):
+            os.remove(material.file_path)
+        new_file_path = save_file_to_disk(file)
+        material.file_path = new_file_path
+        material.file_type = file.content_type
     session.add(material)
     session.commit()
     session.refresh(material)
