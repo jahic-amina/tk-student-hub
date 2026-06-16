@@ -188,22 +188,122 @@ function formatDate(dateValue) {
     hour: '2-digit', minute: '2-digit'
   }).format(new Date(dateValue));
 }
+
+function getInitials(fullName) {
+  if (!fullName) return 'A';
+  return fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+}
 </script>
 
 <template>
   <div class="mb-6" @click="closeMedalDropdown">
-    <h2 class="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-4">
-      {{ comments.length }} {{ comments.length === 1 ? 'Odgovor' : 'Odgovora' }}
-    </h2>
+    <div class="flex items-center justify-between mb-4 gap-4">
+      <h2 class="text-lg font-semibold text-slate-700 dark:text-slate-200 whitespace-nowrap">
+        {{ filteredComments.length }} {{ filteredComments.length === 1 ? 'Odgovor' : 'Odgovora' }}
+      </h2>
+      
+      <div class="relative w-full max-w-xs">
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Pretraži odgovore..."
+          class="w-full text-xs bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg pl-8 pr-8 py-1.5 focus:outline-none focus:ring-2 focus:ring-orange-400 transition-colors"
+        />
+        <svg xmlns="http://www.w3.org/2000/svg" class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+        </svg>
+        <button
+          v-if="searchQuery"
+          @click="searchQuery = ''"
+          class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
 
-    <div class="space-y-1">
-      <template v-for="comment in comments" :key="comment.id">
-        <!-- 
-          Svaki root komentar prolazi kroz ForumCommentNode na depth=0.
-          Node rekurzivno renderuje replies na depth+1.
-          Svi eventi "plutaju" gore do ovog kontrolera.
-        -->
+    <div class="space-y-4">
+      <template v-for="comment in filteredComments" :key="comment.id">
+
+        <div
+          v-if="comment.is_admin_notice"
+          class="rounded-xl border-2 border-red-400 dark:border-red-700 bg-red-50 dark:bg-red-950/30 p-5 flex gap-4 shadow-md ring-2 ring-red-300/30 dark:ring-red-800/30"
+        >
+          <div class="flex flex-col items-center justify-start pt-1 flex-shrink-0 w-7">
+            <span class="text-2xl select-none">🛡️</span>
+          </div>
+
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center flex-wrap gap-2 text-xs">
+                <span class="w-5 h-5 rounded-full bg-red-200 dark:bg-red-900 text-red-700 dark:text-red-300 flex items-center justify-center font-bold text-[8px]">
+                  {{ getInitials(comment.author?.full_name) }}
+                </span>
+                <strong class="text-red-700 dark:text-red-300">{{ comment.author?.full_name || 'Admin' }}</strong>
+                <span class="text-[10px] px-2 py-0.5 rounded border bg-red-100 text-red-700 border-red-300 dark:bg-red-950/60 dark:text-red-400 dark:border-red-800 font-bold">
+                  🛡️ Admin Notice
+                </span>
+                <span class="text-red-400 dark:text-red-600">•</span>
+                <span class="text-red-400 dark:text-red-600">{{ formatDate(comment.created_at) }}</span>
+              </div>
+
+              <div class="flex items-center gap-1">
+                <button
+                  v-if="isAdmin && !comment.is_deleted"
+                  @click="handleStartEdit(comment.id)"
+                  class="w-7 h-7 flex items-center justify-center rounded-full transition-all text-red-300 dark:text-red-700 hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+                  title="Edituj obavještenje"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                    <path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-8.4 8.4a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32l8.4-8.4Z" />
+                    <path d="M5.25 5.25a3 3 0 0 0-3 3v10.5a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3V13.5a.75.75 0 0 0-1.5 0v5.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5V8.25a1.5 1.5 0 0 1 1.5-1.5h5.25a.75.75 0 0 0 0-1.5H5.25Z" />
+                  </svg>
+                </button>
+                <button
+                  v-if="isAdmin"
+                  @click="handleDeleteComment(comment)"
+                  class="w-7 h-7 flex items-center justify-center rounded-full transition-all text-red-300 dark:text-red-700 hover:text-red-500 hover:bg-red-100 dark:hover:bg-red-950/40"
+                  title="Obriši obavještenje"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                    <path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z" clip-rule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div v-if="comment.is_deleted" class="text-red-400 dark:text-red-600 text-sm italic">
+              deleted by user
+            </div>
+            <div v-else-if="editingCommentId === comment.id">
+              <textarea
+                v-model="editContent"
+                class="w-full text-sm border border-red-200 dark:border-red-800 rounded-lg p-3 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
+                rows="3"
+              />
+              <div class="flex gap-2 mt-2">
+                <button @click="handleSubmitEdit(comment.id, editContent)" class="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-lg transition-colors">
+                  Sačuvaj
+                </button>
+                <button @click="handleCancelEdit()" class="px-3 py-1.5 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-700 text-red-500 text-xs rounded-lg hover:bg-red-50 transition-colors">
+                  Otkaži
+                </button>
+              </div>
+            </div>
+            <p v-else class="text-red-800 dark:text-red-300 leading-relaxed text-sm whitespace-pre-line font-medium">
+              {{ comment.content }}
+            </p>
+
+            <p class="mt-2 text-[10px] text-red-400/60 dark:text-red-600/60 italic select-none">
+              Nije dozvoljeno odgovarati na administratorska obavještenja.
+            </p>
+          </div>
+        </div>
+
         <ForumCommentNode
+          v-else
           :comment="comment"
           :current-user-id="currentUserId"
           :is-admin="isAdmin"
@@ -230,10 +330,11 @@ function formatDate(dateValue) {
       </template>
 
       <div
-        v-if="comments.length === 0"
+        v-if="filteredComments.length === 0"
         class="text-center py-8 text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm"
       >
-        Još nema odgovora. Budite prvi!
+        <span v-if="searchQuery">Nema komentara koji odgovaraju pretrazi "{{ searchQuery }}".</span>
+        <span v-else>Još nema odgovora. Budite prvi!</span>
       </div>
     </div>
   </div>
