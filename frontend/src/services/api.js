@@ -576,6 +576,20 @@ export async function rejectMaterial(id) {
   return response.json();
 }
 
+export async function updateMaterial(id, title, description) {
+  const token = localStorage.getItem("token");
+  const response = await fetch(`${BASE_URL}/materials/${id}/update`, {
+    method: "PATCH",
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ title, description }),
+  });
+  if(!response.ok) {
+    throw new Error('Greška pri ažuriranju materijala.')
+  }
+  return response.json();
+}
 
 // Ocjenjivanje materijala 
 export async function rateMaterial(materialId, rating) {
