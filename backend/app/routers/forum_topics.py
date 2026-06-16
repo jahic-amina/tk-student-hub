@@ -419,3 +419,29 @@ def report_topic(topic_id: int, report_data: ReportCreate, db: Session = Depends
     db.add(report)
     db.commit()
     return {"success": True}
+
+@router.put("/{topic_id}", status_code=status.HTTP_200_OK)
+def update_topic(
+    topic_id: int,
+    topic_data: ForumTopicUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    topic = db.get(ForumTopic, topic_id)
+    if not topic or topic.is_deleted:
+        raise HTTPException(status_code=404, detail="Tema nije pronađena.")
+    
+    if topic.user_id != current_user.id and current_user.role != UserRole.admin:
+        raise HTTPException(status_code=403, detail="Možete editovati samo vlastitu temu.")
+    
+    if topic_data.title is not None:
+        topic.title = topic_data.title
+    if topic_data.content is not None:
+        topic.content = topic_data.content
+    
+    topic.updated_at = datetime.now()
+    db.add(topic)
+    db.commit()
+    db.refresh(topic)
+    
+    return build_topic_list_item(db, topic)
