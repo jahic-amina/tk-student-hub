@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { deleteTopic, reportTopic, toggleTopicLike, toggleTopicDislike } from '../services/forum';
 import { toggleTopicLock } from '../services/forum_admin';
+import { updateTopic } from '../services/forum';
 import ForumAvatar from './ForumAvatar.vue';
 import ForumCommentForm from './ForumTopicCommentForm.vue'; 
 
@@ -16,6 +17,10 @@ const isSubmittingReply = ref(false);
 const replyError = ref('');
 const replySuccess = ref('');
 const isVotingTopic = ref(false);
+
+const isEditingTopic = ref(false);
+const editTitle = ref('');
+const editContent = ref('');
 
 const closeDropdown = (e) => {
   if (!e.target.closest('.medals-dropdown-container')) {
@@ -150,13 +155,10 @@ async function handleLockTopic() {
 
 async function handleTopicLike() {
   if (isVotingTopic.value) return;
-
   isVotingTopic.value = true;
-
   try {
     const response = await toggleTopicLike(props.topic.id);
     console.log('LIKE RESPONSE:', response);
-
     props.topic.likes_count = response.likes_count;
     props.topic.dislikes_count = response.dislikes_count;
     props.topic.is_liked = response.is_liked;
@@ -171,13 +173,10 @@ async function handleTopicLike() {
 
 async function handleTopicDislike() {
   if (isVotingTopic.value) return;
-
   isVotingTopic.value = true;
-
   try {
     const response = await toggleTopicDislike(props.topic.id);
     console.log('DISLIKE RESPONSE:', response);
-
     props.topic.likes_count = response.likes_count;
     props.topic.dislikes_count = response.dislikes_count;
     props.topic.is_liked = response.is_liked;
@@ -187,6 +186,33 @@ async function handleTopicDislike() {
     alert('Greška pri dislajkanju teme.');
   } finally {
     isVotingTopic.value = false;
+  }
+}
+
+function startEditTopic() {
+  isEditingTopic.value = true;
+  editTitle.value = props.topic.title;
+  editContent.value = props.topic.content;
+}
+
+function cancelEditTopic() {
+  isEditingTopic.value = false;
+  editTitle.value = '';
+  editContent.value = '';
+}
+
+async function submitEditTopic() {
+  if (!editTitle.value.trim() || !editContent.value.trim()) return;
+  try {
+    const updated = await updateTopic(props.topic.id, {
+      title: editTitle.value,
+      content: editContent.value
+    });
+    props.topic.title = updated.title;
+    props.topic.content = updated.content;
+    isEditingTopic.value = false;
+  } catch (e) {
+    alert('Greška pri editovanju teme.');
   }
 }
 
@@ -223,10 +249,31 @@ function handleFormSubmit({ content, clearForm }) {
     class="bg-white dark:bg-slate-800 rounded-xl border shadow-sm p-6 mb-6 transition-colors duration-200"
     :class="topic.is_locked ? 'border-amber-300 dark:border-amber-900 bg-amber-50/10' : 'border-gray-200 dark:border-slate-700'"
   >
-    <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-      <span v-if="topic.is_locked" title="Tema je zaključana">🔒</span>
-      {{ topic.title }}
-    </h1>
+    <div v-if="isEditingTopic" class="flex flex-col gap-3 mb-4">
+      <input 
+        v-model="editTitle" 
+        type="text" 
+        class="w-full text-xl font-bold p-2 border rounded-lg dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-500"
+        placeholder="Naslov teme..."
+      />
+      <textarea 
+        v-model="editContent" 
+        rows="5" 
+        class="w-full p-2 border rounded-lg dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-500 resize-y"
+        placeholder="Sadržaj teme..."
+      ></textarea>
+      <div class="flex gap-2 justify-end">
+        <button @click="cancelEditTopic" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 cursor-pointer">Otkaži</button>
+        <button @click="submitEditTopic" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-orange-500 text-white hover:bg-orange-600 cursor-pointer">Spasi izmjene</button>
+      </div>
+    </div>
+
+    <div v-else>
+      <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+        <span v-if="topic.is_locked" title="Tema je zaključana">🔒</span>
+        {{ topic.title }}
+      </h1>
+    </div>
     
     <div class="flex items-center flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400 mb-4 bg-slate-50 dark:bg-slate-700 p-2 rounded-lg w-fit">
       <ForumAvatar :author="topic.topic_author || topic.author" />
@@ -243,7 +290,7 @@ function handleFormSubmit({ content, clearForm }) {
       </div>
     </div>
 
-    <p class="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line mb-4">{{ topic.content }}</p>
+    <p v-if="!isEditingTopic" class="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line mb-4">{{ topic.content }}</p>
 
     <div v-if="topic.tags && topic.tags.length > 0" class="flex flex-wrap gap-1.5 mb-4">
       <span v-for="tag in topic.tags" :key="tag.id" class="text-[11px] font-medium px-2.5 py-1 bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 rounded-md shadow-sm">#{{ tag.name }}</span>
@@ -251,47 +298,47 @@ function handleFormSubmit({ content, clearForm }) {
 
     <div class="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700 flex flex-col gap-2">
       <div class="flex items-center w-full gap-2">
-      <div class="topic-votes">
-  <button
-    type="button"
-    class="topic-vote-btn"
-    :class="{ active: topic.is_liked }"
-    :disabled="isVotingTopic"
-    @click="handleTopicLike"
-    title="Lajkaj temu"
-  >
-    <svg viewBox="0 0 24 24" class="topic-vote-icon" aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M7 10.5v9H4.8A2.8 2.8 0 0 1 2 16.7v-3.4a2.8 2.8 0 0 1 2.8-2.8H7Zm2 9h7.6c1.1 0 2.1-.7 2.4-1.8l1.4-5.2A2.5 2.5 0 0 0 18 9.4h-3.3V6.2A2.7 2.7 0 0 0 12 3.5c-.5 0-.9.3-1.1.8L9.5 8.5 7 10.8v8.7h2Z"
-      />
-    </svg>
-  </button>
+        <div class="topic-votes">
+          <button
+            type="button"
+            class="topic-vote-btn"
+            :class="{ active: topic.is_liked }"
+            :disabled="isVotingTopic"
+            @click="handleTopicLike"
+            title="Lajkaj temu"
+          >
+            <svg viewBox="0 0 24 24" class="topic-vote-icon" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M7 10.5v9H4.8A2.8 2.8 0 0 1 2 16.7v-3.4a2.8 2.8 0 0 1 2.8-2.8H7Zm2 9h7.6c1.1 0 2.1-.7 2.4-1.8l1.4-5.2A2.5 2.5 0 0 0 18 9.4h-3.3V6.2A2.7 2.7 0 0 0 12 3.5c-.5 0-.9.3-1.1.8L9.5 8.5 7 10.8v8.7h2Z"
+              />
+            </svg>
+          </button>
 
-  <span class="topic-vote-count" :class="{ active: topic.is_liked }">
-    {{ topic.likes_count ?? 0 }}
-  </span>
+          <span class="topic-vote-count" :class="{ active: topic.is_liked }">
+            {{ topic.likes_count ?? 0 }}
+          </span>
 
-  <button
-    type="button"
-    class="topic-vote-btn"
-    :class="{ active: topic.is_disliked }"
-    :disabled="isVotingTopic"
-    @click="handleTopicDislike"
-    title="Dislajkuj temu"
-  >
-    <svg viewBox="0 0 24 24" class="topic-vote-icon topic-vote-icon-down" aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M7 10.5v9H4.8A2.8 2.8 0 0 1 2 16.7v-3.4a2.8 2.8 0 0 1 2.8-2.8H7Zm2 9h7.6c1.1 0 2.1-.7 2.4-1.8l1.4-5.2A2.5 2.5 0 0 0 18 9.4h-3.3V6.2A2.7 2.7 0 0 0 12 3.5c-.5 0-.9.3-1.1.8L9.5 8.5 7 10.8v8.7h2Z"
-      />
-    </svg>
-  </button>
+          <button
+            type="button"
+            class="topic-vote-btn"
+            :class="{ active: topic.is_disliked }"
+            :disabled="isVotingTopic"
+            @click="handleTopicDislike"
+            title="Dislajkuj temu"
+          >
+            <svg viewBox="0 0 24 24" class="topic-vote-icon topic-vote-icon-down" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M7 10.5v9H4.8A2.8 2.8 0 0 1 2 16.7v-3.4a2.8 2.8 0 0 1 2.8-2.8H7Zm2 9h7.6c1.1 0 2.1-.7 2.4-1.8l1.4-5.2A2.5 2.5 0 0 0 18 9.4h-3.3V6.2A2.7 2.7 0 0 0 12 3.5c-.5 0-.9.3-1.1.8L9.5 8.5 7 10.8v8.7h2Z"
+              />
+            </svg>
+          </button>
 
-  <span class="topic-vote-count" :class="{ active: topic.is_disliked }">
-    {{ topic.dislikes_count ?? 0 }}
-  </span>
-</div>
+          <span class="topic-vote-count" :class="{ active: topic.is_disliked }">
+            {{ topic.dislikes_count ?? 0 }}
+          </span>
+        </div>
         
         <button
           v-if="!topic.is_locked"
@@ -303,11 +350,16 @@ function handleFormSubmit({ content, clearForm }) {
         </button>
 
         <button @click="toggleShare" class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors font-medium px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 bg-transparent">🔗 Dijeli</button>
+        
         <div v-if="!isAdmin && !topic.is_locked" class="relative">
           <button @click="showReportOptions = !showReportOptions" class="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors font-medium px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 bg-transparent">🚩 Prijavi</button>
           <div v-if="showReportOptions" class="absolute top-full mt-1 left-0 bg-white dark:bg-slate-700 border dark:border-slate-600 shadow-lg rounded-lg w-48 z-10 text-xs overflow-hidden"><button v-for="reason in reportReasons" :key="reason" @click="handleReport(reason)" class="block w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-200 bg-transparent">{{ reason }}</button></div>
         </div>
+
         <button v-if="isAdmin" @click="handleLockTopic" class="flex items-center gap-1.5 text-xs text-orange-500 hover:text-orange-700 transition-colors font-medium px-3 py-1.5 rounded-lg border border-orange-200 hover:bg-orange-50 bg-transparent">🔒 {{ topic.is_locked ? 'Otključaj temu' : 'Zaključaj temu' }}</button>
+        
+        <button v-if="(currentUserId === topic.author?.id || isAdmin) && !isEditingTopic" @click="startEditTopic" class="flex items-center gap-1.5 text-xs text-blue-500 hover:text-blue-700 transition-colors font-medium px-3 py-1.5 rounded-lg border border-blue-200 dark:border-blue-900/50 hover:bg-blue-50 dark:hover:bg-slate-700 bg-transparent cursor-pointer">✏️ Uredi temu</button>
+        
         <button v-if="currentUserId === topic.author?.id || isAdmin" @click="handleDeleteTopic" class="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors font-medium px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/20 bg-transparent">🗑️ Obriši temu</button>
 
         <div class="ml-auto flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500 font-medium">
