@@ -9,7 +9,6 @@ from app.core.security import get_current_user
 from app.models.user import User
 from app.models.forum import ForumTopic, ForumComment, ForumCommentVote
 
-# Dodane funkcije za lajkovanje i povlačenje glasova
 from app.services.forum_reputation import (
     get_user_forum_identity,
     register_answer_created,
@@ -20,7 +19,7 @@ from app.services.forum_reputation import (
 
 router = APIRouter(prefix="/forum/comments", tags=["Forum Comments"])
 
-# Sheme
+# --- SHEME ---
 class ForumCommentCreate(BaseModel):
     content: str = Field(min_length=2)
     topic_id: int
@@ -33,6 +32,11 @@ class VoteInput(BaseModel):
 class ForumCommentUpdate(BaseModel):
     content: str = Field(min_length=2)
 
+class AdminNoticeCreate(BaseModel):
+    content: str = Field(min_length=3)
+
+
+# --- POMOĆNE FUNKCIJE ZA KOMENTARE ---
 def get_comment_author_data(db: Session, user_id: int) -> dict:
     user = db.get(User, user_id)
     if not user:
@@ -51,8 +55,7 @@ def get_comment_author_data(db: Session, user_id: int) -> dict:
         "full_name": user.full_name,
         **forum_identity,
     } 
-    
-# Pomocne funkcije za komentare
+
 def get_comment_votes_count(db: Session, comment_id: int) -> int:
     result = db.exec(select(func.coalesce(func.sum(ForumCommentVote.value), 0)).where(ForumCommentVote.comment_id == comment_id)).one()
     return int(result or 0)
@@ -107,6 +110,7 @@ def get_topic_comments(db: Session, topic_id: int) -> list[dict]:
     comment_dict = {comment.id: build_comment_dict(comment) for comment in all_comments}
     top_level = []
 
+    # SPAJANJE U BESKONAČNO STABLO (Podržava reply na reply na reply...)
     for comment in all_comments:
         comment_data = comment_dict[comment.id]
         if comment.parent_id is None:
@@ -116,6 +120,7 @@ def get_topic_comments(db: Session, topic_id: int) -> list[dict]:
             if parent:
                 parent["replies"].append(comment_data)
 
+    # Rekurzivno sortiranje svih podnivoa komentara
     def sort_replies_recursive(comment_data):
         if comment_data["replies"]:
             comment_data["replies"].sort(key=lambda c: (not c.get("is_admin_notice", False), c["created_at"]))
@@ -125,6 +130,7 @@ def get_topic_comments(db: Session, topic_id: int) -> list[dict]:
     for root_comment in top_level:
         sort_replies_recursive(root_comment)
 
+    # Sortiranje glavnih (top-level) komentara
     top_level.sort(key=lambda item: (
         not item.get("is_admin_notice", False),
         not item.get("is_best_answer", False),
@@ -132,6 +138,7 @@ def get_topic_comments(db: Session, topic_id: int) -> list[dict]:
         item["created_at"]
     ))
     return top_level
+
 
 # --- RUTE ZA KOMENTARE ---
 
@@ -148,12 +155,18 @@ def create_forum_comment(
     is_admin_notice = getattr(comment_data, "is_admin_notice", False)
     current_role = getattr(current_user.role, "value", current_user.role)
 
+    if is_admin_notice and current_role != "admin":
+        is_admin_notice = False
+
+    # --- POSEBNA LOGIKA ZA ADMIN NOTICE ---
+    # 1. Admin Notice NE SMIJE biti kreiran kao odgovor na bilo šta
     if is_admin_notice and comment_data.parent_id is not None:
         raise HTTPException(
             status_code=400, 
             detail="Administratorsko obavještenje mora biti glavni komentar i ne može biti odgovor."
         )
 
+    # 2. Provjera ako se šalje običan odgovor da li je roditelj Admin Notice
     if comment_data.parent_id is not None:
         parent_comment = db.get(ForumComment, comment_data.parent_id)
         if not parent_comment or parent_comment.is_deleted:
@@ -245,7 +258,6 @@ def toggle_best_answer(
     db.expire_all()
 
     return {"id": comment.id, "is_best_answer": comment.is_best_answer}
-
 
 @router.post("/{comment_id}/vote", status_code=status.HTTP_200_OK)
 def vote_on_comment(
@@ -355,7 +367,7 @@ def update_comment(
     current_role = getattr(current_user.role, "value", current_user.role)
     if comment.user_id != current_user.id and current_role != "admin":
         raise HTTPException(status_code=403, detail="Možete editovati samo vlastiti komentar.")
-
+    
     comment.content = comment_data.content
     comment.updated_at = datetime.utcnow()
     db.add(comment)
@@ -363,7 +375,6 @@ def update_comment(
     db.refresh(comment)
     
     return {"id": comment.id, "content": comment.content, "updated_at": comment.updated_at}
-
 
 @router.post("/{topic_id}/admin-notice", status_code=status.HTTP_201_CREATED)
 def create_admin_notice(
@@ -385,7 +396,7 @@ def create_admin_notice(
         topic_id=topic_id,
         user_id=current_user.id,
         is_admin_notice=True,
-        parent_id=None #
+        parent_id=None # Eksplicitno forsiramo da nema roditelja
     )
     db.add(notice)
     db.commit()

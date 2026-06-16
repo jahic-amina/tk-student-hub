@@ -400,7 +400,7 @@ def increment_topic_view(topic_id: int, db: Session = Depends(get_db)):
     if not topic or getattr(topic, "is_deleted", False):
         raise HTTPException(status_code=404, detail="Tema nije pronađena.")
     
-     if getattr(topic, "is_deleted", False):
+    if getattr(topic, "is_deleted", False):
         return {"id": topic.id, "views_count": topic.views_count}
 
     topic.views_count += 1
