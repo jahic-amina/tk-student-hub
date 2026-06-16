@@ -39,6 +39,8 @@ const isTopicAuthor = computed(() => {
   return currentUserId.value && props.topicAuthorId && currentUserId.value === props.topicAuthorId;
 });
 
+const canReply = computed(() => !!currentUserId.value && !isAdmin.value);
+
 // REAKTIVNO SKLADIŠTE ZA GLASOVE
 const serverVoteState = ref({});
 
@@ -255,16 +257,98 @@ function getInitials(name) {
     <div class="space-y-4">
       <template v-for="comment in comments" :key="comment.id">
 
+        <!-- ===================== ADMIN NOTICE ===================== -->
         <div
+          v-if="comment.is_admin_notice"
+          class="rounded-xl border-2 border-red-400 dark:border-red-700 bg-red-50 dark:bg-red-950/30 p-5 flex gap-4 shadow-md ring-2 ring-red-300/30 dark:ring-red-800/30"
+        >
+          <!-- Ikona umjesto vote stupca -->
+          <div class="flex flex-col items-center justify-start pt-1 flex-shrink-0 w-7">
+            <span class="text-2xl select-none">🛡️</span>
+          </div>
+
+          <div class="flex-1 min-w-0">
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center flex-wrap gap-2 text-xs">
+                <span class="w-5 h-5 rounded-full bg-red-200 dark:bg-red-900 text-red-700 dark:text-red-300 flex items-center justify-center font-bold text-[8px]">
+                  {{ getInitials(comment.author?.full_name) }}
+                </span>
+                <strong class="text-red-700 dark:text-red-300">{{ comment.author?.full_name || 'Admin' }}</strong>
+                <span class="text-[10px] px-2 py-0.5 rounded border bg-red-100 text-red-700 border-red-300 dark:bg-red-950/60 dark:text-red-400 dark:border-red-800 font-bold">
+                  🛡️ Admin Notice
+                </span>
+                <span class="text-red-400 dark:text-red-600">•</span>
+                <span class="text-red-400 dark:text-red-600">{{ formatDate(comment.created_at) }}</span>
+              </div>
+
+              <!-- Admin može editovati i brisati notice -->
+              <div class="flex items-center gap-1">
+                <button
+                  v-if="isAdmin && !comment.is_deleted"
+                  @click="startEdit(comment)"
+                  class="w-7 h-7 flex items-center justify-center rounded-full transition-all text-red-300 dark:text-red-700 hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+                  title="Edituj obavještenje"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                    <path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-8.4 8.4a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32l8.4-8.4Z" />
+                    <path d="M5.25 5.25a3 3 0 0 0-3 3v10.5a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3V13.5a.75.75 0 0 0-1.5 0v5.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5V8.25a1.5 1.5 0 0 1 1.5-1.5h5.25a.75.75 0 0 0 0-1.5H5.25Z" />
+                  </svg>
+                </button>
+                <button
+                  v-if="isAdmin"
+                  @click="handleDeleteComment(comment)"
+                  class="w-7 h-7 flex items-center justify-center rounded-full transition-all text-red-300 dark:text-red-700 hover:text-red-500 hover:bg-red-100 dark:hover:bg-red-950/40"
+                  title="Obriši obavještenje"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                    <path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z" clip-rule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Sadržaj notice-a -->
+            <div v-if="comment.is_deleted" class="text-red-400 dark:text-red-600 text-sm italic">
+              deleted by user
+            </div>
+            <div v-else-if="editingCommentId === comment.id">
+              <textarea
+                v-model="editContent"
+                class="w-full text-sm border border-red-200 dark:border-red-800 rounded-lg p-3 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
+                rows="3"
+              />
+              <div class="flex gap-2 mt-2">
+                <button @click="submitEdit(comment)" class="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-lg transition-colors">
+                  Sačuvaj
+                </button>
+                <button @click="cancelEdit()" class="px-3 py-1.5 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-700 text-red-500 text-xs rounded-lg hover:bg-red-50 transition-colors">
+                  Otkaži
+                </button>
+              </div>
+            </div>
+            <p v-else class="text-red-800 dark:text-red-300 leading-relaxed text-sm whitespace-pre-line font-medium">
+              {{ comment.content }}
+            </p>
+
+            <!-- Nema reply opcije na admin notice -->
+            <p class="mt-2 text-[10px] text-red-400/60 dark:text-red-600/60 italic select-none">
+              Nije dozvoljeno odgovarati na administratorska obavještenja.
+            </p>
+          </div>
+        </div>
+
+        <!-- ===================== OBIČNI KOMENTAR ===================== -->
+        <div
+          v-else
           class="bg-white dark:bg-slate-800 rounded-xl border p-5 flex gap-4 transition-all shadow-sm"
           :class="[
-            comment.is_admin_notice
-              ? 'border-red-300 dark:border-red-900 bg-red-50/50 dark:bg-red-950/20 ring-1 ring-red-400/20'
-              : comment.is_best_answer
-                ? 'border-yellow-400 dark:border-yellow-600 bg-yellow-50/40 dark:bg-yellow-950/20 ring-1 ring-yellow-400/30'
-                : 'border-gray-200 dark:border-slate-700'
+            comment.is_best_answer
+              ? 'border-yellow-400 dark:border-yellow-600 bg-yellow-50/40 dark:bg-yellow-950/20 ring-1 ring-yellow-400/30'
+              : 'border-gray-200 dark:border-slate-700'
           ]"
         >
+          <!-- Vote stupac -->
           <div class="flex flex-col items-center gap-0.5 flex-shrink-0 pt-1">
             <button
               @click="handleVote(comment, 1)"
@@ -307,7 +391,6 @@ function getInitials(name) {
                 </span>
                 <strong class="text-slate-600 dark:text-slate-300">{{ comment.author?.full_name || 'Kolega' }}</strong>
 
-                <!-- Status: Student / Autor / Admin -->
                 <span
                   v-if="comment.author?.role"
                   class="text-[10px] px-2 py-0.5 rounded border"
@@ -316,7 +399,6 @@ function getInitials(name) {
                   {{ comment.author.role }}
                 </span>
 
-                <!-- Level + titula + XP -->
                 <span
                   v-if="comment.author?.title"
                   class="text-[10px] px-2 py-0.5 rounded border"
@@ -325,7 +407,6 @@ function getInitials(name) {
                   Nivo {{ comment.author.level }} · {{ comment.author.title }} · {{ comment.author.reputation_points }} XP
                 </span>
 
-                <!-- Dropdown medalja (stil kao na TopicMainCard) -->
                 <div v-if="comment.author?.medals && comment.author.medals.length" class="flex items-center gap-1 relative medals-dropdown-container">
                   <span
                     v-for="medal in comment.author.medals.slice(0, 3)"
@@ -367,9 +448,6 @@ function getInitials(name) {
 
                 <span>•</span>
                 <span>{{ formatDate(comment.created_at) }}</span>
-                <span v-if="comment.is_admin_notice" class="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-full font-bold shadow-sm">
-                  🛡️ Admin Notice
-                </span>
                 <span v-if="comment.is_best_answer" class="text-[10px] bg-yellow-100 dark:bg-yellow-950/60 text-yellow-700 dark:text-yellow-400 px-2 py-0.5 rounded-full font-bold border border-yellow-300 dark:border-yellow-800">
                   ✓ Najbolji odgovor
                 </span>
@@ -435,9 +513,10 @@ function getInitials(name) {
 
             <p v-else class="text-slate-700 dark:text-slate-300 leading-relaxed text-sm whitespace-pre-line">{{ comment.content }}</p>
 
+            <!-- Reply dugme — sakriveno za admin -->
             <div class="mt-2">
               <button
-                v-if="currentUserId && !comment.is_deleted"
+                v-if="canReply && !comment.is_deleted"
                 @click="startReply(comment)"
                 class="text-xs text-slate-400 hover:text-orange-500 transition-colors font-medium"
               >
@@ -462,6 +541,7 @@ function getInitials(name) {
               </div>
             </div>
 
+            <!-- Replies -->
             <div v-if="comment.replies && comment.replies.length > 0" class="mt-4 space-y-3 pl-6 border-l-2 border-gray-100 dark:border-slate-700">
               <div
                 v-for="reply in comment.replies"
@@ -476,7 +556,6 @@ function getInitials(name) {
                       </span>
                       <strong class="text-slate-600 dark:text-slate-300">{{ reply.author?.full_name || 'Kolega' }}</strong>
 
-                      <!-- Status: Student / Autor / Admin -->
                       <span
                         v-if="reply.author?.role"
                         class="text-[10px] px-2 py-0.5 rounded border"
@@ -485,7 +564,6 @@ function getInitials(name) {
                         {{ reply.author.role }}
                       </span>
 
-                      <!-- Level + titula + XP -->
                       <span
                         v-if="reply.author?.title"
                         class="text-[10px] px-2 py-0.5 rounded border"
@@ -494,7 +572,6 @@ function getInitials(name) {
                         Nivo {{ reply.author.level }} · {{ reply.author.title }} · {{ reply.author.reputation_points }} XP
                       </span>
 
-                      <!-- Dropdown medalja (stil kao na TopicMainCard) -->
                       <div v-if="reply.author?.medals && reply.author.medals.length" class="flex items-center gap-1 relative medals-dropdown-container">
                         <span
                           v-for="medal in reply.author.medals.slice(0, 3)"
@@ -583,9 +660,10 @@ function getInitials(name) {
                   </div>
                   <p v-else class="text-slate-700 dark:text-slate-300 leading-relaxed text-sm whitespace-pre-line">{{ reply.content }}</p>
 
+                  <!-- Reply na reply — sakriveno za admin -->
                   <div class="mt-2">
                     <button
-                      v-if="currentUserId && !reply.is_deleted"
+                      v-if="canReply && !reply.is_deleted"
                       @click="startReply(reply)"
                       class="text-xs text-slate-400 hover:text-orange-500 transition-colors font-medium"
                     >
