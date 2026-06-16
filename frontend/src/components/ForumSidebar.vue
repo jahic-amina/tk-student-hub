@@ -58,14 +58,17 @@
       </li>
     </ul>
 
-    <div class="mt-6 pt-4 px-2 border-t border-gray-100 dark:border-slate-700">
+    <div v-if="!loading && popularTags.length > 0" class="mt-6 pt-4 px-2 border-t border-gray-100 dark:border-slate-700">
       <h3 class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Popularni tagovi</h3>
       <div class="flex flex-wrap gap-1.5">
-        <span class="text-[10px] font-bold bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-slate-400 dark:text-slate-400 px-2.5 py-1 rounded-full hover:border-[#ff7a00] hover:text-[#ff7a00] dark:hover:border-[#ff7a00] cursor-pointer transition-all">
-          #telekomunikacije
-        </span>
-        <span class="text-[10px] font-bold bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-slate-400 dark:text-slate-400 px-2.5 py-1 rounded-full hover:border-[#ff7a00] hover:text-[#ff7a00] dark:hover:border-[#ff7a00] cursor-pointer transition-all">
-          #mreze
+        <span 
+          v-for="(tag, index) in popularTags" 
+          :key="tag.id || index"
+          @click="emit('tag-izabran', tag.name || tag)"
+          class="text-[10px] font-bold bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-slate-400 dark:text-slate-400 px-2.5 py-1 rounded-full hover:border-[#ff7a00] hover:text-[#ff7a00] dark:hover:border-[#ff7a00] cursor-pointer transition-all"
+        >
+          #{{ tag.name || tag }}
+          <span v-if="tag.topics_count" class="text-[9px] opacity-60 ml-0.5">({{ tag.topics_count }})</span>
         </span>
       </div>
     </div>
@@ -74,9 +77,9 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getCategories } from '../services/forum.js' 
+import { getCategories, getPopularTags } from '../services/forum.js' 
 
-const emit = defineEmits(['kategorija-izabrana'])
+const emit = defineEmits(['kategorija-izabrana', 'tag-izabran'])
 
 defineProps({
   aktivnaKategorijaId: {
@@ -86,19 +89,27 @@ defineProps({
 })
 
 const categories = ref([])
+const popularTags = ref([])
 const loading = ref(true)
 
-const fetchCategories = async () => {
+const fetchData = async () => {
   try {
-    categories.value = await getCategories()
+    // Paralelno izvršavanje API poziva radi brzine
+    const [categoriesRes, tagsRes] = await Promise.all([
+      getCategories(),
+      getPopularTags()
+    ])
+    
+    categories.value = categoriesRes || []
+    popularTags.value = tagsRes || []
   } catch (error) {
-    console.error('Greška:', error)
+    console.error('Greška pri povlačenju podataka za forum sidebar:', error)
   } finally {
     loading.value = false
   }
 }
 
 onMounted(() => {
-  fetchCategories()
+  fetchData()
 })
 </script>

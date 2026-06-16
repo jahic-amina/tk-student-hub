@@ -41,7 +41,7 @@ const naslovWidgeta = computed(() => {
 const trebaPrikazatiWidget = computed(() => {
   if (isLoading.value) return true;
   if (isTopicMode.value) return widgetTopics.value.length > 0;
-  if (isCategoryMode.value) return widgetTopics.value.length >= 1; // Spušten prag radi fleksibilnosti
+  if (isCategoryMode.value) return widgetTopics.value.length >= 1; 
   return widgetTopics.value.length > 0;
 });
 
@@ -50,18 +50,14 @@ const skratiNaslov = (naslov) => {
   return naslov.length > 50 ? naslov.substring(0, 47) + '...' : naslov;
 };
 
-// Centralizovana funkcija za pametno učitavanje u zavisnosti od konteksta
 const osveziPodatkeWidgeta = async () => {
   isLoading.value = true;
   try {
     if (isTopicMode.value) {
-      // Backend ima ugrađen algoritam sličnosti po naslovu i kategoriji
       widgetTopics.value = await getRelatedTopics(props.currentTopicId);
     } else if (isCategoryMode.value) {
-      // Povlači 5 najčitanijih i najaktivnijih iz baze za tu kategoriju
       widgetTopics.value = await getCategoryPopularTopics(props.selectedCategoryId);
     } else {
-      // Globalni mix (Zadnjih 7 dana)
       widgetTopics.value = await getPopularTopics();
     }
   } catch (e) {
@@ -71,7 +67,6 @@ const osveziPodatkeWidgeta = async () => {
   }
 };
 
-// Reaguj na izmjene kategorije ili aktivne teme (npr. kada korisnik klikne na drugu povezanu temu)
 watch(() => [props.selectedCategoryId, props.currentTopicId], () => {
   osveziPodatkeWidgeta();
 }, { immediate: false });
@@ -135,23 +130,6 @@ onMounted(async () => {
         </router-link>
       </div>
 
-    </div>
-
-    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-4 shadow-sm">
-      <div class="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100 dark:border-slate-700">
-        <span class="text-base text-blue-500">📊</span>
-        <h3 class="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Statistika</h3>
-      </div>
-      <div class="grid grid-cols-2 gap-3">
-        <div class="bg-gray-50 dark:bg-slate-700/40 p-3 rounded-xl text-center">
-          <div class="text-base font-black text-slate-800 dark:text-white">1,240</div>
-          <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Članova</div>
-        </div>
-        <div class="bg-gray-50 dark:bg-slate-700/40 p-3 rounded-xl text-center">
-          <div class="text-base font-black text-slate-800 dark:text-white">4,821</div>
-          <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Teme</div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
