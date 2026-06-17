@@ -26,14 +26,14 @@
       <h3 class="text-xs font-bold text-gray-400 uppercase mb-2">Odaberi predmet</h3>
       <select v-model="filters.subject_id" @change="update" class="w-full p-2 border border-gray-200 rounded text-sm outline-none focus:border-orange-500 transition-colors bg-gray-50">
         <option :value="null">Svi predmeti</option>
-        <option v-for="s in subjects" :key="s.id" :value="s.id">{{ s.name }}</option>
+        <option v-for="s in filteredSubjects" :key="s.id" :value="s.id">{{ s.name }}</option>
       </select>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { getSubjects } from '../services/api'
 
 const emit = defineEmits(['change'])
@@ -51,6 +51,29 @@ const filters = reactive({
   types: [], 
   subject_id: null 
 })
+
+const filteredSubjects = computed(() => {
+  if (!filters.years.length) return subjects.value
+
+  const selectedYears = filters.years.map(Number)
+  return subjects.value.filter(subject => selectedYears.includes(Number(subject.study_year)))
+})
+
+watch(
+  () => filters.years.slice(),
+  () => {
+    if (!filters.subject_id) return
+
+    const isSelectedSubjectValid = filteredSubjects.value.some(
+      subject => Number(subject.id) === Number(filters.subject_id)
+    )
+
+    if (!isSelectedSubjectValid) {
+      filters.subject_id = null
+      update()
+    }
+  }
+)
 
 onMounted(async () => { 
   try {
