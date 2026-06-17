@@ -33,3 +33,28 @@ class Notification(Base):
     def __repr__(self) -> str:
         return f"<Notification id={self.id} type={self.type} user_id={self.user_id} read={self.is_read}>"
 
+class NotificationOut(BaseModel):
+    id: int
+    type: NotificationType
+    message: str
+    link: Optional[str] = None
+    is_read: bool
+    created_at: datetime
+ 
+    class Config:
+        from_attributes = True
+
+class NotificationCreate(BaseModel):
+    user_id: int
+    type: NotificationType
+    message: str
+    link: Optional[str] = None
+    reference_id: Optional[int] = None
+ 
+ 
+class UnreadCountOut(BaseModel):
+    count: int
+ 
+ 
+class MarkAllReadOut(BaseModel):
+    updated: int
