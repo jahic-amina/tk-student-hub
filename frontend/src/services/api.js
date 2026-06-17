@@ -314,6 +314,10 @@ export async function getMaterial(id) {
   return response.json();
 }
 
+export function getMaterialPreviewUrl(id) {
+  return `${BASE_URL}/materials/${id}/preview`;
+}
+
 //amer
 export async function deleteMaterial(id) {
   const token = localStorage.getItem("token");
