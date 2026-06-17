@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select, func
 from pydantic import BaseModel, Field
 from typing import Optional
-
+from app.models.notification import Notification, NotificationType
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
@@ -145,6 +145,8 @@ def vote_on_comment(
         )
     ).first()
 
+    novi_like = False
+    
     if existing_vote:
         if existing_vote.value == vote_data.value:
             db.delete(existing_vote)
@@ -155,6 +157,8 @@ def vote_on_comment(
             db.add(existing_vote)
             db.commit()
             user_vote = vote_data.value
+            if vote_data.value == 1:
+                novi_like = True
     else:
         new_vote = ForumCommentVote(
             comment_id=comment_id,
@@ -164,6 +168,16 @@ def vote_on_comment(
         db.add(new_vote)
         db.commit()
         user_vote = vote_data.value
+        if vote_data.value == 1:
+            novi_like = True
+
+    if novi_like and comment.user_id != current_user.id:
+        db.add(Notification(
+            user_id=comment.user_id,
+            text="Vaš komentar na forumu je lajkovan.",
+            type=NotificationType.COMMENT_LIKED
+        ))
+        db.commit()
 
     total_votes = get_comment_votes_count(db, comment_id)
     return {"comment_id": comment_id, "votes_count": total_votes, "user_vote": user_vote}
