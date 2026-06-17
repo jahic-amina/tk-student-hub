@@ -1,9 +1,9 @@
 from sqlmodel import SQLModel, create_engine
-from app.database import engine
+# Importuj engine iz tvoje aplikacije (prilagodi putanju ako je potrebno)
+from app.database import engine 
+# VEOMA VAŽNO: Moramo importovati modele da bi ih SQLModel uopšte vidio
 from app.models.user import User
-from app.models.activity_log import ActivityLog
-from app.models.forum import ForumCategory, ForumTopic, ForumTag, ForumTopicTag, TopicReport, AdminAnnouncement, ForumComment, ForumCommentVote, ForumGuideline, TopicLike
-from app.models.forum_reputation import ForumUserStats
+from app.models.forum import ForumCategory, ForumTopic, ForumTag, ForumTopicTag, TopicReport, AdminAnnouncement
 
 print("Kreiram sve tabele direktno iz modela...")
 SQLModel.metadata.create_all(engine)

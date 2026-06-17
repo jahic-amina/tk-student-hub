@@ -7,7 +7,7 @@ from datetime import datetime
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from app.models.forum import ForumTopic, ForumComment, ForumCommentVote, CommentAttachment
+from app.models.forum import ForumTopic, ForumComment, ForumCommentVote
 from app.routers.forum_helpers import (
     get_author_data,
     get_comment_votes_count,
@@ -116,7 +116,6 @@ def get_topic_comments(db: Session, topic_id: int) -> list[dict]:
                 "is_admin_notice": comment.is_admin_notice,
                 "parent_id": comment.parent_id, "created_at": comment.created_at, "updated_at": comment.updated_at,
                 "votes_count": 0, "likes_count": 0, "dislikes_count": 0, "author": None, "replies": [],
-                "attachments" : [],
             }
 
         return {
@@ -125,8 +124,6 @@ def get_topic_comments(db: Session, topic_id: int) -> list[dict]:
             "parent_id": comment.parent_id, "created_at": comment.created_at, "updated_at": comment.updated_at,
             "votes_count": votes_count, "likes_count": likes_count, "dislikes_count": dislikes_count,
             "author": get_comment_author_data(db, comment.user_id), "replies": [],
-            "attachments": [{"id": a.id, "filename": a.filename, "file_size": a.file_size, "mime_type": a.mime_type}
-                            for a in db.exec(select(CommentAttachment).where(CommentAttachment.comment_id == comment.id)).all()],
         }
 
     comment_dict = {comment.id: build_comment_dict(comment) for comment in all_comments}
@@ -368,31 +365,15 @@ def delete_comment(
     if comment.user_id != current_user.id and current_role != "admin":
         raise HTTPException(status_code=403, detail="Možete obrisati samo vlastiti komentar.")
     
-    replies = db.exec(
-        select(ForumComment).where(
-            ForumComment.parent_id == comment_id,
-            ForumComment.is_deleted == False
-        )
-    ).all()
+    replies = db.exec(select(ForumComment).where(ForumComment.parent_id == comment_id, ForumComment.is_deleted == False)).all()
 
     if replies:
         comment.is_deleted = True
         db.add(comment)
-        db.commit()
     else:
-        # Direktni SQL — zaobiđi ORM dependency resolver
-        db.exec(
-            ForumComment.__table__.update()
-            .where(ForumComment.__table__.c.parent_id == comment_id)
-            .values(parent_id=None)
-        )
-        db.flush()
-        db.exec(
-            ForumComment.__table__.delete()
-            .where(ForumComment.__table__.c.id == comment_id)
-        )
-        db.commit()
-    
+        db.delete(comment)
+        
+    db.commit()
     return {"message": "Komentar je uspješno obrisan.", "comment_id": comment_id}
 
 @router.put("/{comment_id}", status_code=status.HTTP_200_OK)
