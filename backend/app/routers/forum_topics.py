@@ -75,6 +75,7 @@ def get_topic_attachments(db: Session, topic_id: int) -> list[dict]:
     attachments = db.exec(select(TopicAttachment).where(TopicAttachment.topic_id == topic_id)).all()
     return [{"id": a.id, "filename": a.filename, "file_size": a.file_size, "mime_type": a.mime_type} for a in attachments]
 
+
 def build_topic_list_item(db: Session, topic: ForumTopic) -> dict:
     comments_count = get_comments_count(db, topic.id)
     return {
