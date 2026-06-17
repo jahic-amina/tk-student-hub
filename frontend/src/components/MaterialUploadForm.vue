@@ -53,6 +53,7 @@
                 errors.title ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-gray-50 focus:border-primary focus:bg-white'
               ]"
     />
+    <p v-if="errors.title && errors.title !== true" class="text-red-500 text-xs mt-1">{{ errors.title }}</p>
   </div>
 
   <!-- Opis materijala -->
@@ -69,6 +70,7 @@
               errors.description ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-gray-50 focus:border-primary focus:bg-white'
             ]"
     ></textarea>
+    <p v-if="errors.description && errors.description !== true" class="text-red-500 text-xs mt-1">{{ errors.description }}</p>
   </div>
 
 <!-- Tip materijala -->
@@ -295,8 +297,14 @@ const emit = defineEmits(['submit' , 'success'])
 // Prolazi kroz sva polja, označava prazna kao greške, vraća true ako je sve ispravno
 function validateForm() {
   const e = {}
-  if (!title.value.trim()) e.title = true
-  if (!description.value.trim()) e.description = true
+    if (!title.value.trim()) e.title = true
+  else if (title.value.trim().length < 3) e.title = 'Naziv mora imati najmanje 3 karaktera.'
+  else if (title.value.trim().length > 100) e.title = 'Naziv ne može biti duži od 100 karaktera.'
+
+    if (!description.value.trim()) e.description = true
+  else if (description.value.trim().length < 10) e.description = 'Opis mora imati najmanje 10 karaktera.'
+  else if (description.value.trim().length > 1000) e.description = 'Opis ne može biti duži od 1000 karaktera.'
+  
   if (!studyYear.value) e.studyYear = true
   if (!subjectId.value) e.subjectId = true
   if (!materialType.value) e.materialType = true
