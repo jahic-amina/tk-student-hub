@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { deleteTopic, reportTopic } from '../services/forum';
 import { toggleTopicLock } from '../services/forum_admin';
+import { updateTopic } from '../services/forum';
 import ForumAvatar from './ForumAvatar.vue';
 import ForumCommentForm from './ForumTopicCommentForm.vue'; 
 
@@ -15,6 +16,10 @@ const isReplyingToTopic = ref(false);
 const isSubmittingReply = ref(false);
 const replyError = ref('');
 const replySuccess = ref('');
+
+const isEditingTopic = ref(false);
+const editTitle = ref('');
+const editContent = ref('');
 
 const closeDropdown = (e) => {
   if (!e.target.closest('.medals-dropdown-container')) {
@@ -147,7 +152,34 @@ async function handleLockTopic() {
   try { await toggleTopicLock(props.topic.id); props.topic.is_locked = !props.topic.is_locked; } catch (e) { alert('Greška pri promjeni statusa zaključavanja.'); }
 }
 
-function handleFormSubmit({ content, clearForm }) {
+function startEditTopic() {
+  isEditingTopic.value = true;
+  editTitle.value = props.topic.title;
+  editContent.value = props.topic.content;
+}
+
+function cancelEditTopic() {
+  isEditingTopic.value = false;
+  editTitle.value = '';
+  editContent.value = '';
+}
+
+async function submitEditTopic() {
+  if (!editTitle.value.trim() || !editContent.value.trim()) return;
+  try {
+    const updated = await updateTopic(props.topic.id, {
+      title: editTitle.value,
+      content: editContent.value
+    });
+    props.topic.title = updated.title;
+    props.topic.content = updated.content;
+    isEditingTopic.value = false;
+  } catch (e) {
+    alert('Greška pri editovanju teme.');
+  }
+}
+
+function handleFormSubmit({ content, files = [], clearForm }) {
   if (!content.trim()) {
     replyError.value = 'Tekst komentara ne može biti prazan.';
     return;
@@ -158,6 +190,7 @@ function handleFormSubmit({ content, clearForm }) {
 
   emit('submit-topic-reply', {
     content,
+    files,
     onSuccess: () => {
       isSubmittingReply.value = false;
       clearForm(); 
@@ -180,7 +213,25 @@ function handleFormSubmit({ content, clearForm }) {
     class="bg-white dark:bg-slate-800 rounded-xl border shadow-sm p-6 mb-6 transition-colors duration-200"
     :class="topic.is_locked ? 'border-amber-300 dark:border-amber-900 bg-amber-50/10' : 'border-gray-200 dark:border-slate-700'"
   >
-    <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+    <div v-if="isEditingTopic" class="mb-4">
+      <input
+        v-model="editTitle"
+        class="w-full text-xl font-bold border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-2 mb-3 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
+        placeholder="Naslov teme"
+      />
+      <textarea
+        v-model="editContent"
+        class="w-full text-sm border border-gray-200 dark:border-slate-600 rounded-lg p-3 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
+        rows="6"
+        placeholder="Sadržaj teme"
+      ></textarea>
+      <div class="flex gap-2 mt-2">
+        <button @click="submitEditTopic" class="px-3 py-1.5 bg-orange-500 hover:bg-orange-400 text-white text-xs font-bold rounded-lg transition-colors">Sačuvaj</button>
+        <button @click="cancelEditTopic" class="px-3 py-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 text-slate-500 text-xs rounded-lg hover:bg-gray-50 transition-colors">Otkaži</button>
+      </div>
+    </div>
+    
+    <h1 v-else class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
       <span v-if="topic.is_locked" title="Tema je zaključana">🔒</span>
       {{ topic.title }}
     </h1>
@@ -196,7 +247,12 @@ function handleFormSubmit({ content, clearForm }) {
       <div v-if="authorMedals.length > 0" class="flex items-center gap-1 ml-2 border-l pl-2 border-slate-200 dark:border-slate-600 relative medals-dropdown-container">
         <span v-for="rawMedal in featuredMedals" :key="rawMedal.code || rawMedal.id" class="text-base cursor-help transition-transform hover:scale-125 leading-none" :title="parseMedal(rawMedal).tooltip">{{ parseMedal(rawMedal).icon }}</span>
         <button v-if="remainingMedals.length > 0" @click.stop="showAllMedalsDropdown = !showAllMedalsDropdown" class="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-600 hover:bg-slate-200 dark:hover:bg-slate-500 transition-colors text-[10px] px-1.5 py-0.5 rounded font-bold text-slate-600 dark:text-slate-200 ml-0.5 bg-transparent border-none cursor-pointer">+{{ remainingMedals.length }} <span>{{ showAllMedalsDropdown ? '▲' : '▼' }}</span></button>
-        <div v-if="showAllMedalsDropdown && remainingMedals.length > 0" class="absolute top-full left-0 mt-1 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 shadow-xl rounded-lg p-2.5 w-44 z-30"><p class="text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-2 border-b pb-1 border-slate-100 dark:border-slate-600">Ostala priznanja</p><div class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto"><span v-for="rawMedal in remainingMedals" :key="rawMedal.code || rawMedal.id" class="text-base cursor-help transition-transform hover:scale-125 p-1 rounded hover:bg-slate-50 dark:hover:bg-slate-600 leading-none" :title="parseMedal(rawMedal).tooltip">{{ parseMedal(rawMedal).icon }}</span></div></div>
+        <div v-if="showAllMedalsDropdown && remainingMedals.length > 0" class="absolute top-full left-0 mt-1 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 shadow-xl rounded-lg p-2.5 w-44 z-30">
+          <p class="text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-2 border-b pb-1 border-slate-100 dark:border-slate-600">Ostala priznanja</p>
+          <div class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+            <span v-for="rawMedal in remainingMedals" :key="rawMedal.code || rawMedal.id" class="text-base cursor-help transition-transform hover:scale-125 p-1 rounded hover:bg-slate-50 dark:hover:bg-slate-600 leading-none" :title="parseMedal(rawMedal).tooltip">{{ parseMedal(rawMedal).icon }}</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -204,6 +260,28 @@ function handleFormSubmit({ content, clearForm }) {
 
     <div v-if="topic.tags && topic.tags.length > 0" class="flex flex-wrap gap-1.5 mb-4">
       <span v-for="tag in topic.tags" :key="tag.id" class="text-[11px] font-medium px-2.5 py-1 bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 rounded-md shadow-sm">#{{ tag.name }}</span>
+    </div>
+
+    <!-- Attachments preview -->
+    <div v-if="topic.attachments && topic.attachments.length > 0" class="mt-2 mb-4">
+      <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">📎 Prilozi</p>
+      <ul class="flex flex-wrap gap-2">
+        <li v-for="attachment in topic.attachments" :key="attachment.id"
+          class="flex items-center gap-2 text-xs bg-slate-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-1.5"
+        >
+          <span class="truncate max-w-[160px] text-slate-600 dark:text-slate-300">
+            {{ attachment.mime_type.startsWith('image/') ? '🖼️' : '📄' }} {{ attachment.filename }}
+            <span class="text-slate-400">({{ (attachment.file_size / 1024).toFixed(1) }} KB)</span>
+          </span>
+          <a
+            :href="`http://127.0.0.1:8000/forum/attachments/topic/${topic.id}/download/${attachment.id}`"
+            target="_blank"
+            class="text-orange-500 hover:text-orange-400 font-bold whitespace-nowrap"
+          >
+            ⬇ Preuzmi
+          </a>
+        </li>
+      </ul>
     </div>
 
     <div class="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700 flex flex-col gap-2">
@@ -221,10 +299,13 @@ function handleFormSubmit({ content, clearForm }) {
         <button @click="toggleShare" class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors font-medium px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 bg-transparent">🔗 Dijeli</button>
         <div v-if="!isAdmin && !topic.is_locked" class="relative">
           <button @click="showReportOptions = !showReportOptions" class="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors font-medium px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 bg-transparent">🚩 Prijavi</button>
-          <div v-if="showReportOptions" class="absolute top-full mt-1 left-0 bg-white dark:bg-slate-700 border dark:border-slate-600 shadow-lg rounded-lg w-48 z-10 text-xs overflow-hidden"><button v-for="reason in reportReasons" :key="reason" @click="handleReport(reason)" class="block w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-200 bg-transparent">{{ reason }}</button></div>
+          <div v-if="showReportOptions" class="absolute top-full mt-1 left-0 bg-white dark:bg-slate-700 border dark:border-slate-600 shadow-lg rounded-lg w-48 z-10 text-xs overflow-hidden">
+            <button v-for="reason in reportReasons" :key="reason" @click="handleReport(reason)" class="block w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-200 bg-transparent">{{ reason }}</button>
+          </div>
         </div>
         <button v-if="isAdmin" @click="handleLockTopic" class="flex items-center gap-1.5 text-xs text-orange-500 hover:text-orange-700 transition-colors font-medium px-3 py-1.5 rounded-lg border border-orange-200 hover:bg-orange-50 bg-transparent">🔒 {{ topic.is_locked ? 'Otključaj temu' : 'Zaključaj temu' }}</button>
         <button v-if="currentUserId === topic.author?.id || isAdmin" @click="handleDeleteTopic" class="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors font-medium px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/20 bg-transparent">🗑️ Obriši temu</button>
+        <button v-if="currentUserId === topic.author?.id || isAdmin" @click="startEditTopic" class="flex items-center gap-1.5 text-xs text-blue-500 hover:text-blue-700 transition-colors font-medium px-3 py-1.5 rounded-lg border border-blue-200 hover:bg-blue-50 bg-transparent">✏️ Uredi temu</button>
 
         <div class="ml-auto flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500 font-medium">
           <span title="Ukupan broj pregleda ove teme">👁️ {{ topic.views_count || 0 }} pregleda</span>
