@@ -61,15 +61,14 @@
             <p class="text-sm text-gray-500">Broj preuzimanja: {{ material.number_of_downloads || 0 }}</p>
         </div>
     </div>
-        <div class="flex sm:flex-col md:flex-row items-center gap-4 sm:gap-2 md:gap-6 sm:ml-auto min-w-[150px]">
-            <div class="flex flex-col gap-2 w-full items-stretch" @click.stop>
+        <div class="flex flex-col gap-2 shrink-0 mr-8" @click.stop>
                 <template v-if="pending">
                     <button @click="$emit('approve', material.id)"
-                        class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2">
+                        class="w-32 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2">
                         ✓ Odobri
                     </button>
                     <button @click="$emit('reject', material.id)"
-                        class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2">
+                        class="w-32 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2">
                         ✕ Odbij
                     </button>
                 </template>
@@ -80,7 +79,6 @@
                 </template>
             </div>
         </div>
-    </div>
 </template>
 
 <script setup>
