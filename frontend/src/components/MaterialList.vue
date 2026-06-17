@@ -13,19 +13,50 @@
 
       <div v-else>
         <div v-if="filteredMaterialsBookmark.length > 0" class="flex flex-col gap-4">
-          <MaterialCard 
-            v-for="material in filteredMaterialsBookmark" 
-            :key="material.id" 
-            :material="material"
-            @click="$router.push(`/materials/${$event}`)"
-            @deleted="handleDelete"
-            @toggle-bookmark="handleToggleBookmark"
-          />
-        </div>
+    <MaterialCard 
+        v-for="material in filteredMaterialsBookmark" 
+        :key="material.id" 
+        :material="material"
+        @click="$router.push(`/materials/${$event}`)"
+        @deleted="handleDelete"
+        @toggle-bookmark="handleToggleBookmark"
+    />
+    <!-- Paginacija -->
+<div v-if="ukupnoStranica >= 1" class="flex justify-center items-center gap-2 mt-6">
+    <button
+        @click="promijeniStranicu(trenutnastranica - 1)"
+        :disabled="trenutnastranica === 1"
+        class="px-3 py-1 rounded-lg border text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+    >
+        ←
+    </button>
+    <button
+        v-for="br in ukupnoStranica"
+        :key="br"
+        @click="promijeniStranicu(br)"
+        :class="[
+            'px-3 py-1 rounded-lg border text-sm transition',
+            br === trenutnastranica 
+                ? 'bg-primary text-white border-primary' 
+                : 'text-gray-600 hover:bg-gray-100'
+        ]"
+    >
+        {{ br }}
+    </button>
+    <button
+        @click="promijeniStranicu(trenutnastranica + 1)"
+        :disabled="trenutnastranica === ukupnoStranica"
+        class="px-3 py-1 rounded-lg border text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+    >
+        →
+    </button>
+</div>
+</div>
 
-        <div v-else class="w-full py-20 text-left">
-          <p class="text-gray-500 text-lg">Nema materijala za ovaj prikaz.</p>
-        </div>
+<div v-else class="w-full py-20 text-left">
+    <p class="text-gray-500 text-lg">Nema materijala za ovaj prikaz.</p>
+</div>
+  
       </div>
     </div>
   </div>
@@ -48,10 +79,17 @@ const currentUser = userRaw ? JSON.parse(userRaw) : null;
 const currentUserId = ref(currentUser ? currentUser.id : null);
 const userRole = ref(localStorage.getItem('role') || 'member');
 
-async function loadMaterials(filters = {}) {
-  loading.value = true
-  materials.value = await getMaterials(filters)
-  loading.value = false
+const trenutnastranica = ref(1)
+const ukupnoStranica = ref(0)
+const trenutniFilteri = ref({})
+
+async function loadMaterials(filters = {}, page = 1) {
+    loading.value = true
+    const rezultat = await getMaterials(filters, page)
+    materials.value = rezultat.items
+    ukupnoStranica.value = rezultat.total_pages
+    trenutnastranica.value = rezultat.page
+    loading.value = false
 }
 
 onMounted(() => {
@@ -61,7 +99,13 @@ onMounted(() => {
 
 function handleTabChange(tabId) {
   currentTab.value = tabId;
+  trenutnastranica.value = 1
 }
+
+function promijeniStranicu(novaStr) {
+    loadMaterials(trenutniFilteri.value, novaStr)
+}
+
 const filteredMaterials = computed(() => {
   if (currentTab.value === 'mine') {
     return materials.value.filter(m => {
@@ -79,7 +123,9 @@ const filteredMaterials = computed(() => {
   return materials.value;
 });
 async function handleFilterChange(newFilters) {
-  await loadMaterials(newFilters);
+  trenutniFilteri.value = newFilters
+  await loadMaterials(newFilters,1);
+  
 }
 
 function handleDelete(deletedMaterialId) {

@@ -10,6 +10,7 @@ import CompanyLoginView from '../views/company/CompanyLoginView.vue'
 import AdminCompanyApprovalView from '../views/company/AdminCompanyApprovalView.vue'
 import CompanyView from '../views/company/CompanyView.vue'
 import AdminAdsView from '../views/ads/AdminAdsApprovalView.vue'
+import AdminKorisniciView from '../views/admin/AdminKorisniciView.vue'
 
 const routes = [
   {
@@ -71,6 +72,12 @@ const routes = [
     path: '/admin/ads',
     name: 'admin-ads',
     component: AdminAdsView,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/users',
+    name: 'admin-users',
+    component: AdminKorisniciView,
     meta: { requiresAuth: true, requiresAdmin: true }
   },
   {
