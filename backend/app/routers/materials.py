@@ -14,6 +14,7 @@ from app.models.materials import (
 )
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
+from app.models.notification import Notification, NotificationType, NotificationCreate
 
 router = APIRouter(prefix="/materials", tags=["materials"])
 
@@ -326,6 +327,15 @@ def rate_material(
     db.add(new_rating)
     db.commit()
     db.refresh(new_rating)
+    
+    if material.user_id != current_user.id:
+        tekst = f"Vaš materijal '{material.title}' je ocijenjen sa {rating_data.rating}/5."
+        db.add(Notification(
+            user_id=material.user_id,
+            text=tekst,
+            type=NotificationType.MATERIAL_GRADED
+        ))
+        db.commit()
     return new_rating
 
 
