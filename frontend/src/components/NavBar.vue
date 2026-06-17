@@ -28,6 +28,9 @@
               <router-link to="/admin/ads" class="block px-4 py-2.5 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 last:rounded-b-lg">
                Upravljanje oglasima
               </router-link>
+              <router-link to="/admin/users" class="block px-4 py-2.5 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 last:rounded-b-lg">
+               Upravljanje korisnicima
+              </router-link>
             </div> 
           </div>
 

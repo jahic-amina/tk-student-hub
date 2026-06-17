@@ -12,7 +12,8 @@ from app.database import get_db
 from app.models.notification import Notification, NotificationType
 import os
 from uuid import uuid4
-
+from app.services.activity_log_service import log_activity
+from app.enums.activity import ActivityType
 LOCAL_UPLOAD_DIR = os.path.join(os.getcwd(), "uploads", "applications")
 os.makedirs(LOCAL_UPLOAD_DIR, exist_ok=True)
 
@@ -275,6 +276,15 @@ def update_application_company(
         if application.status == ApplicationStatus.accepted:
             tekst = f"Čestitamo! Vaša prijava za oglas '{ad.title}' kod kompanije '{current_company.company_name}' je prihvaćena."
             db.add(Notification(user_id=application.user_id, text=tekst, type=NotificationType.STATUS_CHANGE))
+
+            log_activity(
+                db,
+                application.user_id,
+                ActivityType.internship_accepted,
+                ad.title,
+                f"{current_company.company_name} · {ad.duration_months} meseca",
+                ad.id 
+            )
 
             accepted_count = db.exec(
                 select(Application).where(

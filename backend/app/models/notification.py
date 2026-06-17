@@ -4,12 +4,13 @@ from typing import Optional
 from datetime import datetime, timezone
 from enum import Enum
 
-
 class NotificationType(str, Enum):
     NEW_OPPORTUNITY = "new_opportunity"
     STATUS_CHANGE = "status_change"
     DEADLINE_EXPIRING = "deadline_expiring"
-
+    COMMENT_LIKED = "comment_liked"
+    MATERIAL_GRADED = "material_graded"
+    MATERIAL_PENDING_APPROVAL = "material_pending_approval"
 
 class Notification(SQLModel, table=True):
     __tablename__ = "notifications"

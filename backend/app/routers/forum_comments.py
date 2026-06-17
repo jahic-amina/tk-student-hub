@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select, func
 from pydantic import BaseModel, Field
 from typing import Optional
-
+from app.models.notification import Notification, NotificationType
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
@@ -17,7 +17,8 @@ from app.routers.forum_helpers import (
     get_topic_votes_count,
     get_topic_comments,
 )
-
+from app.services.activity_log_service import log_activity
+from app.enums.activity import ActivityType
 router = APIRouter(prefix="/forum/comments", tags=["Forum Comments"])
 
 
@@ -68,6 +69,14 @@ def create_forum_comment(
     db.commit()
     db.refresh(new_comment)
 
+    comments_count = get_comments_count(db, topic.id)
+    log_activity(
+        db,
+        current_user.id,
+        ActivityType.forum_comment,
+        f"Diskusija · {comments_count} odgovora",
+        topic.id
+    )
     return {
         "id": new_comment.id,
         "content": new_comment.content,
@@ -121,6 +130,17 @@ def toggle_best_answer(
     db.commit()
     db.refresh(comment)
     db.expire_all()
+
+    if comment.is_best_answer:
+        log_activity(
+            db,
+            comment.user_id,
+            ActivityType.forum_answer,
+            topic.title,
+            "Označeno kao korisno",
+            topic.id
+        )
+
     return {"id": comment.id, "is_best_answer": comment.is_best_answer}
 
 
@@ -145,6 +165,8 @@ def vote_on_comment(
         )
     ).first()
 
+    novi_like = False
+    
     if existing_vote:
         if existing_vote.value == vote_data.value:
             db.delete(existing_vote)
@@ -155,6 +177,8 @@ def vote_on_comment(
             db.add(existing_vote)
             db.commit()
             user_vote = vote_data.value
+            if vote_data.value == 1:
+                novi_like = True
     else:
         new_vote = ForumCommentVote(
             comment_id=comment_id,
@@ -164,6 +188,16 @@ def vote_on_comment(
         db.add(new_vote)
         db.commit()
         user_vote = vote_data.value
+        if vote_data.value == 1:
+            novi_like = True
+
+    if novi_like and comment.user_id != current_user.id:
+        db.add(Notification(
+            user_id=comment.user_id,
+            text="Vaš komentar na forumu je lajkovan.",
+            type=NotificationType.COMMENT_LIKED
+        ))
+        db.commit()
 
     total_votes = get_comment_votes_count(db, comment_id)
     return {"comment_id": comment_id, "votes_count": total_votes, "user_vote": user_vote}
