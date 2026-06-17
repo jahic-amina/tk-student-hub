@@ -26,13 +26,13 @@
 </div>
 
  <!-----Polja forme, validacija, drag&drop, submit — Marinela ----->
-    <div v-if="showForm" class="bg-white rounded-lg shadow p-6 mt-6">
+    <div v-if="showForm" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-6">
       
       <!-- Naslov -->
-      <h2 class="text-xl font-bold mb-6">Dodajte novi materijal</h2>
+      <h2 class="text-xl font-bold mb-6 dark:text-white">Dodajte novi materijal</h2>
 
 <!-- Opšta poruka greške -->
-<div v-if="formError" class="bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
+<div v-if="formError" class="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg mb-4 text-sm">
   {{ formError }}
 </div>
 
@@ -41,50 +41,52 @@
 
   <!-- Naziv materijala -->
   <div>
-    <label class="block text-sm font-medium text-gray-700 mb-1">
+    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
       Naziv materijala <span class="text-red-500">*</span>
     </label>
     <input
       v-model="title"
       type="text"
       placeholder="Unesite naziv materijala..."
-      :class="[
-                'w-full border rounded-lg px-3 py-2 focus:outline-none',
-                errors.title ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-gray-50 focus:border-primary focus:bg-white'
-              ]"
-    />
+      class="dark:bg-gray-700 dark:text-white dark:border-gray-600"
+     :class="[
+    'w-full border rounded-lg px-3 py-2 focus:outline-none',
+    errors.title ? 'border-red-500 bg-red-50 dark:bg-red-900/20 dark:border-red-500' : 'border-gray-200 bg-gray-50 focus:border-primary focus:bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white'
+  ]"
+/>
     <p v-if="errors.title && errors.title !== true" class="text-red-500 text-xs mt-1">{{ errors.title }}</p>
   </div>
 
   <!-- Opis materijala -->
   <div>
-    <label class="block text-sm font-medium text-gray-700 mb-1">
+    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
       Opis materijala <span class="text-red-500">*</span>
     </label>
     <textarea
       v-model="description"
       rows="3"
       placeholder="Napišite detaljan opis materijala..."
-     :class="[
-              'w-full border rounded-lg px-3 py-2 focus:outline-none',
-              errors.description ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-gray-50 focus:border-primary focus:bg-white'
-            ]"
+      class="dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:placeholder-gray-400"
+      :class="[
+    'w-full border rounded-lg px-3 py-2 focus:outline-none',
+   errors.description ? 'border-red-500 bg-red-50 dark:bg-red-900/20 dark:border-red-500' : 'border-gray-200 bg-gray-50 focus:border-primary focus:bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white'
+  ]"
     ></textarea>
     <p v-if="errors.description && errors.description !== true" class="text-red-500 text-xs mt-1">{{ errors.description }}</p>
   </div>
 
 <!-- Tip materijala -->
   <div>
-    <label class="block text-sm font-medium text-gray-700 mb-1">
+    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
       Tip materijala <span class="text-red-500">*</span>
     </label>
     <select
       v-model="materialType"
      :class="[
-              'w-full border rounded-lg px-3 py-2 focus:outline-none',
-              errors.materialType ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-gray-50 focus:border-primary focus:bg-white'
-            ]"
->
+    'w-full border rounded-lg px-3 py-2 focus:outline-none',
+    errors.materialType ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-gray-200 bg-gray-50 focus:border-primary focus:bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white'
+  ]"
+  >
       <option value="">Odaberite tip</option>
       <option value="skripta">Skripta</option>
       <option value="auditorne_vježbe">Auditorne vježbe</option>
@@ -96,16 +98,16 @@
 
   <!-- Godina studija -->
   <div>
-    <label class="block text-sm font-medium text-gray-700 mb-1">
+    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
       Godina studija <span class="text-red-500">*</span>
     </label>
     <select
       v-model="studyYear"
      :class="[
-              'w-full border rounded-lg px-3 py-2 focus:outline-none',
-              errors.studyYear ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-gray-50 focus:border-primary focus:bg-white'
-            ]"
->
+    'w-full border rounded-lg px-3 py-2 focus:outline-none',
+    errors.studyYear ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-gray-200 bg-gray-50 focus:border-primary focus:bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white'
+  ]"
+  >
       <option value="">Odaberite godinu</option>
       <option value="1">1. godina</option>
       <option value="2">2. godina</option>
@@ -116,15 +118,15 @@
 
   <!-- Predmet -->
   <div>
-    <label class="block text-sm font-medium text-gray-700 mb-1">
+    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
       Predmet <span class="text-red-500">*</span>
     </label>
     <select
       v-model="subjectId"
-     :class="[
-              'w-full border rounded-lg px-3 py-2 focus:outline-none',
-              errors.subjectId ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-gray-50 focus:border-primary focus:bg-white'
-            ]"
+   :class="[
+    'w-full border rounded-lg px-3 py-2 focus:outline-none',
+    errors.subjectId ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-gray-200 bg-gray-50 focus:border-primary focus:bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white'
+  ]"
 >
       <option value="">Odaberite predmet</option>
 <option v-for="subject in filteredSubjects" :key="subject.id" :value="subject.id">
@@ -135,7 +137,7 @@
 
   <!-- Priloži fajl — drag & drop zona -->
   <div>
-    <label class="block text-sm font-medium text-gray-700 mb-1">
+    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
       Priloži fajl <span class="text-red-500">*</span>
     </label>
     <div
@@ -144,21 +146,21 @@
       @dragleave.prevent="isDragging = false"
       @drop.prevent="onFileDrop"
       :class="[
-                  'border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors',
-                   errors.file
-                    ? 'border-red-500 bg-red-50'
-                    : (isDragging ? 'border-primary bg-orange-50' : 'border-gray-300 bg-gray-50')
-                ]"
+  'border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors',
+  errors.file
+    ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+    : (isDragging ? 'border-primary bg-orange-50' : 'border-gray-300 bg-gray-50 dark:bg-gray-700 dark:border-gray-600')
+]"
     >
       <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 mx-auto mb-2 text-gray-400"
            fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
         <path stroke-linecap="round" stroke-linejoin="round"
               d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5 5 5M12 5v10" />
       </svg>
-      <p class="text-gray-700 font-medium">
+      <p class="text-gray-700 dark:text-gray-200 font-medium">
         Prevucite fajl ovdje ili kliknite da odaberete
       </p>
-      <p class="text-sm text-gray-500 mt-1">
+      <p class="text-gray-700 dark:text-gray-200 font-medium">
         Podržani formati: PDF, DOC, DOCX, TXT, PPT, PPTX, ZIP
       </p>
       <p v-if="selectedFile" class="text-sm text-primary font-medium mt-3">
@@ -179,7 +181,7 @@
 
       
 
-      <div v-if="uploadError" class="bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded-lg mb-4">
+      <div v-if="uploadError" class="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg mb-4">
   ⚠️ {{ uploadError }}
 </div>
 
@@ -195,9 +197,7 @@
         </button>
         <button
         @click="props.directShow ? router.push('/materials') : showForm = false"
-        class="border border-gray-300 px-6 py-2 rounded-lg
-              hover:bg-gray-50 transition-all duration-200"
-      >
+        class="border border-gray-300 dark:border-gray-600 dark:text-gray-200 px-6 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200">
         Odustani
       </button>
       </div>
