@@ -20,6 +20,8 @@
                 :key="komentar.id"
                 :comment="komentar"
                 @obrisan="ukloniKomentar"
+                @ureden="azurirajKomentar"
+
             />
         </div>
 
@@ -65,5 +67,12 @@ function dodajKomentar(noviKomentar) {
 
 function ukloniKomentar(id) {
     komentari.value = komentari.value.filter(k => k.id !== id)
+}
+
+function azurirajKomentar(azuriran) {
+    const index = komentari.value.findIndex(k => k.id === azuriran.id)
+    if (index !== -1) {
+        komentari.value[index] = azuriran
+    }
 }
 </script>

@@ -12,7 +12,7 @@ from app.models.user import User
 # Importovanje svih unikatnih rutera iz app.routers foldera
 from app.routers import (
     auth, dashboard, activity, admin, profiles, account, company, applications, materials,
-    forum_categories, forum_topics, forum_comments, forum_tags, forum_admin, forum_likes
+    forum_categories, forum_topics, forum_comments, forum_tags, forum_admin, forum_likes, my_applications
 )
 
 # Importovanje specifičnih rutera sa aliasima
@@ -59,6 +59,7 @@ app.include_router(company.router)
 
 # Prakse, oglasi i prijave
 app.include_router(ads_router)
+app.include_router(my_applications.router)
 app.include_router(applications.router)
 app.include_router(ad_bookmark_router) 
 

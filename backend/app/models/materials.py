@@ -45,6 +45,7 @@ class Comment(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     content: str
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    updated_at: Optional[datetime] = Field(default=None)
 
     material_id: int = Field(foreign_key="materials.id")
     user_id: int = Field(foreign_key="users.id")
@@ -76,6 +77,7 @@ class CommentResponse(SQLModel):
     material_id: int
     content: str
     created_at: datetime
+    updated_at: Optional[datetime] = None 
     user: UserResponse
     
 class MaterialsResponse(SQLModel):
@@ -109,6 +111,13 @@ class MaterialDetailResponse(SQLModel):
     user: UserResponse
     comments: list[CommentResponse] = []
     ratings: list[Rating] = []
+
+class PaginatedMaterialsResponse(SQLModel):
+    items: list[MaterialsResponse]
+    total: int
+    page: int
+    per_page: int
+    total_pages: int
 
 def get_default_subjects():
     return [

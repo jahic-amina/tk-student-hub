@@ -333,10 +333,9 @@ export async function getSubjects() {
   const res = await fetch(`${BASE_URL}/materials/subjects`);
   return res.json();
 }
-export async function getMaterials(filters = {}) {
+export async function getMaterials(filters = {}, page = 1, perPage = 10) {
   const params = new URLSearchParams();
 
-  
   if (filters.years && filters.years.length > 0) {
     filters.years.forEach(y => params.append('years', y));
   }
@@ -346,36 +345,28 @@ export async function getMaterials(filters = {}) {
   if (filters.subject_id) {
     params.append('subject_id', filters.subject_id);
   }
+  params.append('page', page);
+  params.append('per_page', perPage);
 
-  const queryString = params.toString();
-  
-  
-  const url = queryString 
-    ? `${BASE_URL}/materials/?${queryString}` 
-    : `${BASE_URL}/materials/`;
-
+  const url = `${BASE_URL}/materials/?${params.toString()}`;
   const token = localStorage.getItem("token");
-  const headers = authHeaders(token);
 
   try {
     const response = await fetch(url, {
       method: "GET",
-      headers,
+      headers: { Authorization: `Bearer ${token}` },
     });
-    
     if (response.status === 401) {
-       console.error("Niste ulogovani ili je token istekao");
-       return [];
+      console.error("Niste ulogovani ili je token istekao");
+      return { items: [], total: 0, page: 1, per_page: 10, total_pages: 0 };
     }
-
     if (!response.ok) throw new Error('Mrežna greška');
     return await response.json();
   } catch (error) {
     console.error("Greška u API pozivu:", error);
-    return [];
+    return { items: [], total: 0, page: 1, per_page: 10, total_pages: 0 };
   }
 }
-
 export async function toggleBookmark(materialId) {
   const token = localStorage.getItem("token");
   const response = await fetch(`${BASE_URL}/materials/${materialId}/bookmark`, {
@@ -554,6 +545,22 @@ export async function deleteComment(materialId, commentId) {
   }
 }
 
+export async function updateComment(materialId, commentId, content) {
+  const token = localStorage.getItem('token')
+  const response = await fetch(`${BASE_URL}/materials/${materialId}/comments/${commentId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ content, material_id: materialId })
+  })
+  if (!response.ok) {
+    throw new Error('Greška pri uređivanju komentara.')
+  }
+  return response.json()
+}
+
 export async function getPendingMaterials() {
   const token = localStorage.getItem("token");
   const response = await fetch(`${BASE_URL}/materials/pending`, {
@@ -580,6 +587,26 @@ export async function rejectMaterial(id) {
   return response.json();
 }
 
+export async function updateMaterial(id, title, description, file) {
+  const token = localStorage.getItem("token");
+  const formData = new FormData();
+  formData.append('title', title);
+  formData.append('description', description);
+  if (file) {
+    formData.append('file', file);
+  }
+  const response = await fetch(`${BASE_URL}/materials/${id}/update`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+  if(!response.ok) {
+    throw new Error('Greška pri ažuriranju materijala.')
+  }
+  return response.json();
+}
 
 // Ocjenjivanje materijala 
 export async function rateMaterial(materialId, rating) {
@@ -612,4 +639,11 @@ export async function updateRating(materialId, rating) {
 export async function downloadMaterial(materialId) {
   const response = await fetch(`${BASE_URL}/materials/${materialId}/download`)
   return response
+}
+
+export async function getMyApplications(token) {
+  const response = await fetch(`${BASE_URL}/applications/me/all`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  return response.json()
 }
