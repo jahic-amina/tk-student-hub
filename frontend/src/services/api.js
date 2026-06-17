@@ -519,6 +519,19 @@ export async function deleteUser(token, userId) {
   return handleAdminFetch(response, 'Greška pri brisanju korisnika');
 }
 
+export async function changeUserRole(token, userId, roleData) {
+  const response = await fetch(`${BASE_URL}/admin/users/${userId}/role`, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(roleData) // Šalje se objekat npr. { role: "admin" }
+  });
+
+  return handleAdminFetch(response, 'Greška pri promjeni uloge korisnika');
+}
+
 export async function getPlatformStats(token, period = 'month') {
   try {
     const response = await fetch(`http://localhost:8000/admin/stats?period=${period}`, {
