@@ -10,12 +10,13 @@ from app.core.security import get_current_user
 from app.models.user import User, UserRole
 from app.models.materials import (
     Material, MaterialsResponse, MaterialDetailResponse,
-    Rating, Comment, Subject, RatingCreate, CommentResponse, CommentCreate, Bookmark,
+    Rating, Comment, Subject, RatingCreate, CommentResponse, CommentCreate, Bookmark, PaginatedMaterialsResponse,
 )
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
 from app.services.activity_log_service import log_activity
 from app.enums.activity import ActivityType
+from datetime import datetime
 
 router = APIRouter(prefix="/materials", tags=["materials"])
 
@@ -176,15 +177,17 @@ def upload_material(
         raise HTTPException(status_code=500, detail="Greška pri uploadu.")
 
 
-@router.get("/", response_model=list[MaterialsResponse])
+@router.get("/", response_model=PaginatedMaterialsResponse)
 def get_materials(
     session: Session = Depends(get_db),
     years: Optional[list[int]] = Query(None),
     types: Optional[list[str]] = Query(None),
     subject_id: Optional[int] = Query(None),
     current_user: Optional[User] = Depends(get_current_user),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(10, ge=1, le=50),
 ):
-    return get_materials_by_status(
+    svi = get_materials_by_status(
         session,
         "approved",
         years=years,
@@ -192,6 +195,17 @@ def get_materials(
         subject_id=subject_id,
         current_user=current_user,
     )
+    total = len(svi)
+    start = (page - 1) * per_page
+    end = start + per_page
+    return PaginatedMaterialsResponse(
+        items=svi[start:end],
+        total=total,
+        page=page,
+        per_page=per_page,
+        total_pages=(total + per_page - 1) // per_page,
+    )
+
 
 
 # ---------------------------------------------------------------------------
@@ -317,6 +331,34 @@ def delete_comment(
     session.commit()
     return None
 
+@router.patch("/{material_id}/comments/{comment_id}", response_model=CommentResponse)
+def update_comment(
+    material_id: int,
+    comment_id: int,
+    comment_data: CommentCreate,
+    session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    comment = session.get(Comment, comment_id)
+    if not comment or comment.material_id != material_id:
+        raise HTTPException(status_code=404, detail="Komentar nije pronađen.")
+
+    if comment.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Nemate dozvolu za uređivanje ovog komentara.")
+
+    content = comment_data.content.strip()
+    if not content:
+        raise HTTPException(status_code=400, detail="Komentar ne može biti prazan.")
+    if len(content) > 500:
+        raise HTTPException(status_code=400, detail="Komentar ne može biti duži od 500 karaktera.")
+
+    comment.content = content
+    comment.updated_at = datetime.utcnow()
+    session.add(comment)
+    session.commit()
+    session.refresh(comment)
+    comment.user = current_user
+    return comment
 
 @router.post("/{id}/rate", status_code=201)
 def rate_material(
