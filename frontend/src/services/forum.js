@@ -153,3 +153,29 @@ export async function updateTopic(topicId, data) {
   });
   return handleResponse(response, 'Editovanje teme nije uspjelo.');
 }
+
+export async function uploadTopicAttachments(topicId, files) {
+  const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+  const formData = new FormData();
+  files.forEach(file => formData.append('files', file));
+  
+  const response = await fetch(`${BASE_URL}/forum/attachments/topic/${topicId}`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: formData
+  });
+  return handleResponse(response, 'Upload fajlova nije uspio.');
+}
+
+export async function uploadCommentAttachments(commentId, files) {
+  const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+  const formData = new FormData();
+  files.forEach(file => formData.append('files', file));
+
+  const response = await fetch(`${BASE_URL}/forum/attachments/comment/${commentId}`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: formData
+  });
+  return handleResponse(response, 'Upload fajlova nije uspio.');
+}
