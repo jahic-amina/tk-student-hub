@@ -14,6 +14,7 @@ from app.models.materials import (
 )
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
+from app.models.notification import Notification, NotificationType, NotificationCreate
 from app.services.activity_log_service import log_activity
 from app.enums.activity import ActivityType
 from datetime import datetime
@@ -160,6 +161,15 @@ def upload_material(
         db.commit()
         db.refresh(new_material)
 
+        admini = db.exec(select(User).where(User.role == UserRole.admin)).all()
+        for admin in admini:
+            tekst = f"Novi materijal '{new_material.title}' čeka odobrenje."
+            db.add(Notification(
+                user_id=admin.id,
+                text=tekst,
+                type=NotificationType.MATERIAL_PENDING_APPROVAL
+            ))
+        db.commit()
         subject = db.get(Subject, subject_id)
         log_activity(
             db,
@@ -271,6 +281,14 @@ def approve_material(
         raise HTTPException(status_code=404, detail="Materijal nije pronađen.")
     material.status = "approved"
     session.add(material)
+
+    tekst = f"Vaš materijal '{material.title}' je odobren i sada je vidljiv ostalim studentima."
+    session.add(Notification(
+        user_id=material.user_id,
+        text=tekst,
+        type=NotificationType.STATUS_CHANGE
+    ))
+
     session.commit()
     return {"message": "Materijal odobren."}
 
@@ -288,6 +306,14 @@ def reject_material(
         raise HTTPException(status_code=404, detail="Materijal nije pronađen.")
     material.status = "rejected"
     session.add(material)
+
+    tekst = f"Vaš materijal '{material.title}' je odbijen."
+    session.add(Notification(
+        user_id=material.user_id,
+        text=tekst,
+        type=NotificationType.STATUS_CHANGE
+    ))
+
     session.commit()
     return {"message": "Materijal odbijen."}
 
@@ -429,6 +455,15 @@ def rate_material(
     db.add(new_rating)
     db.commit()
     db.refresh(new_rating)
+    
+    if material.user_id != current_user.id:
+        tekst = f"Vaš materijal '{material.title}' je ocijenjen sa {rating_data.rating}/5."
+        db.add(Notification(
+            user_id=material.user_id,
+            text=tekst,
+            type=NotificationType.MATERIAL_GRADED
+        ))
+        db.commit()
     return new_rating
 
 
