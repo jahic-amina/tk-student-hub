@@ -31,10 +31,10 @@
         <div class="flex items-start gap-4 flex-1 cursor-pointer min-w-0" @click="$emit('click', material.id)">
         <div :class="['p-1 rounded-lg shrink-0 overflow-hidden w-20 h-24 flex items-center justify-center', material.thumbnail_path ? 'bg-gray-100' : 'bg-red-100 text-red-500']">
     <img 
-        v-if="material.thumbnail_path" 
-        :src="`http://127.0.0.1:8000/thumbnails/${material.thumbnail_path.split('/').pop()}`"
-        class="w-full h-full object-cover rounded"
-        alt="thumbnail"
+    v-if="material.thumbnail_path" 
+    :src="`http://127.0.0.1:8000/thumbnails/${material.thumbnail_path.split('/').pop()}`"
+    class="w-full h-full object-contain rounded"
+    alt="thumbnail"
     />
     <svg v-else xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
