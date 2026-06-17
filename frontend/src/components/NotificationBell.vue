@@ -38,7 +38,7 @@
         
         <div 
           v-for="notif in notifications" 
-          :key="notif.id"
+          :key="notif.source + '-' + notif.id"
           @click="clickNotification(notif)"
           class="p-3 border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition flex flex-col gap-1"
           :class="{'bg-indigo-50/40 font-medium': !notif.is_read}"
@@ -59,7 +59,11 @@
 
 <script setup>
 import { ref, onMounted, computed, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { notificationService } from '../services/api';
+import { forumNotificationService } from '../services/forumNotifications'; 
+
+const router = useRouter();
 
 const isOpen = ref(false);
 const notifications = ref([]);
@@ -68,15 +72,58 @@ const unreadCount = computed(() => {
   return notifications.value.filter(n => !n.is_read).length;
 });
 
-
 const fetchNotifications = async () => {
-  try {
-    notifications.value = await notificationService.getMyNotifications();
-  } catch (error) {
-    console.error("Greška pri učitavanju notifikacija:", error);
-  }
-};
+  const results = await Promise.allSettled([
+    notificationService.getMyNotifications(),
+    forumNotificationService.getMyNotifications()
+  ]);
 
+  const generalResult = results[0];
+  const forumResult = results[1];
+
+  const generalNotifications =
+    generalResult.status === 'fulfilled' &&
+    Array.isArray(generalResult.value)
+      ? generalResult.value
+      : [];
+
+  const forumNotifications =
+    forumResult.status === 'fulfilled' &&
+    Array.isArray(forumResult.value)
+      ? forumResult.value
+      : [];
+
+  if (generalResult.status === 'rejected') {
+    console.error(
+      'Greška pri učitavanju postojećih notifikacija:',
+      generalResult.reason
+    );
+  }
+
+  if (forumResult.status === 'rejected') {
+    console.error(
+      'Greška pri učitavanju forum notifikacija:',
+      forumResult.reason
+    );
+  }
+
+  notifications.value = [
+    ...generalNotifications.map(notification => ({
+      ...notification,
+      source: 'general'
+    })),
+
+    ...forumNotifications.map(notification => ({
+      ...notification,
+      source: 'forum'
+    }))
+  ].sort((first, second) => {
+    return (
+      new Date(second.created_at).getTime() -
+      new Date(first.created_at).getTime()
+    );
+  });
+};
 const toggleDropdown = () => {
   isOpen.value = !isOpen.value;
   if (isOpen.value) fetchNotifications();
@@ -87,34 +134,80 @@ const closeDropdown = () => {
 };
 
 const markAllRead = async () => {
-  try {
-    await notificationService.markAllAsRead();
-    notifications.value.forEach(n => n.is_read = true);
-  } catch (error) {
-    console.error(error);
-  }
+  const results = await Promise.allSettled([
+    notificationService.markAllAsRead(),
+    forumNotificationService.markAllAsRead()
+  ]);
+
+  results.forEach(result => {
+    if (result.status === 'rejected') {
+      console.error(result.reason);
+    }
+  });
+
+  await fetchNotifications();
 };
 
 const clickNotification = async (notif) => {
-  if (!notif.is_read) {
-    try {
-      await notificationService.markAsRead(notif.id);
+  try {
+    if (!notif.is_read) {
+      if (notif.source === 'forum') {
+        await forumNotificationService.markAsRead(notif.id);
+      } else {
+        await notificationService.markAsRead(notif.id);
+      }
+
       notif.is_read = true;
-    } catch (error) {
-      console.error(error);
     }
+
+    isOpen.value = false;
+
+    if (notif.source === 'forum' && notif.topic_id) {
+      await router.push(
+        '/forum/tema/' + notif.topic_id
+      );
+    }
+  } catch (error) {
+    console.error(
+      'Greska pri otvaranju notifikacije:',
+      error
+    );
   }
 };
 
 const clearAll = async () => {
-  if (confirm("Da li sigurno želite obrisati sva obavještenja?")) {
-    try {
-      await notificationService.clearAll();
-      notifications.value = [];
-    } catch (error) {
-      console.error(error);
-    }
+  const confirmed = confirm(
+    'Da li sigurno zelite obrisati sva obavjestenja?'
+  );
+
+  if (!confirmed) {
+    return;
   }
+
+  const forumNotifications =
+    notifications.value.filter(
+      notification => notification.source === 'forum'
+    );
+
+  const requests = [
+    notificationService.clearAll(),
+
+    ...forumNotifications.map(notification =>
+      forumNotificationService.deleteNotification(
+        notification.id
+      )
+    )
+  ];
+
+  const results = await Promise.allSettled(requests);
+
+  results.forEach(result => {
+    if (result.status === 'rejected') {
+      console.error(result.reason);
+    }
+  });
+
+  await fetchNotifications();
 };
 
 const formatDate = (dateString) => {
