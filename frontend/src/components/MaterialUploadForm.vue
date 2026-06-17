@@ -192,12 +192,12 @@
           {{ isSubmitting ? 'Slanje...' : '+Dodaj materijal' }}
         </button>
         <button
-          @click="showForm = false"
-          class="border border-gray-300 px-6 py-2 rounded-lg
-                 hover:bg-gray-50 transition-all duration-200"
-        >
-          Odustani
-        </button>
+        @click="props.directShow ? router.push('/materials') : showForm = false"
+        class="border border-gray-300 px-6 py-2 rounded-lg
+              hover:bg-gray-50 transition-all duration-200"
+      >
+        Odustani
+      </button>
       </div>
 
     </div>
@@ -212,8 +212,10 @@
 // ============================================================
 
 import { ref, watch, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { uploadMaterial, getSubjects } from '../services/api'
 
+const router = useRouter()
 // Prop koji kontroliše da li se forma prikazuje odmah (true) ili tek nakon klika na dugme (false)
 // Postavlja se na true kad se forma otvara na posebnoj stranici /materials/upload - Marinela
 const props = defineProps({
