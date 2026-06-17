@@ -513,6 +513,7 @@ def get_material(material_id: int, session: Session = Depends(get_db)):
         ratings=material.ratings,
         average_rating=round(avg, 1) if avg else None,
         rating_count=count,
+        thumbnail_path=material.thumbnail_path,
     )
 
 
