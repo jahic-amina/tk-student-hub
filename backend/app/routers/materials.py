@@ -271,6 +271,7 @@ def update_material(
         new_file_path = save_file_to_disk(file)
         material.file_path = new_file_path
         material.file_type = file.content_type
+        material.status = "pending"  
     session.add(material)
     session.commit()
     session.refresh(material)
