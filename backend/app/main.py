@@ -7,7 +7,8 @@ from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.database import create_db_and_tables
 from app.core.security import get_current_user
-from app.models.user import User                
+from app.models.user import User
+from app.models.forum_notification import ForumNotification                
 
 
 from app.models.forum_reputation import (
@@ -19,9 +20,9 @@ from app.models.forum_reputation import (
 from app.routers import (
     auth, dashboard, activity, admin, profiles, account, company, applications, materials,
     forum_categories, forum_topics, forum_comments, forum_tags, forum_admin, forum_likes,
-    forum_guidelines  # Dodano iz tim3/forum-main grane da ništa ne fali
+    forum_guidelines, forum_attachments
 )
-
+from app.routers import forum_notifications
 
 from app.routers.ad_bookmark import router as ad_bookmark_router
 from app.routers.notification import router as notification_router  
@@ -77,6 +78,8 @@ app.include_router(forum_comments.router)
 app.include_router(forum_tags.router)
 app.include_router(forum_likes.router)
 app.include_router(forum_guidelines.router)
+app.include_router(forum_attachments.router)
+app.include_router(forum_notifications.router)
 
 # Sistem, administracija i ostalo
 app.include_router(dashboard.router)
