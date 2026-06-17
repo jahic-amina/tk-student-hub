@@ -550,6 +550,22 @@ export async function deleteComment(materialId, commentId) {
   }
 }
 
+export async function updateComment(materialId, commentId, content) {
+  const token = localStorage.getItem('token')
+  const response = await fetch(`${BASE_URL}/materials/${materialId}/comments/${commentId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ content, material_id: materialId })
+  })
+  if (!response.ok) {
+    throw new Error('Greška pri uređivanju komentara.')
+  }
+  return response.json()
+}
+
 export async function getPendingMaterials() {
   const token = localStorage.getItem("token");
   const response = await fetch(`${BASE_URL}/materials/pending`, {
@@ -609,3 +625,4 @@ export async function downloadMaterial(materialId) {
   const response = await fetch(`${BASE_URL}/materials/${materialId}/download`)
   return response
 }
+
