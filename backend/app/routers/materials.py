@@ -181,7 +181,7 @@ def get_materials(
     )
 
 
-@router.get("{id}/preview")
+@router.get("/{id}/preview")
 def preview_material(id: int, db: Session = Depends(get_db)):
     material = db.exec(select(Material).where(Material.id == id)).first()
     if not material:
@@ -189,7 +189,7 @@ def preview_material(id: int, db: Session = Depends(get_db)):
     if not os.path.exists(material.file_path):
         raise HTTPException(status_code=404, detail="Fajl nije pronađen na serveru.")
     
-    madia_type, _ = mimetypes.guess_type(material.file_path)    
+    media_type, _ = mimetypes.guess_type(material.file_path)    
     media_type = media_type or "application/octet-stream"
     
     return FileResponse(
