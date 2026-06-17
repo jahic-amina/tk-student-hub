@@ -20,7 +20,7 @@ from app.models.forum_reputation import (
 from app.routers import (
     auth, dashboard, activity, admin, profiles, account, company, applications, materials,
     forum_categories, forum_topics, forum_comments, forum_tags, forum_admin, forum_likes,
-    forum_guidelines  # Dodano iz tim3/forum-main grane da ništa ne fali
+    forum_guidelines, forum_attachments  # Dodano iz tim3/forum-main grane da ništa ne fali
 )
 from app.routers import forum_notifications
 
@@ -78,8 +78,7 @@ app.include_router(forum_comments.router)
 app.include_router(forum_tags.router)
 app.include_router(forum_likes.router)
 app.include_router(forum_guidelines.router)
-app.include_router(forum_notifications.router)
-
+app.include_router(forum_attachments.router)
 # Sistem, administracija i ostalo
 app.include_router(dashboard.router)
 app.include_router(activity.router)

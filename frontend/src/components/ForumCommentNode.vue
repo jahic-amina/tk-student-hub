@@ -29,8 +29,23 @@ const emit = defineEmits([
 
 const replyContentLocal = ref('');
 const editContentLocal  = ref('');
+const replyFilesLocal   = ref([]);
 
-// Vizualno uvlačenje do MAX_VISUAL_DEPTH, dalje ostaje na istom nivou
+const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.pdf', '.docx', '.txt'];
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_FILES = 3;
+
+function handleReplyFileSelect(event) {
+  const files = Array.from(event.target.files);
+  for (const file of files) {
+    const ext = '.' + file.name.split('.').pop().toLowerCase();
+    if (!ALLOWED_EXTENSIONS.includes(ext)) { alert(`Format ${ext} nije dozvoljen.`); return; }
+    if (file.size > MAX_FILE_SIZE) { alert(`Fajl "${file.name}" je prevelik. Max 5 MB.`); return; }
+  }
+  if (replyFilesLocal.value.length + files.length > MAX_FILES) { alert('Maksimalno 3 fajla.'); return; }
+  replyFilesLocal.value = [...replyFilesLocal.value, ...files];
+}
+
 const MAX_VISUAL_DEPTH = 3;
 const shouldIndent = computed(() => props.depth > 0 && props.depth <= MAX_VISUAL_DEPTH);
 
@@ -88,7 +103,6 @@ function formatDate(dateValue) {
 
 const medalKey = computed(() => `c-${props.comment.id}`);
 </script>
-
 <template>
   <div
     :class="[
@@ -105,7 +119,7 @@ const medalKey = computed(() => `c-${props.comment.id}`);
           : 'border-gray-200 dark:border-slate-700'
       ]"
     >
-      <!-- Vote kolona — prikazuje se na svim nivoima -->
+      <!-- Vote kolona -->
       <div class="flex flex-col items-center gap-0.5 flex-shrink-0 pt-1">
         <button
           @click="emit('vote', comment, 1)"
@@ -259,6 +273,25 @@ const medalKey = computed(() => `c-${props.comment.id}`);
           {{ comment.content }}
         </p>
 
+        <!-- Attachments preview -->
+        <div v-if="comment.attachments && comment.attachments.length > 0" class="mt-2">
+          <ul class="flex flex-wrap gap-2">
+            <li v-for="attachment in comment.attachments" :key="attachment.id"
+              class="flex items-center gap-2 text-xs bg-slate-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-1.5"
+            >
+              <span class="truncate max-w-[140px] text-slate-600 dark:text-slate-300">
+                {{ attachment.mime_type?.startsWith('image/') ? '🖼️' : '📄' }} {{ attachment.filename }}
+                <span class="text-slate-400">({{ (attachment.file_size / 1024).toFixed(1) }} KB)</span>
+              </span>
+              <a
+                :href="`http://127.0.0.1:8000/forum/attachments/comment/${comment.id}/download/${attachment.id}`"
+                target="_blank"
+                class="text-orange-500 hover:text-orange-400 font-bold whitespace-nowrap"
+              >⬇ Preuzmi</a>
+            </li>
+          </ul>
+        </div>
+
         <div class="mt-2">
           <button
             v-if="canReply && !comment.is_deleted"
@@ -274,8 +307,26 @@ const medalKey = computed(() => `c-${props.comment.id}`);
             class="w-full text-sm border border-gray-200 dark:border-slate-600 rounded-lg p-3 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
             rows="3"
           />
+
+          <!-- File upload za reply -->
+          <div class="mt-2">
+            <label class="cursor-pointer inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-orange-500 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
+              </svg>
+              Dodaj fajl (max 3, 5MB)
+              <input type="file" multiple class="hidden" accept=".jpg,.jpeg,.png,.pdf,.docx,.txt" @change="handleReplyFileSelect" />
+            </label>
+            <ul v-if="replyFilesLocal.length > 0" class="mt-1 space-y-0.5">
+              <li v-for="(file, i) in replyFilesLocal" :key="i" class="flex items-center gap-2 text-xs text-slate-500">
+                📎 {{ file.name }}
+                <button @click="replyFilesLocal.splice(i, 1)" class="text-red-400 hover:text-red-600 bg-transparent border-none cursor-pointer">✕</button>
+              </li>
+            </ul>
+          </div>
+
           <div class="flex gap-2 mt-2">
-            <button @click="emit('submit-reply', comment, replyContentLocal); replyContentLocal = ''" class="px-3 py-1.5 bg-orange-500 hover:bg-orange-400 text-white text-xs font-bold rounded-lg transition-colors">Pošalji</button>
+            <button @click="emit('submit-reply', comment, replyContentLocal, replyFilesLocal); replyContentLocal = ''; replyFilesLocal = []" class="px-3 py-1.5 bg-orange-500 hover:bg-orange-400 text-white text-xs font-bold rounded-lg transition-colors">Pošalji</button>
             <button @click="emit('cancel-reply')" class="px-3 py-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 text-slate-500 text-xs rounded-lg hover:bg-gray-50 transition-colors">Otkaži</button>
           </div>
         </div>
@@ -308,7 +359,7 @@ const medalKey = computed(() => `c-${props.comment.id}`);
         @submit-edit="(id, txt) => emit('submit-edit', id, txt)"
         @start-reply="(id) => emit('start-reply', id)"
         @cancel-reply="emit('cancel-reply')"
-        @submit-reply="(c, txt) => emit('submit-reply', c, txt)"
+        @submit-reply="(c, txt, files) => emit('submit-reply', c, txt, files)"
         @toggle-medals="(key) => emit('toggle-medals', key)"
       />
     </div>
