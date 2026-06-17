@@ -136,7 +136,9 @@
 
             <!-- Preuzmi -->
             <div class="mb-6">
-                <p class="text-sm text-gray-500 mb-2 dark:text-slate-400 mb-2">Broj preuzimanja: {{ material.number_of_downloads }}</p>
+                <p class="text-sm text-gray-500 mb-2 dark:text-slate-400 mb-2">Broj preuzimanja: {{
+                    material.number_of_downloads }}
+                </p>
                 <div class="flex gap-3">
                     <DownloadButton :material-id="material.id" :full-width="true" @downloaded="updateDownloadCount"
                         class="flex-1" />
@@ -175,7 +177,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DownloadButton from '../../components/DownloadButton.vue'
-import { getMaterial, approveMaterial, rejectMaterial, getMaterialPreviewUrl, updateMaterijal, getSubjects } from '../../services/api'
+import { getMaterial, approveMaterial, rejectMaterial, getMaterialPreviewUrl, updateMaterial, getSubjects } from '../../services/api'
 import SuccessMessage from '../../components/SuccessMessage.vue'
 import CommentList from '../../components/CommentList.vue'
 import MaterialRating from '../../components/MaterialRating.vue'
