@@ -216,7 +216,7 @@ async function submitEditTopic() {
   }
 }
 
-function handleFormSubmit({ content, clearForm }) {
+function handleFormSubmit({ content, files = [], clearForm }) {
   if (!content.trim()) {
     replyError.value = 'Tekst komentara ne može biti prazan.';
     return;
@@ -227,6 +227,7 @@ function handleFormSubmit({ content, clearForm }) {
 
   emit('submit-topic-reply', {
     content,
+    files,
     onSuccess: () => {
       isSubmittingReply.value = false;
       clearForm(); 
