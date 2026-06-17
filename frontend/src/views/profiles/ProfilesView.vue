@@ -24,7 +24,8 @@
     <div v-else class="flex flex-col gap-3">
       <div v-for="praksa in prakse" :key="praksa.id">
         <p class="font-medium text-gray-800">{{ praksa.naziv }}</p>
-        <p class="text-sm text-gray-400">{{ praksa.kompanija }} · <span class="text-orange-500">{{ praksa.status }}</span></p>
+        <p class="text-sm text-gray-400">{{ praksa.kompanija }} · 
+          <span class="text-orange-500">{{ praksa.status  === 'accepted' ? 'Prihvaćena' : 'Na čekanju' }}</span></p>
       </div>
     </div>
   </div>
@@ -205,7 +206,7 @@ import UserProfileCard from '../../components/UserProfileCard.vue'
 import AvatarUploadModal from '../../components/AvatarUploadModal.vue'
 import { getMyProfile, uploadAvatar, removeAvatar } from '../../services/api.js'
 import ActivityFeed from '../../components/ActivityFeed.vue'
-import { getMyActivity } from '../../services/api.js'
+import { getMyActivity, getMyApplications} from '../../services/api.js'
 
 
 const activities = ref([])
@@ -359,6 +360,7 @@ const fetchProfileData = async () => {
 onMounted(() => {
   fetchProfileData()
   loadPreview()
+   loadPrakse()
 })
 
 const handleSubmit = async () => {
@@ -425,20 +427,16 @@ async function onRemove() {
     Object.assign(status, { message: 'Greska pri uklanjanju slike.', isError: true })
   }
 }
-const prakse = ref([
-  {
-    id: 1,
-    naziv: "Full Stack Developer",
-    kompanija: "Tech Corp",
-    status: "U toku"
-  },
-  {
-    id: 2,
-    naziv: "AI Research Assistant",
-    kompanija: "University Lab",
-    status: "U toku"
+const prakse = ref([])
+
+async function loadPrakse() {
+  try {
+    const data = await getMyApplications(getToken())
+    prakse.value = data
+  } catch (error) {
+    console.error('Greška pri dohvatanju praksi:', error)
   }
-])
+}
 
 // --- Funkcija za deaktivaciju ---
 const handleDeactivate = async () => {
