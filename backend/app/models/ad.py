@@ -230,7 +230,7 @@ class AdRead(BaseModel):
     is_deleted: bool
     created_at: datetime
     updated_at: Optional[datetime] = None
-
+    applicants_count: int = 0
     # Modernizovano za Pydantic V2
     model_config = ConfigDict(from_attributes=True)
 
