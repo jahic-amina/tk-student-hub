@@ -157,6 +157,17 @@ def upload_material(
         db.add(new_material)
         db.commit()
         db.refresh(new_material)
+
+        admini = db.exec(select(User).where(User.role == UserRole.admin)).all()
+        for admin in admini:
+            tekst = f"Novi materijal '{new_material.title}' čeka odobrenje."
+            db.add(Notification(
+                user_id=admin.id,
+                text=tekst,
+                type=NotificationType.MATERIAL_PENDING_APPROVAL
+            ))
+        db.commit()
+
         return new_material
     except Exception as e:
         if os.path.exists(file_path):
