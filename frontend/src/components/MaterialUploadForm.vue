@@ -2,7 +2,7 @@
   <div>
   <!-- Dugme za otvaranje forme za upload - Lejla -->
   <button
-  v-if="!showForm"
+  v-if="!showForm && !isAdmin"
   @click="handleDodajKlik"
   class="bg-primary text-white px-6 py-3 rounded-lg font-semibold
          hover:bg-orange-600 hover:shadow-md transition-all duration-200"
@@ -222,6 +222,8 @@ const props = defineProps({
     default: false
   }
 })
+
+const isAdmin = localStorage.getItem('role') === 'admin'
 
 // Reaktivne varijable za stanje
 const showForm = ref(props.directShow)
