@@ -376,6 +376,7 @@ const medalKey = computed(() => `c-${props.comment.id}`);
                 <span class="text-slate-400">({{ (attachment.file_size / 1024).toFixed(1) }} KB)</span>
               </span>
               
+              <a
                 :href="`http://127.0.0.1:8000/forum/attachments/comment/${comment.id}/download/${attachment.id}`"
                 target="_blank"
                 class="text-orange-500 hover:text-orange-400 font-bold whitespace-nowrap"
@@ -398,7 +399,7 @@ const medalKey = computed(() => `c-${props.comment.id}`);
             placeholder="Napišite odgovor..."
             class="w-full text-sm border border-gray-200 dark:border-slate-600 rounded-lg p-3 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
             rows="3"
-          />
+          ></textarea>
 
           <!-- File upload za reply -->
           <div class="mt-2">
