@@ -29,97 +29,6 @@ const emit = defineEmits([
 
 const replyContentLocal = ref('');
 const editContentLocal  = ref('');
-
-// Vizualno uvlačenje do MAX_VISUAL_DEPTH, dalje ostaje na istom nivou
-const MAX_VISUAL_DEPTH = 3;
-const shouldIndent = computed(() => props.depth > 0 && props.depth <= MAX_VISUAL_DEPTH);
-
-const medalIcons = { gold: '🥇', silver: '🥈', bronze: '🥉' };
-const medalThresholds = {
-  best_answers:   { bronze: 1,   silver: 5,   gold: 15   },
-  topics_started: { bronze: 3,   silver: 10,  gold: 25   },
-  reputation:     { bronze: 100, silver: 500, gold: 1000 },
-  night_owl:      { bronze: 1,   silver: 3,   gold: 10   }
-};
-const medalDetails = {
-  best_answers:   { name: 'Najbolji odgovori',   desc: (n) => `Dobijate kada vaš odgovor bude označen kao najbolji ${n} ${n === 1 ? 'put' : 'puta'}.` },
-  topics_started: { name: 'Pokrenute teme',       desc: (n) => `Dobijate kada pokrenete ${n} ${n === 1 ? 'temu' : 'tema'} na forumu.` },
-  reputation:     { name: 'Ukupna reputacija',    desc: (n) => `Dobijate kada skupite ukupno ${n} XP reputacije.` },
-  night_owl:      { name: 'Noćna ptica',          desc: (n) => `Tajna medalja — dobijate kada pokrenete ${n} ${n === 1 ? 'temu' : 'tema'} između 03:00 i 05:00h.` }
-};
-
-function parseMedal(medal) {
-  if (!medal) return { icon: '🏅', tooltip: 'Medalja' };
-  const icon    = medalIcons[medal.tier] || '🏅';
-  const details = medalDetails[medal.category] || { name: medal.category_name || 'Priznanje', desc: () => '' };
-  const prefix  = medal.tier === 'gold' ? 'Zlatna' : medal.tier === 'silver' ? 'Srebrna' : 'Bronzana';
-  const threshold = medalThresholds[medal.category]?.[medal.tier];
-  const fullName  = `${prefix} – ${details.name}`;
-  const description = threshold != null ? details.desc(threshold) : '';
-  return { icon, tooltip: description ? `${fullName}\n${description}` : fullName };
-}
-
-function getTierClass(title) {
-  if (!title) return 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600';
-  const t = title.toLowerCase();
-  if (t.includes('zlatni') || t.includes('expert') || t.includes('legenda'))
-    return 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800 font-bold';
-  if (t.includes('srebrni') || t.includes('napredni') || t.includes('mentor'))
-    return 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600';
-  return 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-900';
-}
-
-function getRoleBadgeClass(role) {
-  if (!role) return 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600';
-  const r = role.toLowerCase();
-  if (r === 'admin')
-    return 'bg-red-50 text-red-700 border-red-300 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800 font-bold';
-  if (r === 'autor' || r === 'mentor')
-    return 'bg-indigo-50 text-indigo-700 border-indigo-300 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-800';
-  return 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900';
-}
-
-function formatDate(dateValue) {
-  if (!dateValue) return '';
-  return new Intl.DateTimeFormat('bs-BA', {
-    day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
-  }).format(new Date(dateValue));
-}
-
-const medalKey = computed(() => `c-${props.comment.id}`);
-</script>
-
-<script setup>
-import { ref, computed } from 'vue';
-import ForumAvatar from './ForumAvatar.vue';
-
-defineOptions({ name: 'ForumCommentNode' })
-
-const props = defineProps({
-  comment:          { type: Object,   required: true },
-  currentUserId:    { type: Number,   default: null },
-  isAdmin:          { type: Boolean,  default: false },
-  isTopicAuthor:    { type: Boolean,  default: false },
-  canReply:         { type: Boolean,  default: false },
-  topicId:          { type: Number,   default: null },
-  openMedalDropdown:{ type: String,   default: null },
-  editingCommentId: { type: Number,   default: null },
-  replyingToId:     { type: Number,   default: null },
-  depth:            { type: Number,   default: 0 },
-  getUserVote:      { type: Function, required: true },
-  getLikesCount:    { type: Function, required: true },
-  getDislikesCount: { type: Function, required: true },
-});
-
-const emit = defineEmits([
-  'vote', 'best-answer', 'delete',
-  'start-edit', 'cancel-edit', 'submit-edit',
-  'start-reply', 'cancel-reply', 'submit-reply',
-  'toggle-medals'
-]);
-
-const replyContentLocal = ref('');
-const editContentLocal  = ref('');
 const replyFilesLocal   = ref([]);
 
 const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.pdf', '.docx', '.txt'];
@@ -194,7 +103,6 @@ function formatDate(dateValue) {
 
 const medalKey = computed(() => `c-${props.comment.id}`);
 </script>
-
 <template>
   <div
     :class="[
@@ -375,7 +283,6 @@ const medalKey = computed(() => `c-${props.comment.id}`);
                 {{ attachment.mime_type?.startsWith('image/') ? '🖼️' : '📄' }} {{ attachment.filename }}
                 <span class="text-slate-400">({{ (attachment.file_size / 1024).toFixed(1) }} KB)</span>
               </span>
-              
               <a
                 :href="`http://127.0.0.1:8000/forum/attachments/comment/${comment.id}/download/${attachment.id}`"
                 target="_blank"
@@ -399,7 +306,7 @@ const medalKey = computed(() => `c-${props.comment.id}`);
             placeholder="Napišite odgovor..."
             class="w-full text-sm border border-gray-200 dark:border-slate-600 rounded-lg p-3 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
             rows="3"
-          ></textarea>
+          />
 
           <!-- File upload za reply -->
           <div class="mt-2">

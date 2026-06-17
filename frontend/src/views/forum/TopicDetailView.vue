@@ -7,8 +7,7 @@ import ForumSidebar from '../../components/ForumSidebar.vue';
 import ForumWidgets from '../../components/ForumWidgets.vue'; 
 import ForumGuidelines from '../../components/ForumGuidelines.vue'; 
 import { postAdminNotice } from '../../services/forum_admin.js';
-import { getTopicById, createComment, incrementTopicView } from '../../services/forum';
-
+import { getTopicById, createComment, incrementTopicView, uploadCommentAttachments } from '../../services/forum';
 const props = defineProps({
   id: { type: [String, Number], required: true }
 });
@@ -86,7 +85,7 @@ watch(
 );
 
 // ---- PRILAGOĐENO ZA RAD SA KARTICOM ----
-const handleNewComment = async ({ content, onSuccess, onError }) => {
+const handleNewComment = async ({ content, files = [], onSuccess, onError }) => {
   commentError.value = '';
   successMessage.value = '';
 
@@ -97,18 +96,19 @@ const handleNewComment = async ({ content, onSuccess, onError }) => {
 
   isSubmitting.value = true;
   try {
-    await createComment({
+    const newComment = await createComment({
       content: content.trim(),
       topic_id: parseInt(props.id),
       is_admin_notice: false
     });
-    
+
+    if (files && files.length > 0 && newComment?.id) {
+      await uploadCommentAttachments(newComment.id, files);
+    }
+
     successMessage.value = 'Odgovor uspješno objavljen!';
-    
-    // Ako je podkomponenta (kartica) poslala callback za uspjeh, okini ga
-    if (onSuccess) onSuccess(); 
-    
-    await loadTopicAndComments(props.id); 
+    if (onSuccess) onSuccess();
+    await loadTopicAndComments(props.id);
   } catch (error) {
     if (onError) onError('Došlo je do greške. Pokušajte ponovo.');
   } finally {
@@ -125,14 +125,15 @@ const handleAdminNotice = async () => {
   noticeError.value = '';
   try {
     await postAdminNotice(props.id, adminNoticeContent.value);
-    adminNoticeContent.value = ''; 
-    await loadTopicAndComments(props.id); 
+    adminNoticeContent.value = '';
+    await loadTopicAndComments(props.id);
   } catch (error) {
     noticeError.value = 'Greška pri objavi obavještenja.';
   } finally {
     isSubmittingNotice.value = false;
   }
 };
+
 </script>
 
 <template>
