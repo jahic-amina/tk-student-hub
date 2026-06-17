@@ -1,5 +1,5 @@
 <template>
-    <div class="max-w-2xl mx-auto py-8 px-4">
+    <div class="max-w-2xl mx-auto py-8 px-4 dark:text-slate-100">
         <!-- Nazad dugme -->
 
         <div class="flex gap-3 mb-6">
@@ -12,7 +12,7 @@
                 <span>NAZAD</span>
             </button>
             <button v-if="material?.user?.id === currentUserId" @click="isEditing ? saveChanges() : toggleEdit()"
-                class="inline-flex items-center gap-2 bg-white border border-gray-300 text-gray-700 font-medium px-4 py-2 rounded-lg hover:bg-gray-50 active:scale-[0.98] transition text-sm">
+                class="inline-flex items-center gap-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 font-medium px-4 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-[0.98] transition text-sm">
                 <svg v-if="!isEditing" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -38,7 +38,7 @@
         <SuccessMessage :message="successMessage" :title="successTitle" :icon="successIcon"
             @close="() => { successMessage = ''; goBack() }" />
 
-        <div v-if="loading" class="text-gray-400">Učitavanje...</div>
+        <div v-if="loading" class="text-gray-400 dark:text-slate-500">Učitavanje...</div>
 
         <div v-else-if="material">
             <!-- Header -->
@@ -46,40 +46,40 @@
                 <div class="w-full">
                     <template v-if="isEditing">
                         <input v-model="material.title"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-1.5 mb-1 focus:outline-none focus:border-primary" />
+                            class="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-lg px-3 py-1.5 mb-1 focus:outline-none focus:border-primary" />
                     </template>
                     <template v-else>
                         <h2 class="text-xl font-bold">{{ material.title }}</h2>
                     </template>
-                    <p class="text-sm text-gray-400">
+                    <p class="text-sm text-gray-400 dark:text-slate-500">
                         Postavio: {{ material.user?.full_name }} • {{ formatDate(material.created_at) }}
                     </p>
                 </div>
             </div>
-
-            <hr class="mb-4" />
+            <hr class="mb-4 dark:border-slate-700" />
 
             <!-- Opis -->
             <div class="mb-6">
                 <h3 class="font-semibold mb-2">Detaljan opis</h3>
                 <template v-if="isEditing">
                     <textarea v-model="material.description" rows="4"
-                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-600 focus:outline-none focus:border-primary resize-none" />
+                        class="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 rounded-lg px-3 py-2 text-sm text-gray-600 focus:outline-none focus:border-primary resize-none" />
                     <div class="mb-6">
                         <h3 class="font-semibold mb-2">Zamijeni fajl (opcionalno)</h3>
                         <div @click="fileInput.click()" @dragover.prevent="isDragging = true"
                             @dragleave.prevent="isDragging = false" @drop.prevent="onFileDrop" :class="[
                                 'border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors',
-                                isDragging ? 'border-primary bg-orange-50' : 'border-gray-300 bg-gray-50'
+                                isDragging ? 'border-primary bg-orange-50 dark:bg-orange-950' : 'border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800'
                             ]">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 mx-auto mb-2 text-gray-400"
                                 fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round"
                                     d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5 5 5M12 5v10" />
                             </svg>
-                            <p class="text-gray-700 font-medium">Prevucite fajl ovdje ili kliknite da odaberete</p>
-                            <p class="text-sm text-gray-500 mt-1">Podržani formati: PDF, DOC, DOCX, TXT, PPT, PPTX, ZIP
-                            </p>
+                            <p class="text-gray-700 dark:text-slate-300 font-medium">Prevucite fajl ovdje ili kliknite
+                                da odaberete</p>
+                            <p class="text-sm text-gray-500 dark:text-slate-400 mt-1">Podržani formati: PDF, DOC, DOCX,
+                                TXT, PPT, PPTX, ZIP</p>
                             <p v-if="selectedFile" class="text-sm text-primary font-medium mt-3">
                                 Odabran: {{ selectedFile.name }}
                             </p>
@@ -91,7 +91,7 @@
                     <div class="mb-4">
                         <h3 class="font-semibold mb-2">Tip materijala</h3>
                         <select v-model="editMaterialType"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-primary">
+                            class="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-primary">
                             <option value="">Odaberite tip</option>
                             <option value="skripta">Skripta</option>
                             <option value="auditorne_vježbe">Auditorne vježbe</option>
@@ -105,7 +105,7 @@
                     <div class="mb-4">
                         <h3 class="font-semibold mb-2">Godina studija</h3>
                         <select v-model="editYear"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-primary">
+                            class="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-primary">
                             <option value="">Odaberite godinu</option>
                             <option value="1">1. godina</option>
                             <option value="2">2. godina</option>
@@ -118,7 +118,7 @@
                     <div class="mb-6">
                         <h3 class="font-semibold mb-2">Predmet</h3>
                         <select v-model="editSubjectId"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-primary">
+                            class="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-primary">
                             <option value="">Odaberite predmet</option>
                             <option v-for="subject in filteredSubjects" :key="subject.id" :value="subject.id">
                                 {{ subject.name }}
@@ -127,7 +127,7 @@
                     </div>
                 </template>
                 <template v-else>
-                    <p class="text-gray-600 text-sm">{{ material.description }}</p>
+                    <p class="text-gray-600 dark:text-slate-400 text-sm ">{{ material.description }}</p>
                 </template>
             </div>
 
@@ -136,7 +136,9 @@
 
             <!-- Preuzmi -->
             <div class="mb-6">
-                <p class="text-sm text-gray-500 mb-2">Broj preuzimanja: {{ material.number_of_downloads }}</p>
+                <p class="text-sm text-gray-500 dark:text-slate-400 mb-2">Broj preuzimanja: {{
+                    material.number_of_downloads }}
+                </p>
                 <DownloadButton :material-id="material.id" :full-width="true" @downloaded="updateDownloadCount" />
             </div>
 
