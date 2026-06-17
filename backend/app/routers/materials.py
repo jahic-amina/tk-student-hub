@@ -96,9 +96,7 @@ def save_file_to_disk(file: UploadFile) -> str:
 # Generisanje thumbnail-a prve stranice PDF-a
 def generate_thumbnail(file_path: str) -> Optional[str]:
     try:
-        print(f"Generating thumbnail for: {file_path}")
         if not file_path.lower().endswith('.pdf'):
-            print("Not a PDF, skipping")
             return None
         doc = fitz.open(file_path)
         page = doc[0]
@@ -108,10 +106,8 @@ def generate_thumbnail(file_path: str) -> Optional[str]:
         thumbnail_path = f"{thumbnail_dir}/{os.path.basename(file_path)}.png"
         pix.save(thumbnail_path)
         doc.close()
-        print(f"Thumbnail saved: {thumbnail_path}")
         return thumbnail_path
     except Exception as e:
-        print(f"Thumbnail error: {e}")
         return None
 
 # ---------------------------------------------------------------------------
