@@ -252,7 +252,7 @@ async function saveChanges() {
     try {
         await updateMaterial(material.value.id, material.value.title, material.value.description, selectedFile.value, editSubjectId.value, editMaterialType.value)
         material.value = await getMaterial(route.params.id) // Ponovo učitaj materijal nakon spremanja
-        successMessage.value = 'Promjene su sačuvane!'
+        successMessage.value = 'Promjene su sačuvane! Čekanje odobrenja od strane administratora.'
         successTitle.value = 'Uspjeh!'
         successIcon.value = '✅'
         isEditing.value = false
