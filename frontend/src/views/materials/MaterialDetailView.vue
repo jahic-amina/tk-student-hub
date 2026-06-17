@@ -87,6 +87,44 @@
                         <input ref="fileInput" type="file" @change="onFileChange"
                             accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.txt" class="hidden" />
                     </div>
+                    <!-- Tip materijala -->
+                    <div class="mb-4">
+                        <h3 class="font-semibold mb-2">Tip materijala</h3>
+                        <select v-model="editMaterialType"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-primary">
+                            <option value="">Odaberite tip</option>
+                            <option value="skripta">Skripta</option>
+                            <option value="auditorne_vježbe">Auditorne vježbe</option>
+                            <option value="laboratorijske_vježbe">Laboratorijske vježbe</option>
+                            <option value="ispiti">Ispiti</option>
+                            <option value="projekat">Projekat</option>
+                        </select>
+                    </div>
+
+                    <!-- Godina studija -->
+                    <div class="mb-4">
+                        <h3 class="font-semibold mb-2">Godina studija</h3>
+                        <select v-model="editYear"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-primary">
+                            <option value="">Odaberite godinu</option>
+                            <option value="1">1. godina</option>
+                            <option value="2">2. godina</option>
+                            <option value="3">3. godina</option>
+                            <option value="4">4. godina</option>
+                        </select>
+                    </div>
+
+                    <!-- Predmet -->
+                    <div class="mb-6">
+                        <h3 class="font-semibold mb-2">Predmet</h3>
+                        <select v-model="editSubjectId"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-primary">
+                            <option value="">Odaberite predmet</option>
+                            <option v-for="subject in filteredSubjects" :key="subject.id" :value="subject.id">
+                                {{ subject.name }}
+                            </option>
+                        </select>
+                    </div>
                 </template>
                 <template v-else>
                     <p class="text-gray-600 text-sm">{{ material.description }}</p>
@@ -121,10 +159,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DownloadButton from '../../components/DownloadButton.vue'
-import { getMaterial, approveMaterial, rejectMaterial, updateMaterial } from '../../services/api'
+import { getMaterial, approveMaterial, rejectMaterial, updateMaterial, getSubjects } from '../../services/api'
 import SuccessMessage from '../../components/SuccessMessage.vue'
 import CommentList from '../../components/CommentList.vue'
 import MaterialRating from '../../components/MaterialRating.vue'
@@ -144,6 +182,22 @@ const originalDescription = ref('')
 const isDragging = ref(false)
 const selectedFile = ref(null)
 const fileInput = ref(null)
+const subjects = ref([])
+const editYear = ref('')
+const editSubjectId = ref(null)
+const editMateriaType = ref('')
+
+onMounted(async () => {
+    material.value = await getMaterial(route.params.id)
+    subjects.value = await getSubjects()
+    loading.value = false
+})
+
+const filteredSubjects = computed(() => {
+    if (!editYear.value) return []
+    return subjects.value.filter(subject => subject.study_year == editYear.value)
+})
+
 
 function onFileChange(event) {
     selectedFile.value = event.target.files[0] || null
@@ -160,6 +214,9 @@ function toggleEdit() {
         // Spremi originalne vrijednosti prije editovanja
         originalTitle.value = material.value.title
         originalDescription.value = material.value.description
+        editYear.value = material.value.subject?.study_year || ''
+        editSubjectId.value = material.value.subject?.id || ''
+        editMateriaType.value = material.value.file_type || ''
     }
     isEditing.value = !isEditing.value
 }
@@ -167,13 +224,17 @@ function toggleEdit() {
 function cancelEdit() {
     material.value.title = originalTitle.value
     material.value.description = originalDescription.value
+    editYear.value = ''
+    editSubjectId.value = ''
+    editMateriaType.value = ''
     isEditing.value = false
     selectedFile.value = null
 }
 
 async function saveChanges() {
     try {
-        await updateMaterial(material.value.id, material.value.title, material.value.description, selectedFile.value)
+        await updateMaterial(material.value.id, material.value.title, material.value.description, selectedFile.value, editSubjectId.value, editMateriaType.value)
+        material.value = await getMaterial(route.params.id) // Ponovo učitaj materijal nakon spremanja
         successMessage.value = 'Promjene su sačuvane!'
         successTitle.value = 'Uspjeh!'
         successIcon.value = '✅'
@@ -184,10 +245,6 @@ async function saveChanges() {
     }
 }
 
-onMounted(async () => {
-    material.value = await getMaterial(route.params.id)
-    loading.value = false
-})
 
 async function handleApprove() {
     try {
