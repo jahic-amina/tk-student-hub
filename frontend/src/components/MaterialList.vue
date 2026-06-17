@@ -1,9 +1,11 @@
 <template>
-  <div class="max-w-7xl mx-auto flex flex-col md:flex-row gap-8 items-start justify-start p-6 w-full">
+  <div class="w-full flex flex-col md:flex-row gap-8 items-start justify-start py-6 pl-0 pr-4 md:-ml-24 lg:-ml-80 bg-transparent" style="max-width: none !important;">
 
-    <MaterialFilter @change="handleFilterChange" />
+    <div class="w-full md:w-[280px] shrink-0 flex flex-col items-stretch justify-start gap-4 text-left">
+      <MaterialFilter @change="handleFilterChange" />
+    </div>
 
-    <div class="flex-grow min-w-0">
+    <div class="flex-grow min-w-0 w-full pl-4">
       <MaterialTabs v-if="userRole !== 'admin'" :activeTab="currentTab" @tab-change="handleTabChange" />
 
       <h1 class="text-2xl font-bold uppercase mb-1">Pregled materijala</h1>
@@ -13,6 +15,20 @@
 
       <div v-else>
         <div v-if="filteredMaterialsBookmark.length > 0" class="flex flex-col gap-4">
+          <MaterialCard 
+            v-for="material in filteredMaterialsBookmark" 
+            :key="material.id" 
+            :material="material"
+            :user-role="userRole"
+            @click="$router.push(`/materials/${$event}`)"
+            @deleted="handleDelete"
+            @toggle-bookmark="handleToggleBookmark"
+          />
+        </div>
+
+        <div v-else class="w-full py-20 text-left">
+          <p class="text-gray-500 text-lg">Nema materijala za ovaj prikaz.</p>
+        </div>
     <MaterialCard 
         v-for="material in filteredMaterialsBookmark" 
         :key="material.id" 
@@ -59,6 +75,7 @@
   
       </div>
     </div>
+
   </div>
 </template>
 
