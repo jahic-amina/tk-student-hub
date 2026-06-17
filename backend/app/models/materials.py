@@ -112,6 +112,13 @@ class MaterialDetailResponse(SQLModel):
     comments: list[CommentResponse] = []
     ratings: list[Rating] = []
 
+class PaginatedMaterialsResponse(SQLModel):
+    items: list[MaterialsResponse]
+    total: int
+    page: int
+    per_page: int
+    total_pages: int
+
 def get_default_subjects():
     return [
         Subject(name="Matematika 1", study_year=1),
