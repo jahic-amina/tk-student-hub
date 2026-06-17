@@ -80,9 +80,7 @@ const materials = ref([])
 const loading = ref(true)
 const currentTab = ref('all')
 
-const userRaw = localStorage.getItem('user');
-const currentUser = userRaw ? JSON.parse(userRaw) : null;
-const currentUserId = ref(currentUser ? currentUser.id : null);
+const currentUserId = ref(Number(localStorage.getItem('user_id')) || null)
 const userRole = ref(localStorage.getItem('role') || 'member');
 
 const trenutnastranica = ref(1)
@@ -91,7 +89,11 @@ const trenutniFilteri = ref({})
 
 async function loadMaterials(filters = {}, page = 1) {
     loading.value = true
-    const rezultat = await getMaterials(filters, page)
+    const aktivniFilteri = currentTab.value === 'mine'
+      ? { ...filters, mine_only: true }
+      : { ...filters, mine_only: false }
+
+    const rezultat = await getMaterials(aktivniFilteri, page)
     materials.value = rezultat.items
     ukupnoStranica.value = rezultat.total_pages
     trenutnastranica.value = rezultat.page
@@ -100,34 +102,18 @@ async function loadMaterials(filters = {}, page = 1) {
 
 onMounted(() => {
   loadMaterials();
-  console.log("Ulogovan korisnik ID:", currentUserId.value);
 })
 
 function handleTabChange(tabId) {
   currentTab.value = tabId;
   trenutnastranica.value = 1
+  loadMaterials(trenutniFilteri.value, 1)
 }
 
 function promijeniStranicu(novaStr) {
     loadMaterials(trenutniFilteri.value, novaStr)
 }
 
-const filteredMaterials = computed(() => {
-  if (currentTab.value === 'mine') {
-    return materials.value.filter(m => {
-      const autorId = m.user?.id;
-      const mojId = currentUserId.value;
-
-      return Number(autorId) === Number(mojId);
-    });
-  }
-
-  if (currentTab.value === 'favorites') {
-    return [];
-  }
-
-  return materials.value;
-});
 async function handleFilterChange(newFilters) {
   trenutniFilteri.value = newFilters
   await loadMaterials(newFilters,1);
@@ -141,18 +127,14 @@ function handleDelete(deletedMaterialId) {
 
 
 const filteredMaterialsBookmark = computed(() => {
-  // 1. Ako je tab "Moji materijali", filtriraj po ID-u korisnika
   if (currentTab.value === 'mine') {
-    return materials.value.filter(m => Number(m.user?.id) === Number(currentUserId.value));
+    return materials.value;
   }
-  
-  // 2. Ako je tab "Najdraži materijali", prikaži samo bookmarkovane
+
   if (currentTab.value === 'favorites') {
     return materials.value.filter(m => m.is_bookmarked === true);
   }
 
-  // 3. DEFAULT (Svi materijali): Ako nije nijedan od gornjih tabova, VRATI SVE
-  // Ovo je dio koji je vjerovatno falio ili se nije izvršavao
   return materials.value;
 });
 
