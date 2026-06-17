@@ -1,4 +1,5 @@
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import Column, SQLModel, Field, Relationship
+from sqlalchemy import String
 from typing import Optional
 from datetime import datetime
 from app.models.user import User 
@@ -22,6 +23,7 @@ class Material(SQLModel, table=True):
     status: str = Field(default="pending")
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
     number_of_downloads: int = Field(default=0)
+    thumbnail_path: Optional[str] = Field(default=None, sa_column=Column(String, nullable=True))
 
     subject_id: int = Field(foreign_key="subjects.id")
     user_id: int = Field(foreign_key="users.id")
@@ -71,7 +73,8 @@ class MaterialCreate(SQLModel):
     title: str
     description: Optional[str] = None
     file_type: str
-    subject_id: int  
+    subject_id: int
+    thumbnail_path: Optional[str] = None
 class CommentCreate(SQLModel):
     content: str
     material_id: int
@@ -106,7 +109,8 @@ class MaterialsResponse(SQLModel):
     average_rating: Optional[float] = None
     rating_count: Optional[int] = None
     is_bookmarked: bool = False
-    
+    thumbnail_path: Optional[str] = None
+
 class MaterialDetailResponse(SQLModel):
     id: int
     title: str
@@ -119,6 +123,7 @@ class MaterialDetailResponse(SQLModel):
     user: UserResponse
     comments: list[CommentResponse] = []
     ratings: list[Rating] = []
+    thumbnail_path: Optional[str] = None
     
     average_rating: Optional[float] = None
     rating_count: Optional[int] = None
