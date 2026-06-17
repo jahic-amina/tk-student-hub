@@ -8,7 +8,7 @@ from app.models.notification import Notification, NotificationType
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from app.models.forum import ForumTopic, ForumComment, ForumCommentVote
+from app.models.forum import ForumTopic, ForumComment, ForumCommentVote, CommentAttachment
 from app.routers.forum_helpers import (
     get_author_data,
     get_comment_votes_count,
@@ -132,6 +132,7 @@ def local_get_topic_comments(db: Session, topic_id: int) -> list[dict]:
                 "is_admin_notice": comment.is_admin_notice,
                 "parent_id": comment.parent_id, "created_at": comment.created_at, "updated_at": comment.updated_at,
                 "votes_count": 0, "likes_count": 0, "dislikes_count": 0, "author": None, "replies": [],
+                "attachments" : [],
             }
 
         return {
@@ -140,6 +141,8 @@ def local_get_topic_comments(db: Session, topic_id: int) -> list[dict]:
             "parent_id": comment.parent_id, "created_at": comment.created_at, "updated_at": comment.updated_at,
             "votes_count": votes_count, "likes_count": likes_count, "dislikes_count": dislikes_count,
             "author": get_comment_author_data(db, comment.user_id), "replies": [],
+            "attachments": [{"id": a.id, "filename": a.filename, "file_size": a.file_size, "mime_type": a.mime_type}
+                            for a in db.exec(select(CommentAttachment).where(CommentAttachment.comment_id == comment.id)).all()],
         }
 
     comment_dict = {comment.id: build_comment_dict(comment) for comment in all_comments}
