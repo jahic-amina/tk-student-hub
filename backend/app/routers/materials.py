@@ -96,17 +96,39 @@ def save_file_to_disk(file: UploadFile) -> str:
 # Generisanje thumbnail-a prve stranice PDF-a
 def generate_thumbnail(file_path: str) -> Optional[str]:
     try:
-        if not file_path.lower().endswith('.pdf'):
-            return None
-        doc = fitz.open(file_path)
-        page = doc[0]
-        pix = page.get_pixmap(matrix=fitz.Matrix(0.5, 0.5))
         thumbnail_dir = "uploads/thumbnails"
         os.makedirs(thumbnail_dir, exist_ok=True)
         thumbnail_path = f"{thumbnail_dir}/{os.path.basename(file_path)}.png"
-        pix.save(thumbnail_path)
-        doc.close()
-        return thumbnail_path
+        
+        # Ako je PDF - direktno generiši
+        if file_path.lower().endswith('.pdf'):
+            doc = fitz.open(file_path)
+            page = doc[0]
+            pix = page.get_pixmap(matrix=fitz.Matrix(0.5, 0.5))
+            pix.save(thumbnail_path)
+            doc.close()
+            return thumbnail_path
+        
+        # Za PPTX, DOCX, PPT, DOC - konvertuj u PDF pa generiši
+        convertable = ('.pptx', '.ppt', '.docx', '.doc')
+        if any(file_path.lower().endswith(ext) for ext in convertable):
+            import subprocess
+            result = subprocess.run([
+                            '/opt/homebrew/bin/soffice', '--headless', '--convert-to', 'pdf',
+                '--outdir', '/tmp', file_path
+            ], capture_output=True, timeout=30)
+            
+            pdf_path = f"/tmp/{os.path.basename(file_path).rsplit('.', 1)[0]}.pdf"
+            if os.path.exists(pdf_path):
+                doc = fitz.open(pdf_path)
+                page = doc[0]
+                pix = page.get_pixmap(matrix=fitz.Matrix(0.5, 0.5))
+                pix.save(thumbnail_path)
+                doc.close()
+                os.remove(pdf_path)
+                return thumbnail_path
+        
+        return None
     except Exception as e:
         return None
 
