@@ -1,8 +1,8 @@
-"""reset migracija
+"""init
 
-Revision ID: f6ab8fc85599
+Revision ID: 86ae47b2ca97
 Revises: 
-Create Date: 2026-06-17 14:22:52.465605
+Create Date: 2026-06-17 22:46:57.987033
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,9 @@ import sqlalchemy as sa
 import sqlmodel
 
 
+
 # revision identifiers, used by Alembic.
-revision: str = 'f6ab8fc85599'
+revision: str = '86ae47b2ca97'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -73,7 +74,7 @@ def upgrade() -> None:
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('profilna_slika_url', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('biografija', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('godina_studija', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('godina_studija', sa.Integer(), nullable=True),
     sa.Column('deactivated_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
@@ -81,7 +82,7 @@ def upgrade() -> None:
     op.create_table('activity_logs',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.Column('activity_type', sa.Enum('material_posted', 'forum_comment', 'internship_completed', 'material_uploaded', 'forum_answer', name='activitytype'), nullable=False),
+    sa.Column('activity_type', sa.Enum('material_posted', 'forum_comment', 'internship_accepted', 'material_uploaded', 'forum_answer', name='activitytype'), nullable=False),
     sa.Column('title', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('subtitle', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('entity_id', sa.Integer(), nullable=True),
@@ -160,7 +161,7 @@ def upgrade() -> None:
     sa.Column('user_id', sa.Integer(), nullable=True),
     sa.Column('company_id', sa.Integer(), nullable=True),
     sa.Column('text', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.Column('type', sa.Enum('NEW_OPPORTUNITY', 'STATUS_CHANGE', 'DEADLINE_EXPIRING', name='notificationtype'), nullable=False),
+    sa.Column('type', sa.Enum('NEW_OPPORTUNITY', 'STATUS_CHANGE', 'DEADLINE_EXPIRING', 'COMMENT_LIKED', 'MATERIAL_GRADED', 'MATERIAL_PENDING_APPROVAL', name='notificationtype'), nullable=False),
     sa.Column('is_read', sa.Boolean(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['company_id'], ['companies.id'], ),
@@ -212,6 +213,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('content', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.Column('material_id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['material_id'], ['materials.id'], ),
