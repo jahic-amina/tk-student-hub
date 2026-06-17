@@ -79,9 +79,7 @@ const materials = ref([])
 const loading = ref(true)
 const currentTab = ref('all')
 
-const userRaw = localStorage.getItem('user');
-const currentUser = userRaw ? JSON.parse(userRaw) : null;
-const currentUserId = ref(currentUser ? currentUser.id : null);
+const currentUserId = ref(Number(localStorage.getItem('user_id')) || null)
 const userRole = ref(localStorage.getItem('role') || 'member');
 
 const trenutnastranica = ref(1)
@@ -91,22 +89,24 @@ const materijalaPoStranici = 10
 
 async function loadMaterials(filters = {}, page = 1) {
     loading.value = true
-    if (currentTab.value === 'all') {
-        const rezultat = await getMaterials(filters, page, 10)
+    if (currentTab.value === 'favorites') {
+        const rezultat = await getMaterials({ ...filters, mine_only: false }, 1, 50)
+        materials.value = rezultat.items
+        trenutnastranica.value = 1
+    } else {
+        const aktivniFilteri = currentTab.value === 'mine'
+          ? { ...filters, mine_only: true }
+          : { ...filters, mine_only: false }
+
+        const rezultat = await getMaterials(aktivniFilteri, page)
         materials.value = rezultat.items
         ukupnoStranica.value = rezultat.total_pages
         trenutnastranica.value = rezultat.page
-    } else {
-        const rezultat = await getMaterials(filters, 1, 50)
-        materials.value = rezultat.items
-        trenutnastranica.value = 1
     }
     loading.value = false
 }
-
 onMounted(() => {
-  loadMaterials();
-  console.log("Ulogovan korisnik ID:", currentUserId.value);
+  loadMaterials()
 })
 
 function handleTabChange(tabId) {
@@ -116,7 +116,7 @@ function handleTabChange(tabId) {
 }
 
 function promijeniStranicu(novaStr) {
-    if (currentTab.value === 'all') {
+    if (currentTab.value === 'all' || currentTab.value === 'mine') {
         loadMaterials(trenutniFilteri.value, novaStr)
     } else {
         trenutnastranica.value = novaStr
@@ -136,7 +136,7 @@ function handleDelete(deletedMaterialId) {
 // Filtrirani materijali (bez paginacije) — puna lista za trenutni tab
 const filteredMaterialsBookmark = computed(() => {
   if (currentTab.value === 'mine') {
-    return materials.value.filter(m => Number(m.user?.id) === Number(currentUserId.value));
+    return materials.value;
   }
   if (currentTab.value === 'favorites') {
     return materials.value.filter(m => m.is_bookmarked === true);
@@ -150,7 +150,7 @@ const ukupnoStranicaLokalno = computed(() => {
 })
 
 const prikazaniMaterijali = computed(() => {
-    if (currentTab.value === 'all') {
+    if (currentTab.value === 'all' || currentTab.value === 'mine') {
         return filteredMaterialsBookmark.value
     }
     const start = (trenutnastranica.value - 1) * materijalaPoStranici
@@ -159,7 +159,10 @@ const prikazaniMaterijali = computed(() => {
 })
 
 const ukupnoStranicaPrikaz = computed(() => {
-    return currentTab.value === 'all' ? ukupnoStranica.value : ukupnoStranicaLokalno.value
+    if (currentTab.value === 'all' || currentTab.value === 'mine') {
+        return ukupnoStranica.value
+    }
+    return ukupnoStranicaLokalno.value
 })
 
 async function handleToggleBookmark(materialId) {

@@ -345,6 +345,9 @@ export async function getMaterials(filters = {}, page = 1, perPage = 10) {
   if (filters.subject_id) {
     params.append('subject_id', filters.subject_id);
   }
+  if (filters.mine_only) {
+    params.append('mine_only', 'true');
+  }
   params.append('page', page);
   params.append('per_page', perPage);
 
