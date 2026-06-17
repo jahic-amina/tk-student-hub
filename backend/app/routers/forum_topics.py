@@ -8,7 +8,7 @@ import re
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User, UserRole
-from app.models.forum import ForumCategory, ForumTopic, ForumTag, ForumTopicTag, TopicReport, AdminAnnouncement
+from app.models.forum import ForumCategory, ForumTopic, ForumTag, ForumTopicTag, TopicReport, AdminAnnouncement, TopicAttachment
 from app.routers.forum_likes import (
     get_topic_likes_count,
     get_topic_dislikes_count,
@@ -63,15 +63,17 @@ def get_author_data(db: Session, user_id: int) -> dict:
     }
 
 def get_topic_tags(db: Session, topic_id: int) -> list[dict]:
-    # Selektujemo cijeli objekat taga, a ne samo naziv stringa
     statement = (
         select(ForumTag)
         .join(ForumTopicTag, ForumTopicTag.tag_id == ForumTag.id)
         .where(ForumTopicTag.topic_id == topic_id)
     )
     tags = db.exec(statement).all()
-    # Vraćamo listu rječnika (ID i Name) koje Vue očekuje
     return [{"id": tag.id, "name": tag.name} for tag in tags]
+
+def get_topic_attachments(db: Session, topic_id: int) -> list[dict]:
+    attachments = db.exec(select(TopicAttachment).where(TopicAttachment.topic_id == topic_id)).all()
+    return [{"id": a.id, "filename": a.filename, "file_size": a.file_size, "mime_type": a.mime_type} for a in attachments]
 
 def build_topic_list_item(db: Session, topic: ForumTopic) -> dict:
     comments_count = get_comments_count(db, topic.id)
@@ -81,6 +83,7 @@ def build_topic_list_item(db: Session, topic: ForumTopic) -> dict:
         "answers_count": comments_count, "created_at": topic.created_at, "updated_at": topic.updated_at,
         "author": get_author_data(db, topic.user_id), "category": get_category_data(db, topic.category_id),
         "tags": get_topic_tags(db, topic.id), "has_best_answer": has_best_answer(db, topic.id),
+        "attachments": get_topic_attachments(db, topic.id)
     }
 
 # --- ROUTES ---
@@ -355,6 +358,7 @@ def get_topic_details(
         "author": get_author_data(db, topic.user_id),
         "category": get_category_data(db, topic.category_id),
         "tags": get_topic_tags(db, topic.id),
+        "attachments": get_topic_attachments(db, topic.id),
         "comments": comments,
         "stats": {
             "comments_count": comments_count,
@@ -379,12 +383,17 @@ def increment_topic_view(topic_id: int, db: Session = Depends(get_db)):
     return {"id": topic.id, "views_count": topic.views_count}
 
 @router.put("/{topic_id}", status_code=status.HTTP_200_OK)
-def update_topic(topic_id: int, topic_data: ForumTopicUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def update_topic(
+    topic_id: int,
+    topic_data: ForumTopicUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     topic = db.get(ForumTopic, topic_id)
     if not topic or topic.is_deleted:
         raise HTTPException(status_code=404, detail="Tema nije pronađena.")
     
-    if topic.user_id != current_user.id and getattr(current_user, 'role', 'member') != 'admin':
+    if topic.user_id != current_user.id and current_user.role != UserRole.admin:
         raise HTTPException(status_code=403, detail="Možete editovati samo vlastitu temu.")
     
     if topic_data.title is not None:
@@ -396,6 +405,7 @@ def update_topic(topic_id: int, topic_data: ForumTopicUpdate, db: Session = Depe
     db.add(topic)
     db.commit()
     db.refresh(topic)
+    
     return build_topic_list_item(db, topic)
 
 @router.delete("/{id}", status_code=status.HTTP_200_OK)
@@ -419,29 +429,3 @@ def report_topic(topic_id: int, report_data: ReportCreate, db: Session = Depends
     db.add(report)
     db.commit()
     return {"success": True}
-
-@router.put("/{topic_id}", status_code=status.HTTP_200_OK)
-def update_topic(
-    topic_id: int,
-    topic_data: ForumTopicUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    topic = db.get(ForumTopic, topic_id)
-    if not topic or topic.is_deleted:
-        raise HTTPException(status_code=404, detail="Tema nije pronađena.")
-    
-    if topic.user_id != current_user.id and current_user.role != UserRole.admin:
-        raise HTTPException(status_code=403, detail="Možete editovati samo vlastitu temu.")
-    
-    if topic_data.title is not None:
-        topic.title = topic_data.title
-    if topic_data.content is not None:
-        topic.content = topic_data.content
-    
-    topic.updated_at = datetime.now()
-    db.add(topic)
-    db.commit()
-    db.refresh(topic)
-    
-    return build_topic_list_item(db, topic)
