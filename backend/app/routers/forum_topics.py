@@ -8,7 +8,7 @@ import re
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User, UserRole
-from app.models.forum import ForumCategory, ForumTopic, ForumTag, ForumTopicTag, TopicReport, AdminAnnouncement
+from app.models.forum import ForumCategory, ForumTopic, ForumTag, ForumTopicTag, TopicReport, AdminAnnouncement, TopicAttachment
 from app.routers.forum_categories import get_category_data 
 from app.routers.forum_likes import get_topic_likes_count
 from app.services.forum_reputation import (
@@ -67,6 +67,10 @@ def get_topic_tags(db: Session, topic_id: int) -> list[dict]:
     tags = db.exec(statement).all()
     # Vraćamo listu rječnika (ID i Name) koje Vue očekuje
     return [{"id": tag.id, "name": tag.name} for tag in tags]
+
+def get_topic_attachments(db: Session, topic_id: int) -> list[dict]:
+    attachments = db.exec(select(TopicAttachment).where(TopicAttachment.topic_id == topic_id)).all()
+    return [{"id": a.id, "filename": a.filename, "file_size": a.file_size, "mime_type": a.mime_type} for a in attachments]
 
 def build_topic_list_item(db: Session, topic: ForumTopic) -> dict:
     comments_count = get_comments_count(db, topic.id)
