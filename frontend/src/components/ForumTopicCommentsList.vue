@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue';
 import { voteOnComment, toggleBestAnswer, deleteComment, updateComment, createComment } from '../services/forum';
 import ForumAvatar from './ForumAvatar.vue';
 import ForumCommentNode from './ForumCommentNode.vue';
+import { uploadCommentAttachments } from '../services/forum';
 
 const props = defineProps({
   comments: { type: Array, required: true },
@@ -29,6 +30,8 @@ const filteredComments = computed(() => {
 // ─── Trenutni korisnik ────────────────────────────────────────────────────────
 const currentUserId = ref(null);
 const currentUserRole = ref(null);
+
+const replyFiles = ref({}); 
 
 onMounted(async () => {
   try {
@@ -92,15 +95,30 @@ function handleCancelEdit() {
   editContent.value = '';
 }
 
-async function handleSubmitEdit(commentId, newContent) {
-  if (!newContent?.trim()) return;
+function handleReplyFiles(commentId, files) {
+  replyFiles.value[commentId] = files;
+}
+
+async function handleSubmitReply(comment, replyText) {
+  if (!replyText?.trim()) return;
   try {
-    await updateComment(commentId, newContent.trim());
-    editingCommentId.value = null;
-    editContent.value = '';
+    const newComment = await createComment({
+      content: replyText.trim(),
+      topic_id: props.topicId,
+      parent_id: comment.id
+    });
+
+    // Upload fajlova ako ih ima
+    const files = replyFiles.value[comment.id];
+    if (files && files.length > 0) {
+      await uploadCommentAttachments(newComment.id, files);
+      delete replyFiles.value[comment.id];
+    }
+
+    replyingToId.value = null;
     emit('refresh');
   } catch (e) {
-    alert('Greška pri editovanju komentara.');
+    alert('Greška pri slanju odgovora.');
   }
 }
 
