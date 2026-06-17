@@ -133,14 +133,19 @@ function handleCancelReply() {
   replyingToId.value = null;
 }
 
-async function handleSubmitReply(comment, replyText) {
+async function handleSubmitReply(comment, replyText, files = []) {
   if (!replyText?.trim()) return;
   try {
-    await createComment({
+    const newComment = await createComment({
       content: replyText.trim(),
       topic_id: props.topicId,
       parent_id: comment.id
     });
+
+    if (files && files.length > 0) {
+      await uploadCommentAttachments(newComment.id, files);
+    }
+
     replyingToId.value = null;
     emit('refresh');
   } catch (e) {
