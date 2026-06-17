@@ -238,6 +238,14 @@ def approve_material(
         raise HTTPException(status_code=404, detail="Materijal nije pronađen.")
     material.status = "approved"
     session.add(material)
+
+    tekst = f"Vaš materijal '{material.title}' je odobren i sada je vidljiv ostalim studentima."
+    session.add(Notification(
+        user_id=material.user_id,
+        text=tekst,
+        type=NotificationType.STATUS_CHANGE
+    ))
+
     session.commit()
     return {"message": "Materijal odobren."}
 
@@ -255,6 +263,14 @@ def reject_material(
         raise HTTPException(status_code=404, detail="Materijal nije pronađen.")
     material.status = "rejected"
     session.add(material)
+
+    tekst = f"Vaš materijal '{material.title}' je odbijen."
+    session.add(Notification(
+        user_id=material.user_id,
+        text=tekst,
+        type=NotificationType.STATUS_CHANGE
+    ))
+
     session.commit()
     return {"message": "Materijal odbijen."}
 
