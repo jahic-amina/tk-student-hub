@@ -99,7 +99,20 @@
             <!-- Preuzmi -->
             <div class="mb-6">
                 <p class="text-sm text-gray-500 mb-2">Broj preuzimanja: {{ material.number_of_downloads }}</p>
-                <DownloadButton :material-id="material.id" :full-width="true" @downloaded="updateDownloadCount" />
+                <div class="flex gap-3">
+                    <DownloadButton :material-id="material.id" :full-width="true" @downloaded="updateDownloadCount"
+                        class="flex-1" />
+                    <button v-if="canPreview" @click="openPreview"
+                        class="flex-1 flex items-center justify-center gap-2 bg-primary text-white font-medium px-4 py-2 rounded-lg hover:bg-primary/90 transition text-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        PREGLEDAJ
+                    </button>
+                </div>
             </div>
 
             <div v-if="isAdmin && material.status === 'pending'" class="flex w-full gap-4 mb-6">
@@ -121,13 +134,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DownloadButton from '../../components/DownloadButton.vue'
-import { getMaterial, approveMaterial, rejectMaterial, updateMaterial } from '../../services/api'
+import { getMaterial, approveMaterial, rejectMaterial, getMaterialPreviewUrl, updateMaterijal } from '../../services/api'
 import SuccessMessage from '../../components/SuccessMessage.vue'
 import CommentList from '../../components/CommentList.vue'
 import MaterialRating from '../../components/MaterialRating.vue'
+
+const PREVIEWABLE = ['pdf', 'txt']
 
 const route = useRoute()
 const router = useRouter()
@@ -184,10 +199,23 @@ async function saveChanges() {
     }
 }
 
+const canPreview = computed(() => {
+    if (!material.value?.file_type) return false
+    const type = material.value.file_type.toLowerCase()
+    return type.includes('pdf') || type.includes('text') || type.includes('text/plain');
+})
+
+
 onMounted(async () => {
     material.value = await getMaterial(route.params.id)
     loading.value = false
 })
+
+
+function openPreview() {
+    const url = getMaterialPreviewUrl(material.value.id)
+    window.open(url, '_blank')
+}
 
 async function handleApprove() {
     try {
