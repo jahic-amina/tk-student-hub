@@ -24,10 +24,11 @@ router = APIRouter(prefix="/materials", tags=["materials"])
 
 def get_materials_by_status(
         session: Session,
-        status: str,
+    status: Optional[str],
         years: Optional[List[int]] = None,
         types: Optional[List[str]] = None,
         subject_id: Optional[int] = None,
+    user_id: Optional[int] = None,
         current_user: Optional[User] = None,
 ):
     query = (
@@ -37,14 +38,17 @@ def get_materials_by_status(
             func.count(Rating.id).label("rating_count"),
         )
         .outerjoin(Rating, Rating.material_id == Material.id)
-        .where(Material.status == status)
     )
+    if status is not None:
+        query = query.where(Material.status == status)
     if years:
         query = query.join(Subject, Material.subject_id == Subject.id).where(Subject.study_year.in_(years))
     if types:
         query = query.where(Material.file_type.in_(types))
     if subject_id:
         query = query.where(Material.subject_id == subject_id)
+    if user_id is not None:
+        query = query.where(Material.user_id == user_id).where(Material.status != "deleted")
 
     query = (
         query.options(
@@ -193,16 +197,24 @@ def get_materials(
     years: Optional[list[int]] = Query(None),
     types: Optional[list[str]] = Query(None),
     subject_id: Optional[int] = Query(None),
+    mine_only: bool = Query(False),
     current_user: Optional[User] = Depends(get_current_user),
     page: int = Query(1, ge=1),
     per_page: int = Query(10, ge=1, le=50),
 ):
+    user_id = current_user.id if mine_only and current_user else None
+    status = "approved" if not mine_only else None
+
+    if mine_only and current_user is None:
+        raise HTTPException(status_code=401, detail="Niste prijavljeni.")
+
     svi = get_materials_by_status(
         session,
-        "approved",
+        status or "approved",
         years=years,
         types=types,
         subject_id=subject_id,
+        user_id=user_id,
         current_user=current_user,
     )
     total = len(svi)
