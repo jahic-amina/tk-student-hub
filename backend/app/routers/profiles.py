@@ -18,13 +18,13 @@ from app.models.profile import UserProfileResponse, AvatarUploadResponse, Avatar
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     biografija: Optional[str] = None
-    godina_studija: Optional[str] = None  # stored as str in User model
+    godina_studija: Optional[int] = None  # stored as str in User model
 
 class UserResponse(BaseModel):
     id: int
     full_name: Optional[str]
     biografija: Optional[str]
-    godina_studija: Optional[str]
+    godina_studija: Optional[int]
 
     class Config:
         from_attributes = True
