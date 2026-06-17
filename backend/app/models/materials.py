@@ -111,6 +111,7 @@ class MaterialDetailResponse(SQLModel):
     user: UserResponse
     comments: list[CommentResponse] = []
     ratings: list[Rating] = []
+    file_extension : Optional[str] = None
 
 class PaginatedMaterialsResponse(SQLModel):
     items: list[MaterialsResponse]
