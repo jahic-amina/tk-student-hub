@@ -587,13 +587,19 @@ export async function rejectMaterial(id) {
   return response.json();
 }
 
-export async function updateMaterial(id, title, description, file) {
+export async function updateMaterial(id, title, description, file, subjectId, materialType) {
   const token = localStorage.getItem("token");
   const formData = new FormData();
   formData.append('title', title);
   formData.append('description', description);
   if (file) {
     formData.append('file', file);
+  }
+  if (subjectId) {
+    formData.append('subject_id', subjectId);
+  }
+  if (materialType) {
+    formData.append('material_type', materialType);
   }
   const response = await fetch(`${BASE_URL}/materials/${id}/update`, {
     method: "PATCH",
