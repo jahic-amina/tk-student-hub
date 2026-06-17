@@ -264,8 +264,7 @@ async function saveChanges() {
 
 const canPreview = computed(() => {
     if (!material.value?.file_type) return false
-    const type = material.value.file_type.toLowerCase()
-    return type.includes('pdf') || type.includes('text') || type.includes('text/plain');
+    return ['pdf', 'txt'].includes(material.value.file_extension);
 })
 
 
