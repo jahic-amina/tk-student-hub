@@ -72,6 +72,7 @@ def get_topic_attachments(db: Session, topic_id: int) -> list[dict]:
     attachments = db.exec(select(TopicAttachment).where(TopicAttachment.topic_id == topic_id)).all()
     return [{"id": a.id, "filename": a.filename, "file_size": a.file_size, "mime_type": a.mime_type} for a in attachments]
 
+
 def build_topic_list_item(db: Session, topic: ForumTopic) -> dict:
     comments_count = get_comments_count(db, topic.id)
     return {
@@ -404,6 +405,7 @@ def get_topic_details(
         "is_locked": getattr(topic, "is_locked", False), "created_at": topic.created_at, "updated_at": topic.updated_at,
         "author": get_author_data(db, topic.user_id), "category": get_category_data(db, topic.category_id),
         "tags": get_topic_tags(db, topic.id), "comments": comments,
+        "attachments": get_topic_attachments(db, topic.id), # DODANO: Uključujemo i fajlove vezane za temu
         "stats": {"comments_count": comments_count, "answers_count": comments_count, "views_count": topic.views_count, "votes_count": votes_count, "has_best_answer": any(comment["is_best_answer"] for comment in comments)},
         "is_deleted": getattr(topic, "is_deleted", False) # DODANO: Signal frontendu da prikaže crveno upozorenje
     }
