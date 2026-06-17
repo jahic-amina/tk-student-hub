@@ -617,3 +617,9 @@ export async function downloadMaterial(materialId) {
   return response
 }
 
+export async function getMyApplications(token) {
+  const response = await fetch(`${BASE_URL}/applications/me/all`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  return response.json()
+}
