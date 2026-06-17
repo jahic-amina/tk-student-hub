@@ -272,7 +272,7 @@ function handleFormSubmit({ content, clearForm }) {
             {{ attachment.mime_type.startsWith('image/') ? '🖼️' : '📄' }} {{ attachment.filename }}
             <span class="text-slate-400">({{ (attachment.file_size / 1024).toFixed(1) }} KB)</span>
           </span>
-          
+          <a
             :href="`http://127.0.0.1:8000/forum/attachments/topic/${topic.id}/download/${attachment.id}`"
             target="_blank"
             class="text-orange-500 hover:text-orange-400 font-bold whitespace-nowrap"
