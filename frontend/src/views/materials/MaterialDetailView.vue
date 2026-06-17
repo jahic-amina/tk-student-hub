@@ -187,7 +187,7 @@ const fileInput = ref(null)
 const subjects = ref([])
 const editYear = ref('')
 const editSubjectId = ref(null)
-const editMateriaType = ref('')
+const editMaterialType = ref('')
 
 onMounted(async () => {
     material.value = await getMaterial(route.params.id)
@@ -218,7 +218,7 @@ function toggleEdit() {
         originalDescription.value = material.value.description
         editYear.value = material.value.subject?.study_year || ''
         editSubjectId.value = material.value.subject?.id || ''
-        editMateriaType.value = material.value.file_type || ''
+        editMaterialType.value = material.value.file_type || ''
     }
     isEditing.value = !isEditing.value
 }
@@ -228,14 +228,14 @@ function cancelEdit() {
     material.value.description = originalDescription.value
     editYear.value = ''
     editSubjectId.value = ''
-    editMateriaType.value = ''
+    editMaterialType.value = ''
     isEditing.value = false
     selectedFile.value = null
 }
 
 async function saveChanges() {
     try {
-        await updateMaterial(material.value.id, material.value.title, material.value.description, selectedFile.value, editSubjectId.value, editMateriaType.value)
+        await updateMaterial(material.value.id, material.value.title, material.value.description, selectedFile.value, editSubjectId.value, editMaterialType.value)
         material.value = await getMaterial(route.params.id) // Ponovo učitaj materijal nakon spremanja
         successMessage.value = 'Promjene su sačuvane!'
         successTitle.value = 'Uspjeh!'
