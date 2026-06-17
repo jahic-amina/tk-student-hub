@@ -14,6 +14,8 @@ from app.models.materials import (
 )
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
+from app.services.activity_log_service import log_activity
+from app.enums.activity import ActivityType
 from datetime import datetime
 
 router = APIRouter(prefix="/materials", tags=["materials"])
@@ -157,6 +159,17 @@ def upload_material(
         db.add(new_material)
         db.commit()
         db.refresh(new_material)
+
+        subject = db.get(Subject, subject_id)
+        log_activity(
+            db,
+            current_user.id,
+            ActivityType.material_posted,
+            new_material.title,
+            f"{subject.name if subject else ''} · {file_type.upper()}",
+            new_material.id 
+        )
+
         return new_material
     except Exception as e:
         if os.path.exists(file_path):
