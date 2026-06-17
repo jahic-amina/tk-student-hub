@@ -9,8 +9,16 @@
         </div>
 
         <div v-else class="flex flex-col gap-4">
-            <MaterialCard v-for="material in materials" :key="material.id" :material="material" :pending="true"
-                @approve="handleApprove" @reject="handleReject" @click="$emit('open', $event)" />
+            <MaterialCard 
+                v-for="material in materials" 
+                :key="material.id" 
+                :material="material" 
+                :pending="true"
+                :user-role="userRole"
+                @approve="handleApprove" 
+                @reject="handleReject" 
+                @click="$emit('open', $event)" 
+            />
         </div>
     </div>
 </template>
@@ -24,6 +32,8 @@ defineEmits(['open'])
 
 const materials = ref([])
 const loading = ref(true)
+
+const userRole = ref(localStorage.getItem('role') || 'member')
 
 onMounted(async () => {
     materials.value = await getPendingMaterials()

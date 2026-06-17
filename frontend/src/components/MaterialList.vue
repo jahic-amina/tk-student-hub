@@ -17,6 +17,7 @@
             v-for="material in filteredMaterialsBookmark" 
             :key="material.id" 
             :material="material"
+            :user-role="userRole"
             @click="$router.push(`/materials/${$event}`)"
             @deleted="handleDelete"
             @toggle-bookmark="handleToggleBookmark"
