@@ -124,6 +124,7 @@ const fetchNotifications = async () => {
     );
   });
 };
+
 const toggleDropdown = () => {
   isOpen.value = !isOpen.value;
   if (isOpen.value) fetchNotifications();
@@ -156,16 +157,19 @@ const clickNotification = async (notif) => {
       } else {
         await notificationService.markAsRead(notif.id);
       }
-
       notif.is_read = true;
     }
 
     isOpen.value = false;
 
     if (notif.source === 'forum' && notif.topic_id) {
-      await router.push(
-        '/forum/tema/' + notif.topic_id
-      );
+      // Ako postoji comment_id, dodajemo hash kako bi
+      // ForumTopicCommentsList mogao scrollati i highlightati taj komentar
+      const hash = notif.comment_id
+        ? '#comment-' + notif.comment_id
+        : '';
+
+      await router.push('/forum/tema/' + notif.topic_id + hash);
     }
   } catch (error) {
     console.error(

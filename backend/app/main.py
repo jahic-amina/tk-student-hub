@@ -88,6 +88,7 @@ app.include_router(materials.router)
 app.include_router(notification_router)
 app.include_router(prakse_router)
 app.include_router(workshops_router)
+app.include_router(forum_notifications.router)
 
 # --- OSNOVNI ENDPOINTI ---
 

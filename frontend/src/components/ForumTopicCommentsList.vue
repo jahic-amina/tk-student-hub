@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { voteOnComment, toggleBestAnswer, deleteComment, updateComment, createComment } from '../services/forum';
 import ForumAvatar from './ForumAvatar.vue';
 import ForumCommentNode from './ForumCommentNode.vue';
@@ -8,7 +8,9 @@ import { uploadCommentAttachments } from '../services/forum';
 const props = defineProps({
   comments: { type: Array, required: true },
   topicAuthorId: { type: Number, default: null },
-  topicId: { type: Number, default: null }
+  topicId: { type: Number, default: null },
+  // ID komentara koji treba highlightati (iz URL hasha, prosljeđen od TopicDetailView)
+  highlightedCommentId: { type: Number, default: null },
 });
 
 const emit = defineEmits(['refresh']);
@@ -48,7 +50,65 @@ onMounted(async () => {
   } catch (e) {
     console.warn('Nije moguće dohvatiti korisnika.');
   }
+
+  // Nakon što se lista mountuje, pokušaj scrollati na highlighted komentar
+  if (props.highlightedCommentId) {
+    await scrollToHighlightedComment(props.highlightedCommentId);
+  }
 });
+
+// Ako se highlightedCommentId promijeni (npr. korisnik klikne drugu notifikaciju
+// dok je već na ovoj stranici), ponovo scrollaj
+watch(
+  () => props.highlightedCommentId,
+  async (newId) => {
+    if (newId) {
+      await scrollToHighlightedComment(newId);
+    }
+  }
+);
+
+// Kada se lista komentara učita/promijeni, pokušaj scrollati
+watch(
+  () => props.comments,
+  async () => {
+    if (props.highlightedCommentId) {
+      await scrollToHighlightedComment(props.highlightedCommentId);
+    }
+  },
+  { once: true }
+);
+
+// ── Scroll & highlight ────────────────────────────────────────────────────────
+// Trajanje highlight animacije u ms
+const HIGHLIGHT_DURATION = 3000;
+
+// Skup ID-jeva koji su trenutno highlightovani
+const activeHighlights = ref(new Set());
+
+async function scrollToHighlightedComment(commentId) {
+  // Čekamo nextTick da se DOM renderuje
+  await nextTick();
+
+  // Mali dodatni timeout jer su komentari rekurzivni i mogu zahtijevati
+  // više render prolaza
+  await new Promise(resolve => setTimeout(resolve, 300));
+
+  const el = document.getElementById('comment-' + commentId);
+  if (!el) return;
+
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  // Dodaj highlight
+  activeHighlights.value = new Set([...activeHighlights.value, commentId]);
+
+  // Ukloni highlight nakon HIGHLIGHT_DURATION
+  setTimeout(() => {
+    activeHighlights.value = new Set(
+      [...activeHighlights.value].filter(id => id !== commentId)
+    );
+  }, HIGHLIGHT_DURATION);
+}
 
 const isAdmin = computed(() => currentUserRole.value === 'admin');
 const isTopicAuthor = computed(() =>
@@ -170,6 +230,18 @@ async function handleDeleteComment(comment) {
   }
 }
 
+// ─── Submit edit ──────────────────────────────────────────────────────────────
+async function handleSubmitEdit(commentId, newContent) {
+  try {
+    await updateComment(commentId, { content: newContent });
+    editingCommentId.value = null;
+    editContent.value = '';
+    emit('refresh');
+  } catch (e) {
+    alert('Greška pri uređivanju komentara.');
+  }
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function findCommentById(nodes, id) {
   for (const node of nodes) {
@@ -231,7 +303,9 @@ function formatDate(dateValue) {
         <!-- ── Admin Notice ───────────────────── -->
         <div
           v-if="comment.is_admin_notice"
-          class="rounded-xl border-2 border-red-400 dark:border-red-700 bg-red-50 dark:bg-red-950/30 p-5 flex gap-4 shadow-md ring-2 ring-red-300/30 dark:ring-red-800/30"
+          :id="'comment-' + comment.id"
+          class="rounded-xl border-2 border-red-400 dark:border-red-700 bg-red-50 dark:bg-red-950/30 p-5 flex gap-4 shadow-md ring-2 ring-red-300/30 dark:ring-red-800/30 transition-all duration-700"
+          :class="{ 'ring-4 ring-yellow-400 ring-offset-2 bg-yellow-50 dark:bg-yellow-950/30': activeHighlights.has(comment.id) }"
         >
           <div class="flex flex-col items-center justify-start pt-1 flex-shrink-0 w-7">
             <span class="text-2xl select-none">🛡️</span>
@@ -320,6 +394,7 @@ function formatDate(dateValue) {
           :get-likes-count="getLikesCount"
           :get-dislikes-count="getDislikesCount"
           :depth="0"
+          :active-highlights="activeHighlights"
           @vote="handleVote"
           @best-answer="handleBestAnswer"
           @delete="handleDeleteComment"
