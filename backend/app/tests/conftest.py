@@ -28,13 +28,10 @@ def session_fixture():
 @pytest.fixture(name="client")
 def client_fixture(session: Session):
     """Fixture for FastAPI TestClient with test database."""
-    def get_session_override():
-        return session
-
-    app.dependency_overrides[get_db] = get_session_override
-    client = TestClient(app)
-    yield client
+    app.dependency_overrides[get_db] = lambda: session
+    yield TestClient(app)
     app.dependency_overrides.clear()
+   
 
 
 @pytest.fixture
@@ -43,13 +40,12 @@ def student_user(session: Session):
     user = User(
         email="student@test.ba",
         full_name="Test Student",
-        hashed_password=hash_password("password123"),
+        password_hash=hash_password("password123"),
         role=UserRole.member,
         is_active=True,
     )
     session.add(user)
-    session.commit()
-    session.refresh(user)
+    session.flush()
     return user
 
 
@@ -59,13 +55,12 @@ def admin_user(session: Session):
     user = User(
         email="admin@test.ba",
         full_name="Test Admin",
-        hashed_password=hash_password("password123"),
+        password_hash=hash_password("password123"),
         role=UserRole.admin,
         is_active=True,
     )
     session.add(user)
-    session.commit()
-    session.refresh(user)
+    session.flush()
     return user
 
 
@@ -84,8 +79,7 @@ def company_user(session: Session):
         address="Test Address",
     )
     session.add(company)
-    session.commit()
-    session.refresh(company)
+    session.flush()
     return company
 
 
@@ -127,8 +121,7 @@ def active_ad(session: Session, company_user: Company):
         status=AdStatus.active,
     )
     session.add(ad)
-    session.commit()
-    session.refresh(ad)
+    session.flush()
     return ad
 
 
@@ -152,8 +145,7 @@ def pending_ad(session: Session, company_user: Company):
         status=AdStatus.pending,
     )
     session.add(ad)
-    session.commit()
-    session.refresh(ad)
+    session.flush()
     return ad
 
 
@@ -175,6 +167,37 @@ def expired_ad(session: Session, company_user: Company):
         status=AdStatus.expired,
     )
     session.add(ad)
-    session.commit()
-    session.refresh(ad)
+    session.flush()
+    return ad
+
+@pytest.fixture
+def other_company_ad(session: Session):
+    """CRITICAL FOR 403 TESTS: Creates an ad that belongs to a completely different company."""
+    other_company = Company(
+        company_name="Other Company LLC",
+        description="Another company.",
+        website_url="https://other.ba",
+        email="other_company@test.ba",
+        phone_number="+38761999999",
+        tin="9876543210321",
+        hashed_password=hash_password("password123"),
+        status=CompanyStatus.approved,
+        address="Other Address",
+    )
+    session.add(other_company)
+    session.flush()
+
+    ad = Ad(
+        company_id=other_company.id,
+        title="Tuđi Oglas (Forbidden Target)",
+        type=AdType.internship,
+        field="IT",
+        location="Mostar",
+        description="You should not see this.",
+        deadline=date.today() + timedelta(days=10),
+        duration_months=3,
+        status=AdStatus.active,
+    )
+    session.add(ad)
+    session.flush()
     return ad
