@@ -1,35 +1,35 @@
 <template>
-  <div class="max-w-6xl mx-auto px-6 py-8">
+  <div class="max-w-6xl mx-auto px-6 py-8 dark:text-gray-100">
 
     <div class="mb-6">
-      <h1 class="text-2xl font-semibold text-gray-800">Upravljanje korisnicima</h1>
+      <h1 class="text-2xl font-semibold text-gray-800 dark:text-white">Upravljanje korisnicima</h1>
       <p class="text-sm text-primary mt-1">Pregled i upravljanje svim korisnicima sistema</p>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-      <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col justify-center">
-        <span class="text-sm text-gray-500 font-medium">Ukupan broj registrovanih</span>
+      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 flex flex-col justify-center">
+        <span class="text-sm text-gray-500 dark:text-gray-400 font-medium">Ukupan broj registrovanih</span>
         <div class="mt-2 flex items-center gap-2">
-          <span v-if="statsLoading" class="text-2xl font-bold text-gray-300">...</span>
-          <span v-else class="text-3xl font-bold text-gray-800">{{ stats.total_users }}</span>
+          <span v-if="statsLoading" class="text-2xl font-bold text-gray-300 dark:text-gray-600">...</span>
+          <span v-else class="text-3xl font-bold text-gray-800 dark:text-white">{{ stats.total_users }}</span>
         </div>
       </div>
 
-      <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col justify-center">
-        <span class="text-sm text-gray-500 font-medium">Trenutno aktivni nalozi</span>
+      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 flex flex-col justify-center">
+        <span class="text-sm text-gray-500 dark:text-gray-400 font-medium">Trenutno aktivni nalozi</span>
         <div class="mt-2 flex items-center gap-2">
-          <span v-if="statsLoading" class="text-2xl font-bold text-gray-300">...</span>
-          <span v-else class="text-3xl font-bold text-green-600">{{ stats.active_users }}</span>
+          <span v-if="statsLoading" class="text-2xl font-bold text-gray-300 dark:text-gray-600">...</span>
+          <span v-else class="text-3xl font-bold text-green-600 dark:text-green-400">{{ stats.active_users }}</span>
         </div>
       </div>
 
-      <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col justify-between">
+      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 flex flex-col justify-between">
         <div class="flex justify-between items-start">
-          <span class="text-sm text-gray-500 font-medium">Nove registracije</span>
+          <span class="text-sm text-gray-500 dark:text-gray-400 font-medium">Nove registracije</span>
           <select 
             v-model="statsPeriod" 
             @change="fetchStats"
-            class="text-xs bg-gray-50 border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary/50 cursor-pointer"
+            class="text-xs bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:text-white rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary/50 cursor-pointer"
           >
             <option value="day">Danas</option>
             <option value="week">Ove sedmice</option>
@@ -37,33 +37,30 @@
           </select>
         </div>
         <div class="mt-2 flex items-center gap-2">
-          <span v-if="statsLoading" class="text-2xl font-bold text-gray-300">...</span>
-          <span v-else class="text-3xl font-bold text-blue-600">+{{ stats.new_registrations }}</span>
+          <span v-if="statsLoading" class="text-2xl font-bold text-gray-300 dark:text-gray-600">...</span>
+          <span v-else class="text-3xl font-bold text-blue-600 dark:text-blue-400">+{{ stats.new_registrations }}</span>
         </div>
       </div>
     </div>
 
     <div class="flex flex-col sm:flex-row gap-3 mb-6">
-
       <div class="relative flex-1">
         <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-               viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
           </svg>
         </span>
         <input
           v-model="searchQuery"
           type="text"
           placeholder="Pretraži po imenu ili email adresi..."
-          class="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+          class="w-full pl-9 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 dark:text-white dark:placeholder-gray-400 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
           @input="fetchUsers"
         />
       </div>
       <select
         v-model="selectedRole"
-        class="border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/30"
+        class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm text-gray-600 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/30"
         @change="fetchUsers"
       >
         <option value="">Uloga</option>
@@ -73,50 +70,42 @@
 
       <select
         v-model="selectedStatus"
-        class="border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/30"
+        class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm text-gray-600 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/30"
         @change="fetchUsers"
       >
         <option value="">Status</option>
         <option value="true">Aktivan</option>
         <option value="false">Deaktiviran</option>
       </select>
-
     </div>
 
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
 
-      <div v-if="loading" class="py-12 text-center text-gray-400 text-sm">
-        Ucitavanje korisnika...
+      <div v-if="loading" class="py-12 text-center text-gray-400 dark:text-gray-500 text-sm">
+        Učitavanje korisnika...
       </div>
 
-      <div v-else-if="error" class="py-12 text-center text-red-400 text-sm">
+      <div v-else-if="error" class="py-12 text-center text-red-400 dark:text-red-500 text-sm">
         {{ error }}
       </div>
 
       <table v-else class="w-full">
         <thead>
-          <tr class="border-b border-gray-100">
-            <th class="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              Ime
-            </th>
-            <th class="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              Email
-            </th>
-            <th class="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              Status
-            </th>
-            <th class="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              Uloga
-            </th>
+          <tr class="border-b border-gray-100 dark:border-gray-700">
+            <th class="text-left px-6 py-3 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Ime</th>
+            <th class="text-left px-6 py-3 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Email</th>
+            <th class="text-left px-6 py-3 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Status</th>
+            <th class="text-left px-6 py-3 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Uloga</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
           <tr
             v-for="user in users"
             :key="user.id"
-            class="border-b border-gray-50 hover:bg-gray-50 transition"
+            class="border-b border-gray-50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
           >
-            <td class="px-6 py-4 text-sm font-medium text-gray-800">
+            <td class="px-6 py-4 text-sm font-medium text-gray-800 dark:text-gray-200">
               {{ user.full_name }}
             </td>
             <td class="px-6 py-4 text-sm text-primary">
@@ -125,7 +114,7 @@
             <td class="px-6 py-4">
               <button
                 @click="toggleUserStatus(user)"
-                :class="user.is_active ? 'bg-green-100 text-green-700 hover:bg-green-200 cursor-pointer' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 cursor-pointer'"
+                :class="user.is_active ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 cursor-pointer' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 cursor-pointer'"
                 class="px-3 py-1 rounded-full text-xs font-medium transition-colors"
                 title="Klikni za promjenu statusa"
               >
@@ -135,7 +124,7 @@
             <td class="px-6 py-4">
               <button
                 @click="openRoleModal(user)"
-                :class="user.role === 'admin' ? 'bg-purple-100 text-purple-700 hover:bg-purple-200 cursor-pointer' : 'bg-blue-100 text-blue-700 hover:bg-blue-200 cursor-pointer'"
+                :class="user.role === 'admin' ? 'bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:hover:bg-purple-900/50 cursor-pointer' : 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 cursor-pointer'"
                 class="px-3 py-1 rounded-full text-xs font-medium transition-colors"
                 title="Klikni za promjenu uloge"
               >
@@ -145,7 +134,7 @@
             <td class="px-6 py-4 text-right text-sm">
               <button 
                 @click="openDeleteModal(user)" 
-                class="text-red-600 hover:text-red-800 font-semibold cursor-pointer transition-colors"
+                class="text-red-600 dark:text-red-500 hover:text-red-800 dark:hover:text-red-400 font-semibold cursor-pointer transition-colors"
               >
                 OBRIŠI
               </button>
@@ -153,46 +142,45 @@
           </tr>
 
           <tr v-if="users.length === 0">
-            <td colspan="4" class="px-6 py-10 text-center text-sm text-gray-400">
+            <td colspan="5" class="px-6 py-10 text-center text-sm text-gray-400 dark:text-gray-500">
               Nema korisnika koji odgovaraju pretrazi.
             </td>
           </tr>
         </tbody>
       </table>
 
-      <div v-if="!loading && !error" class="px-6 py-3 border-t border-gray-50">
+      <div v-if="!loading && !error" class="px-6 py-3 border-t border-gray-50 dark:border-gray-700">
         <p class="text-sm text-primary">
           Prikazano {{ users.length }} od {{ total }} korisnika
         </p>
       </div>
-
     </div>
 
-    <div v-if="isDeleteModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 overflow-y-auto px-4">
-      <div class="bg-white rounded-xl p-6 max-w-md w-full shadow-xl border border-gray-100">
-        <h3 class="text-lg font-semibold text-gray-900 mb-2">Trajno brisanje korisnika</h3>
+    <div v-if="isDeleteModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60 overflow-y-auto px-4">
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full shadow-xl border border-gray-100 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Trajno brisanje korisnika</h3>
         
-        <p class="text-sm text-gray-500 mb-4">
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
           Da li ste sigurni da želite trajno obrisati korisnika 
-          <strong class="text-gray-800">{{ userToDelete?.full_name }}</strong> ({{ userToDelete?.email }})? 
+          <strong class="text-gray-800 dark:text-gray-200">{{ userToDelete?.full_name }}</strong> ({{ userToDelete?.email }})? 
           Ova akcija je nepovratna.
         </p>
         
-        <p class="text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">
-          Upišite riječ <span class="text-red-600 font-bold">OBRIŠI</span> za potvrdu:
+        <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">
+          Upišite riječ <span class="text-red-600 dark:text-red-500 font-bold">OBRIŠI</span> za potvrdu:
         </p>
         
         <input 
           v-model="deleteConfirmationInput"
           type="text" 
           placeholder="OBRIŠI" 
-          class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-500/30 mb-5"
+          class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:text-white rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-500/30 mb-5"
         />
         
         <div class="flex justify-end gap-3">
           <button 
             @click="closeDeleteModal" 
-            class="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
+            class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors cursor-pointer"
           >
             Odustani
           </button>
@@ -201,7 +189,7 @@
             :disabled="deleteConfirmationInput !== 'OBRIŠI'"
             :class="deleteConfirmationInput === 'OBRIŠI' 
               ? 'bg-red-600 hover:bg-red-700 text-white cursor-pointer shadow-sm shadow-red-500/20' 
-              : 'bg-gray-200 text-gray-400 cursor-not-allowed'"
+              : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed'"
             class="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
           >
             Potvrdi brisanje
@@ -210,11 +198,11 @@
       </div>
     </div>
 
-    <div v-if="showErrorModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 overflow-y-auto px-4">
-      <div class="bg-white rounded-xl p-6 max-w-md w-full shadow-xl border border-red-100">
-        <h3 class="text-lg font-semibold text-red-600 mb-2">⚠️ Akcija nije dozvoljena</h3>
+    <div v-if="showErrorModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60 overflow-y-auto px-4">
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full shadow-xl border border-red-100 dark:border-red-900/50">
+        <h3 class="text-lg font-semibold text-red-600 dark:text-red-500 mb-2">⚠️ Akcija nije dozvoljena</h3>
         
-        <p class="text-sm text-gray-600 mb-6">
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
           {{ errorMessage }}
         </p>
         
@@ -229,29 +217,26 @@
       </div>
     </div>
 
-    <div v-if="isStatusModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 overflow-y-auto px-4">
-      <div class="bg-white rounded-xl p-6 max-w-md w-full shadow-xl border border-gray-100">
-        <h3 class="text-lg font-semibold text-gray-900 mb-2">Potvrda akcije</h3>
+    <div v-if="isStatusModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60 overflow-y-auto px-4">
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full shadow-xl border border-gray-100 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Potvrda akcije</h3>
     
-        <p class="text-sm text-gray-500 mb-6">
-      Da li ste sigurni da želite 
-          <strong class="font-bold">{{ actionToPerform }}</strong> korisnika 
-          <strong class="text-gray-800">{{ userToToggle?.full_name }}</strong>?
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
+          Da li ste sigurni da želite <strong class="font-bold text-gray-800 dark:text-gray-200">{{ actionToPerform }}</strong> korisnika 
+          <strong class="text-gray-800 dark:text-gray-200">{{ userToToggle?.full_name }}</strong>?
         </p>
     
         <div class="flex justify-end gap-3">
           <button 
             @click="closeStatusModal" 
-            class="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
+            class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors cursor-pointer"
           >
             Odustani
           </button>
           <button 
             @click="confirmStatusToggle" 
-            :class="actionToPerform === 'aktivirati' 
-              ? 'bg-green-600 hover:bg-green-700 text-white' 
-              : 'bg-red-600 hover:bg-red-700 text-white'"
-            class="px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm"
+            :class="actionToPerform === 'aktivirati' ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'"
+            class="px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm cursor-pointer"
           >
             Potvrdi
           </button>
@@ -259,21 +244,21 @@
       </div>
     </div>
 
-    <div v-if="isRoleModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 overflow-y-auto px-4">
-      <div class="bg-white rounded-xl p-6 max-w-md w-full shadow-xl border border-gray-100">
-        <h3 class="text-lg font-semibold text-gray-900 mb-2">Potvrda promjene uloge</h3>
+    <div v-if="isRoleModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60 overflow-y-auto px-4">
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full shadow-xl border border-gray-100 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Potvrda promjene uloge</h3>
 
-        <p class="text-sm text-gray-500 mb-6">
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
           Da li ste sigurni da želite promijeniti ulogu korisnika 
-          <strong class="text-gray-800">{{ userToChangeRole?.full_name }}</strong> 
-          iz <strong class="text-gray-600">{{ roleLabel(userToChangeRole?.role) }}</strong> 
+          <strong class="text-gray-800 dark:text-gray-200">{{ userToChangeRole?.full_name }}</strong> 
+          iz <strong class="text-gray-600 dark:text-gray-400">{{ roleLabel(userToChangeRole?.role) }}</strong> 
           u <strong class="text-primary font-bold">{{ roleLabel(targetRole) }}</strong>?
         </p>
 
         <div class="flex justify-end gap-3">
           <button 
             @click="closeRoleModal" 
-            class="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
+            class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors cursor-pointer"
           >
             Odustani
           </button>
@@ -288,7 +273,6 @@
     </div>
   </div>
 </template>
-
 
 <script>
 import { getAllUsers, activateUser, deactivateUser, deleteUser, getMyProfile, getPlatformStats, changeUserRole } from '../../services/api.js'
