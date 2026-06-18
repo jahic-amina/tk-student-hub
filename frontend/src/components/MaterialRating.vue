@@ -167,7 +167,7 @@ if (materialData.user?.id === Number(userId)) {
         if (!response.ok) { ratingError.value = 'Greška prilikom ocjenjivanja.'; return }
         ratingMessage.value = 'Hvala na ocjeni! ⭐'
         ratingError.value = ''
-        await osvjeziOcjenu()
+        await refreshRating()
     } catch (err) {
         ratingError.value = 'Greška prilikom ocjenjivanja.'
     }
@@ -184,14 +184,14 @@ async function confirmChangeRating() {
         selectedRating.value = pendingStar.value
         ratingMessage.value = 'Ocjena promijenjena! ⭐'
         ratingError.value = ''
-        await osvjeziOcjenu()
+        await refreshRating()
     } catch (err) {
         ratingError.value = 'Greška prilikom promjene ocjene.'
     }
 }
 
 // Osvjezavanje prosjecne ocjene i broja ocjena nakon ocjenjivanja
-async function osvjeziOcjenu() {
+async function refreshRating() {
     const data = await getMaterial(props.materialId)
     if (data.ratings && data.ratings.length > 0) {
         const sum = data.ratings.reduce((acc, r) => acc + r.rating, 0)

@@ -3,7 +3,7 @@
   <!-- Dugme za otvaranje forme za upload - Lejla -->
   <button
   v-if="!showForm && !isAdmin"
-  @click="handleDodajKlik"
+  @click="handleAddClick"
   class="bg-primary text-white px-6 py-3 rounded-lg font-semibold
          hover:bg-orange-600 hover:shadow-md transition-all duration-200"
 >
@@ -237,7 +237,7 @@ const isSubmitting = ref(false)
 
 // Klik na dugme "Dodajte materijal" — neprijavljene preusmjeravas na login,
 // prijavljene na stranicu za upload 
-function handleDodajKlik() {
+function handleAddClick() {
   const isLoggedIn = !!localStorage.getItem('token')
   if (!isLoggedIn) {
     window.location.href = '/login'

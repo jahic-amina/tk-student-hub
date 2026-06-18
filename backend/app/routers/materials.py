@@ -575,10 +575,10 @@ def rate_material(
     db.refresh(new_rating)
     
     if material.user_id != current_user.id:
-        tekst = f"Vaš materijal '{material.title}' je ocijenjen sa {rating_data.rating}/5."
+        text = f"Vaš materijal '{material.title}' je ocijenjen sa {rating_data.rating}/5."
         db.add(Notification(
             user_id=material.user_id,
-            text=tekst,
+            text=text,
             type=NotificationType.MATERIAL_GRADED
         ))
         db.commit()

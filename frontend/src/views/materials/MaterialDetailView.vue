@@ -232,6 +232,7 @@ async function handleReject() {
 // Ažurira broj preuzimanja lokalno nakon downloada 
 function updateDownloadCount() {
     material.value.number_of_downloads += 1
+    ratingKey.value += 1
 }
 
 function goBack() {
