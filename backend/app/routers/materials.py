@@ -300,9 +300,20 @@ def download_material(
     # Provjera da li je materijal obrisan ili nije odobren
     if material.status == "deleted":
         raise HTTPException(status_code=404, detail="Materijal je uklonjen.")
-    if material.status != "approved":
+
+    is_admin = False
+    if token:
+        payload = decode_access_token(token)
+        if payload:
+            user_id_from_token = payload.get("sub")
+            if user_id_from_token:
+                user = db.get(User, int(user_id_from_token))
+                if user and user.role == UserRole.admin:
+                    is_admin = True
+
+    if material.status != "approved" and not is_admin:
         raise HTTPException(status_code=403, detail="Materijal nije odobren i ne može se preuzeti.")
-    
+
     # Provjera da fajl fizički postoji na serveru
     if not os.path.exists(material.file_path):
         raise HTTPException(status_code=404, detail="Fajl nije pronađen na serveru.")
