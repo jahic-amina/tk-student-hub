@@ -15,6 +15,17 @@
 
       <div v-else>
         <div v-if="filteredMaterialsBookmark.length > 0" class="flex flex-col gap-4">
+  <div class="flex flex-col gap-4">
+    <MaterialCard 
+      v-for="material in prikazaniMaterijali" 
+      :key="material.id" 
+      :material="material"
+      :user-role="userRole"
+      @click="$router.push(`/materials/${$event}`)"
+      @deleted="handleDelete"
+      @toggle-bookmark="handleToggleBookmark"
+    />
+  </div>
           <MaterialCard 
             v-for="material in filteredMaterialsBookmark" 
             :key="material.id" 
@@ -103,6 +114,36 @@
           </div>
         </div>
 
+  <div v-if="ukupnoStranicaPrikaz >= 1" class="flex justify-center items-center gap-2 mt-6">
+    <button
+      @click="promijeniStranicu(trenutnastranica - 1)"
+      :disabled="trenutnastranica === 1"
+      class="px-3 py-1 rounded-lg border text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+    >
+      ←
+    </button>
+    <button
+      v-for="br in ukupnoStranicaPrikaz"
+      :key="br"
+      @click="promijeniStranicu(br)"
+      :class="[
+        'px-3 py-1 rounded-lg border text-sm transition',
+        br === trenutnastranica 
+          ? 'bg-primary text-white border-primary' 
+          : 'text-gray-600 hover:bg-gray-100'
+      ]"
+    >
+      {{ br }}
+    </button>
+    <button
+      @click="promijeniStranicu(trenutnastranica + 1)"
+      :disabled="trenutnastranica === ukupnoStranicaPrikaz"
+      class="px-3 py-1 rounded-lg border text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+    >
+      →
+    </button>
+  </div>
+</div>
         <div v-else class="w-full py-20 text-left">
           <p class="text-gray-500 text-lg">Nema materijala za ovaj prikaz.</p>
         </div>
@@ -114,7 +155,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import MaterialCard from './MaterialCard.vue'
 import { getMaterials } from '../services/api'
 import MaterialFilter from './MaterialFilter.vue'
@@ -131,22 +172,28 @@ const userRole = ref(localStorage.getItem('role') || 'member');
 const trenutnastranica = ref(1)
 const ukupnoStranica = ref(0)
 const trenutniFilteri = ref({})
+const materijalaPoStranici = 10
 
 async function loadMaterials(filters = {}, page = 1) {
     loading.value = true
-    const aktivniFilteri = currentTab.value === 'mine'
-      ? { ...filters, mine_only: true }
-      : { ...filters, mine_only: false }
+    if (currentTab.value === 'favorites') {
+        const rezultat = await getMaterials({ ...filters, mine_only: false }, 1, 50)
+        materials.value = rezultat.items
+        trenutnastranica.value = 1
+    } else {
+        const aktivniFilteri = currentTab.value === 'mine'
+          ? { ...filters, mine_only: true }
+          : { ...filters, mine_only: false }
 
-    const rezultat = await getMaterials(aktivniFilteri, page)
-    materials.value = rezultat.items
-    ukupnoStranica.value = rezultat.total_pages
-    trenutnastranica.value = rezultat.page
+        const rezultat = await getMaterials(aktivniFilteri, page)
+        materials.value = rezultat.items
+        ukupnoStranica.value = rezultat.total_pages
+        trenutnastranica.value = rezultat.page
+    }
     loading.value = false
 }
-
 onMounted(() => {
-  loadMaterials();
+  loadMaterials()
 })
 
 function handleTabChange(tabId) {
@@ -156,32 +203,54 @@ function handleTabChange(tabId) {
 }
 
 function promijeniStranicu(novaStr) {
-    loadMaterials(trenutniFilteri.value, novaStr)
+    if (currentTab.value === 'all' || currentTab.value === 'mine') {
+        loadMaterials(trenutniFilteri.value, novaStr)
+    } else {
+        trenutnastranica.value = novaStr
+    }
 }
 
 async function handleFilterChange(newFilters) {
   trenutniFilteri.value = newFilters
-  await loadMaterials(newFilters,1);
-  
+  trenutnastranica.value = 1
+  await loadMaterials(newFilters, 1);
 }
 
 function handleDelete(deletedMaterialId) {
   materials.value = materials.value.filter(m => m.id !== deletedMaterialId)
 }
 
-
-
+// Filtrirani materijali (bez paginacije) — puna lista za trenutni tab
 const filteredMaterialsBookmark = computed(() => {
   if (currentTab.value === 'mine') {
     return materials.value;
   }
-
   if (currentTab.value === 'favorites') {
     return materials.value.filter(m => m.is_bookmarked === true);
   }
-
   return materials.value;
 });
+
+// Lokalna paginacija samo za "mine" i "favorites"
+const ukupnoStranicaLokalno = computed(() => {
+    return Math.ceil(filteredMaterialsBookmark.value.length / materijalaPoStranici)
+})
+
+const prikazaniMaterijali = computed(() => {
+    if (currentTab.value === 'all' || currentTab.value === 'mine') {
+        return filteredMaterialsBookmark.value
+    }
+    const start = (trenutnastranica.value - 1) * materijalaPoStranici
+    const end = start + materijalaPoStranici
+    return filteredMaterialsBookmark.value.slice(start, end)
+})
+
+const ukupnoStranicaPrikaz = computed(() => {
+    if (currentTab.value === 'all' || currentTab.value === 'mine') {
+        return ukupnoStranica.value
+    }
+    return ukupnoStranicaLokalno.value
+})
 
 async function handleToggleBookmark(materialId) {
     try {
