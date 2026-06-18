@@ -5,19 +5,21 @@ import ForumAvatar from './ForumAvatar.vue';
 defineOptions({ name: 'ForumCommentNode' })
 
 const props = defineProps({
-  comment:          { type: Object,   required: true },
-  currentUserId:    { type: Number,   default: null },
-  isAdmin:          { type: Boolean,  default: false },
-  isTopicAuthor:    { type: Boolean,  default: false },
-  canReply:         { type: Boolean,  default: false },
-  topicId:          { type: Number,   default: null },
-  openMedalDropdown:{ type: String,   default: null },
-  editingCommentId: { type: Number,   default: null },
-  replyingToId:     { type: Number,   default: null },
-  depth:            { type: Number,   default: 0 },
-  getUserVote:      { type: Function, required: true },
-  getLikesCount:    { type: Function, required: true },
-  getDislikesCount: { type: Function, required: true },
+  comment:            { type: Object,   required: true },
+  currentUserId:      { type: Number,   default: null },
+  isAdmin:            { type: Boolean,  default: false },
+  isTopicAuthor:      { type: Boolean,  default: false },
+  canReply:           { type: Boolean,  default: false },
+  topicId:            { type: Number,   default: null },
+  openMedalDropdown:  { type: String,   default: null },
+  editingCommentId:   { type: Number,   default: null },
+  replyingToId:       { type: Number,   default: null },
+  depth:              { type: Number,   default: 0 },
+  getUserVote:        { type: Function, required: true },
+  getLikesCount:      { type: Function, required: true },
+  getDislikesCount:   { type: Function, required: true },
+  // Set ID-jeva koji su trenutno highlightovani (dolazi iz ForumTopicCommentsList)
+  activeHighlights:   { type: Object,   default: () => new Set() },
 });
 
 const emit = defineEmits([
@@ -48,6 +50,9 @@ function handleReplyFileSelect(event) {
 
 const MAX_VISUAL_DEPTH = 3;
 const shouldIndent = computed(() => props.depth > 0 && props.depth <= MAX_VISUAL_DEPTH);
+
+// Da li je ovaj komentar trenutno highlightovan
+const isHighlighted = computed(() => props.activeHighlights.has(props.comment.id));
 
 const medalIcons = { gold: '🥇', silver: '🥈', bronze: '🥉' };
 const medalThresholds = {
@@ -103,6 +108,7 @@ function formatDate(dateValue) {
 
 const medalKey = computed(() => `c-${props.comment.id}`);
 </script>
+
 <template>
   <div
     :class="[
@@ -111,12 +117,19 @@ const medalKey = computed(() => `c-${props.comment.id}`);
         : 'mt-3'
     ]"
   >
+    <!--
+      id="comment-{id}" omogućava scrollIntoView iz ForumTopicCommentsList.
+      Tranzicija duration-700 osigurava glatko pojavljivanje/nestajanje hightlighta.
+    -->
     <div
-      class="bg-white dark:bg-slate-800 rounded-xl border p-4 flex gap-3 shadow-sm transition-all"
+      :id="'comment-' + comment.id"
+      class="bg-white dark:bg-slate-800 rounded-xl border p-4 flex gap-3 shadow-sm transition-all duration-700"
       :class="[
-        comment.is_best_answer
-          ? 'border-yellow-400 dark:border-yellow-600 bg-yellow-50/40 dark:bg-yellow-950/20 ring-1 ring-yellow-400/30'
-          : 'border-gray-200 dark:border-slate-700'
+        isHighlighted
+          ? 'border-yellow-400 dark:border-yellow-500 ring-2 ring-yellow-400/60 ring-offset-1 bg-yellow-50/60 dark:bg-yellow-950/20'
+          : comment.is_best_answer
+            ? 'border-yellow-400 dark:border-yellow-600 bg-yellow-50/40 dark:bg-yellow-950/20 ring-1 ring-yellow-400/30'
+            : 'border-gray-200 dark:border-slate-700'
       ]"
     >
       <!-- Vote kolona -->
@@ -351,6 +364,7 @@ const medalKey = computed(() => `c-${props.comment.id}`);
         :get-user-vote="getUserVote"
         :get-likes-count="getLikesCount"
         :get-dislikes-count="getDislikesCount"
+        :active-highlights="activeHighlights"
         @vote="(c, v) => emit('vote', c, v)"
         @best-answer="(c) => emit('best-answer', c)"
         @delete="(c) => emit('delete', c)"

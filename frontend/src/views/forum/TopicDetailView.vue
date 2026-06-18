@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import ForumTopicMainCard from '../../components/ForumTopicMainCard.vue';
 import ForumTopicCommentsList from '../../components/ForumTopicCommentsList.vue';
 import ForumSidebar from '../../components/ForumSidebar.vue'; 
@@ -8,11 +8,13 @@ import ForumWidgets from '../../components/ForumWidgets.vue';
 import ForumGuidelines from '../../components/ForumGuidelines.vue'; 
 import { postAdminNotice } from '../../services/forum_admin.js';
 import { getTopicById, createComment, incrementTopicView, uploadCommentAttachments } from '../../services/forum';
+
 const props = defineProps({
   id: { type: [String, Number], required: true }
 });
 
 const router = useRouter();
+const route = useRoute();
 
 const fullTopicData = ref(null);
 const isLoading = ref(true);
@@ -29,6 +31,14 @@ const isAdmin = computed(() => localStorage.getItem('role') === 'admin');
 const odabraniKategorijaId = computed(() => fullTopicData.value?.category?.id || null);
 
 const sortCriteria = ref('top'); // 'top' | 'newest' | 'oldest'
+
+// Izvuci comment_id iz URL hasha (#comment-123 → 123)
+const highlightedCommentId = computed(() => {
+  const hash = route.hash; // npr. '#comment-456'
+  if (!hash || !hash.startsWith('#comment-')) return null;
+  const parsed = parseInt(hash.replace('#comment-', ''), 10);
+  return isNaN(parsed) ? null : parsed;
+});
 
 const sortedComments = computed(() => {
   const komentari = fullTopicData.value?.comments || [];
@@ -185,10 +195,12 @@ const handleAdminNotice = async () => {
             </select>
           </div>
 
+          <!-- Prosljeđujemo highlighted comment id da lista zna koji da highlightuje -->
           <ForumTopicCommentsList 
             :comments="sortedComments" 
             :topic-author-id="topicAuthorId" 
-            :topic-id="parseInt(props.id)" 
+            :topic-id="parseInt(props.id)"
+            :highlighted-comment-id="highlightedCommentId"
             @refresh="() => loadTopicAndComments(props.id)" 
           />
 
