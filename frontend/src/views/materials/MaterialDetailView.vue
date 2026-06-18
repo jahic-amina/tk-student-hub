@@ -9,7 +9,7 @@
                     stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                <span>NAZAD</span>
+                <span class="font-bold">NAZAD</span>
             </button>
             <button v-if="material?.user?.id === currentUserId" @click="isEditing ? saveChanges() : toggleEdit()"
                 class="inline-flex items-center gap-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 font-medium px-4 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-[0.98] transition text-sm">
