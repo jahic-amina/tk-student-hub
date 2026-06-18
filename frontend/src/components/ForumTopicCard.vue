@@ -1,7 +1,5 @@
 <script setup>
 import { ref, computed } from 'vue';
-
-// 1. Uvozimo tvoju novu ForumAvatar komponentu (prilagodi putanju ako je potrebno)
 import ForumAvatar from './ForumAvatar.vue'; 
 
 const props = defineProps({
@@ -11,12 +9,8 @@ const props = defineProps({
 
 const emit = defineEmits(['obrisi']);
 
-
 const showAllMedalsDropdown = ref(false);
 
-
-
-// MAPIRANJE MEDALJA (isti pattern kao TopicMainCard / ForumComments)
 const medalIcons = { gold: '🥇', silver: '🥈', bronze: '🥉' };
 
 const medalThresholds = {
@@ -92,8 +86,6 @@ const authorMedals = computed(() => props.tema?.author?.medals || []);
 const featuredMedals = computed(() => authorMedals.value.slice(0, 3));
 const remainingMedals = computed(() => authorMedals.value.slice(3));
 
-
-
 function formatDate(dateValue) {
   if (!dateValue) return "";
   return new Intl.DateTimeFormat("bs-BA", {
@@ -148,89 +140,127 @@ function formatDate(dateValue) {
     </div>
     
     <div class="flex items-center justify-between mt-5 pt-4 border-t border-gray-100 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400">
-  <div class="flex items-center gap-2 font-medium flex-wrap">
-    <ForumAvatar :author="tema.author" class="w-5.5 h-5.5 text-[9px]" />
+      <div class="flex items-center gap-2 font-medium flex-wrap">
+        <ForumAvatar :author="tema.author" class="w-5.5 h-5.5 text-[9px]" />
 
-    <span class="text-slate-700 dark:text-slate-200 font-semibold">
-      {{ tema.author?.full_name || 'Korisnik' }}
-    </span>
+        <span class="text-slate-700 dark:text-slate-200 font-semibold">
+          {{ tema.author?.full_name || 'Korisnik' }}
+        </span>
 
-    <span
-      class="font-bold uppercase text-[10px] px-1.5 py-0.5 rounded border"
-      :class="getRoleBadgeClass(tema.author?.role)"
-    >
-      {{ tema.author?.role || 'Student' }}
-    </span>
+        <span
+          class="font-bold uppercase text-[10px] px-1.5 py-0.5 rounded border"
+          :class="getRoleBadgeClass(tema.author?.role)"
+        >
+          {{ tema.author?.role || 'Student' }}
+        </span>
 
-    <span class="text-[10px] font-medium text-slate-400 dark:text-slate-500">
-      Lvl {{ tema.author?.level || 1 }}
-    </span>
+        <span class="text-[10px] font-medium text-slate-400 dark:text-slate-500">
+          Lvl {{ tema.author?.level || 1 }}
+        </span>
 
-    <span
-      v-if="tema.author?.title"
-      class="text-[10px] px-2 py-0.5 rounded border scale-95 origin-left"
-      :class="getTierClass(tema.author.title)"
-    >
-      {{ tema.author.title }} ({{ tema.author.reputation_points }} XP)
-    </span>
+        <span
+          v-if="tema.author?.title"
+          class="text-[10px] px-2 py-0.5 rounded border scale-95 origin-left"
+          :class="getTierClass(tema.author.title)"
+        >
+          {{ tema.author.title }} ({{ tema.author.reputation_points }} XP)
+        </span>
 
-    <div
-      v-if="authorMedals.length > 0"
-      class="flex items-center gap-1 border-l pl-2 border-slate-200 dark:border-slate-700 relative medals-dropdown-container"
-    >
-      <span
-        v-for="m in featuredMedals"
-        :key="m.code || m.id"
-        class="text-base cursor-help transition-transform hover:scale-125 leading-none"
-        :title="parseMedal(m).tooltip"
-      >
-        {{ parseMedal(m).icon }}
-      </span>
-
-      <button
-        v-if="remainingMedals.length > 0"
-        @click.prevent.stop="showAllMedalsDropdown = !showAllMedalsDropdown"
-        class="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-600 hover:bg-slate-200 dark:hover:bg-slate-500 transition-colors text-[10px] px-1.5 py-0.5 rounded font-bold text-slate-600 dark:text-slate-200 ml-0.5 bg-transparent border-none cursor-pointer"
-      >
-        +{{ remainingMedals.length }}
-        <span>{{ showAllMedalsDropdown ? '▲' : '▼' }}</span>
-      </button>
-
-      <div
-        v-if="showAllMedalsDropdown && remainingMedals.length > 0"
-        @click.prevent.stop
-        class="absolute top-full left-0 mt-1 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 shadow-xl rounded-lg p-2.5 w-44 z-30"
-      >
-        <p class="text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-2 border-b pb-1 border-slate-100 dark:border-slate-600">
-          Ostala priznanja
-        </p>
-
-        <div class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+        <div
+          v-if="authorMedals.length > 0"
+          class="flex items-center gap-1 border-l pl-2 border-slate-200 dark:border-slate-700 relative medals-dropdown-container"
+        >
           <span
-            v-for="m in remainingMedals"
+            v-for="m in featuredMedals"
             :key="m.code || m.id"
-            class="text-base cursor-help transition-transform hover:scale-125 p-1 rounded hover:bg-slate-50 dark:hover:bg-slate-600 leading-none"
+            class="text-base cursor-help transition-transform hover:scale-125 leading-none"
             :title="parseMedal(m).tooltip"
           >
             {{ parseMedal(m).icon }}
           </span>
+
+          <button
+            v-if="remainingMedals.length > 0"
+            @click.prevent.stop="showAllMedalsDropdown = !showAllMedalsDropdown"
+            class="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-600 hover:bg-slate-200 dark:hover:bg-slate-500 transition-colors text-[10px] px-1.5 py-0.5 rounded font-bold text-slate-600 dark:text-slate-200 ml-0.5 bg-transparent border-none cursor-pointer"
+          >
+            +{{ remainingMedals.length }}
+            <span>{{ showAllMedalsDropdown ? '▲' : '▼' }}</span>
+          </button>
+
+          <div
+            v-if="showAllMedalsDropdown && remainingMedals.length > 0"
+            @click.prevent.stop
+            class="absolute top-full left-0 mt-1 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 shadow-xl rounded-lg p-2.5 w-44 z-30"
+          >
+            <p class="text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-2 border-b pb-1 border-slate-100 dark:border-slate-600">
+              Ostala priznanja
+            </p>
+
+            <div class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+              <span
+                v-for="m in remainingMedals"
+                :key="m.code || m.id"
+                class="text-base cursor-help transition-transform hover:scale-125 p1 rounded hover:bg-slate-50 dark:hover:bg-slate-600 leading-none"
+                :title="parseMedal(m).tooltip"
+              >
+                {{ parseMedal(m).icon }}
+              </span>
+            </div>
+          </div>
         </div>
+
+        <span class="text-slate-300 dark:text-slate-600">•</span>
+        <span>{{ formatDate(tema.created_at) }}</span>
+      </div>
+
+      <div class="flex items-center gap-3 font-medium">
+
+        <span class="flex items-center gap-1 text-slate-400 dark:text-slate-500">
+          👁️ {{ tema.views_count || 0 }}
+        </span>
+
+        <!-- Lajkovi — iste ikonice kao TopicMainCard -->
+        <div class="flex items-center gap-1">
+          <svg
+            viewBox="0 0 24 24"
+            class="w-4 h-4 transition-colors"
+            :class="tema.is_liked ? 'text-[#ff7a00]' : 'text-slate-300 dark:text-slate-600'"
+            aria-hidden="true"
+          >
+            <path fill="currentColor" d="M7 10.5v9H4.8A2.8 2.8 0 0 1 2 16.7v-3.4a2.8 2.8 0 0 1 2.8-2.8H7Zm2 9h7.6c1.1 0 2.1-.7 2.4-1.8l1.4-5.2A2.5 2.5 0 0 0 18 9.4h-3.3V6.2A2.7 2.7 0 0 0 12 3.5c-.5 0-.9.3-1.1.8L9.5 8.5 7 10.8v8.7h2Z" />
+          </svg>
+          <span
+            class="text-xs font-bold"
+            :class="tema.is_liked ? 'text-[#ff7a00]' : 'text-slate-400 dark:text-slate-500'"
+          >
+            {{ tema.likes_count ?? 0 }}
+          </span>
+        </div>
+
+        <!-- Dislajkovi — iste ikonice kao TopicMainCard (rotirana) -->
+        <div class="flex items-center gap-1">
+          <svg
+            viewBox="0 0 24 24"
+            class="w-4 h-4 rotate-180 transition-colors"
+            :class="tema.is_disliked ? 'text-[#ff7a00]' : 'text-slate-300 dark:text-slate-600'"
+            aria-hidden="true"
+          >
+            <path fill="currentColor" d="M7 10.5v9H4.8A2.8 2.8 0 0 1 2 16.7v-3.4a2.8 2.8 0 0 1 2.8-2.8H7Zm2 9h7.6c1.1 0 2.1-.7 2.4-1.8l1.4-5.2A2.5 2.5 0 0 0 18 9.4h-3.3V6.2A2.7 2.7 0 0 0 12 3.5c-.5 0-.9.3-1.1.8L9.5 8.5 7 10.8v8.7h2Z" />
+          </svg>
+          <span
+            class="text-xs font-bold"
+            :class="tema.is_disliked ? 'text-[#ff7a00]' : 'text-slate-400 dark:text-slate-500'"
+          >
+            {{ tema.dislikes_count ?? 0 }}
+          </span>
+        </div>
+
+        <span class="text-[#ff7a00] dark:text-orange-400 flex items-center gap-1 font-semibold">
+          💬 {{ tema.comments_count || 0 }}
+        </span>
+
       </div>
     </div>
-
-    <span class="text-slate-300 dark:text-slate-600">•</span>
-    <span>{{ formatDate(tema.created_at) }}</span>
-  </div>
-
-  <div class="flex items-center space-x-4 font-medium">
-    <span class="flex items-center gap-1">
-      👁️ {{ tema.views_count || 0 }}
-    </span>
-
-    <span class="text-[#ff7a00] dark:text-orange-400 flex items-center gap-1 font-semibold">
-      💬 {{ tema.comments_count || 0 }}
-    </span>
-  </div>
-</div>
   </router-link>
 </template>
