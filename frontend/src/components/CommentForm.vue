@@ -1,8 +1,8 @@
 <template>
     <div class="mt-4">
         <!-- Neprijavljen korisnik -->
-        <div v-if="!prijavljen" class="text-sm text-gray-500 italic">
-            <router-link to="/login" class="text-primary font-medium hover:underline">Prijavi se</router-link>
+        <div v-if="!prijavljen" class="text-sm text-gray-500 dark:text-slate-400 italic">
+        <router-link to="/login" class="text-primary font-medium hover:underline">Prijavi se</router-link>
             da bi mogao komentarisati.
         </div>
 
@@ -13,11 +13,11 @@
                 placeholder="Napišite komentar..."
                 rows="3"
                 maxlength="500"
-                class="w-full border rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:ring-2 focus:ring-primary"
-            />
+               class="w-full border dark:border-slate-600 rounded-lg p-3 text-sm text-gray-700 dark:text-slate-200 dark:bg-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+               />
             <div class="flex justify-between items-center mt-1">
-                <span class="text-xs text-gray-400">{{ preostaloKaraktera }} / 500</span>
-                <button
+               <span class="text-xs text-gray-400 dark:text-slate-500">{{ preostaloKaraktera }} / 500</span>
+               <button
                     @click="objavi"
                     :disabled="!validan || slanje"
                     class="bg-primary text-white px-4 py-1.5 rounded-lg text-sm transition hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
