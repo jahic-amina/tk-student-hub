@@ -144,9 +144,22 @@ class TopicLike(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class TopicDislike(SQLModel, table=True):
+    __tablename__ = "topic_dislikes"
+
+    __table_args__ = (
+        UniqueConstraint("topic_id", "user_id", name="unique_topic_dislike_per_user"),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    topic_id: int = Field(foreign_key="forum_topics.id", index=True)
+    user_id: int = Field(foreign_key="users.id", index=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class ForumGuideline(SQLModel, table=True):
     __tablename__ = "forum_guidelines"
-    
+
     id: Optional[int] = Field(default=None, primary_key=True)
     title: str
     content: str
