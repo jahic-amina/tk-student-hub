@@ -1,7 +1,7 @@
 <template>
     <div
-        class="relative flex flex-col sm:flex-row sm:items-center justify-between border rounded-xl p-4 shadow-sm hover:shadow-md transition gap-4"
-    >
+    class="relative flex flex-col sm:flex-row sm:items-center justify-between border rounded-xl p-4 shadow-sm hover:shadow-md transition gap-4 dark:bg-slate-800 dark:border-slate-700"
+>
        <button 
     v-if="userRole !== 'admin'"
     type="button"
@@ -47,19 +47,22 @@
     </svg>
 </div>
             
-            <div class="min-w-0 overflow-hidden">
-            <p class="font-semibold text-gray-800 truncate">{{ material.title }}</p>
-            <p class="text-sm text-gray-500 truncate">{{ material.description }}</p>
-            <p class="text-xs text-gray-400 mt-1">Ko je postavio: {{ material.user?.full_name || 'Nepoznato' }}</p>
-            <p class="text-xs text-gray-400">Datum postavljanja: {{ formatDate(material.created_at) }}</p>
-            <div class="flex items-center gap-1 mt-2">
-                <span v-for="star in 5" :key="star" class="text-yellow-400 text-lg">
-                    {{ star <= Math.round(material.average_rating || 0) ? '★' : '☆' }}
-                </span>
-                <span class="text-sm text-gray-500">({{ material.rating_count || 0 }})</span>
-            </div>
-            <p class="text-sm text-gray-500">Broj preuzimanja: {{ material.number_of_downloads || 0 }}</p>
-        </div>
+         <div class="min-w-0 overflow-hidden flex-1">
+   <p class="font-semibold text-gray-800 dark:text-slate-100 truncate">{{ material.title }}</p>
+   <p class="text-sm text-gray-500 dark:text-slate-400 mt-1">Postavio: {{ material.user?.full_name || 'Nepoznato' }}</p>
+   <p class="text-sm text-gray-500 dark:text-slate-400">Datum postavljanja: {{ formatDate(material.created_at) }}</p>
+   <p class="text-sm text-gray-500 dark:text-slate-400 mt-1">{{ material.subject?.name }}</p>
+ </div>
+
+<div class="flex flex-col items-center justify-center shrink-0 px-4">
+    <div class="flex items-center gap-1">
+        <span v-for="star in 5" :key="star" class="text-yellow-400 text-lg">
+            {{ star <= Math.round(material.average_rating || 0) ? '★' : '☆' }}
+        </span>
+        <span class="text-sm text-gray-500 dark:text-slate-400">({{ material.rating_count || 0 }})</span>
+    </div>
+    <p class="text-sm text-gray-500 dark:text-slate-400 mt-1">Broj preuzimanja: {{ material.number_of_downloads || 0 }}</p>
+</div>
     </div>
         <div class="flex flex-col gap-2 shrink-0 mr-8" @click.stop>
                 <template v-if="pending">
