@@ -1,8 +1,8 @@
-"""init
+"""initial migration
 
-Revision ID: 86ae47b2ca97
+Revision ID: 5dc882546c9a
 Revises: 
-Create Date: 2026-06-17 22:46:57.987033
+Create Date: 2026-06-18 14:40:36.087578
 
 """
 from typing import Sequence, Union
@@ -12,9 +12,8 @@ import sqlalchemy as sa
 import sqlmodel
 
 
-
 # revision identifiers, used by Alembic.
-revision: str = '86ae47b2ca97'
+revision: str = '5dc882546c9a'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -150,6 +149,7 @@ def upgrade() -> None:
     sa.Column('status', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('number_of_downloads', sa.Integer(), nullable=False),
+    sa.Column('thumbnail_path', sa.String(), nullable=True),
     sa.Column('subject_id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['subject_id'], ['subjects.id'], ),
@@ -203,11 +203,12 @@ def upgrade() -> None:
     op.create_index(op.f('ix_applications_ad_id'), 'applications', ['ad_id'], unique=False)
     op.create_index(op.f('ix_applications_user_id'), 'applications', ['user_id'], unique=False)
     op.create_table('bookmarks',
-    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('material_id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['material_id'], ['materials.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
-    sa.PrimaryKeyConstraint('user_id', 'material_id')
+    sa.PrimaryKeyConstraint('id')
     )
     op.create_table('comments',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -216,6 +217,15 @@ def upgrade() -> None:
     sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.Column('material_id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['material_id'], ['materials.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('downloads',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('material_id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('downloaded_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['material_id'], ['materials.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -298,6 +308,7 @@ def downgrade() -> None:
     op.drop_table('ratings')
     op.drop_table('forum_topic_tags')
     op.drop_table('forum_comments')
+    op.drop_table('downloads')
     op.drop_table('comments')
     op.drop_table('bookmarks')
     op.drop_index(op.f('ix_applications_user_id'), table_name='applications')
