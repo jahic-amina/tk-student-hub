@@ -49,6 +49,11 @@ app.add_middleware(
 # Montiranje statičkih fajlova za upload
 app.mount("/uploads", StaticFiles(directory=LOCAL_UPLOAD_DIR), name="uploads")
 
+# Montiranje thumbnails foldera
+THUMBNAIL_DIR = os.path.join(LOCAL_UPLOAD_DIR, "thumbnails")
+os.makedirs(THUMBNAIL_DIR, exist_ok=True)
+app.mount("/thumbnails", StaticFiles(directory=THUMBNAIL_DIR), name="thumbnails")
+
 # --- REGISTRACIJA SVIH RUTERA ---
 
 # Autentifikacija i korisnički nalozi

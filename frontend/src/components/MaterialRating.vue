@@ -26,12 +26,12 @@
 
     <!-- Ocjena materijala -->
     <div class="mb-6">
-        <h3 class="font-semibold mb-2">Ocjena materijala</h3>
+        <h3 class="font-semibold mb-2 text-base">Ocjena materijala</h3>
         <div class="flex items-center gap-2">
             <span v-for="star in 5" :key="star" class="text-yellow-400 text-2xl">
                 {{ star <= Math.round(localAvgRating) ? '★' : '☆' }}
             </span>
-            <span class="text-gray-600">{{ localAvgRating }} / 5.0 ({{ localRatingCount }} ocjena)</span>
+            <span class="text-gray-600 text-sm">{{ localAvgRating }} / 5.0 ({{ localRatingCount }} ocjena)</span>
         </div>
 
         <!-- Ocijeni -->

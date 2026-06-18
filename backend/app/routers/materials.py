@@ -2,6 +2,7 @@ import os
 import mimetypes
 import shutil
 import uuid
+import fitz
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status, Query
 from fastapi.responses import FileResponse
 from sqlmodel import Session, select, func
@@ -100,6 +101,44 @@ def save_file_to_disk(file: UploadFile) -> str:
         shutil.copyfileobj(file.file, buffer)
     return file_path
 
+# Generisanje thumbnail-a prve stranice PDF-a
+def generate_thumbnail(file_path: str) -> Optional[str]:
+    try:
+        thumbnail_dir = "uploads/thumbnails"
+        os.makedirs(thumbnail_dir, exist_ok=True)
+        thumbnail_path = f"{thumbnail_dir}/{os.path.basename(file_path)}.png"
+        
+        # Ako je PDF - direktno generiši
+        if file_path.lower().endswith('.pdf'):
+            doc = fitz.open(file_path)
+            page = doc[0]
+            pix = page.get_pixmap(matrix=fitz.Matrix(0.5, 0.5))
+            pix.save(thumbnail_path)
+            doc.close()
+            return thumbnail_path
+        
+        # Za PPTX, DOCX, PPT, DOC - konvertuj u PDF pa generiši
+        convertable = ('.pptx', '.ppt', '.docx', '.doc')
+        if any(file_path.lower().endswith(ext) for ext in convertable):
+            import subprocess
+            result = subprocess.run([
+                            '/opt/homebrew/bin/soffice', '--headless', '--convert-to', 'pdf',
+                '--outdir', '/tmp', file_path
+            ], capture_output=True, timeout=30)
+            
+            pdf_path = f"/tmp/{os.path.basename(file_path).rsplit('.', 1)[0]}.pdf"
+            if os.path.exists(pdf_path):
+                doc = fitz.open(pdf_path)
+                page = doc[0]
+                pix = page.get_pixmap(matrix=fitz.Matrix(0.5, 0.5))
+                pix.save(thumbnail_path)
+                doc.close()
+                os.remove(pdf_path)
+                return thumbnail_path
+        
+        return None
+    except Exception as e:
+        return None
 
 # ---------------------------------------------------------------------------
 # NOTE: Static/fixed-path routes MUST come before parameterized routes
@@ -150,7 +189,7 @@ def upload_material(
         raise HTTPException(status_code=409, detail="Ovaj fajl je već uploadovan.")
 
     file_path = save_file_to_disk(file)
-
+    thumbnail_path = generate_thumbnail(file_path) 
     try:
         new_material = Material(
             title=title,
@@ -160,6 +199,7 @@ def upload_material(
             subject_id=subject_id,
             user_id=current_user.id,
             status="pending",
+            thumbnail_path=thumbnail_path,
         )
         db.add(new_material)
         db.commit()
@@ -626,6 +666,7 @@ def get_material(material_id: int, session: Session = Depends(get_db)):
         ratings=material.ratings,
         average_rating=round(avg, 1) if avg else None,
         rating_count=count,
+        thumbnail_path=material.thumbnail_path,
     )
 
 
