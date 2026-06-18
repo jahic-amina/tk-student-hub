@@ -41,23 +41,25 @@
                 <span v-for="star in 5" :key="star" class="text-2xl transition"
                     :class="[
                         star <= hoverRating || star <= selectedRating ? 'text-yellow-400' : 'text-gray-300',
-                        isLoggedIn ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
+                       (isLoggedIn && hasDownloaded) ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
                     ]"
                     @mouseover="isLoggedIn && (hoverRating = star)"
                     @mouseleave="hoverRating = 0"
                     @click="submitRating(star)">★</span>
             </div>
             <p v-if="ratingError" class="text-sm text-red-600 mt-2">{{ ratingError }}</p>
-            <p v-if="!isLoggedIn" class="text-sm text-gray-400 mt-2">Prijavite se da biste ocijenili materijal.</p>
+            <p v-if="isLoggedIn && !hasDownloaded" class="text-sm text-gray-400 mt-2">
+                Preuzmite materijal da biste mogli ocijeniti.
+            </p>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 
 // Importujemo API funkcije umjesto direktnog fetch-a
-import { getMaterial, rateMaterial, updateRating } from '../services/api'
+import { getMaterial, rateMaterial, updateRating, checkHasDownloaded } from '../services/api'
 
 const props = defineProps({
     materialId: {
@@ -76,6 +78,9 @@ const localRatingCount = ref(0)
 // Korisnikova ocjena
 const myRating = ref(0)
 
+// Provjera da li je korisnik preuzeo materijal
+const hasDownloaded = ref(false)
+
 // Poruke uspjeha i greske
 const ratingMessage = ref('')
 const ratingError = ref('')
@@ -87,8 +92,21 @@ const pendingStar = ref(0)
 // Provjera da li je korisnik prijavljen
 const isLoggedIn = computed(() => !!localStorage.getItem('token'))
 
+// Izvuci user_id iz JWT tokena
+function getUserIdFromToken() {
+    const token = localStorage.getItem('token')
+    if (!token) return null
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        return Number(payload.sub) || Number(payload.user_id) || Number(payload.id)
+    } catch {
+        return null
+    }
+}
+
 // Kad se komponenta mountuje, fetchaj ocjene i provjeri korisnikovu ocjenu
 onMounted(async () => {
+    ratingError.value = ''
     const data = await getMaterial(props.materialId)
     if (data.ratings && data.ratings.length > 0) {
         const sum = data.ratings.reduce((acc, r) => acc + r.rating, 0)
@@ -96,35 +114,50 @@ onMounted(async () => {
         localRatingCount.value = data.ratings.length
     }
 
-    // Provjeri da li je korisnik vec ocijenio ovaj materijal
+    // Provjera da li je korisnik vec ocijenio ovaj materijal
     if (isLoggedIn.value) {
-        const user = JSON.parse(localStorage.getItem('user') || '{}')
-        const myRatingObj = data.ratings?.find(r => r.user_id === user.id)
+       const userId = getUserIdFromToken()
+       const myRatingObj = data.ratings?.find(r => r.user_id === userId)
         if (myRatingObj) {
             myRating.value = myRatingObj.rating
             selectedRating.value = myRatingObj.rating
-        }
+        } 
+       // Provjera da li je korisnik preuzeo materijal
+    try {
+         const token = localStorage.getItem('token')
+         const json = await checkHasDownloaded(props.materialId)
+         hasDownloaded.value = json.has_downloaded
+         await nextTick()  
+    } catch {
+        hasDownloaded.value = false
     }
-})
+}
+}) 
 
 // Slanje ocjene na backend
 async function submitRating(star) {
     if (!isLoggedIn.value) return
 
-// Provjera - korisnik ne moze ocijeniti vlastiti materijal 
-const user = JSON.parse(localStorage.getItem('user') || '{}')
-const materialData = await getMaterial(props.materialId)
-if (materialData.user?.id === user.id) {
-    ratingError.value = 'Ne možete ocijeniti vlastiti materijal.'
+ // Blokira ocjenjivanje ako korisnik nije preuzeo materijal
+    if (!hasDownloaded.value) {
     return
-}
-
-// Ako je vec ocijenio, prikazuje modal za promjenu
+    }
+    
+ // Ako je vec ocijenio, prikazuje modal za promjenu
     if (selectedRating.value > 0) {
         pendingStar.value = star
         showChangeModal.value = true
         return
     }
+
+// Provjera - korisnik ne moze ocijeniti vlastiti materijal 
+const userId = getUserIdFromToken()
+const materialData = await getMaterial(props.materialId)
+if (materialData.user?.id === Number(userId)) {
+    ratingError.value = 'Ne možete ocijeniti vlastiti materijal.'
+    return
+}
+
     selectedRating.value = star
     ratingMessage.value = ''
     ratingError.value = ''

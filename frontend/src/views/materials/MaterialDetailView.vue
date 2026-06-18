@@ -132,8 +132,7 @@
             </div>
 
             <!-- Ocjena -->
-            <MaterialRating :material-id="material.id" />
-
+           <MaterialRating :material-id="material.id" :key="ratingKey" />
             <!-- Preuzmi -->
             <div class="mb-6">
                 <p class="text-sm text-gray-500 mb-2 dark:text-slate-400 mb-2">Broj preuzimanja: {{
@@ -188,6 +187,7 @@ const route = useRoute()
 const router = useRouter()
 const material = ref(null)
 const loading = ref(true)
+const ratingKey = ref(0)  
 const isAdmin = localStorage.getItem('role') === 'admin'
 const currentUserId = Number(localStorage.getItem('user_id'))
 const successMessage = ref('')
@@ -301,9 +301,12 @@ async function handleReject() {
         console.error('Greška prilikom odbijanja materijala:', error)
     }
 }
-// Ažurira broj preuzimanja lokalno nakon downloada - Marinela
+// Ažurira broj preuzimanja lokalno nakon downloada 
 function updateDownloadCount() {
     material.value.number_of_downloads += 1
+    setTimeout(() => {
+        ratingKey.value += 1
+    }, 500)
 }
 
 function goBack() {

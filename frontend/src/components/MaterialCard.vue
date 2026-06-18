@@ -73,7 +73,7 @@
                     </button>
                 </template>
                 <template v-else>
-                    <DownloadButton :material-id="material.id" class="w-full" />
+                   <DownloadButton :material-id="material.id" class="w-full" @downloaded="$emit('downloaded', material.id)" />
                     <DeleteMaterialButton :material="material" @deleted="$emit('deleted', material.id)" @click.stop
                         class="w-full" />
                 </template>
@@ -100,7 +100,7 @@ defineProps({
     }
 })
 
-defineEmits(['click', 'deleted', 'approve', 'reject', 'toggle-bookmark'])
+defineEmits(['click', 'deleted', 'approve', 'reject', 'toggle-bookmark', 'downloaded' ])
 
 function formatDate(dateStr) {
     if (!dateStr) return 'N/A'

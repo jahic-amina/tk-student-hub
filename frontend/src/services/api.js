@@ -644,10 +644,24 @@ export async function updateRating(materialId, rating) {
   return response
 }
 
-// Download materijala - Marinela
+// Download materijala sa bilježenjem korisnika  
 export async function downloadMaterial(materialId) {
-  const response = await fetch(`${BASE_URL}/materials/${materialId}/download`)
-  return response
+    const token = localStorage.getItem('token')
+   const timestamp = Date.now()
+    const url = token && token !== 'null' && token !== 'undefined'
+        ? `${BASE_URL}/materials/${materialId}/download?token=${token}&t=${timestamp}`
+        : `${BASE_URL}/materials/${materialId}/download?t=${timestamp}`
+    const response = await fetch(url)
+    return response
+}
+
+// Provjera da li je korisnik preuzeo materijal 
+export async function checkHasDownloaded(materialId) {
+    const token = localStorage.getItem('token')
+    const response = await fetch(`${BASE_URL}/materials/${materialId}/has-downloaded`, {
+        headers: { Authorization: `Bearer ${token}` }
+    })
+    return response.json()
 }
 
 export async function getMyApplications(token) {
