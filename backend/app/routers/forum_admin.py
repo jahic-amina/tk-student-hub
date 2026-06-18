@@ -7,7 +7,7 @@ from app.models.user import User, UserRole
 from app.models.forum import TopicReport, AdminAnnouncement, ForumTopic, ForumCategory
 from datetime import datetime, timedelta
 
-router = APIRouter(prefix="/admin", tags=["Forum Admin"])
+router = APIRouter(prefix="/forum/admin", tags=["Forum Admin"])
 
 # Pomocna funkcija za verifikaciju admina
 def get_current_admin(current_user: User = Depends(get_current_user)):

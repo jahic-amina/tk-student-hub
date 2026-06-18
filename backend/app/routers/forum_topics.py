@@ -122,14 +122,11 @@ def get_all_topics(
     days_old: Optional[int] = None,
     current_user: Optional[User] = Depends(get_current_user)
 ):
-    excluded_topics = select(TopicReport.topic_id).where(TopicReport.status.in_(["pending", "accepted"])).subquery()
-
-    statement = select(ForumTopic).where(ForumTopic.is_deleted == False).where(ForumTopic.id.not_in(excluded_topics))
-    count_statement = select(func.count(ForumTopic.id)).where(ForumTopic.is_deleted == False).where(ForumTopic.id.not_in(excluded_topics))
+    statement = select(ForumTopic).where(ForumTopic.is_deleted == False)
+    count_statement = select(func.count(ForumTopic.id)).where(ForumTopic.is_deleted == False)
 
     if category_id is not None:
         statement = statement.where(ForumTopic.category_id == category_id)
-        # FIX #3: Ispravljen filter za count — koristimo ForumTopic.category_id umjesto ForumCategory.id
         count_statement = count_statement.where(ForumTopic.category_id == category_id)
 
     if search and search.strip():
@@ -155,7 +152,6 @@ def get_all_topics(
         statement = statement.order_by(ForumTopic.views_count.desc(), ForumTopic.id.desc())
     elif sort_by == "najaktivnije":
         from app.models.forum import ForumComment
-        # FIX #7: Dodan distinct() kako bi se spriječilo duplikovanje redova pri joinu
         statement = (
             statement
             .join(ForumComment, ForumComment.topic_id == ForumTopic.id, isouter=True)
@@ -394,7 +390,7 @@ def get_handled_reports(db: Session = Depends(get_db), current_user: User = Depe
 def handle_report_action(
     report_id: int,
     action: str,
-    payload: ReportActionPayload,  # FIX #2: Schema je sada definirana
+    payload: ReportActionPayload,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -501,7 +497,6 @@ def increment_topic_view(topic_id: int, db: Session = Depends(get_db)):
     db.refresh(topic)
     return {"id": topic.id, "views_count": topic.views_count}
 
-# FIX #1: Uklonjen duplikat — ostaje samo ova verzija koja je ispravna
 @router.put("/{topic_id}", status_code=status.HTTP_200_OK)
 def update_topic(
     topic_id: int,
@@ -521,7 +516,6 @@ def update_topic(
     if topic_data.content is not None:
         topic.content = topic_data.content
 
-    # FIX #6: Konzistentna upotreba UTC vremena
     topic.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
     db.add(topic)
     db.commit()

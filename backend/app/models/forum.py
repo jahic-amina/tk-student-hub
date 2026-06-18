@@ -131,6 +131,18 @@ class AdminAnnouncement(SQLModel, table=True):
     expires_at: Optional[datetime] = Field(default=None, nullable=True)
 
 
+class ForumGuideline(SQLModel, table=True):
+    __tablename__ = "forum_guidelines"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    title: str
+    content: str
+    order: int = Field(default=0)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+# --- NOVI MODEL OD KOLEGA ZA LAJKOVANJE TEME ---
 class TopicLike(SQLModel, table=True):
     __tablename__ = "topic_likes"
 
@@ -155,17 +167,6 @@ class TopicDislike(SQLModel, table=True):
     topic_id: int = Field(foreign_key="forum_topics.id", index=True)
     user_id: int = Field(foreign_key="users.id", index=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
-
-
-class ForumGuideline(SQLModel, table=True):
-    __tablename__ = "forum_guidelines"
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    title: str
-    content: str
-    order: int = Field(default=0)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
 
 class TopicAttachment(SQLModel, table=True):
