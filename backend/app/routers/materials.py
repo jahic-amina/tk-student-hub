@@ -2,15 +2,16 @@ import os
 import mimetypes
 import shutil
 import uuid
+import fitz
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status, Query
 from fastapi.responses import FileResponse
 from sqlmodel import Session, select, func
 from app.database import get_db
-from app.core.security import get_current_user
+from app.core.security import get_current_user, decode_access_token
 from app.models.user import User, UserRole
 from app.models.materials import (
-    Material, MaterialsResponse, MaterialDetailResponse,
-    Rating, Comment, Subject, RatingCreate, CommentResponse, CommentCreate, Bookmark, PaginatedMaterialsResponse,
+    Material, MaterialsResponse, MaterialDetailResponse, 
+    Rating, Comment, Subject, RatingCreate, CommentResponse, CommentCreate, Bookmark, Download, PaginatedMaterialsResponse, 
 )
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
@@ -100,6 +101,44 @@ def save_file_to_disk(file: UploadFile) -> str:
         shutil.copyfileobj(file.file, buffer)
     return file_path
 
+# Generisanje thumbnail-a prve stranice PDF-a
+def generate_thumbnail(file_path: str) -> Optional[str]:
+    try:
+        thumbnail_dir = "uploads/thumbnails"
+        os.makedirs(thumbnail_dir, exist_ok=True)
+        thumbnail_path = f"{thumbnail_dir}/{os.path.basename(file_path)}.png"
+        
+        # Ako je PDF - direktno generiši
+        if file_path.lower().endswith('.pdf'):
+            doc = fitz.open(file_path)
+            page = doc[0]
+            pix = page.get_pixmap(matrix=fitz.Matrix(0.5, 0.5))
+            pix.save(thumbnail_path)
+            doc.close()
+            return thumbnail_path
+        
+        # Za PPTX, DOCX, PPT, DOC - konvertuj u PDF pa generiši
+        convertable = ('.pptx', '.ppt', '.docx', '.doc')
+        if any(file_path.lower().endswith(ext) for ext in convertable):
+            import subprocess
+            result = subprocess.run([
+                            '/opt/homebrew/bin/soffice', '--headless', '--convert-to', 'pdf',
+                '--outdir', '/tmp', file_path
+            ], capture_output=True, timeout=30)
+            
+            pdf_path = f"/tmp/{os.path.basename(file_path).rsplit('.', 1)[0]}.pdf"
+            if os.path.exists(pdf_path):
+                doc = fitz.open(pdf_path)
+                page = doc[0]
+                pix = page.get_pixmap(matrix=fitz.Matrix(0.5, 0.5))
+                pix.save(thumbnail_path)
+                doc.close()
+                os.remove(pdf_path)
+                return thumbnail_path
+        
+        return None
+    except Exception as e:
+        return None
 
 # ---------------------------------------------------------------------------
 # NOTE: Static/fixed-path routes MUST come before parameterized routes
@@ -150,7 +189,7 @@ def upload_material(
         raise HTTPException(status_code=409, detail="Ovaj fajl je već uploadovan.")
 
     file_path = save_file_to_disk(file)
-
+    thumbnail_path = generate_thumbnail(file_path) 
     try:
         new_material = Material(
             title=title,
@@ -160,6 +199,7 @@ def upload_material(
             subject_id=subject_id,
             user_id=current_user.id,
             status="pending",
+            thumbnail_path=thumbnail_path,
         )
         db.add(new_material)
         db.commit()
@@ -228,8 +268,6 @@ def get_materials(
         total_pages=(total + per_page - 1) // per_page,
     )
 
-
-
 @router.get("/{id}/preview")
 def preview_material(id: int, db: Session = Depends(get_db)):
     material = db.exec(select(Material).where(Material.id == id)).first()
@@ -248,29 +286,52 @@ def preview_material(id: int, db: Session = Depends(get_db)):
             "Content-Disposition": "inline"
         })
 
-# ---------------------------------------------------------------------------
-# Parameterized routes below — order matters for /download vs /{material_id}
-# ---------------------------------------------------------------------------
-
 @router.get("/{id}/download")
-def download_material(id: int, db: Session = Depends(get_db)):
+def download_material(
+    id: int,
+    db: Session = Depends(get_db),
+    token: Optional[str] = Query(None),
+):
+    # Provjera da li materijal postoji
     material = db.exec(select(Material).where(Material.id == id)).first()
     if material is None:
         raise HTTPException(status_code=404, detail="Materijal sa tim ID-em ne postoji.")
+    
+    # Provjera da li je materijal obrisan ili nije odobren
     if material.status == "deleted":
         raise HTTPException(status_code=404, detail="Materijal je uklonjen.")
     if material.status != "approved":
         raise HTTPException(status_code=403, detail="Materijal nije odobren i ne može se preuzeti.")
+    
+    # Provjera da fajl fizički postoji na serveru
     if not os.path.exists(material.file_path):
         raise HTTPException(status_code=404, detail="Fajl nije pronađen na serveru.")
 
+    # Odrediti tip fajla za FileResponse header
     media_type = material.file_type
     if not media_type or "/" not in media_type:
         guessed, _ = mimetypes.guess_type(material.file_path)
         media_type = guessed or "application/octet-stream"
 
+    # Povećaj broj preuzimanja
     material.number_of_downloads += 1
     db.add(material)
+
+   # Bilježi ko je preuzeo koristeći query token
+    if token:
+        payload = decode_access_token(token)
+        if payload:
+            user_id = payload.get("sub")
+            if user_id:
+                already = db.exec(
+                    select(Download).where(
+                        Download.material_id == id,
+                        Download.user_id == int(user_id)
+                    )
+                ).first()
+                if not already:
+                    db.add(Download(material_id=id, user_id=int(user_id)))
+
     db.commit()
 
     return FileResponse(
@@ -279,6 +340,21 @@ def download_material(id: int, db: Session = Depends(get_db)):
         media_type=media_type,
     )
 
+# Vraća true/false — da li je prijavljeni korisnik preuzeo ovaj materijal
+# Koristi se u frontendu da odluči da li prikazati zvjezdice kao aktivne
+@router.get("/{id}/has-downloaded")
+def has_downloaded(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),  # mora biti prijavljen
+):
+    result = db.exec(
+        select(Download).where(
+            Download.material_id == id,
+            Download.user_id == current_user.id
+        )
+    ).first()
+    return {"has_downloaded": result is not None}
 
 @router.patch("/{material_id}/approve")
 def approve_material(
@@ -459,16 +535,29 @@ def rate_material(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # Provjera da li materijal postoji
     material = db.exec(select(Material).where(Material.id == id)).first()
     if not material:
         raise HTTPException(status_code=404, detail="Materijal nije pronađen.")
+    
+    # Provjera da li je korisnik preuzeo materijal prije ocjenjivanja
+    download = db.exec(
+        select(Download).where(
+            Download.material_id == id,
+            Download.user_id == current_user.id
+        )
+    ).first()
+    if not download:
+        raise HTTPException(status_code=403, detail="Morate preuzeti materijal prije ocjenjivanja.")
 
+    # Provjera da li je korisnik već ocijenio ovaj materijal
     existing = db.exec(
         select(Rating).where(Rating.material_id == id, Rating.user_id == current_user.id)
     ).first()
     if existing:
         raise HTTPException(status_code=409, detail="Već ste ocijenili ovaj materijal.")
 
+    # Sačuvaj novu ocjenu
     new_rating = Rating(rating=rating_data.rating, material_id=id, user_id=current_user.id)
     db.add(new_rating)
     db.commit()
@@ -492,11 +581,24 @@ def update_rating(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # Provjera da li je korisnik preuzeo materijal prije izmjene ocjene
+    download = db.exec(
+        select(Download).where(
+            Download.material_id == id,
+            Download.user_id == current_user.id
+        )
+    ).first()
+    if not download:
+        raise HTTPException(status_code=403, detail="Morate preuzeti materijal prije ocjenjivanja.")
+
+    # Provjera da li korisnik ima postojeću ocjenu koju mijenja
     existing = db.exec(
         select(Rating).where(Rating.material_id == id, Rating.user_id == current_user.id)
     ).first()
     if not existing:
         raise HTTPException(status_code=404, detail="Niste ocijenili ovaj materijal.")
+    
+    # Ažuriraj ocjenu
     existing.rating = rating_data.rating
     db.add(existing)
     db.commit()
@@ -564,6 +666,7 @@ def get_material(material_id: int, session: Session = Depends(get_db)):
         ratings=material.ratings,
         average_rating=round(avg, 1) if avg else None,
         rating_count=count,
+        thumbnail_path=material.thumbnail_path,
     )
 
 

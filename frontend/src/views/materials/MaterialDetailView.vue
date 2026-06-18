@@ -43,6 +43,11 @@
         <div v-else-if="material">
             <!-- Header -->
             <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h2 class="text-xl font-bold">{{ material.title }}</h2>
+                    <p class="text-sm text-gray-400">Postavio: {{ material.user?.full_name }}</p>
+                    <p class="text-sm text-gray-400">Datum: {{ formatDate(material.created_at) }}</p>
+              </div>
                 <div class="w-full">
                     <template v-if="isEditing">
                         <input v-model="material.title"
@@ -58,6 +63,28 @@
             </div>
             <hr class="mb-4 dark:border-slate-700" />
 
+            <!-- Thumbnail + Opis -->
+<div class="flex gap-6 mb-6">
+    <div v-if="material.thumbnail_path" class="shrink-0">
+        <img 
+            :src="`http://127.0.0.1:8000/thumbnails/${material.thumbnail_path.split('/').pop()}`"
+            class="w-48 object-cover rounded-lg"
+            alt="thumbnail"
+        />
+    </div>
+    <div class="flex-1">
+        <h3 class="font-semibold mb-2 text-base">Detaljan opis</h3>
+        <p class="text-gray-600 text-sm mb-4">{{ material.description }}</p>
+        <MaterialRating :material-id="material.id" :key="ratingKey" />
+    </div>
+</div>
+
+<!-- Preuzmi -->
+<div class="mb-6">
+    <p class="text-sm text-gray-500 mb-2">Broj preuzimanja: {{ material.number_of_downloads }}</p>
+    <DownloadButton :material-id="material.id" :full-width="true" @downloaded="updateDownloadCount" />
+</div>
+            
             <!-- Opis -->
             <div class="mb-6">
                 <h3 class="font-semibold mb-2">Detaljan opis</h3>
@@ -132,8 +159,7 @@
             </div>
 
             <!-- Ocjena -->
-            <MaterialRating :material-id="material.id" />
-
+           <MaterialRating :material-id="material.id" :key="ratingKey" />
             <!-- Preuzmi -->
             <div class="mb-6">
                 <p class="text-sm text-gray-500 mb-2 dark:text-slate-400 mb-2">Broj preuzimanja: {{
@@ -188,6 +214,7 @@ const route = useRoute()
 const router = useRouter()
 const material = ref(null)
 const loading = ref(true)
+const ratingKey = ref(0)  
 const isAdmin = localStorage.getItem('role') === 'admin'
 const currentUserId = Number(localStorage.getItem('user_id'))
 const successMessage = ref('')
@@ -301,9 +328,12 @@ async function handleReject() {
         console.error('Greška prilikom odbijanja materijala:', error)
     }
 }
-// Ažurira broj preuzimanja lokalno nakon downloada - Marinela
+// Ažurira broj preuzimanja lokalno nakon downloada 
 function updateDownloadCount() {
     material.value.number_of_downloads += 1
+    setTimeout(() => {
+        ratingKey.value += 1
+    }, 500)
 }
 
 function goBack() {

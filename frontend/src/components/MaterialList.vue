@@ -26,6 +26,93 @@
       @toggle-bookmark="handleToggleBookmark"
     />
   </div>
+          <MaterialCard 
+            v-for="material in filteredMaterialsBookmark" 
+            :key="material.id" 
+            :material="material"
+            @click="$router.push(`/materials/${$event}`)"
+            @deleted="handleDelete"
+            @toggle-bookmark="handleToggleBookmark"
+            @downloaded="handleDownloaded"
+          />
+    <!-- Paginacija -->
+<div v-if="ukupnoStranica >= 1" class="flex justify-center items-center gap-2 mt-6">
+    <button
+        @click="promijeniStranicu(trenutnastranica - 1)"
+        :disabled="trenutnastranica === 1"
+        class="px-3 py-1 rounded-lg border text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+    >
+        ←
+    </button>
+    <button
+        v-for="br in ukupnoStranica"
+        :key="br"
+        @click="promijeniStranicu(br)"
+        :class="[
+            'px-3 py-1 rounded-lg border text-sm transition',
+            br === trenutnastranica 
+                ? 'bg-primary text-white border-primary' 
+                : 'text-gray-600 hover:bg-gray-100'
+        ]"
+    >
+        {{ br }}
+    </button>
+    <button
+        @click="promijeniStranicu(trenutnastranica + 1)"
+        :disabled="trenutnastranica === ukupnoStranica"
+        class="px-3 py-1 rounded-lg border text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+    >
+        →
+    </button>
+</div>
+</div>
+
+<div v-else class="w-full py-20 text-left">
+    <p class="text-gray-500 text-lg">Nema materijala za ovaj prikaz.</p>
+</div>
+  
+          <div class="flex flex-col gap-4">
+            <MaterialCard 
+              v-for="material in filteredMaterialsBookmark" 
+              :key="material.id" 
+              :material="material"
+              :user-role="userRole"
+              @click="$router.push(`/materials/${$event}`)"
+              @deleted="handleDelete"
+              @toggle-bookmark="handleToggleBookmark"
+            />
+          </div>
+
+          <div v-if="ukupnoStranica >= 1" class="flex justify-center items-center gap-2 mt-6">
+            <button
+              @click="promijeniStranicu(trenutnastranica - 1)"
+              :disabled="trenutnastranica === 1"
+              class="px-3 py-1 rounded-lg border text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              ←
+            </button>
+            <button
+              v-for="br in ukupnoStranica"
+              :key="br"
+              @click="promijeniStranicu(br)"
+              :class="[
+                'px-3 py-1 rounded-lg border text-sm transition',
+                br === trenutnastranica 
+                  ? 'bg-primary text-white border-primary' 
+                  : 'text-gray-600 hover:bg-gray-100'
+              ]"
+            >
+              {{ br }}
+            </button>
+            <button
+              @click="promijeniStranicu(trenutnastranica + 1)"
+              :disabled="trenutnastranica === ukupnoStranica"
+              class="px-3 py-1 rounded-lg border text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              →
+            </button>
+          </div>
+        </div>
 
   <div v-if="ukupnoStranicaPrikaz >= 1" class="flex justify-center items-center gap-2 mt-6">
     <button
@@ -174,6 +261,13 @@ async function handleToggleBookmark(materialId) {
         }
     } catch (error) {
         console.error("Greška kod bookmarka:", error);
+    }
+}
+
+async function handleDownloaded(materialId) {
+    const material = materials.value.find(m => m.id === materialId)
+    if (material) {
+        material.number_of_downloads += 1
     }
 }
 </script>
