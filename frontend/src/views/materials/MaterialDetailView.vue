@@ -68,9 +68,13 @@
             <div class="flex-1">
              <p class="text-sm text-gray-500 dark:text-slate-400 mb-3">{{ material.subject?.name }} • {{ material.subject?.study_year }}. godina • {{ material.file_type }}</p>
              <h3 class="font-semibold mb-2 text-base">Detaljan opis</h3>
-                <template v-if="!isEditing">
-                    <p class="text-gray-600 dark:text-slate-400 text-sm mb-4">{{ material.description }}</p>
-                </template>
+<template v-if="isEditing">
+    <textarea v-model="material.description" rows="4"
+        class="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none mb-4" />
+</template>
+<template v-else>
+    <p class="text-gray-600 dark:text-slate-400 text-sm mb-4">{{ material.description }}</p>
+</template>
                 <MaterialRating :material-id="material.id" :key="ratingKey" />
             </div>
         </div>

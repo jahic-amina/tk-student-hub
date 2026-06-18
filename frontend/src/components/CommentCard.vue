@@ -1,7 +1,7 @@
 <template>
-    <div class="border rounded-xl p-4 shadow-sm bg-white">
+    <div class="border rounded-xl p-4 shadow-sm bg-white dark:bg-slate-800 dark:border-slate-700">
         <div class="flex items-center justify-between mb-2">
-            <span class="font-semibold text-gray-800">{{ comment.user?.full_name || 'Nepoznato' }}</span>
+            <span class="font-semibold text-gray-800 dark:text-slate-100">{{ comment.user?.full_name || 'Nepoznato' }}</span>
             <div class="flex items-center gap-3">
                 <span class="text-xs text-gray-400">{{ relativnoVrijeme(comment.created_at) }}</span>
                 <button
@@ -21,14 +21,14 @@
             </div>
         </div>
         <div v-if="!ureduje">
-            <p class="text-gray-600 text-sm leading-relaxed">{{ comment.content }}</p>
+            <p class="text-gray-600 dark:text-slate-300 text-sm leading-relaxed">{{ comment.content }}</p>
         </div>
         <div v-else>
             <textarea
                 v-model="noviTekst"
                 rows="3"
                 maxlength="500"
-                class="w-full border rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                class="w-full border dark:border-slate-600 rounded-lg p-3 text-sm text-gray-700 dark:text-slate-200 dark:bg-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-primary"
             />
             <div class="flex justify-between items-center mt-1">
                 <span class="text-xs text-gray-400">{{ noviTekst.length }} / 500</span>
