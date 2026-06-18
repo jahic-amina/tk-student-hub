@@ -76,7 +76,7 @@
                     </button>
                 </template>
                 <template v-else>
-                   <DownloadButton :material-id="material.id" @downloaded="$emit('downloaded', material.id)" />
+                   <DownloadButton :material-id="material.id" class="w-full" @downloaded="$emit('downloaded', material.id)" />
                    <DeleteMaterialButton v-if="userRole === 'admin' || material.user?.id === currentUserId" :material="material" @deleted="$emit('deleted', material.id)" @click.stop class="w-full" />
                 </template>
             </div>

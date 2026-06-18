@@ -82,7 +82,7 @@
     <div class="mb-6">
         <p class="text-sm text-gray-500 dark:text-slate-400 mb-2">Broj preuzimanja: {{ material.number_of_downloads }}</p>
         <div class="flex gap-3">
-            <DownloadButton :material-id="material.id" :full-width="true" @downloaded="updateDownloadCount" class="flex-1" />
+            <DownloadButton :material-id="material.id" :full-width="true" @downloaded="updateDownloadCount" class="w-full" />
             <button v-if="canPreview" @click="openPreview"
                 class="flex-1 flex items-center justify-center gap-2 bg-primary text-white font-medium px-4 py-2 rounded-lg hover:bg-primary/90 transition text-sm">
                 PREGLEDAJ
@@ -232,9 +232,6 @@ async function handleReject() {
 // Ažurira broj preuzimanja lokalno nakon downloada 
 function updateDownloadCount() {
     material.value.number_of_downloads += 1
-    setTimeout(() => {
-        ratingKey.value += 1
-    }, 500)
 }
 
 function goBack() {

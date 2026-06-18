@@ -1,12 +1,12 @@
 <template>
   <div>
     <!-- Glavno dugme -->
-    <button
-  type="button"
-  @click="handleDownload"
-  :disabled="isDownloading"
-  class="inline-flex items-center gap-2 bg-primary text-white font-semibold px-5 py-2.5 rounded-lg shadow-sm hover:bg-primary/90 transition disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
->
+     <button
+      type="button"
+      @click="handleDownload"
+      :disabled="isDownloading"
+  :class="['inline-flex items-center justify-center gap-2 bg-primary text-white font-semibold px-5 py-2.5 rounded-lg shadow-sm hover:bg-primary/90 transition disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary', fullWidth ? 'w-full' : 'w-36']"
+  >
       <!-- SVG ikona strelica (download) -->
       <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5"
            fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
