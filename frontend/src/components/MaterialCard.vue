@@ -77,8 +77,7 @@
                 </template>
                 <template v-else>
                    <DownloadButton :material-id="material.id" class="w-full" @downloaded="$emit('downloaded', material.id)" />
-                    <DeleteMaterialButton :material="material" @deleted="$emit('deleted', material.id)" @click.stop
-                        class="w-full" />
+                   <DeleteMaterialButton v-if="userRole === 'admin' || material.user?.id === currentUserId" :material="material" @deleted="$emit('deleted', material.id)" @click.stop class="w-full" />
                 </template>
             </div>
         </div>
@@ -87,6 +86,7 @@
 <script setup>
 import DownloadButton from './DownloadButton.vue'
 import DeleteMaterialButton from './DeleteMaterialButton.vue'
+const currentUserId = Number(localStorage.getItem('user_id'))
 
 defineProps({
     material: {
