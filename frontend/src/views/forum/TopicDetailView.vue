@@ -7,8 +7,7 @@ import ForumSidebar from '../../components/ForumSidebar.vue';
 import ForumWidgets from '../../components/ForumWidgets.vue'; 
 import ForumGuidelines from '../../components/ForumGuidelines.vue'; 
 import { postAdminNotice } from '../../services/forum_admin.js';
-import { getTopicById, createComment, incrementTopicView } from '../../services/forum';
-
+import { getTopicById, createComment, incrementTopicView, uploadCommentAttachments } from '../../services/forum';
 const props = defineProps({
   id: { type: [String, Number], required: true }
 });
@@ -29,13 +28,28 @@ const isAdmin = computed(() => localStorage.getItem('role') === 'admin');
 
 const odabraniKategorijaId = computed(() => fullTopicData.value?.category?.id || null);
 
+const sortCriteria = ref('top'); // 'top' | 'newest' | 'oldest'
+
 const sortedComments = computed(() => {
   const komentari = fullTopicData.value?.comments || [];
-  return [...komentari].sort((a, b) => {
-    if (a.is_best_answer && !b.is_best_answer) return -1;
-    if (!a.is_best_answer && b.is_best_answer) return 1;
+  const sorted = [...komentari];
+
+  // Admin notice i best answer uvijek ostaju na vrhu bez obzira na sort
+  sorted.sort((a, b) => {
+    if (a.is_admin_notice !== b.is_admin_notice) return a.is_admin_notice ? -1 : 1;
+    if (a.is_best_answer !== b.is_best_answer) return a.is_best_answer ? -1 : 1;
+
+    if (sortCriteria.value === 'top') {
+      return (b.votes_count ?? 0) - (a.votes_count ?? 0);
+    } else if (sortCriteria.value === 'newest') {
+      return new Date(b.created_at) - new Date(a.created_at);
+    } else if (sortCriteria.value === 'oldest') {
+      return new Date(a.created_at) - new Date(b.created_at);
+    }
     return 0;
   });
+
+  return sorted;
 });
 
 const topicAuthorId = computed(() => fullTopicData.value?.author?.id || null);
@@ -71,7 +85,7 @@ watch(
 );
 
 // ---- PRILAGOĐENO ZA RAD SA KARTICOM ----
-const handleNewComment = async ({ content, onSuccess, onError }) => {
+const handleNewComment = async ({ content, files = [], onSuccess, onError }) => {
   commentError.value = '';
   successMessage.value = '';
 
@@ -82,18 +96,19 @@ const handleNewComment = async ({ content, onSuccess, onError }) => {
 
   isSubmitting.value = true;
   try {
-    await createComment({
+    const newComment = await createComment({
       content: content.trim(),
       topic_id: parseInt(props.id),
       is_admin_notice: false
     });
-    
+
+    if (files && files.length > 0 && newComment?.id) {
+      await uploadCommentAttachments(newComment.id, files);
+    }
+
     successMessage.value = 'Odgovor uspješno objavljen!';
-    
-    // Ako je podkomponenta (kartica) poslala callback za uspjeh, okini ga
-    if (onSuccess) onSuccess(); 
-    
-    await loadTopicAndComments(props.id); 
+    if (onSuccess) onSuccess();
+    await loadTopicAndComments(props.id);
   } catch (error) {
     if (onError) onError('Došlo je do greške. Pokušajte ponovo.');
   } finally {
@@ -110,14 +125,15 @@ const handleAdminNotice = async () => {
   noticeError.value = '';
   try {
     await postAdminNotice(props.id, adminNoticeContent.value);
-    adminNoticeContent.value = ''; 
-    await loadTopicAndComments(props.id); 
+    adminNoticeContent.value = '';
+    await loadTopicAndComments(props.id);
   } catch (error) {
     noticeError.value = 'Greška pri objavi obavještenja.';
   } finally {
     isSubmittingNotice.value = false;
   }
 };
+
 </script>
 
 <template>
@@ -156,12 +172,25 @@ const handleAdminNotice = async () => {
                @refresh="() => loadTopicAndComments(props.id)"
             />
 
-            <ForumTopicCommentsList 
-              :comments="sortedComments" 
-              :topic-author-id="topicAuthorId" 
-              :topic-id="parseInt(props.id)" 
-              @refresh="() => loadTopicAndComments(props.id)" 
-            />
+            <!-- Sort dropdown -->
+             <div class="flex items-center justify-end gap-2 mb-3">
+              <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Sortiraj:</span>
+              <select
+              v-model="sortCriteria"
+              class="text-xs font-semibold bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-orange-400 cursor-pointer transition-colors"
+              >
+              <option value="top">⬆ Najbolje ocijenjeni</option>
+              <option value="newest">🕐 Najnoviji</option>
+              <option value="oldest">🕓 Najstariji</option>
+            </select>
+          </div>
+
+          <ForumTopicCommentsList 
+            :comments="sortedComments" 
+            :topic-author-id="topicAuthorId" 
+            :topic-id="parseInt(props.id)" 
+            @refresh="() => loadTopicAndComments(props.id)" 
+          />
 
             <div v-if="fullTopicData.is_locked" class="bg-gray-100 dark:bg-slate-800 text-center text-gray-500 p-4 rounded-xl font-bold mt-4">
               🔒 Ova tema je zaključana za daljnje odgovore.

@@ -161,3 +161,39 @@ export async function getRelatedTopics(topicId) {
   const response = await fetch(`${BASE_URL}/forum/topics/${topicId}/related`, { headers: getHeaders() });
   return handleResponse(response, 'Greška pri dohvatanju povezanih tema.');
 }
+
+// Endpoint za uređivanje teme (dostupan samo originalnom autoru i adminima)
+export async function updateTopic(topicId, data) {
+  const response = await fetch(`${BASE_URL}/forum/topics/${topicId}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(data)
+  });
+  return handleResponse(response, 'Editovanje teme nije uspjelo.');
+}
+
+export async function uploadTopicAttachments(topicId, files) {
+  const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+  const formData = new FormData();
+  files.forEach(file => formData.append('files', file));
+  
+  const response = await fetch(`${BASE_URL}/forum/attachments/topic/${topicId}`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: formData
+  });
+  return handleResponse(response, 'Upload fajlova nije uspio.');
+}
+
+export async function uploadCommentAttachments(commentId, files) {
+  const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+  const formData = new FormData();
+  files.forEach(file => formData.append('files', file));
+
+  const response = await fetch(`${BASE_URL}/forum/attachments/comment/${commentId}`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: formData
+  });
+  return handleResponse(response, 'Upload fajlova nije uspio.');
+}
