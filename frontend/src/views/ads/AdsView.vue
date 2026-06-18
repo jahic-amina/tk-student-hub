@@ -186,7 +186,9 @@ export default {
             typeKey: ad.type,
             location: ad.location,
             duration: ad.duration_months,
-            field: ad.field
+            field: ad.field,
+            spots: ad.spots ?? null,
+            applicants_count: ad.applicants_count ?? 0
           }
         })
 

@@ -63,7 +63,7 @@ function iconComponent(type) {
     material_uploaded: ArrowUpTrayIcon,
     forum_comment: ChatBubbleLeftIcon,
     forum_answer: ChatBubbleLeftIcon,
-    internship_completed: CheckCircleIcon
+    internship_accepted: CheckCircleIcon
   }
   return map[type] || DocumentTextIcon
 }
@@ -74,7 +74,7 @@ function iconBg(type) {
     material_uploaded: 'bg-purple-100',
     forum_comment: 'bg-green-100',
     forum_answer: 'bg-green-100',
-    internship_completed: 'bg-orange-100'
+    internship_accepted: 'bg-orange-100'
   }
   return map[type] || 'bg-gray-100'
 }
@@ -85,7 +85,7 @@ function iconColor(type) {
     material_uploaded: 'text-purple-600',
     forum_comment: 'text-green-600',
     forum_answer: 'text-green-600',
-    internship_completed: 'text-orange-500'
+    internship_accepted: 'text-orange-500'
   }
   return map[type] || 'text-gray-500'
 }
@@ -96,7 +96,7 @@ function typeLabel(type) {
     material_uploaded: { text: 'Uploadovao materijal', color: 'text-purple-500' },
     forum_comment: { text: 'Komentarisao na forumu', color: 'text-green-500' },
     forum_answer: { text: 'Odgovorio na pitanje', color: 'text-green-500' },
-    internship_completed: { text: 'Završio praksu', color: 'text-orange-500' }
+    internship_accepted: { text: 'Prihvaćena prijava za praksu', color: 'text-orange-500' }
   }
   return map[type] || { text: 'Aktivnost', color: 'text-gray-500' }
 }

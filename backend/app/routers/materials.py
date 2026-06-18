@@ -10,21 +10,26 @@ from app.database import get_db
 from app.core.security import get_current_user, decode_access_token
 from app.models.user import User, UserRole
 from app.models.materials import (
-    Material, MaterialsResponse, MaterialDetailResponse,
-    Rating, Comment, Subject, RatingCreate, CommentResponse, CommentCreate, Bookmark, Download,  # dodano: Download
+    Material, MaterialsResponse, MaterialDetailResponse, 
+    Rating, Comment, Subject, RatingCreate, CommentResponse, CommentCreate, Bookmark, Download, PaginatedMaterialsResponse, 
 )
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
+from app.models.notification import Notification, NotificationType, NotificationCreate
+from app.services.activity_log_service import log_activity
+from app.enums.activity import ActivityType
+from datetime import datetime
 
 router = APIRouter(prefix="/materials", tags=["materials"])
 
 
 def get_materials_by_status(
         session: Session,
-        status: str,
+    status: Optional[str],
         years: Optional[List[int]] = None,
         types: Optional[List[str]] = None,
         subject_id: Optional[int] = None,
+    user_id: Optional[int] = None,
         current_user: Optional[User] = None,
 ):
     query = (
@@ -34,14 +39,17 @@ def get_materials_by_status(
             func.count(Rating.id).label("rating_count"),
         )
         .outerjoin(Rating, Rating.material_id == Material.id)
-        .where(Material.status == status)
     )
+    if status is not None:
+        query = query.where(Material.status == status)
     if years:
         query = query.join(Subject, Material.subject_id == Subject.id).where(Subject.study_year.in_(years))
     if types:
         query = query.where(Material.file_type.in_(types))
     if subject_id:
         query = query.where(Material.subject_id == subject_id)
+    if user_id is not None:
+        query = query.where(Material.user_id == user_id).where(Material.status != "deleted")
 
     query = (
         query.options(
@@ -196,6 +204,26 @@ def upload_material(
         db.add(new_material)
         db.commit()
         db.refresh(new_material)
+
+        admini = db.exec(select(User).where(User.role == UserRole.admin)).all()
+        for admin in admini:
+            tekst = f"Novi materijal '{new_material.title}' čeka odobrenje."
+            db.add(Notification(
+                user_id=admin.id,
+                text=tekst,
+                type=NotificationType.MATERIAL_PENDING_APPROVAL
+            ))
+        db.commit()
+        subject = db.get(Subject, subject_id)
+        log_activity(
+            db,
+            current_user.id,
+            ActivityType.material_posted,
+            new_material.title,
+            f"{subject.name if subject else ''} · {file_type.upper()}",
+            new_material.id 
+        )
+
         return new_material
     except Exception as e:
         if os.path.exists(file_path):
@@ -203,24 +231,60 @@ def upload_material(
         raise HTTPException(status_code=500, detail="Greška pri uploadu.")
 
 
-@router.get("/", response_model=list[MaterialsResponse])
+@router.get("/", response_model=PaginatedMaterialsResponse)
 def get_materials(
     session: Session = Depends(get_db),
     years: Optional[list[int]] = Query(None),
     types: Optional[list[str]] = Query(None),
     subject_id: Optional[int] = Query(None),
+    mine_only: bool = Query(False),
     current_user: Optional[User] = Depends(get_current_user),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(10, ge=1, le=50),
 ):
-    return get_materials_by_status(
+    user_id = current_user.id if mine_only and current_user else None
+    status = "approved" if not mine_only else None
+
+    if mine_only and current_user is None:
+        raise HTTPException(status_code=401, detail="Niste prijavljeni.")
+
+    svi = get_materials_by_status(
         session,
-        "approved",
+        status or "approved",
         years=years,
         types=types,
         subject_id=subject_id,
+        user_id=user_id,
         current_user=current_user,
     )
+    total = len(svi)
+    start = (page - 1) * per_page
+    end = start + per_page
+    return PaginatedMaterialsResponse(
+        items=svi[start:end],
+        total=total,
+        page=page,
+        per_page=per_page,
+        total_pages=(total + per_page - 1) // per_page,
+    )
 
-
+@router.get("/{id}/preview")
+def preview_material(id: int, db: Session = Depends(get_db)):
+    material = db.exec(select(Material).where(Material.id == id)).first()
+    if not material:
+        raise HTTPException(status_code=404, detail="Materijal sa tim ID-em ne postoji.")
+    if not os.path.exists(material.file_path):
+        raise HTTPException(status_code=404, detail="Fajl nije pronađen na serveru.")
+    
+    media_type, _ = mimetypes.guess_type(material.file_path)    
+    media_type = media_type or "application/octet-stream"
+    
+    return FileResponse(
+        path=material.file_path,
+        media_type=media_type,
+        headers={
+            "Content-Disposition": "inline"
+        })
 
 @router.get("/{id}/download")
 def download_material(
@@ -305,6 +369,14 @@ def approve_material(
         raise HTTPException(status_code=404, detail="Materijal nije pronađen.")
     material.status = "approved"
     session.add(material)
+
+    tekst = f"Vaš materijal '{material.title}' je odobren i sada je vidljiv ostalim studentima."
+    session.add(Notification(
+        user_id=material.user_id,
+        text=tekst,
+        type=NotificationType.STATUS_CHANGE
+    ))
+
     session.commit()
     return {"message": "Materijal odobren."}
 
@@ -322,9 +394,53 @@ def reject_material(
         raise HTTPException(status_code=404, detail="Materijal nije pronađen.")
     material.status = "rejected"
     session.add(material)
+
+    tekst = f"Vaš materijal '{material.title}' je odbijen."
+    session.add(Notification(
+        user_id=material.user_id,
+        text=tekst,
+        type=NotificationType.STATUS_CHANGE
+    ))
+
     session.commit()
     return {"message": "Materijal odbijen."}
 
+@router.patch("/{material_id}/update")
+def update_material(
+    material_id: int,
+    title: Optional[str] = Form(None),
+    description: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None),
+    subject_id: Optional[int] = Form(None),
+    material_type: Optional[str] = Form(None),
+    session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    material = session.get(Material, material_id)
+    if not material:
+        raise HTTPException(status_code=404, detail="Materijal nije pronađen.")
+    if material.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Nemate dozvolu za ažuriranje ovog materijala.")
+    if title:
+        material.title = title
+    if description:
+        material.description = description
+    if subject_id:
+        material.subject_id = subject_id
+    if material_type:
+        material.file_type = material_type
+    if file:
+        validate_file_format(file)
+        if os.path.exists(material.file_path):
+            os.remove(material.file_path)
+        new_file_path = save_file_to_disk(file)
+        material.file_path = new_file_path
+        material.file_type = file.content_type
+        material.status = "pending"  
+    session.add(material)
+    session.commit()
+    session.refresh(material)
+    return {"message": "Materijal ažuriran."}
 
 @router.get("/{material_id}/comments", response_model=list[CommentResponse])
 def get_comments(material_id: int, session: Session = Depends(get_db)):
@@ -383,6 +499,34 @@ def delete_comment(
     session.commit()
     return None
 
+@router.patch("/{material_id}/comments/{comment_id}", response_model=CommentResponse)
+def update_comment(
+    material_id: int,
+    comment_id: int,
+    comment_data: CommentCreate,
+    session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    comment = session.get(Comment, comment_id)
+    if not comment or comment.material_id != material_id:
+        raise HTTPException(status_code=404, detail="Komentar nije pronađen.")
+
+    if comment.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Nemate dozvolu za uređivanje ovog komentara.")
+
+    content = comment_data.content.strip()
+    if not content:
+        raise HTTPException(status_code=400, detail="Komentar ne može biti prazan.")
+    if len(content) > 500:
+        raise HTTPException(status_code=400, detail="Komentar ne može biti duži od 500 karaktera.")
+
+    comment.content = content
+    comment.updated_at = datetime.utcnow()
+    session.add(comment)
+    session.commit()
+    session.refresh(comment)
+    comment.user = current_user
+    return comment
 
 @router.post("/{id}/rate", status_code=201)
 def rate_material(
@@ -418,6 +562,15 @@ def rate_material(
     db.add(new_rating)
     db.commit()
     db.refresh(new_rating)
+    
+    if material.user_id != current_user.id:
+        tekst = f"Vaš materijal '{material.title}' je ocijenjen sa {rating_data.rating}/5."
+        db.add(Notification(
+            user_id=material.user_id,
+            text=tekst,
+            type=NotificationType.MATERIAL_GRADED
+        ))
+        db.commit()
     return new_rating
 
 
