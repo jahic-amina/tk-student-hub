@@ -251,12 +251,17 @@ def _build_ads(companies: list[Company], users: list[User]) -> list[Ad]:
         {"title": "Mobile App Developer", "type": AdType.internship, "field": "Mobile Development", "location": "Trebinje", "description": "Develop iOS and Android applications.", "deadline": 38, "duration_months": 5, "compensation": 380.0, "spots": 1},
         {"title": "Full Stack Developer", "type": AdType.internship, "field": "Full Stack", "location": "Bihac", "description": "Work on both frontend and backend systems.", "deadline": 42, "duration_months": 4, "compensation": 370.0, "spots": 2},
         {"title": "Software Engineer Apprenticeship", "type": AdType.internship, "field": "Software Engineering", "location": "Sarajevo", "description": "Comprehensive software engineering training program.", "deadline": 50, "duration_months": 6, "compensation": 400.0, "spots": 3},
+        {"title": "Python Bootcamp", "type": AdType.education, "field": "Programiranje", "location": "Sarajevo", "description": "Intenzivni kurs Python programiranja za studente.", "deadline": 30, "duration_months": 2, "compensation": None, "spots": 20},
+        {"title": "Web Development Kurs", "type": AdType.education, "field": "Web Development", "location": "Tuzla", "description": "Naučite HTML, CSS i JavaScript od nule.", "deadline": 35, "duration_months": 3, "compensation": None, "spots": 15},
+        {"title": "Data Science Radionica", "type": AdType.education, "field": "Data Science", "location": "Mostar", "description": "Uvod u analizu podataka i machine learning.", "deadline": 40, "duration_months": 1, "compensation": None, "spots": 10},
+        {"title": "Stipendija za IT studente", "type": AdType.scholarship, "field": "Informacione tehnologije", "location": "Sarajevo", "description": "Stipendija namijenjena studentima IT fakulteta.", "deadline": 45, "duration_months": None, "compensation": 500.0, "spots": 5},
+        {"title": "STEM Stipendija", "type": AdType.scholarship, "field": "STEM", "location": "Banja Luka", "description": "Stipendija za studente prirodnih i tehničkih nauka.", "deadline": 50,("title"): AdType.scholarship,("field"): "STEM",("location"): "Banja Luka",("description"): "Stipendija za studente prirodnih i tehničkih nauka.",("deadline"): 50,("duration_months"): None,("compensation"): 400.0,("spots"): 3},
     ]
     ads = []
     for index, template in enumerate(ad_templates):
         ads.append(
             Ad(
-                company_id=companies[index].id,
+                company_id=companies[index % len(companies)].id,
                 approved_by=users[0].id,
                 title=template["title"],
                 type=template["type"],
