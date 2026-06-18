@@ -132,8 +132,15 @@
                 {{ user.is_active ? 'Aktivan' : 'Deaktiviran' }}
               </button>
             </td>
-            <td class="px-6 py-4 text-sm text-gray-700">
-              {{ roleLabel(user.role) }}
+            <td class="px-6 py-4">
+              <button
+                @click="openRoleModal(user)"
+                :class="user.role === 'admin' ? 'bg-purple-100 text-purple-700 hover:bg-purple-200 cursor-pointer' : 'bg-blue-100 text-blue-700 hover:bg-blue-200 cursor-pointer'"
+                class="px-3 py-1 rounded-full text-xs font-medium transition-colors"
+                title="Klikni za promjenu uloge"
+              >
+                {{ roleLabel(user.role) }}
+              </button>
             </td>
             <td class="px-6 py-4 text-right text-sm">
               <button 
@@ -251,19 +258,49 @@
         </div>
       </div>
     </div>
+
+    <div v-if="isRoleModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 overflow-y-auto px-4">
+      <div class="bg-white rounded-xl p-6 max-w-md w-full shadow-xl border border-gray-100">
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">Potvrda promjene uloge</h3>
+
+        <p class="text-sm text-gray-500 mb-6">
+          Da li ste sigurni da želite promijeniti ulogu korisnika 
+          <strong class="text-gray-800">{{ userToChangeRole?.full_name }}</strong> 
+          iz <strong class="text-gray-600">{{ roleLabel(userToChangeRole?.role) }}</strong> 
+          u <strong class="text-primary font-bold">{{ roleLabel(targetRole) }}</strong>?
+        </p>
+
+        <div class="flex justify-end gap-3">
+          <button 
+            @click="closeRoleModal" 
+            class="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
+          >
+            Odustani
+          </button>
+          <button 
+            @click="confirmRoleChange" 
+            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm cursor-pointer"
+          >
+            Potvrdi
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 
 <script>
-import { getAllUsers, activateUser, deactivateUser, deleteUser, getMyProfile, getPlatformStats } from '../../services/api.js'
+import { getAllUsers, activateUser, deactivateUser, deleteUser, getMyProfile, getPlatformStats, changeUserRole } from '../../services/api.js'
 
 // ERROR PORUKE - CENTRALIZOVANE
 const ERROR_MESSAGES = {
   CANNOT_DEACTIVATE_SELF: 'Ne možete ovdje deaktivirati svoj profil. Molimo da to uradite u dijelu uredi profil.',
   CANNOT_DELETE_SELF: 'Ne možete obrisati svoj profil. Molimo kontaktirajte drugog administratora.',
+  CANNOT_CHANGE_ROLE_SELF: 'Ne možete sami sebi promijeniti ulogu.',
   DEACTIVATE_ERROR: 'Došlo je do greške prilikom promjene statusa. Pokušajte ponovo.',
-  DELETE_ERROR: 'Došlo je do greške prilikom brisanja korisnika. Pokušajte ponovo.'
+  DELETE_ERROR: 'Došlo je do greške prilikom brisanja korisnika. Pokušajte ponovo.',
+  ROLE_ERROR: 'Došlo je do greške prilikom promjene uloge. Pokušajte ponovo.'
 }
 
 export default {
@@ -294,6 +331,9 @@ export default {
       },
       statsPeriod: 'month',
       statsLoading: false,
+      isRoleModalOpen: false,    
+      userToChangeRole: null,     
+      targetRole: '',
     
     }
   },
@@ -345,160 +385,180 @@ export default {
         return
       }
 
-      // Samo otvorimo modal - akcija se izvršava nakon potvrde
       this.openStatusModal(user)
     },
-   async confirmStatusToggle() {
-      if (!this.userToToggle) return
+    async confirmStatusToggle() {
+        if (!this.userToToggle) return
 
-      const user = this.userToToggle
-  
-      // Provjera da li admin pokušava deaktivirati samog sebe
-      if (user.id === this.currentUserId && user.is_active) {
-        this.closeStatusModal()
-        this.showError(ERROR_MESSAGES.CANNOT_DEACTIVATE_SELF)
-        return
-      }
-
-      const token = localStorage.getItem('token')
-      const oldIsActive = user.is_active
-
-      user.is_active = !user.is_active
-      this.closeStatusModal()
-
-      try {
-        if (oldIsActive) {
-          await deactivateUser(token, user.id, "Deaktivacija od strane administratora")
-        } else {
-          await activateUser(token, user.id)
-        }
-      } catch (error) {
-        // Ako je greška, vrati na staro stanje
-        user.is_active = oldIsActive
-        this.showError(ERROR_MESSAGES.DEACTIVATE_ERROR)
-        console.error(error)
-      }
-    },
-
-    // DODANA METODA ZA STATISTIKU
-    async fetchStats() {
-      this.statsLoading = true
-      try {
+        const user = this.userToToggle
         const token = localStorage.getItem('token')
-        const data = await getPlatformStats(token, this.statsPeriod)
-        
-        if (data) {
-          this.stats = data
+        const oldIsActive = user.is_active
+
+        user.is_active = !user.is_active
+        this.closeStatusModal()
+
+        try {
+          if (oldIsActive) {
+            await deactivateUser(token, user.id, "Deaktivacija od strane administratora")
+          } else {
+            await activateUser(token, user.id)
+          }
+        } catch (error) {
+          user.is_active = oldIsActive
+          this.showError(ERROR_MESSAGES.DEACTIVATE_ERROR)
+          console.error(error)
         }
-      } catch (error) {
-        console.error('Greška pri dohvatanju statistike:', error)
-      } finally {
-        this.statsLoading = false
-      }
-    },
+      },
+
+    // METODA ZA STATISTIKU
+      async fetchStats() {
+        this.statsLoading = true
+        try {
+          const token = localStorage.getItem('token')
+          const data = await getPlatformStats(token, this.statsPeriod)
+        
+          if (data) {
+            this.stats = data
+          }
+        } catch (error) {
+          console.error('Greška pri dohvatanju statistike:', error)
+        } finally {
+          this.statsLoading = false
+        }
+      },
     // Metode za upravljanje brisanjem
-    openDeleteModal(user) {
+      openDeleteModal(user) {
       // Provjera da li admin pokušava obrisati samog sebe
-      if (user.id === this.currentUserId) {
-        this.showError(ERROR_MESSAGES.CANNOT_DELETE_SELF)
-        return
-      }
-      this.userToDelete = user
-      this.deleteConfirmationInput = ''
-      this.isDeleteModalOpen = true
-    },
+        if (user.id === this.currentUserId) {
+          this.showError(ERROR_MESSAGES.CANNOT_DELETE_SELF)
+          return
+        }
+        this.userToDelete = user
+        this.deleteConfirmationInput = ''
+        this.isDeleteModalOpen = true
+      },
 
-    closeDeleteModal() {
-      this.isDeleteModalOpen = false
-      this.userToDelete = null
-    },
+      closeDeleteModal() {
+        this.isDeleteModalOpen = false
+        this.userToDelete = null
+      },
 
-    closeErrorModal() {
-      this.showErrorModal = false
-      this.errorMessage = ''
-    },
+      closeErrorModal() {
+        this.showErrorModal = false
+        this.errorMessage = ''
+      },
 
-    showError(message) {
-      this.errorMessage = message
-      this.showErrorModal = true
-    },
+      showError(message) {
+        this.errorMessage = message
+        this.showErrorModal = true
+      },
 
-    async confirmDeleteUser() {
-      // Dvostruka provjera za svaki slučaj
-      if (this.deleteConfirmationInput !== 'OBRIŠI') return
+      async confirmDeleteUser() {
+        if (this.deleteConfirmationInput !== 'OBRIŠI') return
 
-      const token = localStorage.getItem('token')
+        const token = localStorage.getItem('token')
       
-      try {
+        try {
         // Poziv API servisa za brisanje
-        await deleteUser(token, this.userToDelete.id)
+          await deleteUser(token, this.userToDelete.id)
         
-        // Lokalno uklanjanje korisnika iz tabele (Optimistic / Instant UX)
-        this.users = this.users.filter(u => u.id !== this.userToDelete.id)
-        this.total--
-        
-        // Zatvaranje modala
-        this.closeDeleteModal()
-      } catch (error) {
-        this.showError(ERROR_MESSAGES.DELETE_ERROR)
-        console.error(error)
-      }
-    },
+          this.users = this.users.filter(u => u.id !== this.userToDelete.id)
+          this.total--
+          this.closeDeleteModal()
+        } catch (error) {
+          this.showError(ERROR_MESSAGES.DELETE_ERROR)
+          console.error(error)
+        }
+      },
 
-    openStatusModal(user) {
-  this.userToToggle = user;
-  this.actionToPerform = user.is_active ? 'deaktivirati' : 'aktivirati';
-  this.isStatusModalOpen = true;
-},
+      openStatusModal(user) {
+        this.userToToggle = user;
+        this.actionToPerform = user.is_active ? 'deaktivirati' : 'aktivirati';
+        this.isStatusModalOpen = true;
+      },
 
-closeStatusModal() {
-  this.isStatusModalOpen = false;
-  this.userToToggle = null;
-  this.actionToPerform = '';
-},
+      closeStatusModal() {
+        this.isStatusModalOpen = false;
+        this.userToToggle = null;
+        this.actionToPerform = '';
+      },
 
-async confirmStatusToggle() {
-  if (!this.userToToggle) return;
-
-  // Prebacujemo postojeću logiku iz toggleUserStatus ovdje
-  const user = this.userToToggle;
+      async confirmStatusToggle() {
+        if (!this.userToToggle) return;
+        const user = this.userToToggle;
   
   // Provjera da li admin pokušava deaktivirati samog sebe
-  if (user.id === this.currentUserId) {
-    this.closeStatusModal(); // Prvo zatvori modal za status
-    this.showError(ERROR_MESSAGES.CANNOT_DEACTIVATE_SELF);
-    return;
-  }
+        if (user.id === this.currentUserId) {
+          this.closeStatusModal(); 
+          this.showError(ERROR_MESSAGES.CANNOT_DEACTIVATE_SELF);
+          return;
+        }
 
-  const token = localStorage.getItem('token');
-  const oldIsActive = user.is_active;
+        const token = localStorage.getItem('token');
+        const oldIsActive = user.is_active;
 
-  // Optimistic UI update
-  user.is_active = !user.is_active;
-  this.closeStatusModal(); // Zatvori modal odmah
+        user.is_active = !user.is_active;
+        this.closeStatusModal(); 
 
-  try {
-    if (oldIsActive) {
-      await deactivateUser(token, user.id, "Deaktivacija od strane administratora");
-    } else {
-      await activateUser(token, user.id);
-    }
-    this.fetchStats();
-  } catch (error) {
-    user.is_active = oldIsActive; // Vrati na staro ako je greška
-    this.showError(ERROR_MESSAGES.DEACTIVATE_ERROR);
-    console.error(error);
-  }
-},
+        try {
+          if (oldIsActive) {
+            await deactivateUser(token, user.id, "Deaktivacija od strane administratora");
+          } else {
+            await activateUser(token, user.id);
+          }
+          this.fetchStats();
+        } catch (error) {
+          user.is_active = oldIsActive; 
+          this.showError(ERROR_MESSAGES.DEACTIVATE_ERROR);
+          console.error(error);
+        }
+      },
+      openRoleModal(user) {
+        if (user.id === this.currentUserId) {
+          this.showError(ERROR_MESSAGES.CANNOT_CHANGE_ROLE_SELF)
+          return
+        }
 
-    roleLabel(role) {
-      const labels = {
-        member: 'Student',
-        mentor: 'Mentor',
-        admin: 'Administrator'
+        this.userToChangeRole = user
+        this.targetRole = user.role === 'admin' ? 'member' : 'admin'
+        this.isRoleModalOpen = true
+      },
+
+      closeRoleModal() {
+        this.isRoleModalOpen = false
+        this.userToChangeRole = null
+        this.targetRole = ''
+      },
+
+      async confirmRoleChange() {
+        if (!this.userToChangeRole) return
+
+        const user = this.userToChangeRole
+        const token = localStorage.getItem('token')
+        const oldRole = user.role
+        const newRole = user.role === 'admin' ? 'member' : 'admin'
+
+        user.role = newRole
+        this.closeRoleModal()
+
+        try {
+          await changeUserRole(token, user.id, { role: newRole })
+        } catch (error) {
+   
+          user.role = oldRole
+          this.showError(ERROR_MESSAGES.ROLE_ERROR)
+          console.error(error)
+        }
+      },
+
+      roleLabel(role) {
+        const labels = {
+          member: 'Student',
+          mentor: 'Mentor',
+          admin: 'Administrator'
+        }
+        return labels[role] || role
       }
-      return labels[role] || role
     }
-  }
 }
 </script>
