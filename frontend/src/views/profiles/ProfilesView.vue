@@ -1,60 +1,62 @@
 <template>
-  <div>
+  <div class="dark:bg-gray-900 min-h-screen transition-colors">
     <div v-if="!isEditing" class="max-w-4xl mx-auto py-8 px-4">
 
-      <div v-if="loading" class="text-center py-20 text-gray-400"> Učitavanje...</div>
+      <div v-if="loading" class="text-center py-20 text-gray-400 dark:text-gray-500"> Učitavanje...</div>
 
-      <div v-else-if="error" class="bg-red-100 text-red-600 p-4 rounded-lg">
-         {{ error }} 
+      <div v-else-if="error" class="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-4 rounded-lg">
+          {{ error }} 
       </div>
       
       <div v-else-if="profile">
         <UserProfileCard :profile="profile" @edit-avatar="showModal = true" @edit-profile="isEditing = true"/>
         
-        <div class="bg-white rounded-xl shadow p-6 mb-6">
-          <h2 class="text-lg font-bold mb-3">O meni</h2>
-          <p class="text-gray-600 text-sm">{{ profile.biografija || 'Nije unesena biografija.' }}</p>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6 border border-gray-100 dark:border-gray-700">
+          <h2 class="text-lg font-bold mb-3 dark:text-white">O meni</h2>
+          <p class="text-gray-600 dark:text-gray-300 text-sm">{{ profile.biografija || 'Nije unesena biografija.' }}</p>
         </div>
-      <div class="grid grid-cols-2 gap-6">
-  <div class="bg-white rounded-xl shadow p-6">
-    <h2 class="text-lg font-bold mb-4">Trenutne prakse</h2>
-    <div v-if="prakse.length === 0">
-      <p class="text-gray-400 text-sm">Nema trenutnih praksi.</p>
-    </div>
-    <div v-else class="flex flex-col gap-3">
-      <div v-for="praksa in prakse" :key="praksa.id">
-        <p class="font-medium text-gray-800">{{ praksa.naziv }}</p>
-        <p class="text-sm text-gray-400">{{ praksa.kompanija }} · 
-          <span class="text-orange-500">{{ praksa.status  === 'accepted' ? 'Prihvaćena' : 'Na čekanju' }}</span></p>
+
+        <div class="grid grid-cols-2 gap-6">
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-100 dark:border-gray-700">
+            <h2 class="text-lg font-bold mb-4 dark:text-white">Trenutne prakse</h2>
+            <div v-if="prakse.length === 0">
+              <p class="text-gray-400 dark:text-gray-500 text-sm">Nema trenutnih praksi.</p>
+            </div>
+            <div v-else class="flex flex-col gap-3">
+              <div v-for="praksa in prakse" :key="praksa.id">
+                <p class="font-medium text-gray-800 dark:text-gray-200">{{ praksa.naziv }}</p>
+                <p class="text-sm text-gray-400 dark:text-gray-500">{{ praksa.kompanija }} · 
+                  <span class="text-orange-500">{{ praksa.status  === 'accepted' ? 'Prihvaćena' : 'Na čekanju' }}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-100 dark:border-gray-700">
+            <h2 class="text-lg font-bold mb-4 dark:text-white">Nedavna aktivnost</h2>
+            <ActivityFeed :activities="activities" :loading="activityLoading" />
+            <button 
+              v-if="hasMore && !showingAll"
+              @click="handleShowAll"
+              class="mt-4 text-sm text-orange-500 hover:text-orange-600 flex items-center gap-1"
+            >
+              Prikaži sve
+            </button>
+          </div>
+        </div>
+
+        <div v-if="successMessage" class="mt-4 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 p-3 rounded-lg font-medium">{{ successMessage }} </div>
       </div>
     </div>
-  </div>
 
-  <div class="bg-white rounded-xl shadow p-6">
-    <h2 class="text-lg font-bold mb-4">Nedavna aktivnost</h2>
-    <ActivityFeed :activities="activities" :loading="activityLoading" />
-    <button 
-      v-if="hasMore && !showingAll"
-      @click="handleShowAll"
-      class="mt-4 text-sm text-orange-500 hover:text-orange-600 flex items-center gap-1"
-    >
-      Prikaži sve
-    </button>
-  </div>
-</div>
-        <div v-if="successMessage" class="mt-4 bg-green-100 text-green-700 p-3 rounded-lg font-medium">{{ successMessage }} </div>
-      </div>
-
-    </div>
-
-    <div v-else class="min-h-screen bg-gray-50 flex flex-col font-sans text-sm text-gray-600 relative">
+    <div v-else class="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col font-sans text-sm text-gray-600 dark:text-gray-300 relative">
       
       <div v-if="toast.show" class="fixed top-5 right-5 z-50 bg-green-500 text-white px-5 py-3 rounded-xl shadow-lg font-semibold flex items-center gap-2 animate-bounce">
         <span>✓</span> {{ toast.message }}
       </div>
 
       <div class="max-w-5xl w-full mx-auto px-4 pt-6">
-        <button @click="isEditing = false" class="text-gray-400 hover:text-gray-800 font-bold flex items-center gap-2 transition px-3 py-1.5 rounded-lg hover:bg-gray-100">
+        <button @click="isEditing = false" class="text-gray-400 hover:text-gray-800 dark:hover:text-white font-bold flex items-center gap-2 transition px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
           ← Nazad na profil
         </button>
       </div>
@@ -62,45 +64,45 @@
       <main class="flex-1 max-w-5xl w-full mx-auto px-4 py-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         <div class="space-y-4">
-          <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm text-center">
-            <div class="w-24 h-24 rounded-full mx-auto mb-3 border bg-gray-200 flex items-center justify-center overflow-hidden">
+          <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm text-center">
+            <div class="w-24 h-24 rounded-full mx-auto mb-3 border bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
               <img v-if="profile?.profilna_slika_url" :src="`http://localhost:8000${profile.profilna_slika_url}`" class="w-full h-full object-cover" />
-              <span v-else class="text-white text-4xl font-bold">{{ getInitials() }}</span>
+              <span v-else class="text-white text-4xl font-bold dark:text-gray-300">{{ getInitials() }}</span>
             </div>            
-            <p class="text-xs text-gray-400 mb-4">{{ form.email }}</p>
-            <button @click="showModal = true" type="button" class="w-full py-2 bg-orange-55 hover:bg-orange-100 text-orange-600 rounded-xl border border-orange-200 font-bold text-xs transition shadow-sm flex justify-center items-center gap-2">
+            <p class="text-xs text-gray-400 dark:text-gray-500 mb-4">{{ form.email }}</p>
+            <button @click="showModal = true" type="button" class="w-full py-2 bg-orange-55 dark:bg-orange-950/40 hover:bg-orange-100 dark:hover:bg-orange-900 text-orange-600 dark:text-orange-400 rounded-xl border border-orange-200 dark:border-orange-700 font-bold text-xs transition shadow-sm flex justify-center items-center gap-2">
               <span>📷</span> Uredi profilnu sliku
             </button>
           </div>
 
-          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div class="px-4 py-2.5 bg-gray-50 border-b text-xs font-bold text-gray-400 uppercase tracking-wider">Aktivnost</div>
-            <nav class="divide-y divide-gray-50">
-              <a v-for="link in ['Historija', 'Sačuvano', 'Javni Profil']" :key="link" href="#" class="block px-4 py-2.5 hover:bg-orange-50 hover:text-orange-500 transition font-medium">{{ link }}</a>
+          <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+            <div class="px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600 text-xs font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider">Aktivnost</div>
+            <nav class="divide-y divide-gray-50 dark:divide-gray-700">
+              <a v-for="link in ['Historija', 'Sačuvano', 'Javni Profil']" :key="link" href="#" class="block px-4 py-2.5 hover:bg-orange-50 dark:hover:bg-gray-700 hover:text-orange-500 transition font-medium dark:text-gray-300">{{ link }}</a>
             </nav>
           </div>
         </div>
 
         <div class="lg:col-span-2 space-y-6">
-          <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+          <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
             <h2 class="text-xl font-bold text-orange-500 mb-1">Uredi profil</h2>
-            <p class="text-xs text-gray-400 mb-4">Ažurirajte vaše lične podatke i biografiju</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mb-4">Ažurirajte vaše lične podatke i biografiju</p>
             
-            <div v-if="status.isError && status.message" class="mb-4 p-3 rounded-xl text-xs bg-red-50 text-red-700 border border-red-100 font-medium">
+            <div v-if="status.isError && status.message" class="mb-4 p-3 rounded-xl text-xs bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-100 dark:border-red-800 font-medium">
               ⚠️ {{ status.message }}
             </div>
 
             <form @submit.prevent="handleSubmit" class="space-y-4">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><label class="block font-medium mb-1">Ime</label><input v-model="form.first_name" type="text" class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none"/></div>
-                <div><label class="block font-medium mb-1">Prezime</label><input v-model="form.last_name" type="text" class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none"/></div>
+                <div><label class="block font-medium mb-1 dark:text-gray-300">Ime</label><input v-model="form.first_name" type="text" class="w-full p-2.5 border rounded-xl dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"/></div>
+                <div><label class="block font-medium mb-1 dark:text-gray-300">Prezime</label><input v-model="form.last_name" type="text" class="w-full p-2.5 border rounded-xl dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"/></div>
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><label class="block font-medium mb-1">Email</label><input v-model="form.email" type="email" disabled class="w-full p-2.5 border bg-gray-50 text-gray-400 rounded-xl cursor-not-allowed"/></div>
+                <div><label class="block font-medium mb-1 dark:text-gray-300">Email</label><input v-model="form.email" type="email" disabled class="w-full p-2.5 border bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-400 dark:text-gray-500 rounded-xl cursor-not-allowed"/></div>
                 <div>
-                  <label class="block font-medium mb-1">Godina studija</label>
-                  <select v-model="form.study_year" class="w-full p-2.5 border rounded-xl bg-white focus:ring-2 focus:ring-orange-500 focus:outline-none">
+                  <label class="block font-medium mb-1 dark:text-gray-300">Godina studija</label>
+                  <select v-model="form.study_year" class="w-full p-2.5 border rounded-xl bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-orange-500 focus:outline-none">
                     <option :value="null" disabled>Odaberite godinu studija</option>
                     <option v-for="y in 4" :key="y" :value="y">{{ y }}. godina</option>
                   </select>
@@ -109,22 +111,22 @@
 
               <div>
                 <div class="flex justify-between text-xs mb-1">
-                  <label class="font-medium text-gray-700">Biografija</label>
-                  <span :class="form.bio.length > 500 ? 'text-red-500 font-bold' : 'text-gray-400'">{{ form.bio.length }}/500</span>
+                  <label class="font-medium text-gray-700 dark:text-gray-300">Biografija</label>
+                  <span :class="form.bio.length > 500 ? 'text-red-500 font-bold' : 'text-gray-400 dark:text-gray-500'">{{ form.bio.length }}/500</span>
                 </div>
-                <textarea v-model="form.bio" rows="3" placeholder="Dodaj biografiju..." class="w-full p-2.5 border rounded-xl resize-none focus:ring-2 focus:ring-orange-500 focus:outline-none"></textarea>
+                <textarea v-model="form.bio" rows="3" placeholder="Dodaj biografiju..." class="w-full p-2.5 border rounded-xl resize-none dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"></textarea>
               </div>
 
-              <div class="pt-4 border-t space-y-3">
-                <h3 class="font-bold text-gray-700 uppercase tracking-wider text-xs">Promijeni lozinku</h3>
-                <div><label class="block text-xs font-medium mb-1 text-gray-500">Stara lozinka</label><input v-model="security.current_password" type="password" class="w-full sm:w-1/2 p-2.5 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none"/></div>
+              <div class="pt-4 border-t dark:border-gray-700 space-y-3">
+                <h3 class="font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider text-xs">Promijeni lozinku</h3>
+                <div><label class="block text-xs font-medium mb-1 text-gray-500 dark:text-gray-400">Stara lozinka</label><input v-model="security.current_password" type="password" class="w-full sm:w-1/2 p-2.5 border rounded-xl dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"/></div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div><label class="block text-xs font-medium mb-1 text-gray-500">Nova lozinka</label><input v-model="security.new_password" type="password" class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none"/></div>
-                  <div><label class="block text-xs font-medium mb-1 text-gray-500">Ponovi novu lozinku</label><input v-model="security.confirm_password" type="password" class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none"/></div>
+                  <div><label class="block text-xs font-medium mb-1 text-gray-500 dark:text-gray-400">Nova lozinka</label><input v-model="security.new_password" type="password" class="w-full p-2.5 border rounded-xl dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"/></div>
+                  <div><label class="block text-xs font-medium mb-1 text-gray-500 dark:text-gray-400">Ponovi novu lozinku</label><input v-model="security.confirm_password" type="password" class="w-full p-2.5 border rounded-xl dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"/></div>
                 </div>
               </div>
 
-              <div class="flex justify-end pt-2 border-t">
+              <div class="flex justify-end pt-2 border-t dark:border-gray-700">
                 <button type="submit" :disabled="isLoading || form.bio.length > 500" class="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl disabled:opacity-50 transition active:scale-95 text-sm shadow-md">
                   {{ isLoading ? 'Spašavanje...' : 'Sačuvaj izmjene' }}
                 </button>
@@ -132,12 +134,13 @@
             </form>
           </div>
 
-          <div class="bg-red-50 p-6 rounded-2xl border border-red-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div class="bg-red-50 dark:bg-red-950/20 p-6 rounded-2xl border border-red-100 dark:border-red-900/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h3 class="text-sm font-bold text-red-800">Deaktivacija računa</h3>
-              <p class="text-xs text-red-500">Privremeno onemogućite svoj račun.</p>
+              <h3 class="text-sm font-bold text-red-800 dark:text-red-400">Deaktivacija računa</h3>
+              <p class="text-xs text-red-500 dark:text-red-500">Privremeno onemogućite svoj račun.</p>
             </div>
-            <button @click="showDeactivateModal = true" type="button" class="px-4 py-2 bg-white text-red-700 border border-red-200 font-bold rounded-xl hover:bg-red-100 transition text-xs">Deaktiviraj nalog</button>          </div>
+            <button @click="showDeactivateModal = true" type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-700 font-bold rounded-xl hover:bg-red-100 dark:hover:bg-red-900/40 transition text-xs">Deaktiviraj nalog</button>
+          </div>
         </div>
       </main>
     </div>
@@ -150,27 +153,28 @@
       @remove="onRemove"
       :initials="(form.first_name?.charAt(0) || '') + (form.last_name?.charAt(0) || '')"
     />
+
     <div v-if="showDeactivateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
-      <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-gray-100">
-        <h3 class="text-lg font-bold text-red-600 mb-2">Potvrda deaktivacije</h3>
-        <p class="text-sm text-gray-600 mb-4">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-md shadow-xl border border-gray-100 dark:border-gray-700">
+        <h3 class="text-lg font-bold text-red-600 dark:text-red-400 mb-2">Potvrda deaktivacije</h3>
+        <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
           Da biste deaktivirali nalog, molimo unesite svoju lozinku. Nakon uspješne deaktivacije bićete odjavljeni iz sistema.
         </p>
         
-        <div v-if="deactivateError" class="mb-4 p-3 rounded-xl text-xs bg-red-50 text-red-700 border border-red-100 font-medium">
+        <div v-if="deactivateError" class="mb-4 p-3 rounded-xl text-xs bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-100 dark:border-red-800 font-medium">
           ⚠️ {{ deactivateError }}
         </div>
         
-        <label class="block text-xs font-medium mb-1 text-gray-500">Vaša lozinka</label>
+        <label class="block text-xs font-medium mb-1 text-gray-500 dark:text-gray-400">Vaša lozinka</label>
         <input 
           v-model="deactivatePassword" 
           type="password" 
           placeholder="Unesite lozinku..." 
-          class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none mb-6"
+          class="w-full p-2.5 border rounded-xl dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-red-500 focus:outline-none mb-6"
         />
         
         <div class="flex justify-end gap-3">
-          <button @click="closeDeactivateModal" :disabled="isDeactivating" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl font-medium transition text-sm">
+          <button @click="closeDeactivateModal" :disabled="isDeactivating" class="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl font-medium transition text-sm">
             Odustani
           </button>
           <button @click="handleDeactivate" :disabled="isDeactivating || !deactivatePassword" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl disabled:opacity-50 transition shadow-md text-sm">
@@ -181,10 +185,10 @@
     </div>
 
     <div v-if="showSuccessModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
-      <div class="bg-white rounded-2xl p-8 w-full max-w-md shadow-xl border border-gray-100 text-center">
-        <div class="mb-4 text-4xl">✓</div>
-        <h3 class="text-lg font-bold text-green-600 mb-2">Deaktivacija uspješna</h3>
-        <p class="text-sm text-gray-600 mb-6">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 w-full max-w-md shadow-xl border border-gray-100 dark:border-gray-700 text-center">
+        <div class="mb-4 text-4xl dark:text-white">✓</div>
+        <h3 class="text-lg font-bold text-green-600 dark:text-green-400 mb-2">Deaktivacija uspješna</h3>
+        <p class="text-sm text-gray-600 dark:text-gray-300 mb-6">
           Uspješno ste deaktivirali profil. Za ponovnu aktivaciju obratite se administratoru.
         </p>
         
