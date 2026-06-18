@@ -74,13 +74,6 @@
               <span>📷</span> Uredi profilnu sliku
             </button>
           </div>
-
-          <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
-            <div class="px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600 text-xs font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider">Aktivnost</div>
-            <nav class="divide-y divide-gray-50 dark:divide-gray-700">
-              <a v-for="link in ['Historija', 'Sačuvano', 'Javni Profil']" :key="link" href="#" class="block px-4 py-2.5 hover:bg-orange-50 dark:hover:bg-gray-700 hover:text-orange-500 transition font-medium dark:text-gray-300">{{ link }}</a>
-            </nav>
-          </div>
         </div>
 
         <div class="lg:col-span-2 space-y-6">
