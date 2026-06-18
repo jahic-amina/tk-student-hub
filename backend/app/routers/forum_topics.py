@@ -85,16 +85,16 @@ def build_topic_list_item(db: Session, topic: ForumTopic, user_id: Optional[int]
         is_liked = is_topic_liked_by_user(db, topic.id, user_id)
         is_disliked = is_topic_disliked_by_user(db, topic.id, user_id)
 
- return {
+    return {
         "id": topic.id, 
         "title": topic.title, 
         "summary": make_summary(topic.content), 
         "content": topic.content,
         "views_count": topic.views_count, 
         "likes_count": get_topic_likes_count(db, topic.id), 
-        "dislikes_count": get_topic_dislikes_count(db, topic.id),
-        "is_liked": is_liked,
-        "is_disliked": is_disliked,
+        "dislikes_count": get_topic_dislikes_count(db, topic.id), # DODANO
+        "is_liked": is_liked,       # DODANO
+        "is_disliked": is_disliked, # DODANO
         "comments_count": comments_count,
         "answers_count": comments_count, 
         "created_at": topic.created_at, 
@@ -103,8 +103,8 @@ def build_topic_list_item(db: Session, topic: ForumTopic, user_id: Optional[int]
         "category": get_category_data(db, topic.category_id),
         "tags": get_topic_tags(db, topic.id), 
         "has_best_answer": has_best_answer(db, topic.id),
-        "attachments": get_topic_attachments(db, topic.id)
     }
+
 # --- ROUTES ---
 
 @router.get("/", response_model=Dict[str, Any])

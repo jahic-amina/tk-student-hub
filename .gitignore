@@ -7,17 +7,6 @@ __pycache__/
 *.pyc
 *.pyo
 
-# Environment Variables & Secrets
-.env
-backend/.env
-
-# Static Uploads
-uploads/
-backend/uploads/
-
-# Temporary / Local Seed Scripts
-backend/app/seed.py
-backend/app/create_tables.py
 
 # Database
 backend/sql_app.db
