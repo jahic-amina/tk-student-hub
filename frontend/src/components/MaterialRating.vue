@@ -1,28 +1,27 @@
 <template>
     <!-- Modal za promjenu ocjene - Marinela -->
     <div v-if="showChangeModal" class="fixed inset-0 flex items-center justify-center z-[60]">
-        <div class="bg-white rounded-xl shadow-xl p-8 max-w-md w-full mx-4 text-center">
-            <div class="text-5xl mb-4">⭐</div>
-            <h3 class="text-xl font-bold text-gray-800 mb-2">Želite li promijeniti ocjenu?</h3>
-            <p class="text-gray-600 mb-6">Već ste ocijenili ovaj materijal. Da li ste sigurni?</p>
-            <div class="flex gap-3 justify-center">
-                <button @click="showChangeModal = false" class="border border-gray-300 px-6 py-2 rounded-lg hover:bg-gray-50 transition">Ne</button>
-                <button @click="confirmChangeRating" class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition">Da, promijeni</button>
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl p-8 max-w-md w-full mx-4 text-center">
+          <h3 class="text-xl font-bold text-gray-800 dark:text-slate-100 mb-2">Želite li promijeniti ocjenu?</h3>
+          <p class="text-gray-600 dark:text-slate-300 mb-6">Već ste ocijenili ovaj materijal. Da li ste sigurni?</p>
+          <div class="flex gap-3 justify-center">
+        <button @click="showChangeModal = false" class="border border-gray-300 dark:border-slate-600 dark:text-slate-200 px-6 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition">Ne</button>
+        <button @click="confirmChangeRating" class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition">Da, promijeni</button>
             </div>
         </div>
         <div class="fixed inset-0 bg-black opacity-40 -z-10"></div>
     </div>
 
     <!-- Modal uspjeh ocjene -->
-    <div v-if="ratingMessage" class="fixed inset-0 flex items-center justify-center z-[60]">
-    <div class="bg-white rounded-xl shadow-xl p-8 max-w-md w-full mx-4 text-center">
+   <div v-if="ratingMessage" class="fixed inset-0 flex items-center justify-center z-[60]">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl p-8 max-w-md w-full mx-4 text-center">
         <div class="text-5xl mb-4">⭐</div>
-        <h3 class="text-xl font-bold text-gray-800 mb-2">{{ ratingMessage === 'Ocjena promijenjena! ⭐' ? 'Ocjena promijenjena!' : 'Hvala na ocjeni!' }}</h3>
-        <p class="text-gray-600 mb-6">{{ ratingMessage === 'Ocjena promijenjena! ⭐' ? 'Vaša ocjena je uspješno promijenjena.' : 'Uspješno ste ocijenili ovaj materijal.' }}</p>
+        <h3 class="text-xl font-bold text-gray-800 dark:text-slate-100 mb-2">{{ ratingMessage === 'Ocjena promijenjena! ⭐' ? 'Ocjena promijenjena!' : 'Hvala na ocjeni!' }}</h3>
+        <p class="text-gray-600 dark:text-slate-300 mb-6">{{ ratingMessage === 'Ocjena promijenjena! ⭐' ? 'Vaša ocjena je uspješno promijenjena.' : 'Uspješno ste ocijenili ovaj materijal.' }}</p>
         <button @click="ratingMessage = ''" class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition">U redu</button>
     </div>
     <div class="fixed inset-0 bg-black opacity-40 -z-10"></div>
-</div>
+  </div>
 
     <!-- Ocjena materijala -->
     <div class="mb-6">
@@ -31,13 +30,13 @@
             <span v-for="star in 5" :key="star" class="text-yellow-400 text-2xl">
                 {{ star <= Math.round(localAvgRating) ? '★' : '☆' }}
             </span>
-            <span class="text-gray-600 text-sm">{{ localAvgRating }} / 5.0 ({{ localRatingCount }} ocjena)</span>
+            <span class="text-gray-600 dark:text-slate-300 text-sm">{{ localAvgRating }} / 5.0 ({{ localRatingCount }} ocjena)</span>
         </div>
 
         <!-- Ocijeni -->
         <div class="mt-4">
-            <p class="text-sm text-gray-500 mb-1">{{ selectedRating > 0 ? 'Vaša ocjena:' : 'Ocijenite ovaj materijal:' }}</p>
-            <div class="flex gap-1">
+            <p class="text-sm text-gray-500 dark:text-slate-400 mb-1">{{ selectedRating > 0 ? 'Vaša ocjena:' : 'Ocijenite ovaj materijal:' }}</p>
+        <div class="flex gap-1">
                 <span v-for="star in 5" :key="star" class="text-2xl transition"
                     :class="[
                         star <= hoverRating || star <= selectedRating ? 'text-yellow-400' : 'text-gray-300',
@@ -48,7 +47,7 @@
                     @click="submitRating(star)">★</span>
             </div>
             <p v-if="ratingError" class="text-sm text-red-600 mt-2">{{ ratingError }}</p>
-            <p v-if="isLoggedIn && !hasDownloaded" class="text-sm text-gray-400 mt-2">
+            <p v-if="isLoggedIn && !hasDownloaded" class="text-sm text-gray-400 dark:text-slate-500 mt-2">
                 Preuzmite materijal da biste mogli ocijeniti.
             </p>
         </div>
