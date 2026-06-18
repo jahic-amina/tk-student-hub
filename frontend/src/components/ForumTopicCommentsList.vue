@@ -115,6 +115,7 @@ const isTopicAuthor = computed(() =>
   !!(currentUserId.value && props.topicAuthorId && currentUserId.value === props.topicAuthorId)
 );
 
+// Admin ne može odgovarati na komentare (iz forum-main)
 const canReply = computed(() => !!currentUserId.value && !isAdmin.value);
 
 // ─── Reaktivno stanje glasova ─────────────────────────────────────────────────
@@ -253,17 +254,17 @@ function findCommentById(nodes, id) {
   return null;
 }
 
+function getInitials(fullName) {
+  if (!fullName) return '?';
+  return fullName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+}
+
 function formatDate(dateValue) {
   if (!dateValue) return '';
   return new Intl.DateTimeFormat('bs-BA', {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit'
   }).format(new Date(dateValue));
-}
-
-function getInitials(fullName) {
-  if (!fullName) return 'A';
-  return fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 }
 </script>
 
@@ -296,9 +297,10 @@ function getInitials(fullName) {
       </div>
     </div>
 
-    <div class="space-y-4">
+    <div class="space-y-1">
       <template v-for="comment in filteredComments" :key="comment.id">
 
+        <!-- ── Admin Notice ───────────────────── -->
         <div
           v-if="comment.is_admin_notice"
           :id="'comment-' + comment.id"
@@ -376,12 +378,14 @@ function getInitials(fullName) {
           </div>
         </div>
 
+        <!-- ── Obični komentar → ForumCommentNode ──────────────── -->
         <ForumCommentNode
           v-else
           :comment="comment"
           :current-user-id="currentUserId"
           :is-admin="isAdmin"
           :is-topic-author="isTopicAuthor"
+          :can-reply="canReply"
           :topic-id="topicId"
           :open-medal-dropdown="openMedalDropdown"
           :editing-comment-id="editingCommentId"
@@ -402,6 +406,7 @@ function getInitials(fullName) {
           @submit-reply="handleSubmitReply"
           @toggle-medals="toggleMedalDropdown"
         />
+
       </template>
 
       <div

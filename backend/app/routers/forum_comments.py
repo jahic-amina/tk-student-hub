@@ -4,7 +4,6 @@ from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
-from app.models.notification import Notification, NotificationType
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
@@ -19,8 +18,6 @@ from app.routers.forum_helpers import (
     get_topic_votes_count,
     get_topic_comments,
 )
-from app.services.activity_log_service import log_activity
-from app.enums.activity import ActivityType
 
 from app.services.forum_reputation import (
     get_user_forum_identity,
@@ -52,23 +49,25 @@ __all__ = [
     "get_topic_votes_count",
 ]
 
-# --- SCHEMAS ---
+
+# --- SHEME ---
 class ForumCommentCreate(BaseModel):
     content: str = Field(min_length=2)
     topic_id: int
     is_admin_notice: Optional[bool] = False
     parent_id: Optional[int] = None
 
-
 class VoteInput(BaseModel):
     value: int = Field(..., description="1 za like, -1 za dislike")
-
 
 class ForumCommentUpdate(BaseModel):
     content: str = Field(min_length=2)
 
+class AdminNoticeCreate(BaseModel):
+    content: str = Field(min_length=3)
 
-# --- POMOĆNE FUNKCIJE I LOKALNE IMPLEMENTACIJE ---
+
+# --- POMOĆNE FUNKCIJE (Sa integracijom reputacije) ---
 def get_comment_author_data(db: Session, user_id: int) -> dict:
     user = db.get(User, user_id)
     if not user:
@@ -88,44 +87,41 @@ def get_comment_author_data(db: Session, user_id: int) -> dict:
         **forum_identity,
     } 
 
-def local_get_comment_dislikes_count(db: Session, comment_id: int) -> int:
-    result = db.exec(
-        select(func.count(ForumCommentVote.id))
-        .where(ForumCommentVote.comment_id == comment_id, ForumCommentVote.value == -1)
-    ).one()
+def get_comment_votes_count(db: Session, comment_id: int) -> int:
+    result = db.exec(select(func.coalesce(func.sum(ForumCommentVote.value), 0)).where(ForumCommentVote.comment_id == comment_id)).one()
     return int(result or 0)
 
-def local_get_comments_count(db: Session, topic_id: int) -> int:
-    result = db.exec(
-        select(func.count(ForumComment.id))
-        .where(ForumComment.topic_id == topic_id, ForumComment.is_deleted == False)
-    ).one()
+def get_comment_likes_count(db: Session, comment_id: int) -> int:
+    result = db.exec(select(func.count(ForumCommentVote.id)).where(ForumCommentVote.comment_id == comment_id, ForumCommentVote.value == 1)).one()
     return int(result or 0)
 
-def local_has_best_answer(db: Session, topic_id: int) -> bool:
-    best_answer = db.exec(
-        select(ForumComment)
-        .where(ForumComment.topic_id == topic_id, ForumComment.is_deleted == False, ForumComment.is_best_answer == True)
-    ).first()
+def get_comment_dislikes_count(db: Session, comment_id: int) -> int:
+    result = db.exec(select(func.count(ForumCommentVote.id)).where(ForumCommentVote.comment_id == comment_id, ForumCommentVote.value == -1)).one()
+    return int(result or 0)
+
+def get_comments_count(db: Session, topic_id: int) -> int:
+    result = db.exec(select(func.count(ForumComment.id)).where(ForumComment.topic_id == topic_id, ForumComment.is_deleted == False)).one()
+    return int(result or 0)
+
+def has_best_answer(db: Session, topic_id: int) -> bool:
+    best_answer = db.exec(select(ForumComment).where(ForumComment.topic_id == topic_id, ForumComment.is_deleted == False, ForumComment.is_best_answer == True)).first()
     return best_answer is not None
 
-def local_get_topic_votes_count(db: Session, topic_id: int) -> int:
-    comments = db.exec(
-        select(ForumComment).where(ForumComment.topic_id == topic_id, ForumComment.is_deleted == False)
-    ).all()
+def get_topic_votes_count(db: Session, topic_id: int) -> int:
+    comments = db.exec(select(ForumComment).where(ForumComment.topic_id == topic_id, ForumComment.is_deleted == False)).all()
     total = 0
     for comment in comments:
         total += get_comment_votes_count(db, comment.id)
     return total
 
-def local_get_topic_comments(db: Session, topic_id: int) -> list[dict]:
+def get_topic_comments(db: Session, topic_id: int) -> list[dict]:
     all_comments = db.exec(select(ForumComment).where(ForumComment.topic_id == topic_id)).all()
-    
+
     def build_comment_dict(comment: ForumComment) -> dict:
         votes_count = get_comment_votes_count(db, comment.id)
         likes_count = get_comment_likes_count(db, comment.id)
-        dislikes_count = local_get_comment_dislikes_count(db, comment.id)
-        
+        dislikes_count = get_comment_dislikes_count(db, comment.id)
+
         if comment.is_deleted:
             return {
                 "id": comment.id, "content": "deleted by user", "is_deleted": True, "is_best_answer": False,
@@ -178,7 +174,9 @@ def local_get_topic_comments(db: Session, topic_id: int) -> list[dict]:
     return top_level
 
 
-# --- ROUTES ---
+# ---------------------------------------------------------------------------
+# RUTE ZA KOMENTARE
+# ---------------------------------------------------------------------------
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def create_forum_comment(
@@ -190,7 +188,7 @@ def create_forum_comment(
     if not topic or topic.is_deleted:
         raise HTTPException(status_code=404, detail="Tema nije pronađena.")
 
-    is_admin_notice = bool(comment_data.is_admin_notice)
+    is_admin_notice = getattr(comment_data, "is_admin_notice", False)
     current_role = getattr(current_user.role, "value", current_user.role)
 
     if is_admin_notice and current_role != "admin":
@@ -217,16 +215,16 @@ def create_forum_comment(
             )
 
     new_comment = ForumComment(
-        content=comment_data.content, 
-        topic_id=comment_data.topic_id, 
-        user_id=current_user.id, 
-        is_admin_notice=is_admin_notice, 
+        content=comment_data.content,
+        topic_id=comment_data.topic_id,
+        user_id=current_user.id,
+        is_admin_notice=is_admin_notice,
         parent_id=comment_data.parent_id
     )
+
     db.add(new_comment)
     db.flush()
 
-    # Automatski dodjeljuje bodove za napisani odgovor (Reputation sistem)
     register_answer_created(db, user_id=current_user.id, comment_id=new_comment.id)
 
     actor_name = get_user_display_name(current_user)
@@ -270,14 +268,6 @@ def create_forum_comment(
     db.commit()
     db.refresh(new_comment)
 
-    comments_count = local_get_comments_count(db, topic.id)
-    log_activity(
-        db,
-        current_user.id,
-        ActivityType.forum_comment,
-        f"Diskusija · {comments_count} odgovora",
-        topic.id
-    )
     return {
         "id": new_comment.id,
         "content": new_comment.content,
@@ -285,16 +275,15 @@ def create_forum_comment(
         "parent_id": new_comment.parent_id,
         "is_admin_notice": new_comment.is_admin_notice,
         "created_at": new_comment.created_at,
-        "author": get_comment_author_data(db, new_comment.user_id),
+        "author": get_comment_author_data(db, new_comment.user_id)
     }
-
 
 @router.get("/topic/{topic_id}")
 def get_comments(topic_id: int, db: Session = Depends(get_db)):
     topic = db.get(ForumTopic, topic_id)
     if not topic or topic.is_deleted:
         raise HTTPException(status_code=404, detail="Tema nije pronađena.")
-    return local_get_topic_comments(db, topic_id)
+    return get_topic_comments(db, topic_id)
 
 
 @router.patch("/{comment_id}/best-answer", status_code=status.HTTP_200_OK)
@@ -365,7 +354,6 @@ def toggle_best_answer(
 
         comment.is_best_answer = True
 
-        # Anti-Abuse: Proslijeđen topic.user_id kao giver_id
         register_best_answer(
             db,
             user_id=comment.user_id,
@@ -388,16 +376,6 @@ def toggle_best_answer(
     db.commit()
     db.refresh(comment)
     db.expire_all()
-
-    if comment.is_best_answer:
-        log_activity(
-            db,
-            comment.user_id,
-            ActivityType.forum_answer,
-            topic.title,
-            "Označeno kao korisno",
-            topic.id
-        )
 
     return {"id": comment.id, "is_best_answer": comment.is_best_answer}
 
@@ -426,15 +404,12 @@ def vote_on_comment(
         )
     ).first()
 
-    novi_like = False
-
     should_notify_comment_vote = False
     notification_type = None
     notification_text = None
 
     if existing_vote:
         if existing_vote.value == vote_data.value:
-            # Povlačenje glasa sa anti-abuse podrškom
             previous_value = existing_vote.value
 
             db.delete(existing_vote)
@@ -475,7 +450,6 @@ def vote_on_comment(
             user_vote = 0
 
         else:
-            # Promjena glasa
             previous_value = existing_vote.value
             existing_vote.value = vote_data.value
 
@@ -524,11 +498,8 @@ def vote_on_comment(
 
             should_notify_comment_vote = True
             user_vote = vote_data.value
-            if vote_data.value == 1:
-                novi_like = True
 
     else:
-        # Prvi glas korisnika
         new_vote = ForumCommentVote(
             comment_id=comment_id,
             user_id=current_user.id,
@@ -548,16 +519,6 @@ def vote_on_comment(
 
         should_notify_comment_vote = True
         user_vote = vote_data.value
-        if vote_data.value == 1:
-            novi_like = True
-
-    if novi_like and comment.user_id != current_user.id:
-        db.add(Notification(
-            user_id=comment.user_id,
-            text="Vaš komentar na forumu je lajkovan.",
-            type=NotificationType.COMMENT_LIKED
-        ))
-        db.commit()
 
     if should_notify_comment_vote:
         actor_name = get_user_display_name(current_user)
@@ -631,7 +592,6 @@ def delete_comment(
     
     return {"message": "Komentar je uspješno obrisan.", "comment_id": comment_id}
 
-
 @router.put("/{comment_id}", status_code=status.HTTP_200_OK)
 def update_comment(
     comment_id: int,
@@ -675,7 +635,7 @@ def update_comment(
 @router.post("/{topic_id}/admin-notice", status_code=status.HTTP_201_CREATED)
 def create_admin_notice(
     topic_id: int,
-    data: ForumCommentCreate,
+    data: AdminNoticeCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
