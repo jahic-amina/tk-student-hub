@@ -76,17 +76,35 @@ def get_topic_attachments(db: Session, topic_id: int) -> list[dict]:
     return [{"id": a.id, "filename": a.filename, "file_size": a.file_size, "mime_type": a.mime_type} for a in attachments]
 
 
-def build_topic_list_item(db: Session, topic: ForumTopic) -> dict:
+def build_topic_list_item(db: Session, topic: ForumTopic, user_id: Optional[int] = None) -> dict:
     comments_count = get_comments_count(db, topic.id)
-    return {
-        "id": topic.id, "title": topic.title, "summary": make_summary(topic.content), "content": topic.content,
-        "views_count": topic.views_count, "likes_count": get_topic_likes_count(db, topic.id), "comments_count": comments_count,
-        "answers_count": comments_count, "created_at": topic.created_at, "updated_at": topic.updated_at,
-        "author": get_author_data(db, topic.user_id), "category": get_category_data(db, topic.category_id),
-        "tags": get_topic_tags(db, topic.id), "has_best_answer": has_best_answer(db, topic.id),
+    
+    is_liked = False
+    is_disliked = False
+    if user_id:
+        is_liked = is_topic_liked_by_user(db, topic.id, user_id)
+        is_disliked = is_topic_disliked_by_user(db, topic.id, user_id)
+
+ return {
+        "id": topic.id, 
+        "title": topic.title, 
+        "summary": make_summary(topic.content), 
+        "content": topic.content,
+        "views_count": topic.views_count, 
+        "likes_count": get_topic_likes_count(db, topic.id), 
+        "dislikes_count": get_topic_dislikes_count(db, topic.id),
+        "is_liked": is_liked,
+        "is_disliked": is_disliked,
+        "comments_count": comments_count,
+        "answers_count": comments_count, 
+        "created_at": topic.created_at, 
+        "updated_at": topic.updated_at,
+        "author": get_author_data(db, topic.user_id), 
+        "category": get_category_data(db, topic.category_id),
+        "tags": get_topic_tags(db, topic.id), 
+        "has_best_answer": has_best_answer(db, topic.id),
         "attachments": get_topic_attachments(db, topic.id)
     }
-
 # --- ROUTES ---
 
 @router.get("/", response_model=Dict[str, Any])
@@ -98,7 +116,8 @@ def get_all_topics(
     per_page: int = 5,
     sort_by: Optional[str] = "najnovije", 
     unanswered: Optional[bool] = False,   
-    days_old: Optional[int] = None        
+    days_old: Optional[int] = None,
+    current_user: Optional[User] = Depends(get_current_user) # DODANO
 ):
     excluded_topics = select(TopicReport.topic_id).where(TopicReport.status.in_(["pending", "accepted"])).subquery()
 
@@ -145,7 +164,9 @@ def get_all_topics(
     statement = statement.offset(skip).limit(per_page)
     topics = db.exec(statement).all()
     
-    topics_list = [build_topic_list_item(db, topic) for topic in topics]
+    user_id = current_user.id if current_user else None
+    topics_list = [build_topic_list_item(db, topic, user_id) for topic in topics]
+    
     return {"items": topics_list, "total": total_topics, "page": page, "per_page": per_page}
 
 
@@ -225,11 +246,14 @@ def create_forum_topic(
     db.commit()
     db.refresh(new_topic)
 
-    return build_topic_list_item(db, new_topic)
+    return build_topic_list_item(db, new_topic, current_user.id)
 
 
 @router.get("/popular", response_model=List[Dict[str, Any]])
-def get_popular_sidebar_topics(db: Session = Depends(get_db)):
+def get_popular_sidebar_topics(
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user) # DODANO
+):
     from app.models.forum import ForumComment
     vremenska_granica = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=7)
     
@@ -250,11 +274,16 @@ def get_popular_sidebar_topics(db: Session = Depends(get_db)):
     )
     
     popular_topics = db.exec(statement).all()
-    return [build_topic_list_item(db, topic) for topic in popular_topics]
+    user_id = current_user.id if current_user else None
+    return [build_topic_list_item(db, topic, user_id) for topic in popular_topics]
 
 
 @router.get("/category-popular/{category_id}", response_model=List[Dict[str, Any]])
-def get_category_popular_topics(category_id: int, db: Session = Depends(get_db)):
+def get_category_popular_topics(
+    category_id: int, 
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user) # DODANO
+):
     from app.models.forum import ForumComment
     comments_sub = (
         select(ForumComment.topic_id, func.count(ForumComment.id).label("c_count"))
@@ -273,11 +302,16 @@ def get_category_popular_topics(category_id: int, db: Session = Depends(get_db))
     )
 
     category_topics = db.exec(statement).all()
-    return [build_topic_list_item(db, topic) for topic in category_topics]
+    user_id = current_user.id if current_user else None
+    return [build_topic_list_item(db, topic, user_id) for topic in category_topics]
 
 
 @router.get("/{topic_id}/related", response_model=List[Dict[str, Any]])
-def get_related_topics_api(topic_id: int, db: Session = Depends(get_db)):
+def get_related_topics_api(
+    topic_id: int, 
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user) # DODANO
+):
     trenutna_tema = db.get(ForumTopic, topic_id)
     if not trenutna_tema or trenutna_tema.is_deleted:
         raise HTTPException(status_code=404, detail="Tema nije pronađena.")
@@ -310,8 +344,74 @@ def get_related_topics_api(topic_id: int, db: Session = Depends(get_db)):
     )
 
     slicne_teme = db.exec(statement).all()
-    return [build_topic_list_item(db, topic) for topic in slicne_teme]
+    user_id = current_user.id if current_user else None
+    return [build_topic_list_item(db, topic, user_id) for topic in slicne_teme]
 
+
+# --- REPORTS & ANNOUNCEMENTS ---
+@router.get("/reports/active", response_model=List[Dict[str, Any]])
+def get_active_reports(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if current_user.role != UserRole.admin:
+        raise HTTPException(status_code=403, detail="Nemate ovlaštenje.")
+    
+    reports = db.exec(select(TopicReport).where(TopicReport.status == "pending").order_by(TopicReport.created_at.desc())).all()
+    output = []
+    for report in reports:
+        topic = db.get(ForumTopic, report.topic_id)
+        if not topic or topic.is_deleted: continue
+        reporter = db.get(User, report.user_id)
+        output.append({
+            "report_id": report.id, "reason": report.reason, "created_at": report.created_at, "status": report.status,
+            "reporter_name": reporter.full_name if reporter else "Nepoznat korisnik", 
+            "topic": build_topic_list_item(db, topic, current_user.id) 
+        })
+    return output
+
+@router.get("/reports/handled", response_model=List[Dict[str, Any]])
+def get_handled_reports(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if current_user.role != UserRole.admin:
+        raise HTTPException(status_code=403, detail="Nemate ovlaštenje.")
+    
+    reports = db.exec(select(TopicReport).where(TopicReport.status.in_(["accepted", "dismissed"])).order_by(TopicReport.created_at.desc())).all()
+    output = []
+    for report in reports:
+        topic = db.get(ForumTopic, report.topic_id)
+        if not topic or topic.is_deleted: continue
+        reporter = db.get(User, report.user_id)
+        output.append({
+            "report_id": report.id, "reason": report.reason, "created_at": report.created_at, "status": report.status,
+            "reporter_name": reporter.full_name if reporter else "Nepoznat korisnik", 
+            "topic": build_topic_list_item(db, topic, current_user.id) 
+        })
+    return output
+
+@router.patch("/reports/{report_id}/action")
+def handle_report_action(report_id: int, action: str, payload: ReportActionPayload, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if current_user.role != UserRole.admin:
+        raise HTTPException(status_code=403, detail="Nemate ovlaštenje.")
+    report = db.get(TopicReport, report_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Prijava nije pronađena.")
+    
+    if action == "accept":
+        report.status = "accepted"
+    elif action == "dismiss":
+        report.status = "dismissed"
+    else:
+        report.status = "resolved"
+        
+    report.action_taken = action 
+    report.admin_explanation = payload.explanation
+    
+    reporting_user = db.get(User, report.user_id)
+    if reporting_user:
+        reporting_user.reports_count += 1
+        db.add(reporting_user)
+        
+    db.add(report)
+    db.commit()
+    
+    return {"success": True, "message": f"Prijava uspješno riješena sa statusom: {report.status}."}
 
 @router.get("/announcements/active")
 def get_active_announcements(db: Session = Depends(get_db)):
@@ -430,3 +530,29 @@ def report_topic(topic_id: int, report_data: ReportCreate, db: Session = Depends
     db.add(report)
     db.commit()
     return {"success": True}
+
+@router.put("/{topic_id}", status_code=status.HTTP_200_OK)
+def update_topic(
+    topic_id: int,
+    topic_data: ForumTopicUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    topic = db.get(ForumTopic, topic_id)
+    if not topic or topic.is_deleted:
+        raise HTTPException(status_code=404, detail="Tema nije pronađena.")
+    
+    if topic.user_id != current_user.id and current_user.role != UserRole.admin:
+        raise HTTPException(status_code=403, detail="Možete editovati samo vlastitu temu.")
+    
+    if topic_data.title is not None:
+        topic.title = topic_data.title
+    if topic_data.content is not None:
+        topic.content = topic_data.content
+    
+    topic.updated_at = datetime.now()
+    db.add(topic)
+    db.commit()
+    db.refresh(topic)
+    
+    return build_topic_list_item(db, topic, current_user.id)

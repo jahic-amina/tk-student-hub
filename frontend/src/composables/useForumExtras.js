@@ -35,6 +35,17 @@ export async function toggleTopicLike(topicId) {
   return handleResponse(response, 'Lajkovanje teme nije uspjelo.');
 }
 
+// DODATO: Funkcija za dislajk ukoliko ti zatreba
+export async function toggleTopicDislike(topicId) {
+  const response = await fetch(`${BASE_URL}/forum/topics/${topicId}/dislike`, {
+    method: 'POST',
+    headers: getHeaders()
+  });
+
+  return handleResponse(response, 'Dislajkovanje teme nije uspjelo.');
+}
+
+// ISPRAVLJENO: Sada ažurira i lajkove i dislajkove sa tačnim imenima koje Vue komponenta očekuje
 export function updateTopicLikeInList(teme, payload) {
   const index = teme.value.findIndex((tema) => tema.id === payload.topicId);
 
@@ -42,8 +53,12 @@ export function updateTopicLikeInList(teme, payload) {
 
   teme.value[index] = {
     ...teme.value[index],
-    likes_count: payload.likesCount,
-    liked_by_me: payload.liked
+    // Koristimo fallback na trenutne vrijednosti ako payload ne sadrži neki podatak
+    likes_count: payload.likesCount !== undefined ? payload.likesCount : teme.value[index].likes_count,
+    is_liked: payload.isLiked !== undefined ? payload.isLiked : teme.value[index].is_liked,
+    
+    dislikes_count: payload.dislikesCount !== undefined ? payload.dislikesCount : teme.value[index].dislikes_count,
+    is_disliked: payload.isDisliked !== undefined ? payload.isDisliked : teme.value[index].is_disliked
   };
 }
 
@@ -61,22 +76,22 @@ export function useForumLazyLoading({
   });
 
   const ucitajJosTema = async () => {
-  if (isLoadingMore.value) return;
-  if (prikaziPrijave.value) return;
-  if (!imaJosTema.value) return;
+    if (isLoadingMore.value) return;
+    if (prikaziPrijave.value) return;
+    if (!imaJosTema.value) return;
 
-  try {
-    isLoadingMore.value = true;
-    trenutnaStranica.value += 1;
+    try {
+      isLoadingMore.value = true;
+      trenutnaStranica.value += 1;
 
-    await Promise.all([
-      ucitajTeme(true),
-      new Promise((resolve) => setTimeout(resolve, 600))
-    ]);
-  } finally {
-    isLoadingMore.value = false;
-  }
-};
+      await Promise.all([
+        ucitajTeme(true),
+        new Promise((resolve) => setTimeout(resolve, 600))
+      ]);
+    } finally {
+      isLoadingMore.value = false;
+    }
+  };
 
   const handleScroll = () => {
     const skoroDno =
