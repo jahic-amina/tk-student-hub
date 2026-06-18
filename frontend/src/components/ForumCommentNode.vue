@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import ForumAvatar from './ForumAvatar.vue';
+import ForumAttachmentPreview from './ForumAttachmentPreview.vue';
 
 defineOptions({ name: 'ForumCommentNode' })
 
@@ -18,7 +19,6 @@ const props = defineProps({
   getUserVote:        { type: Function, required: true },
   getLikesCount:      { type: Function, required: true },
   getDislikesCount:   { type: Function, required: true },
-  // Set ID-jeva koji su trenutno highlightovani (dolazi iz ForumTopicCommentsList)
   activeHighlights:   { type: Object,   default: () => new Set() },
 });
 
@@ -51,7 +51,6 @@ function handleReplyFileSelect(event) {
 const MAX_VISUAL_DEPTH = 3;
 const shouldIndent = computed(() => props.depth > 0 && props.depth <= MAX_VISUAL_DEPTH);
 
-// Da li je ovaj komentar trenutno highlightovan
 const isHighlighted = computed(() => props.activeHighlights.has(props.comment.id));
 
 const medalIcons = { gold: '🥇', silver: '🥈', bronze: '🥉' };
@@ -117,10 +116,6 @@ const medalKey = computed(() => `c-${props.comment.id}`);
         : 'mt-3'
     ]"
   >
-    <!--
-      id="comment-{id}" omogućava scrollIntoView iz ForumTopicCommentsList.
-      Tranzicija duration-700 osigurava glatko pojavljivanje/nestajanje hightlighta.
-    -->
     <div
       :id="'comment-' + comment.id"
       class="bg-white dark:bg-slate-800 rounded-xl border p-4 flex gap-3 shadow-sm transition-all duration-700"
@@ -266,6 +261,7 @@ const medalKey = computed(() => `c-${props.comment.id}`);
           </div>
         </div>
 
+        <!-- Sadržaj -->
         <div v-if="comment.is_deleted" class="text-slate-400 dark:text-slate-500 text-sm italic">
           deleted by user
         </div>
@@ -282,29 +278,21 @@ const medalKey = computed(() => `c-${props.comment.id}`);
           </div>
         </div>
 
-        <p v-else class="text-slate-700 dark:text-slate-300 leading-relaxed text-sm whitespace-pre-line">
-          {{ comment.content }}
-        </p>
+        <template v-else>
+          <p class="text-slate-700 dark:text-slate-300 leading-relaxed text-sm whitespace-pre-line">
+            {{ comment.content }}
+          </p>
 
-        <!-- Attachments preview -->
-        <div v-if="comment.attachments && comment.attachments.length > 0" class="mt-2">
-          <ul class="flex flex-wrap gap-2">
-            <li v-for="attachment in comment.attachments" :key="attachment.id"
-              class="flex items-center gap-2 text-xs bg-slate-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-1.5"
-            >
-              <span class="truncate max-w-[140px] text-slate-600 dark:text-slate-300">
-                {{ attachment.mime_type?.startsWith('image/') ? '🖼️' : '📄' }} {{ attachment.filename }}
-                <span class="text-slate-400">({{ (attachment.file_size / 1024).toFixed(1) }} KB)</span>
-              </span>
-              <a
-                :href="`http://127.0.0.1:8000/forum/attachments/comment/${comment.id}/download/${attachment.id}`"
-                target="_blank"
-                class="text-orange-500 hover:text-orange-400 font-bold whitespace-nowrap"
-              >⬇ Preuzmi</a>
-            </li>
-          </ul>
-        </div>
+          <!-- Attachments sa preview komponentom -->
+          <div v-if="comment.attachments && comment.attachments.length > 0" class="mt-3">
+            <ForumAttachmentPreview
+              :attachments="comment.attachments"
+              :download-base-url="`http://127.0.0.1:8000/forum/attachments/comment/${comment.id}`"
+            />
+          </div>
+        </template>
 
+        <!-- Reply dugme -->
         <div class="mt-2">
           <button
             v-if="canReply && !comment.is_deleted"
@@ -313,6 +301,7 @@ const medalKey = computed(() => `c-${props.comment.id}`);
           >↩ Odgovori</button>
         </div>
 
+        <!-- Reply forma -->
         <div v-if="replyingToId === comment.id" class="mt-3">
           <textarea
             v-model="replyContentLocal"
@@ -321,7 +310,6 @@ const medalKey = computed(() => `c-${props.comment.id}`);
             rows="3"
           />
 
-          <!-- File upload za reply -->
           <div class="mt-2">
             <label class="cursor-pointer inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-orange-500 transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -339,8 +327,14 @@ const medalKey = computed(() => `c-${props.comment.id}`);
           </div>
 
           <div class="flex gap-2 mt-2">
-            <button @click="emit('submit-reply', comment, replyContentLocal, replyFilesLocal); replyContentLocal = ''; replyFilesLocal = []" class="px-3 py-1.5 bg-orange-500 hover:bg-orange-400 text-white text-xs font-bold rounded-lg transition-colors">Pošalji</button>
-            <button @click="emit('cancel-reply')" class="px-3 py-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 text-slate-500 text-xs rounded-lg hover:bg-gray-50 transition-colors">Otkaži</button>
+            <button
+              @click="emit('submit-reply', comment, replyContentLocal, replyFilesLocal); replyContentLocal = ''; replyFilesLocal = []"
+              class="px-3 py-1.5 bg-orange-500 hover:bg-orange-400 text-white text-xs font-bold rounded-lg transition-colors"
+            >Pošalji</button>
+            <button
+              @click="emit('cancel-reply')"
+              class="px-3 py-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 text-slate-500 text-xs rounded-lg hover:bg-gray-50 transition-colors"
+            >Otkaži</button>
           </div>
         </div>
       </div>

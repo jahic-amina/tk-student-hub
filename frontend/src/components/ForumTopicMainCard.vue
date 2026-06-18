@@ -5,13 +5,13 @@ import { deleteTopic, reportTopic, toggleTopicLike, toggleTopicDislike } from '.
 import { toggleTopicLock } from '../services/forum_admin';
 import { updateTopic } from '../services/forum';
 import ForumAvatar from './ForumAvatar.vue';
-import ForumCommentForm from './ForumTopicCommentForm.vue'; 
+import ForumCommentForm from './ForumTopicCommentForm.vue';
+import ForumAttachmentPreview from './ForumAttachmentPreview.vue';
 
 const router = useRouter();
 const currentUserId = ref(null);
 const showAllMedalsDropdown = ref(false);
 
-// ---- Stanje za kontrolu forme ----
 const isReplyingToTopic = ref(false);
 const isSubmittingReply = ref(false);
 const replyError = ref('');
@@ -53,20 +53,11 @@ const props = defineProps({
   isAdmin: { type: Boolean, default: false }
 });
 
-// ---- Definišemo emit događaj prema roditelju ----
 const emit = defineEmits(['submit-topic-reply', 'refresh']);
 
-const authorMedals = computed(() => {
-  return props.topic?.author?.medals || [];
-});
-
-const featuredMedals = computed(() => {
-  return authorMedals.value.slice(0, 3);
-});
-
-const remainingMedals = computed(() => {
-  return authorMedals.value.slice(3);
-});
+const authorMedals = computed(() => props.topic?.author?.medals || []);
+const featuredMedals = computed(() => authorMedals.value.slice(0, 3));
+const remainingMedals = computed(() => authorMedals.value.slice(3));
 
 const medalIcons = { gold: '🥇', silver: '🥈', bronze: '🥉' };
 const medalThresholds = {
@@ -99,7 +90,7 @@ const formatDate = (dateValue) => {
   return new Intl.DateTimeFormat("bs-BA", {
     day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
   }).format(new Date(dateValue));
-}
+};
 
 function getTierClass(title) {
   if (!title) return 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600';
@@ -135,8 +126,14 @@ async function copyToClipboard() {
     copySuccess.value = true;
     setTimeout(() => { copySuccess.value = false; }, 3000);
   } catch {
-    const el = document.createElement('textarea'); el.value = shareUrl.value; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
-    copySuccess.value = true; setTimeout(() => { copySuccess.value = false; }, 3000);
+    const el = document.createElement('textarea');
+    el.value = shareUrl.value;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    copySuccess.value = true;
+    setTimeout(() => { copySuccess.value = false; }, 3000);
   }
 }
 
@@ -158,13 +155,11 @@ async function handleTopicLike() {
   isVotingTopic.value = true;
   try {
     const response = await toggleTopicLike(props.topic.id);
-    console.log('LIKE RESPONSE:', response);
     props.topic.likes_count = response.likes_count;
     props.topic.dislikes_count = response.dislikes_count;
     props.topic.is_liked = response.is_liked;
     props.topic.is_disliked = response.is_disliked;
   } catch (e) {
-    console.error(e);
     alert('Greška pri lajkanju teme.');
   } finally {
     isVotingTopic.value = false;
@@ -176,13 +171,11 @@ async function handleTopicDislike() {
   isVotingTopic.value = true;
   try {
     const response = await toggleTopicDislike(props.topic.id);
-    console.log('DISLIKE RESPONSE:', response);
     props.topic.likes_count = response.likes_count;
     props.topic.dislikes_count = response.dislikes_count;
     props.topic.is_liked = response.is_liked;
     props.topic.is_disliked = response.is_disliked;
   } catch (e) {
-    console.error(e);
     alert('Greška pri dislajkanju teme.');
   } finally {
     isVotingTopic.value = false;
@@ -221,20 +214,18 @@ function handleFormSubmit({ content, files = [], clearForm }) {
     replyError.value = 'Tekst komentara ne može biti prazan.';
     return;
   }
-  
   replyError.value = '';
   isSubmittingReply.value = true;
-
   emit('submit-topic-reply', {
     content,
     files,
     onSuccess: () => {
       isSubmittingReply.value = false;
-      clearForm(); 
+      clearForm();
       replySuccess.value = 'Odgovor uspješno objavljen!';
       setTimeout(() => {
         replySuccess.value = '';
-        isReplyingToTopic.value = false; 
+        isReplyingToTopic.value = false;
       }, 2000);
     },
     onError: (errMgs) => {
@@ -246,7 +237,7 @@ function handleFormSubmit({ content, files = [], clearForm }) {
 </script>
 
 <template>
-  <div 
+  <div
     class="bg-white dark:bg-slate-800 rounded-xl border shadow-sm p-6 mb-6 transition-colors duration-200"
     :class="topic.is_locked ? 'border-amber-300 dark:border-amber-900 bg-amber-50/10' : 'border-gray-200 dark:border-slate-700'"
   >
@@ -269,13 +260,11 @@ function handleFormSubmit({ content, files = [], clearForm }) {
       </div>
     </div>
 
-    <div v-else>
-      <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-        <span v-if="topic.is_locked" title="Tema je zaključana">🔒</span>
-        {{ topic.title }}
-      </h1>
-    </div>
-    
+    <h1 v-else class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+      <span v-if="topic.is_locked" title="Tema je zaključana">🔒</span>
+      {{ topic.title }}
+    </h1>
+
     <div class="flex items-center flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400 mb-4 bg-slate-50 dark:bg-slate-700 p-2 rounded-lg w-fit">
       <ForumAvatar :author="topic.topic_author || topic.author" />
       <span class="font-semibold text-slate-700 dark:text-slate-200">{{ topic.author?.full_name || 'Korisnik' }}</span>
@@ -303,24 +292,10 @@ function handleFormSubmit({ content, files = [], clearForm }) {
     </div>
 
     <div v-if="topic.attachments && topic.attachments.length > 0" class="mt-2 mb-4">
-      <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">📎 Prilozi</p>
-      <ul class="flex flex-wrap gap-2">
-        <li v-for="attachment in topic.attachments" :key="attachment.id"
-          class="flex items-center gap-2 text-xs bg-slate-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-1.5"
-        >
-          <span class="truncate max-w-[160px] text-slate-600 dark:text-slate-300">
-            {{ attachment.mime_type.startsWith('image/') ? '🖼️' : '📄' }} {{ attachment.filename }}
-            <span class="text-slate-400">({{ (attachment.file_size / 1024).toFixed(1) }} KB)</span>
-          </span>
-          <a
-            :href="`http://127.0.0.1:8000/forum/attachments/topic/${topic.id}/download/${attachment.id}`"
-            target="_blank"
-            class="text-orange-500 hover:text-orange-400 font-bold whitespace-nowrap"
-          >
-            ⬇ Preuzmi
-          </a>
-        </li>
-      </ul>
+      <ForumAttachmentPreview
+        :attachments="topic.attachments"
+        :download-base-url="`http://127.0.0.1:8000/forum/attachments/topic/${topic.id}`"
+      />
     </div>
 
     <div class="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700 flex flex-col gap-2">
@@ -335,17 +310,10 @@ function handleFormSubmit({ content, files = [], clearForm }) {
             title="Lajkaj temu"
           >
             <svg viewBox="0 0 24 24" class="topic-vote-icon" aria-hidden="true">
-              <path
-                fill="currentColor"
-                d="M7 10.5v9H4.8A2.8 2.8 0 0 1 2 16.7v-3.4a2.8 2.8 0 0 1 2.8-2.8H7Zm2 9h7.6c1.1 0 2.1-.7 2.4-1.8l1.4-5.2A2.5 2.5 0 0 0 18 9.4h-3.3V6.2A2.7 2.7 0 0 0 12 3.5c-.5 0-.9.3-1.1.8L9.5 8.5 7 10.8v8.7h2Z"
-              />
+              <path fill="currentColor" d="M7 10.5v9H4.8A2.8 2.8 0 0 1 2 16.7v-3.4a2.8 2.8 0 0 1 2.8-2.8H7Zm2 9h7.6c1.1 0 2.1-.7 2.4-1.8l1.4-5.2A2.5 2.5 0 0 0 18 9.4h-3.3V6.2A2.7 2.7 0 0 0 12 3.5c-.5 0-.9.3-1.1.8L9.5 8.5 7 10.8v8.7h2Z" />
             </svg>
           </button>
-
-          <span class="topic-vote-count" :class="{ active: topic.is_liked }">
-            {{ topic.likes_count ?? 0 }}
-          </span>
-
+          <span class="topic-vote-count" :class="{ active: topic.is_liked }">{{ topic.likes_count ?? 0 }}</span>
           <button
             type="button"
             class="topic-vote-btn"
@@ -355,18 +323,12 @@ function handleFormSubmit({ content, files = [], clearForm }) {
             title="Dislajkuj temu"
           >
             <svg viewBox="0 0 24 24" class="topic-vote-icon topic-vote-icon-down" aria-hidden="true">
-              <path
-                fill="currentColor"
-                d="M7 10.5v9H4.8A2.8 2.8 0 0 1 2 16.7v-3.4a2.8 2.8 0 0 1 2.8-2.8H7Zm2 9h7.6c1.1 0 2.1-.7 2.4-1.8l1.4-5.2A2.5 2.5 0 0 0 18 9.4h-3.3V6.2A2.7 2.7 0 0 0 12 3.5c-.5 0-.9.3-1.1.8L9.5 8.5 7 10.8v8.7h2Z"
-              />
+              <path fill="currentColor" d="M7 10.5v9H4.8A2.8 2.8 0 0 1 2 16.7v-3.4a2.8 2.8 0 0 1 2.8-2.8H7Zm2 9h7.6c1.1 0 2.1-.7 2.4-1.8l1.4-5.2A2.5 2.5 0 0 0 18 9.4h-3.3V6.2A2.7 2.7 0 0 0 12 3.5c-.5 0-.9.3-1.1.8L9.5 8.5 7 10.8v8.7h2Z" />
             </svg>
           </button>
-
-          <span class="topic-vote-count" :class="{ active: topic.is_disliked }">
-            {{ topic.dislikes_count ?? 0 }}
-          </span>
+          <span class="topic-vote-count" :class="{ active: topic.is_disliked }">{{ topic.dislikes_count ?? 0 }}</span>
         </div>
-        
+
         <button
           v-if="!topic.is_locked"
           @click="isReplyingToTopic = !isReplyingToTopic"
@@ -377,7 +339,7 @@ function handleFormSubmit({ content, files = [], clearForm }) {
         </button>
 
         <button @click="toggleShare" class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors font-medium px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 bg-transparent">🔗 Dijeli</button>
-        
+
         <div v-if="!isAdmin && !topic.is_locked" class="relative">
           <button @click="showReportOptions = !showReportOptions" class="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors font-medium px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 bg-transparent">🚩 Prijavi</button>
           <div v-if="showReportOptions" class="absolute top-full mt-1 left-0 bg-white dark:bg-slate-700 border dark:border-slate-600 shadow-lg rounded-lg w-48 z-10 text-xs overflow-hidden">
@@ -411,11 +373,26 @@ function handleFormSubmit({ content, files = [], clearForm }) {
       <div v-if="showShareBox" class="p-3 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-lg flex flex-col gap-2">
         <p class="text-xs text-slate-500 dark:text-slate-400 font-semibold px-1">Podijeli temu</p>
         <div class="flex items-center gap-2">
-          <button @click="copyToClipboard" class="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors bg-transparent border-none" title="Kopiraj link"><svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 00-5.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg><span class="text-[10px] text-slate-500">{{ copySuccess ? 'Kopirano!' : 'Kopiraj' }}</span></button>
-          <button @click="shareOnFacebook" class="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors bg-transparent border-none" title="Facebook"><svg class="w-8 h-8" viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg><span class="text-[10px] text-slate-500">Facebook</span></button>
-          <button @click="shareOnMessenger" class="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors bg-transparent border-none" title="Messenger"><svg class="w-8 h-8" viewBox="0 0 24 24" fill="#0099FF"><path d="M12 0C5.373 0 0 4.974 0 11.111c0 3.498 1.744 6.614 4.469 8.654V24l4.088-2.242c1.092.3 2.246.464 3.443.464 6.627 0 12-4.974 12-11.111C24 4.974 18.627 0 12 0zm1.191 14.963l-3.055-3.26-5.963 3.26L10.732 8.1l3.131 3.26L19.752 8.1l-6.561 6.863z"/></svg><span class="text-[10px] text-slate-500">Messenger</span></button>
-          <button @click="shareOnWhatsApp" class="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors bg-transparent border-none" title="WhatsApp"><svg class="w-8 h-8" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg><span class="text-[10px] text-slate-500">WhatsApp</span></button>
-          <button @click="shareOnViber" class="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors bg-transparent border-none" title="Viber"><img src="https://cdn.simpleicons.org/viber/7360F2" class="w-8 h-8" alt="Viber" /><span class="text-[10px] text-slate-500">Viber</span></button>
+          <button @click="copyToClipboard" class="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors bg-transparent border-none" title="Kopiraj link">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 00-5.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+            <span class="text-[10px] text-slate-500">{{ copySuccess ? 'Kopirano!' : 'Kopiraj' }}</span>
+          </button>
+          <button @click="shareOnFacebook" class="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors bg-transparent border-none" title="Facebook">
+            <svg class="w-8 h-8" viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            <span class="text-[10px] text-slate-500">Facebook</span>
+          </button>
+          <button @click="shareOnMessenger" class="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors bg-transparent border-none" title="Messenger">
+            <svg class="w-8 h-8" viewBox="0 0 24 24" fill="#0099FF"><path d="M12 0C5.373 0 0 4.974 0 11.111c0 3.498 1.744 6.614 4.469 8.654V24l4.088-2.242c1.092.3 2.246.464 3.443.464 6.627 0 12-4.974 12-11.111C24 4.974 18.627 0 12 0zm1.191 14.963l-3.055-3.26-5.963 3.26L10.732 8.1l3.131 3.26L19.752 8.1l-6.561 6.863z"/></svg>
+            <span class="text-[10px] text-slate-500">Messenger</span>
+          </button>
+          <button @click="shareOnWhatsApp" class="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors bg-transparent border-none" title="WhatsApp">
+            <svg class="w-8 h-8" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            <span class="text-[10px] text-slate-500">WhatsApp</span>
+          </button>
+          <button @click="shareOnViber" class="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors bg-transparent border-none" title="Viber">
+            <img src="https://cdn.simpleicons.org/viber/7360F2" class="w-8 h-8" alt="Viber" />
+            <span class="text-[10px] text-slate-500">Viber</span>
+          </button>
         </div>
       </div>
     </div>
@@ -431,7 +408,6 @@ function handleFormSubmit({ content, files = [], clearForm }) {
   min-width: 30px;
   margin-right: 10px;
 }
-
 .topic-vote-btn {
   border: none;
   background: transparent;
@@ -441,40 +417,11 @@ function handleFormSubmit({ content, files = [], clearForm }) {
   transition: all 0.18s ease;
   line-height: 1;
 }
-
-.topic-vote-btn:hover {
-  color: #ff7a00;
-  transform: scale(1.12);
-}
-
-.topic-vote-btn.active {
-  color: #ff7a00;
-}
-
-.topic-vote-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.65;
-}
-
-.topic-vote-icon {
-  width: 18px;
-  height: 18px;
-  display: block;
-}
-
-.topic-vote-icon-down {
-  transform: rotate(180deg);
-}
-
-.topic-vote-count {
-  font-size: 12px;
-  font-weight: 700;
-  color: #94a3b8;
-  line-height: 1.1;
-  margin: 1px 0 4px;
-}
-
-.topic-vote-count.active {
-  color: #ff7a00;
-}
+.topic-vote-btn:hover { color: #ff7a00; transform: scale(1.12); }
+.topic-vote-btn.active { color: #ff7a00; }
+.topic-vote-btn:disabled { cursor: not-allowed; opacity: 0.65; }
+.topic-vote-icon { width: 18px; height: 18px; display: block; }
+.topic-vote-icon-down { transform: rotate(180deg); }
+.topic-vote-count { font-size: 12px; font-weight: 700; color: #94a3b8; line-height: 1.1; margin: 1px 0 4px; }
+.topic-vote-count.active { color: #ff7a00; }
 </style>
