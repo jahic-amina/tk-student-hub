@@ -10,7 +10,12 @@ from app.core.security import get_current_user
 from app.models.user import User, UserRole
 from app.models.forum import ForumCategory, ForumTopic, ForumTag, ForumTopicTag, TopicReport, AdminAnnouncement
 from app.routers.forum_categories import get_category_data 
-from app.routers.forum_likes import get_topic_likes_count
+from app.routers.forum_likes import (
+    get_topic_likes_count,
+    get_topic_dislikes_count,
+    is_topic_liked_by_user,
+    is_topic_disliked_by_user,
+)
 from app.services.forum_reputation import (
     get_user_forum_identity,
     register_topic_created,
@@ -396,13 +401,32 @@ def get_topic_details(
     votes_count = get_topic_votes_count(db, topic.id)
 
     return {
-        "id": topic.id, "title": topic.title, "content": topic.content, "views_count": topic.views_count,
-        "is_locked": getattr(topic, "is_locked", False), "created_at": topic.created_at, "updated_at": topic.updated_at,
-        "author": get_author_data(db, topic.user_id), "category": get_category_data(db, topic.category_id),
-        "tags": get_topic_tags(db, topic.id), "comments": comments,
-        "stats": {"comments_count": comments_count, "answers_count": comments_count, "views_count": topic.views_count, "votes_count": votes_count, "has_best_answer": any(comment["is_best_answer"] for comment in comments)},
-        "is_deleted": getattr(topic, "is_deleted", False) # DODANO: Signal frontendu da prikaže crveno upozorenje
-    }
+    "id": topic.id,
+    "title": topic.title,
+    "content": topic.content,
+    "views_count": topic.views_count,
+
+    "likes_count": get_topic_likes_count(db, topic.id),
+    "dislikes_count": get_topic_dislikes_count(db, topic.id),
+    "is_liked": is_topic_liked_by_user(db, topic.id, current_user.id),
+    "is_disliked": is_topic_disliked_by_user(db, topic.id, current_user.id),
+
+    "is_locked": getattr(topic, "is_locked", False),
+    "created_at": topic.created_at,
+    "updated_at": topic.updated_at,
+    "author": get_author_data(db, topic.user_id),
+    "category": get_category_data(db, topic.category_id),
+    "tags": get_topic_tags(db, topic.id),
+    "comments": comments,
+    "stats": {
+        "comments_count": comments_count,
+        "answers_count": comments_count,
+        "views_count": topic.views_count,
+        "votes_count": votes_count,
+        "has_best_answer": any(comment["is_best_answer"] for comment in comments),
+    },
+    "is_deleted": getattr(topic, "is_deleted", False),
+}
 
 @router.patch("/{topic_id}/view")
 def increment_topic_view(topic_id: int, db: Session = Depends(get_db)):
