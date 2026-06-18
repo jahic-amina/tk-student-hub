@@ -20,9 +20,9 @@ class User(SQLModel, table=True):
     role: UserRole = Field(default=UserRole.member)
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
     is_active: bool = Field(default=True)
-    profilna_slika_url: Optional[str] = Field(default=None)
-    biografija: Optional[str] = Field(default=None)
-    godina_studija: Optional[int] = Field(default=None)
+    profile_picture_url: Optional[str] = Field(default=None)
+    biography: Optional[str] = Field(default=None)
+    year_of_study: Optional[int] = Field(default=None)
     activity_logs: list["ActivityLog"] = Relationship(back_populates="user")
     deactivated_at: Optional[datetime] = Field(
         default=None,
