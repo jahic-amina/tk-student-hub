@@ -27,6 +27,18 @@ from app.services.forum_reputation import (
     rollback_comment_vote,
 )
 
+from app.models.forum_notification import (
+    ForumNotification,
+    ForumNotificationType,
+)
+
+from app.services.forum_notification_service import (
+    create_forum_notification,
+    hide_forum_notification,
+    notify_mentions,
+    get_user_display_name,
+)
+
 router = APIRouter(prefix="/forum/comments", tags=["Forum Comments"])
 
 # Re-export helpers so existing imports from this module keep working
@@ -215,6 +227,44 @@ def create_forum_comment(
 
     register_answer_created(db, user_id=current_user.id, comment_id=new_comment.id)
 
+    actor_name = get_user_display_name(current_user)
+
+    # 1. Ako je glavni komentar na temu, autor teme dobija notifikaciju.
+    if new_comment.parent_id is None:
+        create_forum_notification(
+            db=db,
+            recipient_user_id=topic.user_id,
+            actor_user_id=current_user.id,
+            topic_id=topic.id,
+            comment_id=new_comment.id,
+            notification_type=ForumNotificationType.TOPIC_REPLY,
+            text=f"Kolega {actor_name} je odgovorio na vašu temu {topic.title}.",
+        )
+
+    # 2. Ako je reply na specifičan komentar, autor tog komentara dobija notifikaciju.
+    else:
+        parent_comment = db.get(ForumComment, new_comment.parent_id)
+
+        if parent_comment and not parent_comment.is_deleted:
+            create_forum_notification(
+                db=db,
+                recipient_user_id=parent_comment.user_id,
+                actor_user_id=current_user.id,
+                topic_id=topic.id,
+                comment_id=new_comment.id,
+                notification_type=ForumNotificationType.COMMENT_REPLY,
+                text=f"Kolega {actor_name} je odgovorio na vaš komentar u temi {topic.title}.",
+            )
+
+    # 3. Ako komentar sadrži @username, označeni korisnik dobija mention notifikaciju.
+    notify_mentions(
+        db=db,
+        text=new_comment.content,
+        actor_user=current_user,
+        topic=topic,
+        comment_id=new_comment.id,
+    )
+
     db.commit()
     db.refresh(new_comment)
 
@@ -253,8 +303,26 @@ def toggle_best_answer(
     if topic.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Samo autor teme može označiti najbolji odgovor.")
 
+    # Ako je komentar već najbolji odgovor, sada ga skidamo.
     if comment.is_best_answer:
         comment.is_best_answer = False
+
+        old_notification = db.exec(
+            select(ForumNotification).where(
+                ForumNotification.recipient_user_id == comment.user_id,
+                ForumNotification.actor_user_id == current_user.id,
+                ForumNotification.topic_id == topic.id,
+                ForumNotification.comment_id == comment.id,
+                ForumNotification.type == ForumNotificationType.BEST_ANSWER,
+                ForumNotification.is_hidden == False,
+            )
+        ).first()
+
+        if old_notification:
+            old_notification.is_hidden = True
+            db.add(old_notification)
+
+    # Ako komentar nije najbolji odgovor, sada ga označavamo.
     else:
         existing_best = db.exec(
             select(ForumComment).where(
@@ -268,13 +336,40 @@ def toggle_best_answer(
             existing_best.is_best_answer = False
             db.add(existing_best)
 
+            old_notification = db.exec(
+                select(ForumNotification).where(
+                    ForumNotification.recipient_user_id == existing_best.user_id,
+                    ForumNotification.actor_user_id == current_user.id,
+                    ForumNotification.topic_id == topic.id,
+                    ForumNotification.comment_id == existing_best.id,
+                    ForumNotification.type == ForumNotificationType.BEST_ANSWER,
+                    ForumNotification.is_read == False,
+                    ForumNotification.is_hidden == False,
+                )
+            ).first()
+
+            if old_notification:
+                old_notification.is_hidden = True
+                db.add(old_notification)
+
         comment.is_best_answer = True
 
         register_best_answer(
             db,
             user_id=comment.user_id,
-            giver_id=topic.user_id, 
+            giver_id=topic.user_id,
             comment_id=comment.id,
+        )
+
+        create_forum_notification(
+            db=db,
+            recipient_user_id=comment.user_id,
+            actor_user_id=current_user.id,
+            topic_id=topic.id,
+            comment_id=comment.id,
+            notification_type=ForumNotificationType.BEST_ANSWER,
+            text=f"Čestitamo! Autor teme {topic.title} je označio Vaš odgovor kao najbolji.",
+            prevent_duplicate=True,
         )
 
     db.add(comment)
@@ -298,6 +393,10 @@ def vote_on_comment(
     if not comment or comment.is_deleted:
         raise HTTPException(status_code=404, detail="Komentar nije pronađen.")
 
+    topic = db.get(ForumTopic, comment.topic_id)
+    if not topic or topic.is_deleted:
+        raise HTTPException(status_code=404, detail="Tema nije pronađena.")
+
     existing_vote = db.exec(
         select(ForumCommentVote).where(
             ForumCommentVote.comment_id == comment_id,
@@ -305,54 +404,152 @@ def vote_on_comment(
         )
     ).first()
 
+    should_notify_comment_vote = False
+    notification_type = None
+    notification_text = None
+
     if existing_vote:
         if existing_vote.value == vote_data.value:
             previous_value = existing_vote.value
+
             db.delete(existing_vote)
             db.flush()
-            
+
             rollback_comment_vote(
-                db, 
-                user_id=comment.user_id, 
-                giver_id=current_user.id, 
-                comment_id=comment_id, 
-                previous_value=previous_value
+                db,
+                user_id=comment.user_id,
+                giver_id=current_user.id,
+                comment_id=comment_id,
+                previous_value=previous_value,
             )
-            db.commit()
+
+            # Ako uklanja like, sakrij staru like notifikaciju.
+            if previous_value == 1:
+                hide_forum_notification(
+                    db=db,
+                    recipient_user_id=comment.user_id,
+                    actor_user_id=current_user.id,
+                    topic_id=topic.id,
+                    comment_id=comment.id,
+                    notification_type=ForumNotificationType.COMMENT_LIKE,
+                    only_unread=False,
+                )
+
+            # Ako uklanja dislike, sakrij staru dislike notifikaciju.
+            if previous_value == -1:
+                hide_forum_notification(
+                    db=db,
+                    recipient_user_id=comment.user_id,
+                    actor_user_id=current_user.id,
+                    topic_id=topic.id,
+                    comment_id=comment.id,
+                    notification_type=ForumNotificationType.COMMENT_DISLIKE,
+                    only_unread=False,
+                )
+
             user_vote = 0
+
         else:
             previous_value = existing_vote.value
             existing_vote.value = vote_data.value
+
             db.add(existing_vote)
             db.flush()
-            
-            rollback_comment_vote(db, user_id=comment.user_id, giver_id=current_user.id, comment_id=comment_id, previous_value=previous_value)
-            register_comment_vote(db, user_id=comment.user_id, giver_id=current_user.id, comment_id=comment_id, vote_value=vote_data.value)
-            
-            db.commit()
+
+            rollback_comment_vote(
+                db,
+                user_id=comment.user_id,
+                giver_id=current_user.id,
+                comment_id=comment_id,
+                previous_value=previous_value,
+            )
+
+            register_comment_vote(
+                db,
+                user_id=comment.user_id,
+                giver_id=current_user.id,
+                comment_id=comment_id,
+                vote_value=vote_data.value,
+            )
+
+            # Ako mijenja like u dislike, sakrij staru like notifikaciju.
+            if previous_value == 1:
+                hide_forum_notification(
+                    db=db,
+                    recipient_user_id=comment.user_id,
+                    actor_user_id=current_user.id,
+                    topic_id=topic.id,
+                    comment_id=comment.id,
+                    notification_type=ForumNotificationType.COMMENT_LIKE,
+                    only_unread=False,
+                )
+
+            # Ako mijenja dislike u like, sakrij staru dislike notifikaciju.
+            if previous_value == -1:
+                hide_forum_notification(
+                    db=db,
+                    recipient_user_id=comment.user_id,
+                    actor_user_id=current_user.id,
+                    topic_id=topic.id,
+                    comment_id=comment.id,
+                    notification_type=ForumNotificationType.COMMENT_DISLIKE,
+                    only_unread=False,
+                )
+
+            should_notify_comment_vote = True
             user_vote = vote_data.value
+
     else:
         new_vote = ForumCommentVote(
             comment_id=comment_id,
             user_id=current_user.id,
             value=vote_data.value,
         )
+
         db.add(new_vote)
         db.flush()
-        
+
         register_comment_vote(
-            db, 
-            user_id=comment.user_id, 
-            giver_id=current_user.id, 
-            comment_id=comment_id, 
-            vote_value=vote_data.value
+            db,
+            user_id=comment.user_id,
+            giver_id=current_user.id,
+            comment_id=comment_id,
+            vote_value=vote_data.value,
         )
-        db.commit()
+
+        should_notify_comment_vote = True
         user_vote = vote_data.value
 
-    total_votes = get_comment_votes_count(db, comment_id)
-    return {"comment_id": comment_id, "votes_count": total_votes, "user_vote": user_vote}
+    if should_notify_comment_vote:
+        actor_name = get_user_display_name(current_user)
 
+        if vote_data.value == 1:
+            notification_type = ForumNotificationType.COMMENT_LIKE
+            notification_text = f"Kolega {actor_name} je lajkao/la vaš komentar u temi {topic.title}."
+        else:
+            notification_type = ForumNotificationType.COMMENT_DISLIKE
+            notification_text = f"Kolega {actor_name} je dislajkao/la vaš komentar u temi {topic.title}."
+
+        create_forum_notification(
+            db=db,
+            recipient_user_id=comment.user_id,
+            actor_user_id=current_user.id,
+            topic_id=topic.id,
+            comment_id=comment.id,
+            notification_type=notification_type,
+            text=notification_text,
+            prevent_duplicate=True,
+        )
+
+    db.commit()
+
+    total_votes = get_comment_votes_count(db, comment_id)
+
+    return {
+        "comment_id": comment_id,
+        "votes_count": total_votes,
+        "user_vote": user_vote,
+    }
 
 @router.delete("/{comment_id}", status_code=status.HTTP_200_OK)
 def delete_comment(
@@ -409,10 +606,27 @@ def update_comment(
     current_role = getattr(current_user.role, "value", current_user.role)
     if comment.user_id != current_user.id and current_role != "admin":
         raise HTTPException(status_code=403, detail="Možete editovati samo vlastiti komentar.")
+
+    topic = db.get(ForumTopic, comment.topic_id)
+    if not topic or topic.is_deleted:
+        raise HTTPException(status_code=404, detail="Tema nije pronađena.")
+
+    old_content = comment.content
     
     comment.content = comment_data.content
     comment.updated_at = datetime.utcnow()
+
     db.add(comment)
+
+    notify_mentions(
+        db=db,
+        text=comment.content,
+        old_text=old_content,
+        actor_user=current_user,
+        topic=topic,
+        comment_id=comment.id,
+    )
+
     db.commit()
     db.refresh(comment)
     

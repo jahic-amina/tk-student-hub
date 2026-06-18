@@ -169,6 +169,7 @@ const handleAdminNotice = async () => {
               :topic="fullTopicData" 
               :is-admin="isAdmin" 
               @submit-topic-reply="handleNewComment"
+               @refresh="() => loadTopicAndComments(props.id)"
             />
 
             <!-- Sort dropdown -->

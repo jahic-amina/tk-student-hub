@@ -155,6 +155,20 @@ class TopicLike(SQLModel, table=True):
     user_id: int = Field(foreign_key="users.id", index=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+
+class TopicDislike(SQLModel, table=True):
+    __tablename__ = "topic_dislikes"
+
+    __table_args__ = (
+        UniqueConstraint("topic_id", "user_id", name="unique_topic_dislike_per_user"),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    topic_id: int = Field(foreign_key="forum_topics.id", index=True)
+    user_id: int = Field(foreign_key="users.id", index=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class TopicAttachment(SQLModel, table=True):
     __tablename__ = "topic_attachments"
 
@@ -177,4 +191,3 @@ class CommentAttachment(SQLModel, table=True):
     file_size: int
     mime_type: str = Field(max_length=100)
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    

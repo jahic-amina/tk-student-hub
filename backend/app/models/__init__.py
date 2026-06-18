@@ -26,3 +26,6 @@ from app.models.forum_reputation import (
     ForumUserMedal,
     ForumUserStats,
 )
+
+# Modeli za forum notifikacije
+from app.models.forum_notification import ForumNotification, ForumNotificationType

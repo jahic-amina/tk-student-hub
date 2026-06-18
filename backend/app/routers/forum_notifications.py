@@ -21,7 +21,10 @@ def get_my_forum_notifications(
     statement = (
         select(ForumNotification)
         .where(
-            ForumNotification.recipient_user_id == current_user.id
+
+            ForumNotification.recipient_user_id == current_user.id,
+            ForumNotification.is_hidden == False,
+            
         )
         .order_by(
             ForumNotification.is_read.asc(),
@@ -76,6 +79,8 @@ def mark_all_forum_notifications_as_read(
         select(ForumNotification).where(
             ForumNotification.recipient_user_id == current_user.id,
             ForumNotification.is_read == False,
+            ForumNotification.is_hidden == False,
+
         )
     ).all()
 

@@ -68,6 +68,24 @@ export async function voteOnComment(commentId, value) {
   return handleResponse(response, 'Glasanje nije uspjelo.');
 }
 
+export async function toggleTopicLike(topicId) {
+  const response = await fetch(`${BASE_URL}/forum/topics/${topicId}/like`, {
+    method: 'POST',
+    headers: getHeaders()
+  });
+
+  return handleResponse(response, 'Lajkovanje teme nije uspjelo.');
+}
+
+export async function toggleTopicDislike(topicId) {
+  const response = await fetch(`${BASE_URL}/forum/topics/${topicId}/dislike`, {
+    method: 'POST',
+    headers: getHeaders()
+  });
+
+  return handleResponse(response, 'Dislajkovanje teme nije uspjelo.');
+}
+
 export async function toggleBestAnswer(commentId) {
   const response = await fetch(`${BASE_URL}/forum/comments/${commentId}/best-answer`, { method: 'PATCH', headers: getHeaders() });
   return handleResponse(response, 'Označavanje najboljeg odgovora nije uspjelo.');

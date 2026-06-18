@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
-import { deleteTopic, reportTopic } from '../services/forum';
+import { deleteTopic, reportTopic, toggleTopicLike, toggleTopicDislike } from '../services/forum';
 import { toggleTopicLock } from '../services/forum_admin';
 import { updateTopic } from '../services/forum';
 import ForumAvatar from './ForumAvatar.vue';
@@ -16,6 +16,7 @@ const isReplyingToTopic = ref(false);
 const isSubmittingReply = ref(false);
 const replyError = ref('');
 const replySuccess = ref('');
+const isVotingTopic = ref(false);
 
 const isEditingTopic = ref(false);
 const editTitle = ref('');
@@ -23,7 +24,7 @@ const editContent = ref('');
 
 const closeDropdown = (e) => {
   if (!e.target.closest('.medals-dropdown-container')) {
-    showAllMedalsDropdown = false;
+    showAllMedalsDropdown.value = false;
   }
 };
 
@@ -53,7 +54,7 @@ const props = defineProps({
 });
 
 // ---- Definišemo emit događaj prema roditelju ----
-const emit = defineEmits(['submit-topic-reply']);
+const emit = defineEmits(['submit-topic-reply', 'refresh']);
 
 const authorMedals = computed(() => {
   return props.topic?.author?.medals || [];
@@ -150,6 +151,42 @@ async function handleReport(reason) {
 
 async function handleLockTopic() {
   try { await toggleTopicLock(props.topic.id); props.topic.is_locked = !props.topic.is_locked; } catch (e) { alert('Greška pri promjeni statusa zaključavanja.'); }
+}
+
+async function handleTopicLike() {
+  if (isVotingTopic.value) return;
+  isVotingTopic.value = true;
+  try {
+    const response = await toggleTopicLike(props.topic.id);
+    console.log('LIKE RESPONSE:', response);
+    props.topic.likes_count = response.likes_count;
+    props.topic.dislikes_count = response.dislikes_count;
+    props.topic.is_liked = response.is_liked;
+    props.topic.is_disliked = response.is_disliked;
+  } catch (e) {
+    console.error(e);
+    alert('Greška pri lajkanju teme.');
+  } finally {
+    isVotingTopic.value = false;
+  }
+}
+
+async function handleTopicDislike() {
+  if (isVotingTopic.value) return;
+  isVotingTopic.value = true;
+  try {
+    const response = await toggleTopicDislike(props.topic.id);
+    console.log('DISLIKE RESPONSE:', response);
+    props.topic.likes_count = response.likes_count;
+    props.topic.dislikes_count = response.dislikes_count;
+    props.topic.is_liked = response.is_liked;
+    props.topic.is_disliked = response.is_disliked;
+  } catch (e) {
+    console.error(e);
+    alert('Greška pri dislajkanju teme.');
+  } finally {
+    isVotingTopic.value = false;
+  }
 }
 
 function startEditTopic() {
@@ -262,7 +299,6 @@ function handleFormSubmit({ content, files = [], clearForm }) {
       <span v-for="tag in topic.tags" :key="tag.id" class="text-[11px] font-medium px-2.5 py-1 bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 rounded-md shadow-sm">#{{ tag.name }}</span>
     </div>
 
-    <!-- Attachments preview -->
     <div v-if="topic.attachments && topic.attachments.length > 0" class="mt-2 mb-4">
       <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">📎 Prilozi</p>
       <ul class="flex flex-wrap gap-2">
@@ -286,6 +322,47 @@ function handleFormSubmit({ content, files = [], clearForm }) {
 
     <div class="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700 flex flex-col gap-2">
       <div class="flex items-center w-full gap-2">
+        <div class="topic-votes">
+          <button
+            type="button"
+            class="topic-vote-btn"
+            :class="{ active: topic.is_liked }"
+            :disabled="isVotingTopic"
+            @click="handleTopicLike"
+            title="Lajkaj temu"
+          >
+            <svg viewBox="0 0 24 24" class="topic-vote-icon" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M7 10.5v9H4.8A2.8 2.8 0 0 1 2 16.7v-3.4a2.8 2.8 0 0 1 2.8-2.8H7Zm2 9h7.6c1.1 0 2.1-.7 2.4-1.8l1.4-5.2A2.5 2.5 0 0 0 18 9.4h-3.3V6.2A2.7 2.7 0 0 0 12 3.5c-.5 0-.9.3-1.1.8L9.5 8.5 7 10.8v8.7h2Z"
+              />
+            </svg>
+          </button>
+
+          <span class="topic-vote-count" :class="{ active: topic.is_liked }">
+            {{ topic.likes_count ?? 0 }}
+          </span>
+
+          <button
+            type="button"
+            class="topic-vote-btn"
+            :class="{ active: topic.is_disliked }"
+            :disabled="isVotingTopic"
+            @click="handleTopicDislike"
+            title="Dislajkuj temu"
+          >
+            <svg viewBox="0 0 24 24" class="topic-vote-icon topic-vote-icon-down" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M7 10.5v9H4.8A2.8 2.8 0 0 1 2 16.7v-3.4a2.8 2.8 0 0 1 2.8-2.8H7Zm2 9h7.6c1.1 0 2.1-.7 2.4-1.8l1.4-5.2A2.5 2.5 0 0 0 18 9.4h-3.3V6.2A2.7 2.7 0 0 0 12 3.5c-.5 0-.9.3-1.1.8L9.5 8.5 7 10.8v8.7h2Z"
+              />
+            </svg>
+          </button>
+
+          <span class="topic-vote-count" :class="{ active: topic.is_disliked }">
+            {{ topic.dislikes_count ?? 0 }}
+          </span>
+        </div>
         
         <button
           v-if="!topic.is_locked"
@@ -337,3 +414,60 @@ function handleFormSubmit({ content, files = [], clearForm }) {
     </div>
   </div>
 </template>
+
+<style scoped>
+.topic-votes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  margin-right: 10px;
+}
+
+.topic-vote-btn {
+  border: none;
+  background: transparent;
+  color: #cbd5e1;
+  padding: 2px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  line-height: 1;
+}
+
+.topic-vote-btn:hover {
+  color: #ff7a00;
+  transform: scale(1.12);
+}
+
+.topic-vote-btn.active {
+  color: #ff7a00;
+}
+
+.topic-vote-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.topic-vote-icon {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.topic-vote-icon-down {
+  transform: rotate(180deg);
+}
+
+.topic-vote-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: #94a3b8;
+  line-height: 1.1;
+  margin: 1px 0 4px;
+}
+
+.topic-vote-count.active {
+  color: #ff7a00;
+}
+</style>
