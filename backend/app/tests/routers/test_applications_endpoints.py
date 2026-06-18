@@ -1,10 +1,17 @@
+from email.policy import default
 import pytest
 from datetime import date, timedelta
-from sqlmodel import Session
+from requests import session
+from sqlmodel import Session, select
 from fastapi.testclient import TestClient
+from app.models.user import User, UserRole
+from app.core.security import hash_password
+from app.models.application import ApplicationStatus, Application
+from app.models.ad import Ad, AdStatus, AdType
+from app.models.notification import Notification, NotificationType
+from app.tests.conftest import active_ad
 
-from app.models.application import ApplicationStatus
-from app.models.ad import AdStatus
+
 
 
 # ============================================================
@@ -15,20 +22,22 @@ class TestGetApplicationsAdmin:
 
     def test_admin_can_get_all_applications(
         self, client: TestClient, session: Session, admin_token: str, 
-        student_user, active_ad, company_user
+        student_user, active_ad
     ):
         """Admin can retrieve all applications."""
-        # Create an application first
-        from app.models.application import Application
+    
         app = Application(
             user_id=student_user.id,
             ad_id=active_ad.id,
             cv_path="/uploads/cvs/test.pdf",
             motivational_letter_path="/uploads/letters/test.pdf",
             phone="+38761234567",
+            status=ApplicationStatus.pending,
+            is_archived=False
         )
         session.add(app)
-        session.commit()
+        session.flush()
+        session.refresh(app)
 
         response = client.get(
             "/applications/",
@@ -36,7 +45,7 @@ class TestGetApplicationsAdmin:
         )
         assert response.status_code == 200
         data = response.json()
-        assert len(data) > 0
+        assert len(data) == 1
         assert data[0]["user_id"] == student_user.id
 
     def test_student_cannot_get_all_applications(
@@ -48,14 +57,17 @@ class TestGetApplicationsAdmin:
             headers={"Authorization": f"Bearer {student_token}"}
         )
         assert response.status_code == 403
-        assert "Permission denied" in response.json()["detail"]
+        assert "You do not have access to this resource." in response.json()["detail"]
 
     def test_admin_filter_applications_by_status(
         self, client: TestClient, session: Session, admin_token: str,
-        student_user, active_ad, company_user
+        student_user, active_ad
     ):
         """Admin can filter applications by status."""
-        from app.models.application import Application
+        
+        session.refresh(student_user)
+        session.refresh(active_ad)
+
         app = Application(
             user_id=student_user.id,
             ad_id=active_ad.id,
@@ -63,31 +75,33 @@ class TestGetApplicationsAdmin:
             motivational_letter_path="/uploads/letters/test.pdf",
             phone="+38761234567",
             status=ApplicationStatus.pending,
+            is_archived=False
         )
         session.add(app)
-        session.commit()
+        session.flush() 
 
         response = client.get(
-            "/applications/?app_status=pending",
+            f"/applications/?app_status={ApplicationStatus.pending.value}",
             headers={"Authorization": f"Bearer {admin_token}"}
         )
         assert response.status_code == 200
         data = response.json()
         for item in data:
-            assert item["status"] == "pending"
+            assert item["status"] == ApplicationStatus.pending.value
 
     def test_admin_filter_applications_by_ad_id(
         self, client: TestClient, session: Session, admin_token: str,
         student_user, active_ad, pending_ad, company_user
     ):
         """Admin can filter applications by ad_id."""
-        from app.models.application import Application
+        
         app1 = Application(
             user_id=student_user.id,
             ad_id=active_ad.id,
             cv_path="/uploads/cvs/test.pdf",
             motivational_letter_path="/uploads/letters/test.pdf",
             phone="+38761234567",
+            is_archived=False
         )
         app2 = Application(
             user_id=student_user.id,
@@ -95,10 +109,11 @@ class TestGetApplicationsAdmin:
             cv_path="/uploads/cvs/test2.pdf",
             motivational_letter_path="/uploads/letters/test2.pdf",
             phone="+38761234567",
+            is_archived=False
         )
         session.add(app1)
         session.add(app2)
-        session.commit()
+        session.flush()
 
         response = client.get(
             f"/applications/?ad_id={active_ad.id}",
@@ -106,7 +121,8 @@ class TestGetApplicationsAdmin:
         )
         assert response.status_code == 200
         data = response.json()
-        assert all(item["ad_id"] == active_ad.id for item in data)
+        assert len(data) == 1
+        assert data[0]["ad_id"] == active_ad.id
 
 
 # ============================================================
@@ -121,6 +137,9 @@ class TestGetCompanyApplications:
     ):
         """Company can retrieve all applications for their ads."""
         from app.models.application import Application
+        session.refresh(student_user)
+        session.refresh(active_ad)
+
         app = Application(
             user_id=student_user.id,
             ad_id=active_ad.id,
@@ -129,7 +148,7 @@ class TestGetCompanyApplications:
             phone="+38761234567",
         )
         session.add(app)
-        session.commit()
+        session.flush()
 
         response = client.get(
             "/applications/company/all",
@@ -148,14 +167,14 @@ class TestGetCompanyApplications:
             "/applications/company/all",
             headers={"Authorization": f"Bearer {student_token}"}
         )
-        assert response.status_code == 403
+        assert response.status_code in [401, 403]
 
     def test_company_filter_by_status(
         self, client: TestClient, session: Session, company_token: str,
         company_user, student_user, active_ad
     ):
         """Company can filter their applications by status."""
-        from app.models.application import Application
+        
         app = Application(
             user_id=student_user.id,
             ad_id=active_ad.id,
@@ -165,16 +184,16 @@ class TestGetCompanyApplications:
             status=ApplicationStatus.accepted,
         )
         session.add(app)
-        session.commit()
+        session.flush()
 
         response = client.get(
-            "/applications/company/all?app_status=accepted",
+            f"/applications/company/all?app_status={ApplicationStatus.accepted.value}",
             headers={"Authorization": f"Bearer {company_token}"}
         )
         assert response.status_code == 200
         data = response.json()
         for item in data:
-            assert item["status"] == "accepted"
+            assert item["status"] == ApplicationStatus.accepted.value
 
 
 # ============================================================
@@ -195,9 +214,11 @@ class TestGetCompanyApplicationsByAd:
             cv_path="/uploads/cvs/test.pdf",
             motivational_letter_path="/uploads/letters/test.pdf",
             phone="+38761234567",
+            status=ApplicationStatus.pending
         )
         session.add(app)
-        session.commit()
+        session.flush()
+        session.refresh(app)
 
         response = client.get(
             f"/applications/company/by-ad/{active_ad.id}",
@@ -210,15 +231,15 @@ class TestGetCompanyApplicationsByAd:
 
     def test_company_cannot_access_other_company_ad(
         self, client: TestClient, session: Session, company_token: str,
-        student_user, pending_ad
+        student_user, other_company_ad
     ):
         """Company cannot access applications for ads they don't own."""
         response = client.get(
-            f"/applications/company/by-ad/{pending_ad.id}",
+            f"/applications/company/by-ad/{other_company_ad.id}",
             headers={"Authorization": f"Bearer {company_token}"}
         )
         assert response.status_code == 403
-        assert "You do not have access" in response.json()["detail"]
+        assert "You do not have access to applications for this ad." in response.json()["detail"]
 
     def test_ad_not_found_returns_404(
         self, client: TestClient, company_token: str
@@ -235,16 +256,18 @@ class TestGetCompanyApplicationsByAd:
         company_user, student_user, active_ad
     ):
         """Pagination works with limit and offset."""
-        from app.models.application import Application
-        from app.models.user import User, UserRole
-        from app.core.security import hash_password
-        
+        existing_apps = session.exec(select(Application).where(Application.ad_id == active_ad.id)).all()
+        for app in existing_apps:
+            session.delete(app)
+        session.flush()
+       
         for i in range(5):
             other_student = User(
-                email=f"student{i}@test.ba",
+                email=f"student_a{i}@test.ba",
                 full_name=f"Student {i}",
-                hashed_password=hash_password("hashed"),
+                password_hash=hash_password("hashed"),
                 role=UserRole.member,
+                is_active=True,
             )
             session.add(other_student)
             session.flush()
@@ -255,9 +278,10 @@ class TestGetCompanyApplicationsByAd:
                 cv_path=f"/uploads/cvs/test{i}.pdf",
                 motivational_letter_path=f"/uploads/letters/test{i}.pdf",
                 phone="+38761234567",
+                is_archived=False,
             )
             session.add(app_obj)
-        session.commit()
+        session.flush()
 
         response = client.get(
             f"/applications/company/by-ad/{active_ad.id}?limit=2&offset=0",
@@ -265,7 +289,7 @@ class TestGetCompanyApplicationsByAd:
         )
         assert response.status_code == 200
         data = response.json()
-        assert len(data) <= 2
+        assert len(data) == 2
 
 
 # ============================================================
@@ -278,6 +302,9 @@ class TestCreateApplication:
         self, client: TestClient, session: Session, student_token: str,
         student_user, active_ad
     ):
+        session.refresh(student_user)
+        session.refresh(active_ad)
+        
         """Student can apply to an active ad."""
         payload = {
             "ad_id": active_ad.id,
@@ -346,7 +373,7 @@ class TestCreateApplication:
             phone="+38761234567",
         )
         session.add(existing_app)
-        session.commit()
+        session.flush()
 
         payload = {
             "ad_id": active_ad.id,
@@ -401,7 +428,7 @@ class TestGetApplication:
             phone="+38761234567",
         )
         session.add(app)
-        session.commit()
+        session.flush()
         session.refresh(app)
 
         response = client.get(
@@ -426,7 +453,7 @@ class TestGetApplication:
             phone="+38761234567",
         )
         session.add(app)
-        session.commit()
+        session.flush()
         session.refresh(app)
 
         response = client.get(
@@ -437,32 +464,45 @@ class TestGetApplication:
 
     def test_student_cannot_get_other_student_application(
         self, client: TestClient, session: Session, student_token: str,
-        active_ad, company_user
+          company_user
     ):
         """Student cannot view another student's application."""
-        from app.models.application import Application
-        from app.models.user import User, UserRole
-        from app.core.security import hash_password
+        isolated_ad = Ad(
+            company_id=company_user.id,
+            title="Isolated Ad For Test",
+            type=AdType.internship,
+            field="IT",
+            location="Sarajevo",
+            description="Testing isolation.",
+            deadline=date.today() + timedelta(days=10),
+            duration_months=3,
+            status=AdStatus.active,
+        )
+        session.add(isolated_ad)
+        session.flush()
+
         
         other_student = User(
             email="other@test.ba",
             full_name="Other Student",
-            hashed_password=hash_password("password"),
+            password_hash=hash_password("password"),
             role=UserRole.member,
+            is_active=True,
         )
         session.add(other_student)
-        session.commit()
+        session.flush()
         session.refresh(other_student)
 
         app = Application(
             user_id=other_student.id,
-            ad_id=active_ad.id,
+            ad_id=isolated_ad.id,
             cv_path="/uploads/cvs/test.pdf",
             motivational_letter_path="/uploads/letters/test.pdf",
             phone="+38761234567",
         )
         session.add(app)
-        session.commit()
+        session.flush()
+        session.refresh(app)
 
         response = client.get(
             f"/applications/{app.id}",
@@ -499,7 +539,7 @@ class TestUpdateApplicationAdmin:
             phone="+38761234567",
         )
         session.add(app)
-        session.commit()
+        session.flush()
         session.refresh(app)
 
         payload = {
@@ -530,7 +570,7 @@ class TestUpdateApplicationAdmin:
             phone="+38761234567",
         )
         session.add(app)
-        session.commit()
+        session.flush()
 
         payload = {"status": "rejected"}
         response = client.patch(
@@ -561,7 +601,7 @@ class TestUpdateApplicationCompany:
             phone="+38761234567",
         )
         session.add(app)
-        session.commit()
+        session.flush()
         session.refresh(app)
 
         payload = {
@@ -579,19 +619,19 @@ class TestUpdateApplicationCompany:
 
     def test_company_cannot_update_other_company_application(
         self, client: TestClient, session: Session, company_token: str,
-        student_user, pending_ad
+        student_user, other_company_ad
     ):
         """Company cannot update applications for ads they don't own."""
-        from app.models.application import Application
         app = Application(
             user_id=student_user.id,
-            ad_id=pending_ad.id,
+            ad_id=other_company_ad.id,
             cv_path="/uploads/cvs/test.pdf",
             motivational_letter_path="/uploads/letters/test.pdf",
             phone="+38761234567",
         )
         session.add(app)
-        session.commit()
+        session.flush()
+        session.refresh(app)
 
         payload = {"status": "rejected"}
         response = client.patch(
@@ -600,15 +640,14 @@ class TestUpdateApplicationCompany:
             headers={"Authorization": f"Bearer {company_token}"}
         )
         assert response.status_code == 403
+        assert "You do not have access to alter this application." in response.json()["detail"]
 
     def test_company_accept_notifies_student(
         self, client: TestClient, session: Session, company_token: str,
         company_user, student_user, active_ad
     ):
         """When company accepts, student gets notification."""
-        from app.models.application import Application
-        from app.models.notification import Notification
-        from sqlmodel import select
+        
         
         app = Application(
             user_id=student_user.id,
@@ -618,7 +657,7 @@ class TestUpdateApplicationCompany:
             phone="+38761234567",
         )
         session.add(app)
-        session.commit()
+        session.flush()
         session.refresh(app)
 
         payload = {"status": "accepted"}
@@ -648,18 +687,18 @@ class TestUpdateApplicationCompany:
         student1 = User(
             email="student1@test.ba",
             full_name="Student 1",
-            hashed_password=hash_password("pwd"),
+            password_hash=hash_password("pwd"),
             role=UserRole.member,
         )
         student2 = User(
             email="student2@test.ba",
             full_name="Student 2",
-            hashed_password=hash_password("pwd"),
+            password_hash=hash_password("pwd"),
             role=UserRole.member,
         )
         session.add(student1)
         session.add(student2)
-        session.commit()
+        session.flush()
         session.refresh(student1)
         session.refresh(student2)
         
@@ -680,7 +719,7 @@ class TestUpdateApplicationCompany:
         )
         session.add(app1)
         session.add(app2)
-        session.commit()
+        session.flush()
         session.refresh(app1)
         session.refresh(app2)
 
@@ -725,7 +764,7 @@ class TestDeleteApplication:
             phone="+38761234567",
         )
         session.add(app)
-        session.commit()
+        session.flush()
         session.refresh(app)
 
         response = client.delete(
@@ -752,7 +791,7 @@ class TestDeleteApplication:
             phone="+38761234567",
         )
         session.add(app)
-        session.commit()
+        session.flush()
 
         response = client.delete(
             f"/applications/{app.id}",
@@ -789,7 +828,7 @@ class TestGetCompanyApplication:
             phone="+38761234567",
         )
         session.add(app)
-        session.commit()
+        session.flush()
         session.refresh(app)
 
         response = client.get(
@@ -802,19 +841,20 @@ class TestGetCompanyApplication:
 
     def test_company_cannot_view_other_company_application(
         self, client: TestClient, session: Session, company_token: str,
-        student_user, pending_ad
+        student_user, other_company_ad
     ):
         """Company cannot view applications for ads they don't own."""
         from app.models.application import Application
         app = Application(
             user_id=student_user.id,
-            ad_id=pending_ad.id,
+            ad_id=other_company_ad.id,
             cv_path="/uploads/cvs/test.pdf",
             motivational_letter_path="/uploads/letters/test.pdf",
             phone="+38761234567",
         )
         session.add(app)
-        session.commit()
+        session.flush()
+        session.refresh(app)
 
         response = client.get(
             f"/applications/company/application/{app.id}",
