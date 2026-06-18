@@ -55,7 +55,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 
 // Importujemo API funkcije umjesto direktnog fetch-a
 import { getMaterial, rateMaterial, updateRating, checkHasDownloaded } from '../services/api'
@@ -64,6 +64,10 @@ const props = defineProps({
     materialId: {
         type: Number,
         required: true
+    },
+    parentHasDownloaded: {
+        type: Boolean,
+        default: false
     }
 })
 
@@ -79,6 +83,11 @@ const myRating = ref(0)
 
 // Provjera da li je korisnik preuzeo materijal
 const hasDownloaded = ref(false)
+watch(() => props.parentHasDownloaded, (downloaded) => {
+    if (downloaded) {
+        hasDownloaded.value = true
+    }
+})
 
 // Poruke uspjeha i greske
 const ratingMessage = ref('')

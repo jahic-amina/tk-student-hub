@@ -75,8 +75,8 @@
 <template v-else>
     <p class="text-gray-600 dark:text-slate-400 text-sm mb-4">{{ material.description }}</p>
 </template>
-                <MaterialRating :material-id="material.id" :key="ratingKey" />
-            </div>
+                <MaterialRating :material-id="material.id" :parent-has-downloaded="hasDownloaded" />
+                </div>
         </div>
     <!-- Preuzmi -->
     <div class="mb-6">
@@ -121,7 +121,7 @@ const route = useRoute()
 const router = useRouter()
 const material = ref(null)
 const loading = ref(true)
-const ratingKey = ref(0)  
+const hasDownloaded = ref(false) 
 const isAdmin = localStorage.getItem('role') === 'admin'
 const currentUserId = Number(localStorage.getItem('user_id'))
 const successMessage = ref('')
@@ -232,7 +232,7 @@ async function handleReject() {
 // Ažurira broj preuzimanja lokalno nakon downloada 
 function updateDownloadCount() {
     material.value.number_of_downloads += 1
-    ratingKey.value += 1
+    hasDownloaded.value = true
 }
 
 function goBack() {
