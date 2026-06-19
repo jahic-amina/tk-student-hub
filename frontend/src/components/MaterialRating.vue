@@ -50,6 +50,9 @@
             <p v-if="isLoggedIn && !hasDownloaded" class="text-sm text-gray-400 dark:text-slate-500 mt-2">
                 Preuzmite materijal da biste mogli ocijeniti.
             </p>
+            <p v-if="!isLoggedIn" class="text-sm text-gray-400 dark:text-slate-500 mt-2">
+                Prijavite se da biste mogli ocijeniti materijal.
+            </p>
         </div>
     </div>
 </template>
