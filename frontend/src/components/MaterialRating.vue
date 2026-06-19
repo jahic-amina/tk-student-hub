@@ -50,9 +50,10 @@
             <p v-if="isLoggedIn && !hasDownloaded" class="text-sm text-gray-400 dark:text-slate-500 mt-2">
                 Preuzmite materijal da biste mogli ocijeniti.
             </p>
-            <p v-if="!isLoggedIn" class="text-sm text-gray-400 dark:text-slate-500 mt-2">
-                Prijavite se da biste mogli ocijeniti materijal.
-            </p>
+            <p v-if="!isLoggedIn" class="text-sm text-gray-500 dark:text-slate-400 mt-2 italic">
+            <router-link to="/login" class="text-primary font-medium hover:underline">Prijavite se</router-link>
+            da biste mogli ocijeniti materijal.
+        </p>
         </div>
     </div>
 </template>
