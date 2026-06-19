@@ -11,7 +11,8 @@
                 </svg>
                 <span class="font-bold">NAZAD</span>
             </button>
-            <button v-if="material?.user?.id === currentUserId" @click="isEditing ? saveChanges() : toggleEdit()"
+            <button v-if="currentUserId && material?.user?.id === currentUserId"
+                @click="isEditing ? saveChanges() : toggleEdit()"
                 class="inline-flex items-center gap-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 font-medium px-4 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-[0.98] transition text-sm">
                 <svg v-if="!isEditing" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -41,41 +42,40 @@
         <div v-if="loading" class="text-gray-400 dark:text-slate-500">Učitavanje...</div>
 
         <div v-else-if="material">
-    <!-- Header -->
-    <div class="flex justify-between items-start mb-4">
-        <div class="w-full">
-            <template v-if="isEditing">
-                <input v-model="material.title"
-                    class="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-lg px-3 py-1.5 mb-1 focus:outline-none focus:border-primary" />
-            </template>
-            <template v-else>
-                <h2 class="text-xl font-bold">{{ material.title }}</h2>
-            </template>
-            <p class="text-sm text-gray-400 dark:text-slate-400">Postavio: {{ material.user?.full_name }}</p>
-            <p class="text-sm text-gray-400 dark:text-slate-400">Datum: {{ formatDate(material.created_at) }}</p>
-        </div>
-    </div>
-    <hr class="mb-4 dark:border-slate-700" />
-        <!-- Thumbnail + Opis + Ocjena -->
-        <div class="flex gap-6 mb-6">
-            <div v-if="material.thumbnail_path" class="shrink-0">
-                <img 
-                    :src="`http://127.0.0.1:8000/thumbnails/${material.thumbnail_path.split('/').pop()}`"
-                    class="w-48 object-cover rounded-lg"
-                    alt="thumbnail"
-                />
+            <!-- Header -->
+            <div class="flex justify-between items-start mb-4">
+                <div class="w-full">
+                    <template v-if="isEditing">
+                        <input v-model="material.title"
+                            class="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-lg px-3 py-1.5 mb-1 focus:outline-none focus:border-primary" />
+                    </template>
+                    <template v-else>
+                        <h2 class="text-xl font-bold">{{ material.title }}</h2>
+                    </template>
+                    <p class="text-sm text-gray-400 dark:text-slate-400">Postavio: {{ material.user?.full_name }}</p>
+                    <p class="text-sm text-gray-400 dark:text-slate-400">Datum: {{ formatDate(material.created_at) }}
+                    </p>
+                </div>
             </div>
-            <div class="flex-1">
-             <p class="text-sm text-gray-500 dark:text-slate-400 mb-3">{{ material.subject?.name }} • {{ material.subject?.study_year }}. godina • {{ material.file_type }}</p>
-             <h3 class="font-semibold mb-2 text-base">Detaljan opis</h3>
-<template v-if="isEditing">
-    <textarea v-model="material.description" rows="4"
-        class="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none mb-4" />
-</template>
-<template v-else>
-    <p class="text-gray-600 dark:text-slate-400 text-sm mb-4">{{ material.description }}</p>
-</template>
-                <MaterialRating :material-id="material.id" :parent-has-downloaded="hasDownloaded" />
+            <hr class="mb-4 dark:border-slate-700" />
+            <!-- Thumbnail + Opis + Ocjena -->
+            <div class="flex gap-6 mb-6">
+                <div v-if="material.thumbnail_path" class="shrink-0">
+                    <img :src="`http://127.0.0.1:8000/thumbnails/${material.thumbnail_path.split('/').pop()}`"
+                        class="w-48 object-cover rounded-lg" alt="thumbnail" />
+                </div>
+                <div class="flex-1">
+                    <p class="text-sm text-gray-500 dark:text-slate-400 mb-3">{{ material.subject?.name }} • {{
+                        material.subject?.study_year }}. godina • {{ material.file_type }}</p>
+                    <h3 class="font-semibold mb-2 text-base">Detaljan opis</h3>
+                    <template v-if="isEditing">
+                        <textarea v-model="material.description" rows="4"
+                            class="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none mb-4" />
+                    </template>
+                    <template v-else>
+                        <p class="text-gray-600 dark:text-slate-400 text-sm mb-4">{{ material.description }}</p>
+                    </template>
+                    <MaterialRating :material-id="material.id" :parent-has-downloaded="hasDownloaded" />
                 </div>
             </div>
             <!-- Preuzmi -->
@@ -92,20 +92,22 @@
                 </div>
             </div>
 
-    <!-- Admin odobri/odbij -->
-    <div v-if="isAdmin && material.status === 'pending'" class="flex w-full gap-4 mb-6">
-        <button @click="handleApprove" class="flex-1 justify-center py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 font-medium">
-            <span>✓</span> Odobri
-        </button>
-        <button @click="handleReject" class="flex-1 justify-center py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2 font-medium">
-            <span>✕</span> Odbij
-        </button>
-    </div>
+            <!-- Admin odobri/odbij -->
+            <div v-if="isAdmin && material.status === 'pending'" class="flex w-full gap-4 mb-6">
+                <button @click="handleApprove"
+                    class="flex-1 justify-center py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 font-medium">
+                    <span>✓</span> Odobri
+                </button>
+                <button @click="handleReject"
+                    class="flex-1 justify-center py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2 font-medium">
+                    <span>✕</span> Odbij
+                </button>
+            </div>
 
-    <!-- Komentari -->
-    <CommentList :material-id="material.id" />
-</div>
-</div>
+            <!-- Komentari -->
+            <CommentList :material-id="material.id" />
+        </div>
+    </div>
 </template>
 
 <script setup>

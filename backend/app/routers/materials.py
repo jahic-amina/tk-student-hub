@@ -267,6 +267,26 @@ def get_materials(
         per_page=per_page,
         total_pages=(total + per_page - 1) // per_page,
     )
+@router.get("/public", response_model=PaginatedMaterialsResponse)
+def get_public_materials(
+    session: Session = Depends(get_db),
+    years: Optional[list[int]] = Query(None),
+    types: Optional[list[str]] = Query(None),
+    subject_id: Optional[int] = Query(None),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(10, ge=1, le=50),
+):
+    svi = get_materials_by_status(session, "approved", years=years, types=types, subject_id=subject_id)
+    total = len(svi)
+    start = (page - 1) * per_page
+    end = start + per_page
+    return PaginatedMaterialsResponse(
+        items=svi[start:end],
+        total=total,
+        page=page,
+        per_page=per_page,
+        total_pages=(total + per_page - 1) // per_page,
+    ) 
 
 @router.get("/{id}/preview")
 def preview_material(id: int, db: Session = Depends(get_db)):
