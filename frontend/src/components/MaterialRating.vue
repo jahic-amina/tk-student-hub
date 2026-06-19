@@ -55,7 +55,6 @@
             </p>
         </div>
     </div>
-</template>
 
 <script setup>
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
