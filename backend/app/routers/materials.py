@@ -662,6 +662,7 @@ def get_material(material_id: int, session: Session = Depends(get_db)):
     material.comments.sort(key=lambda c: c.created_at, reverse=True)
     avg = sum(r.rating for r in material.ratings) / len(material.ratings) if material.ratings else None
     count = len(material.ratings)
+    ext = material.file_path.split('.')[-1].lower() if material.file_path else None
 
     return MaterialDetailResponse(
         id=material.id,
@@ -678,6 +679,7 @@ def get_material(material_id: int, session: Session = Depends(get_db)):
         average_rating=round(avg, 1) if avg else None,
         rating_count=count,
         thumbnail_path=material.thumbnail_path,
+        file_extension=ext,
     )
 
 

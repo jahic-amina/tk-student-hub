@@ -77,18 +77,20 @@
 </template>
                 <MaterialRating :material-id="material.id" :parent-has-downloaded="hasDownloaded" />
                 </div>
-        </div>
-    <!-- Preuzmi -->
-    <div class="mb-6">
-        <p class="text-sm text-gray-500 dark:text-slate-400 mb-2">Broj preuzimanja: {{ material.number_of_downloads }}</p>
-        <div class="flex gap-3">
-            <DownloadButton :material-id="material.id" :full-width="true" @downloaded="updateDownloadCount" class="w-full" />
-            <button v-if="canPreview" @click="openPreview"
-                class="flex-1 flex items-center justify-center gap-2 bg-primary text-white font-medium px-4 py-2 rounded-lg hover:bg-primary/90 transition text-sm">
-                PREGLEDAJ
-            </button>
-        </div>
-    </div>
+            </div>
+            <!-- Preuzmi -->
+            <div class="mb-6">
+                <p class="text-sm text-gray-500 dark:text-slate-400 mb-2">Broj preuzimanja: {{
+                    material.number_of_downloads }}</p>
+                <div class="flex gap-3">
+                    <DownloadButton :material-id="material.id" :full-width="true" @downloaded="updateDownloadCount"
+                        class="w-full" />
+                    <button v-if="canPreview" @click="openPreview"
+                        class="inline-flex items-center justify-center gap-2 bg-primary text-white font-semibold px-5 py-2.5 rounded-lg shadow-sm hover:bg-primary/90 transition disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary">
+                        PREGLEDAJ
+                    </button>
+                </div>
+            </div>
 
     <!-- Admin odobri/odbij -->
     <div v-if="isAdmin && material.status === 'pending'" class="flex w-full gap-4 mb-6">
@@ -121,7 +123,7 @@ const route = useRoute()
 const router = useRouter()
 const material = ref(null)
 const loading = ref(true)
-const hasDownloaded = ref(false) 
+const hasDownloaded = ref(false)
 const isAdmin = localStorage.getItem('role') === 'admin'
 const currentUserId = Number(localStorage.getItem('user_id'))
 const successMessage = ref('')
@@ -142,6 +144,7 @@ onMounted(async () => {
     material.value = await getMaterial(route.params.id)
     subjects.value = await getSubjects()
     loading.value = false
+    console.log(material.value?.file_extension)
 })
 
 const filteredSubjects = computed(() => {
@@ -198,8 +201,7 @@ async function saveChanges() {
 
 const canPreview = computed(() => {
     if (!material.value?.file_type) return false
-    const type = material.value.file_type.toLowerCase()
-    return type.includes('pdf') || type.includes('text') || type.includes('text/plain');
+    return ['pdf', 'txt'].includes(material.value.file_extension)
 })
 
 
