@@ -89,8 +89,8 @@
   >
       <option value="">Odaberite tip</option>
       <option value="skripta">Skripta</option>
-      <option value="auditorne_vježbe">Auditorne vježbe</option>
-      <option value="laboratorijske_vježbe">Laboratorijske vježbe</option>
+      <option value="auditorne_vjezbe">Auditorne vježbe</option>
+      <option value="laboratorijske_vjezbe">Laboratorijske vježbe</option>
       <option value="ispiti">Ispiti</option>
       <option value="projekat">Projekat</option>
     </select>

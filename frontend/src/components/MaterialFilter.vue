@@ -38,9 +38,10 @@ const subjects = ref([])
 
 const typesMap = {
   'skripta': 'Skripte',
-  'biljeske': 'Bilješke',
   'auditorne_vjezbe': 'Auditorne vježbe',
-  'ispiti': 'Ispiti'
+  'laboratorijske_vjezbe': 'Laboratorijske vježbe',
+  'ispiti': 'Ispiti',
+  'projekat': 'Projekat'
 }
 
 const filters = reactive({ 
