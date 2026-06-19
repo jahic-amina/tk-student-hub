@@ -370,6 +370,18 @@ export async function getMaterials(filters = {}, page = 1, perPage = 10) {
     return { items: [], total: 0, page: 1, per_page: 10, total_pages: 0 };
   }
 }
+
+export async function getPublicMaterials(filters = {}, page = 1, perPage = 10) {
+    const params = new URLSearchParams();
+    if (filters.years?.length > 0) filters.years.forEach(y => params.append('years', y));
+    if (filters.types?.length > 0) filters.types.forEach(t => params.append('types', t));
+    if (filters.subject_id) params.append('subject_id', filters.subject_id);
+    params.append('page', page);
+    params.append('per_page', perPage);
+    const response = await fetch(`${BASE_URL}/materials/public?${params.toString()}`);
+    if (!response.ok) throw new Error('Greška');
+    return response.json();
+}
 export async function toggleBookmark(materialId) {
   const token = localStorage.getItem("token");
   const response = await fetch(`${BASE_URL}/materials/${materialId}/bookmark`, {

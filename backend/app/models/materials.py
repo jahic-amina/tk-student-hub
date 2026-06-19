@@ -128,6 +128,7 @@ class MaterialDetailResponse(SQLModel):
     thumbnail_path: Optional[str] = None
     average_rating: Optional[float] = None
     rating_count: Optional[int] = None
+    file_extension: Optional[str] = None
 class PaginatedMaterialsResponse(SQLModel):
     items: list[MaterialsResponse]
     total: int

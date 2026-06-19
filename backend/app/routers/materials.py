@@ -267,6 +267,26 @@ def get_materials(
         per_page=per_page,
         total_pages=(total + per_page - 1) // per_page,
     )
+@router.get("/public", response_model=PaginatedMaterialsResponse)
+def get_public_materials(
+    session: Session = Depends(get_db),
+    years: Optional[list[int]] = Query(None),
+    types: Optional[list[str]] = Query(None),
+    subject_id: Optional[int] = Query(None),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(10, ge=1, le=50),
+):
+    svi = get_materials_by_status(session, "approved", years=years, types=types, subject_id=subject_id)
+    total = len(svi)
+    start = (page - 1) * per_page
+    end = start + per_page
+    return PaginatedMaterialsResponse(
+        items=svi[start:end],
+        total=total,
+        page=page,
+        per_page=per_page,
+        total_pages=(total + per_page - 1) // per_page,
+    ) 
 
 @router.get("/{id}/preview")
 def preview_material(id: int, db: Session = Depends(get_db)):
@@ -300,9 +320,20 @@ def download_material(
     # Provjera da li je materijal obrisan ili nije odobren
     if material.status == "deleted":
         raise HTTPException(status_code=404, detail="Materijal je uklonjen.")
-    if material.status != "approved":
+
+    is_admin = False
+    if token:
+        payload = decode_access_token(token)
+        if payload:
+            user_id_from_token = payload.get("sub")
+            if user_id_from_token:
+                user = db.get(User, int(user_id_from_token))
+                if user and user.role == UserRole.admin:
+                    is_admin = True
+
+    if material.status != "approved" and not is_admin:
         raise HTTPException(status_code=403, detail="Materijal nije odobren i ne može se preuzeti.")
-    
+
     # Provjera da fajl fizički postoji na serveru
     if not os.path.exists(material.file_path):
         raise HTTPException(status_code=404, detail="Fajl nije pronađen na serveru.")
@@ -564,10 +595,10 @@ def rate_material(
     db.refresh(new_rating)
     
     if material.user_id != current_user.id:
-        tekst = f"Vaš materijal '{material.title}' je ocijenjen sa {rating_data.rating}/5."
+        text = f"Vaš materijal '{material.title}' je ocijenjen sa {rating_data.rating}/5."
         db.add(Notification(
             user_id=material.user_id,
-            text=tekst,
+            text=text,
             type=NotificationType.MATERIAL_GRADED
         ))
         db.commit()
@@ -651,6 +682,7 @@ def get_material(material_id: int, session: Session = Depends(get_db)):
     material.comments.sort(key=lambda c: c.created_at, reverse=True)
     avg = sum(r.rating for r in material.ratings) / len(material.ratings) if material.ratings else None
     count = len(material.ratings)
+    ext = material.file_path.split('.')[-1].lower() if material.file_path else None
 
     return MaterialDetailResponse(
         id=material.id,
@@ -667,6 +699,7 @@ def get_material(material_id: int, session: Session = Depends(get_db)):
         average_rating=round(avg, 1) if avg else None,
         rating_count=count,
         thumbnail_path=material.thumbnail_path,
+        file_extension=ext,
     )
 
 

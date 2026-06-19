@@ -3,14 +3,13 @@
         <h3 class="font-semibold mb-4">Komentari ({{ komentari.length }})</h3>
 
         <!-- Učitavanje -->
-        <div v-if="loading" class="text-gray-400 text-sm">Učitavanje komentara...</div>
-
+        <div v-if="loading" class="text-gray-400 dark:text-slate-500 text-sm">Učitavanje komentara...</div>
         <!-- Greška -->
         <div v-else-if="greska" class="text-red-400 text-sm">Greška pri učitavanju komentara.</div>
 
         <!-- Nema komentara -->
-        <div v-else-if="komentari.length === 0" class="text-gray-400 text-sm italic mb-4">
-            Još uvijek nema komentara. Budite prvi koji će ostaviti komentar.
+       <div v-else-if="komentari.length === 0" class="text-gray-400 dark:text-slate-500 text-sm italic mb-4">
+        Još uvijek nema komentara. Budite prvi koji će ostaviti komentar.
         </div>
 
         <!-- Lista komentara -->
@@ -25,7 +24,7 @@
             />
         </div>
 
-        <hr class="mb-4" />
+        <hr class="mb-4 dark:border-slate-700" />
 
         <!-- Forma za dodavanje -->
         <CommentForm :material-id="materialId" @komentar-dodan="dodajKomentar" />
