@@ -3,7 +3,8 @@ from sqlmodel import Session, select, func
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-
+from app.services.activity_log_service import log_activity
+from app.enums.activity import ActivityType
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
@@ -267,6 +268,16 @@ def create_forum_comment(
 
     db.commit()
     db.refresh(new_comment)
+
+    comments_count = get_comments_count(db, topic.id)
+    log_activity(
+        db,
+        current_user.id,
+        ActivityType.FORUM_COMMENT,
+        topic.title,
+        f"Diskusija · {comments_count} odgovora",
+        topic.id
+    )
 
     return {
         "id": new_comment.id,
