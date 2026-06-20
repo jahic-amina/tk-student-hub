@@ -16,17 +16,14 @@
     </button>
 
     <div v-if="prikaziModal" @click.stop class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div class="bg-white p-6 rounded-xl max-w-sm w-full shadow-2xl border border-gray-100 text-left">
-        <h3 class="text-lg font-bold text-gray-900 mb-2">Potvrda brisanja</h3>
-        <p class="text-gray-600 text-sm mb-6">Da li ste sigurni da želite obrisati ovaj materijal?</p>
-        
-        <div class="flex justify-end gap-3">
-          <button 
-            @click="prikaziModal = false" 
-            class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 text-sm font-medium hover:bg-gray-50 transition"
-          >
+      <div class="bg-white dark:bg-slate-800 p-6 rounded-xl max-w-sm w-full shadow-2xl border border-gray-100 dark:border-slate-700 text-left">
+    <h3 class="text-lg font-bold text-gray-900 dark:text-slate-100 mb-2">Potvrda brisanja</h3>
+    <p class="text-gray-600 dark:text-slate-300 text-sm mb-6">Da li ste sigurni da želite obrisati ovaj materijal?</p>
+    <div class="flex justify-end gap-3">
+        <button @click="prikaziModal = false" 
+            class="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-700 dark:text-slate-200 text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-700 transition">
             Otkaži
-          </button>
+        </button>
           <button 
             @click="pokreniBrisanje" 
             :disabled="loading"

@@ -29,3 +29,5 @@ starlette==1.0.0
 typing_extensions==4.15.0
 uvicorn==0.44.0
 pytest==8.3.4
+tzdata
+PyMuPDF

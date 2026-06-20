@@ -74,7 +74,7 @@ def company_user(session: Session):
         email="company@test.ba",
         phone_number="+38761234567",
         tin="1234567890123",
-        hashed_password=hash_password("password123"),
+        hashed_password=hash_password("password123"),  # Kompanija ostaje hashed_password
         status=CompanyStatus.approved,
         address="Test Address",
     )

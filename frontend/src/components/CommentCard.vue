@@ -1,9 +1,9 @@
 <template>
-    <div class="border rounded-xl p-4 shadow-sm bg-white">
+    <div class="border rounded-xl p-4 shadow-sm bg-white dark:bg-slate-800 dark:border-slate-700">
         <div class="flex items-center justify-between mb-2">
-            <span class="font-semibold text-gray-800">{{ comment.user?.full_name || 'Nepoznato' }}</span>
+            <span class="font-semibold text-gray-800 dark:text-slate-100">{{ comment.user?.full_name || 'Nepoznato' }}</span>
             <div class="flex items-center gap-3">
-                <span class="text-xs text-gray-400">{{ relativnoVrijeme(comment.created_at) }}</span>
+                <span class="text-xs text-gray-400 dark:text-slate-500">{{ relativnoVrijeme(comment.created_at) }}</span>
                 <button
                     v-if="mozeUrediti"
                     @click="otvoriUredi"
@@ -21,22 +21,22 @@
             </div>
         </div>
         <div v-if="!ureduje">
-            <p class="text-gray-600 text-sm leading-relaxed">{{ comment.content }}</p>
+            <p class="text-gray-600 dark:text-slate-300 text-sm leading-relaxed">{{ comment.content }}</p>
         </div>
         <div v-else>
             <textarea
                 v-model="noviTekst"
                 rows="3"
                 maxlength="500"
-                class="w-full border rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                class="w-full border dark:border-slate-600 rounded-lg p-3 text-sm text-gray-700 dark:text-slate-200 dark:bg-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-primary"
             />
             <div class="flex justify-between items-center mt-1">
-                <span class="text-xs text-gray-400">{{ noviTekst.length }} / 500</span>
-                <div class="flex gap-2">
+               <span class="text-xs text-gray-400 dark:text-slate-500">{{ noviTekst.length }} / 500</span>
+               <div class="flex gap-2">
                     <button
                         @click="odustaniUredi"
-                        class="text-xs text-gray-400 hover:text-gray-600 transition"
-                    >
+                        class="text-xs text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200 transition"
+                         >
                         Odustani
                     </button>
                     <button
@@ -50,9 +50,9 @@
             </div>
         </div>
         <!-- Oznaka izmijenjeno -->
-        <p v-if="comment.updated_at" class="text-xs text-gray-400 mt-1">
-            uređeno · {{ formatirajDatum(comment.updated_at) }}
-        </p>
+       <p v-if="comment.updated_at" class="text-xs text-gray-400 dark:text-slate-500 mt-1">
+    uređeno · {{ formatirajDatum(comment.updated_at) }}
+</p>
 
         <!-- Toast -->
         <div v-if="toastPoruka" class="mt-2 text-xs text-green-500">{{ toastPoruka }}</div>

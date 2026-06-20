@@ -1,17 +1,12 @@
-# Python
+# Python & Virtual Environments
 .venv/
 venv/
-.venv/
 backend/venv/
 backend/.venv/
-backend/uploads/
 __pycache__/
 *.pyc
 *.pyo
-backend/.env
-.env
-backend/.env
-backend/.venv/
+
 
 # Database
 backend/sql_app.db
@@ -22,15 +17,12 @@ backend/sql_app.db
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
-.DS_Store
 
-# IDE & Editori
+# IDE & Editors
 .vscode/
 .idea/
+.DS_Store
 
-# Superpowers internal docs
+# Documentation & Internal Docs
 docs/superpowers/
-
-uploads/
-
 docs/superpowers/venv/

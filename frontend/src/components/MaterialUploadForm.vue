@@ -3,7 +3,7 @@
   <!-- Dugme za otvaranje forme za upload - Lejla -->
   <button
   v-if="!showForm && !isAdmin"
-  @click="handleDodajKlik"
+  @click="handleAddClick"
   class="bg-primary text-white px-6 py-3 rounded-lg font-semibold
          hover:bg-orange-600 hover:shadow-md transition-all duration-200"
 >
@@ -11,10 +11,10 @@
 </button>
 
   <div v-if="successMessage" class="fixed inset-0 flex items-center justify-center z-50">
-  <div class="bg-white rounded-xl shadow-xl p-8 max-w-md w-full mx-4 text-center">
+  <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl p-8 max-w-md w-full mx-4 text-center">
     <div class="text-5xl mb-4">✅</div>
-    <h3 class="text-xl font-bold text-gray-800 mb-2">Materijal poslan!</h3>
-    <p class="text-gray-600 mb-6">{{ successMessage }}</p>
+    <h3 class="text-xl font-bold text-gray-800 dark:text-slate-100 mb-2">Materijal poslan!</h3>
+    <p class="text-gray-600 dark:text-slate-300 mb-6">{{ successMessage }}</p>
     <button
     @click="successMessage = ''; emit('success')"
     class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition"
@@ -89,8 +89,8 @@
   >
       <option value="">Odaberite tip</option>
       <option value="skripta">Skripta</option>
-      <option value="auditorne_vježbe">Auditorne vježbe</option>
-      <option value="laboratorijske_vježbe">Laboratorijske vježbe</option>
+      <option value="auditorne_vjezbe">Auditorne vježbe</option>
+      <option value="laboratorijske_vjezbe">Laboratorijske vježbe</option>
       <option value="ispiti">Ispiti</option>
       <option value="projekat">Projekat</option>
     </select>
@@ -237,7 +237,7 @@ const isSubmitting = ref(false)
 
 // Klik na dugme "Dodajte materijal" — neprijavljene preusmjeravas na login,
 // prijavljene na stranicu za upload 
-function handleDodajKlik() {
+function handleAddClick() {
   const isLoggedIn = !!localStorage.getItem('token')
   if (!isLoggedIn) {
     window.location.href = '/login'
