@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session, select, delete
+from sqlmodel import Session, select, delete, func
 from typing import List
 from app.database import get_db 
 from app.models.notification import (
@@ -104,6 +104,19 @@ def get_my_notifications(
     statement = statement.order_by(Notification.is_read.asc(), Notification.created_at.desc())
     return session.exec(statement).all()
 
+@router.get("/unread-count", status_code=status.HTTP_200_OK)
+def get_unread_count(
+    session: Session = Depends(get_db),
+    current_actor = Depends(get_current_actor)
+):
+    statement = select(func.count(Notification.id)).where(Notification.is_read == False)
+    if isinstance(current_actor, User):
+        statement = statement.where(Notification.user_id == current_actor.id)
+    else:
+        statement = statement.where(Notification.company_id == current_actor.id)
+
+    count = session.exec(statement).one()
+    return {"count": count}
 
 @router.api_route("/read-all", methods=["POST", "PATCH", "PUT"], status_code=status.HTTP_200_OK)
 def mark_all_as_read(
