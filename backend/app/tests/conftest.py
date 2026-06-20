@@ -43,7 +43,7 @@ def student_user(session: Session):
     user = User(
         email="student@test.ba",
         full_name="Test Student",
-        hashed_password=hash_password("password123"),
+        password_hash=hash_password("password123"),  # Ispravljeno
         role=UserRole.member,
         is_active=True,
     )
@@ -59,7 +59,7 @@ def admin_user(session: Session):
     user = User(
         email="admin@test.ba",
         full_name="Test Admin",
-        hashed_password=hash_password("password123"),
+        password_hash=hash_password("password123"),  # Ispravljeno
         role=UserRole.admin,
         is_active=True,
     )
@@ -79,7 +79,7 @@ def company_user(session: Session):
         email="company@test.ba",
         phone_number="+38761234567",
         tin="1234567890123",
-        hashed_password=hash_password("password123"),
+        hashed_password=hash_password("password123"),  # Kompanija ostaje hashed_password
         status=CompanyStatus.approved,
         address="Test Address",
     )
