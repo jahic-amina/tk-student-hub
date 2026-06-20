@@ -256,6 +256,14 @@ def create_forum_comment(
                 notification_type=ForumNotificationType.COMMENT_REPLY,
                 text=f"Kolega {actor_name} je odgovorio na vaš komentar u temi {topic.title}.",
             )
+        log_activity(
+            db,
+            current_user.id,
+            ActivityType.forum_answer,
+            topic.title,
+            "Odgovorio na komentar",
+            topic.id
+        )
 
     # 3. Ako komentar sadrži @username, označeni korisnik dobija mention notifikaciju.
     notify_mentions(
@@ -273,7 +281,7 @@ def create_forum_comment(
     log_activity(
         db,
         current_user.id,
-        ActivityType.FORUM_COMMENT,
+        ActivityType.forum_answer,
         topic.title,
         f"Diskusija · {comments_count} odgovora",
         topic.id
