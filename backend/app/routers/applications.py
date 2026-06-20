@@ -190,6 +190,15 @@ def create_application(
     db.add(application)
     db.commit()
     db.refresh(application)
+
+    log_activity(
+        db,
+        current_user.id,
+        ActivityType.internship_accepted,
+        ad.title,
+        "Prijavio se na praksu",
+        ad.id
+    )
     return application
 
 @router.patch("/company/{application_id}", response_model=ApplicationRead)
@@ -229,7 +238,7 @@ def update_application_company(
             log_activity(
                 db,
                 application.user_id,
-                ActivityType.INTERNSHIP_ACCEPTED,
+                ActivityType.internship_accepted,
                 ad.title,
                 f"{current_company.company_name} · {ad.duration_months} meseca",
                 ad.id 
