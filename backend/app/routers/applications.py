@@ -149,6 +149,11 @@ def create_application(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if current_user.role != UserRole.member:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only users can apply.",
+        )
     ad = db.get(Ad, payload.ad_id)
     if not ad:
         raise HTTPException(
@@ -183,6 +188,69 @@ def create_application(
     )
 
     db.add(application)
+    db.commit()
+    db.refresh(application)
+    return application
+
+@router.patch("/company/{application_id}", response_model=ApplicationRead)
+def update_application_company(
+    application_id: int,
+    payload: ApplicationUpdate,
+    db: Session = Depends(get_db),
+    current_company: Company = Depends(get_current_company),
+):
+    application = db.get(Application, application_id)
+    if not application:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found.",
+        )
+
+    ad = db.get(Ad, application.ad_id)
+    if not ad or ad.company_id != current_company.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to alter this application.",
+        )
+
+    previous_status = application.status
+
+    updates = payload.model_dump(exclude_unset=True)
+    for field_name, field_value in updates.items():
+        setattr(application, field_name, field_value)
+
+    db.add(application)
+
+    if previous_status != application.status:
+        if application.status == ApplicationStatus.accepted:
+            message = f"Čestitamo! Vaša prijava za oglas '{ad.title}' kod kompanije '{current_company.company_name}' je prihvaćena."
+            db.add(Notification(user_id=application.user_id, text=message, type=NotificationType.STATUS_CHANGE))
+
+            log_activity(
+                db,
+                application.user_id,
+                ActivityType.internship_accepted,
+                ad.title,
+                f"{current_company.company_name} · {ad.duration_months} meseca",
+                ad.id 
+            )
+
+            accepted_count = db.exec(
+                select(Application).where(
+                    Application.ad_id == ad.id,
+                    Application.status == ApplicationStatus.accepted
+                )
+            ).all()
+
+            if len(accepted_count) >= ad.spots:
+                ad.status = AdStatus.expired
+                ad.updated_at = datetime.now(timezone.utc)
+                db.add(ad)
+
+        elif application.status == ApplicationStatus.rejected:
+            message = f"Vaša prijava za oglas '{ad.title}' kod kompanije '{current_company.company_name}' ovaj put nije odabrana."
+            db.add(Notification(user_id=application.user_id, text=message, type=NotificationType.STATUS_CHANGE))
+
     db.commit()
     db.refresh(application)
     return application
@@ -228,83 +296,27 @@ def upload_cv_local(
         raise HTTPException(status_code=400, detail="File must have a .pdf extension.") 
     if file.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(status_code=400, detail="File must be a PDF.") 
-     
-    content = file.file.read()
-
-    if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(status_code=400, detail="File size exceeds 5 MB limit.")    
     
+    # Track size in chunks
+    size = 0
+    chunks = []
+    while chunk := file.file.read(8192):  # Read 8KB at a time
+        size += len(chunk)
+        if size > MAX_FILE_SIZE:
+            raise HTTPException(status_code=400, detail="File size exceeds 5 MB limit.")
+        chunks.append(chunk)
+    
+
     filename = f"{uuid4().hex}.{file_ext}"
     cv_path = f"uploads/applications/{filename}"
     dest = os.path.join(LOCAL_UPLOAD_DIR, filename)
     
     with open(dest, "wb") as f:
-        f.write(content)
+        for chunk in chunks:
+            f.write(chunk)
 
     return {"path": cv_path}
 
-@router.patch("/company/{application_id}", response_model=ApplicationRead)
-def update_application_company(
-    application_id: int,
-    payload: ApplicationUpdate,
-    db: Session = Depends(get_db),
-    current_company: Company = Depends(get_current_company),
-):
-    application = db.get(Application, application_id)
-    if not application:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Application not found.",
-        )
-
-    ad = db.get(Ad, application.ad_id)
-    if not ad or ad.company_id != current_company.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have access to alter this application.",
-        )
-
-    stari_status = application.status
-
-    updates = payload.model_dump(exclude_unset=True)
-    for field_name, field_value in updates.items():
-        setattr(application, field_name, field_value)
-
-    db.add(application)
-
-    if stari_status != application.status:
-        if application.status == ApplicationStatus.accepted:
-            tekst = f"Čestitamo! Vaša prijava za oglas '{ad.title}' kod kompanije '{current_company.company_name}' je prihvaćena."
-            db.add(Notification(user_id=application.user_id, text=tekst, type=NotificationType.STATUS_CHANGE))
-
-            log_activity(
-                db,
-                application.user_id,
-                ActivityType.internship_accepted,
-                ad.title,
-                f"{current_company.company_name} · {ad.duration_months} meseca",
-                ad.id 
-            )
-
-            accepted_count = db.exec(
-                select(Application).where(
-                    Application.ad_id == ad.id,
-                    Application.status == ApplicationStatus.accepted
-                )
-            ).all()
-
-            if len(accepted_count) >= ad.spots:
-                ad.status = AdStatus.expired
-                ad.updated_at = datetime.now(timezone.utc)
-                db.add(ad)
-
-        elif application.status == ApplicationStatus.rejected:
-            tekst = f"Vaša prijava za oglas '{ad.title}' kod kompanije '{current_company.company_name}' ovaj put nije odabrana."
-            db.add(Notification(user_id=application.user_id, text=tekst, type=NotificationType.STATUS_CHANGE))
-
-    db.commit()
-    db.refresh(application)
-    return application
 
 @router.delete("/{application_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_application(
