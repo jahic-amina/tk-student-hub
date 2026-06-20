@@ -229,7 +229,7 @@ def update_application_company(
             log_activity(
                 db,
                 application.user_id,
-                ActivityType.internship_accepted,
+                ActivityType.INTERNSHIP_ACCEPTED,
                 ad.title,
                 f"{current_company.company_name} · {ad.duration_months} meseca",
                 ad.id 
