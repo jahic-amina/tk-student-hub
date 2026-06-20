@@ -7,15 +7,24 @@ from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.database import create_db_and_tables
 from app.core.security import get_current_user
-from app.models.user import User                
+from app.models.user import User
+from app.models.forum_notification import ForumNotification
+
+# Import je potreban da SQLModel registruje nove tabele reputacije.
+from app.models.forum_reputation import (
+    ForumReputationEvent,
+    ForumUserMedal,
+    ForumUserStats,
+)
 
 # Importovanje svih unikatnih rutera iz app.routers foldera
 from app.routers import (
     auth, dashboard, activity, admin, profiles, account, company, applications, materials,
-    forum_categories, forum_topics, forum_comments, forum_tags, forum_admin, forum_likes, my_applications
+    forum_categories, forum_topics, forum_comments, forum_tags, forum_admin, forum_likes, 
+    forum_guidelines, my_applications, forum_attachments
 )
+from app.routers import forum_notifications
 
-# Importovanje specifičnih rutera sa aliasima
 from app.routers.ad_bookmark import router as ad_bookmark_router
 from app.routers.notification import router as notification_router  
 from app.routers.ad import router as ads_router
@@ -74,6 +83,9 @@ app.include_router(forum_topics.router)
 app.include_router(forum_comments.router)
 app.include_router(forum_tags.router)
 app.include_router(forum_likes.router)
+app.include_router(forum_guidelines.router)
+app.include_router(forum_notifications.router)
+app.include_router(forum_attachments.router)
 
 # Sistem, administracija i ostalo
 app.include_router(dashboard.router)
@@ -84,6 +96,7 @@ app.include_router(materials.router)
 app.include_router(notification_router)
 app.include_router(prakse_router)
 app.include_router(workshops_router)
+app.include_router(forum_notifications.router)
 
 # --- OSNOVNI ENDPOINTI ---
 

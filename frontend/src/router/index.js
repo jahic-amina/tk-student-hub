@@ -82,8 +82,8 @@ const routes = [
   },
   {
     path: "/prakse-i-edukacije",
-    name: "prakse",
-    component: AdsView, // POPRAVLJENO: Koristi AdsView umjesto ApplicationView
+    name: "prakse-edukacije", // Ovdje sam preimenovao name da ne bude isto kao zadnja ruta ispod
+    component: AdsView,
     meta: { requiresAuth: true },
   },
   {
@@ -148,8 +148,8 @@ const routes = [
     meta: { requiresAuth: true, requiresAdmin: true }
   },
   {
-    path: '/admin/forum',
-    name: 'admin-forum-dashboard',
+    path: '/forum/admin',
+    name: 'admin-dashboard',
     component: () => import('../views/forum/admin/AdminDashboardView.vue'),
     meta: { requiresAuth: true, requiresAdmin: true }
   },
@@ -164,7 +164,7 @@ const routes = [
     name: 'workshops',
     component: () => import('../views/workshops/WorkshopsView.vue'),
     meta: { requiresAuth: true }
-  },
+  }
 ];
 
 const router = createRouter({
@@ -172,7 +172,6 @@ const router = createRouter({
   routes,
 });
 
-// POPRAVLJENO: Očišćena i ispravljena navigacijska zaštita (Guards)
 router.beforeEach((to, from, next) => {
   const isLoggedIn = !!localStorage.getItem('token')
   const role = localStorage.getItem('role')
