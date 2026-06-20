@@ -378,6 +378,7 @@ const handleSubmit = async () => {
     const { current_password, new_password, confirm_password } = security
     if (current_password || new_password) {
       if (!current_password) throw new Error('Unesite trenutnu lozinku.')
+      if (new_password.length < 8) throw new Error('Nova lozinka mora imati najmanje 8 karaktera.')
       if (new_password !== confirm_password) throw new Error('Nove lozinke se ne podudaraju.')
       
       await api.patch('/profiles/me/password', { current_password, new_password })
