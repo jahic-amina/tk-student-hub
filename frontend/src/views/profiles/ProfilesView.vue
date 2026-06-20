@@ -13,7 +13,7 @@
         
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6 border border-gray-100 dark:border-gray-700">
           <h2 class="text-lg font-bold mb-3 dark:text-white">O meni</h2>
-          <p class="text-gray-600 dark:text-gray-300 text-sm">{{ profile.biografija || 'Nije unesena biografija.' }}</p>
+          <p class="text-gray-600 dark:text-gray-300 text-sm">{{ profile.biography || 'Nije unesena biografija.' }}</p>
         </div>
 
         <div class="grid grid-cols-2 gap-6">
@@ -66,7 +66,7 @@
         <div class="space-y-4">
           <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm text-center">
             <div class="w-24 h-24 rounded-full mx-auto mb-3 border bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
-              <img v-if="profile?.profilna_slika_url" :src="`http://localhost:8000${profile.profilna_slika_url}`" class="w-full h-full object-cover" />
+              <img v-if="profile?.profile_picture_url" :src="`http://localhost:8000${profile.profile_picture_url}`" class="w-full h-full object-cover" />
               <span v-else class="text-white text-4xl font-bold dark:text-gray-300">{{ getInitials() }}</span>
             </div>            
             <p class="text-xs text-gray-400 dark:text-gray-500 mb-4">{{ form.email }}</p>
@@ -101,13 +101,12 @@
                   </select>
                 </div>
               </div>
-
               <div>
                 <div class="flex justify-between text-xs mb-1">
                   <label class="font-medium text-gray-700 dark:text-gray-300">Biografija</label>
-                  <span :class="form.bio.length > 500 ? 'text-red-500 font-bold' : 'text-gray-400 dark:text-gray-500'">{{ form.bio.length }}/500</span>
+                  <span :class="form.biography.length > 500 ? 'text-red-500 font-bold' : 'text-gray-400 dark:text-gray-500'">{{ form.biography.length }}/500</span>
                 </div>
-                <textarea v-model="form.bio" rows="3" placeholder="Dodaj biografiju..." class="w-full p-2.5 border rounded-xl resize-none dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"></textarea>
+                <textarea v-model="form.biography" rows="3" placeholder="Dodaj biografiju..." class="w-full p-2.5 border rounded-xl resize-none dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"></textarea>
               </div>
 
               <div class="pt-4 border-t dark:border-gray-700 space-y-3">
@@ -120,7 +119,7 @@
               </div>
 
               <div class="flex justify-end pt-2 border-t dark:border-gray-700">
-                <button type="submit" :disabled="isLoading || form.bio.length > 500" class="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl disabled:opacity-50 transition active:scale-95 text-sm shadow-md">
+                <button type="submit" :disabled="isLoading || form.biography.length > 500" class="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl disabled:opacity-50 transition active:scale-95 text-sm shadow-md">
                   {{ isLoading ? 'Spašavanje...' : 'Sačuvaj izmjene' }}
                 </button>
               </div>
@@ -140,7 +139,7 @@
 
     <AvatarUploadModal 
       v-if="showModal" 
-      :currentImageUrl="profile?.profilna_slika_url"
+      :currentImageUrl="profile?.profile_picture_url"
       @close="showModal = false" 
       @save="onSave"
       @remove="onRemove"
@@ -306,7 +305,7 @@ const closeDeactivateModal = () => {
 const isLoading = ref(false)
 const toast = reactive({ show: false, message: '' })
 const status = reactive({ message: '', isError: false })
-const form = reactive({ first_name: '', last_name: '', email: '', study_year: 1, bio: '' })
+const form = reactive({ first_name: '', last_name: '', email: '', study_year: 1, biography: '' })
 const security = reactive({ current_password: '', new_password: '', confirm_password: '' })
 
 const showToast = (msg) => {
@@ -330,8 +329,8 @@ const fetchProfileData = async () => {
         first_name: first || '',
         last_name: rest.join(' '),
         email: data.email || '',
-        study_year: data.study_year || data.godina_studija || 1,
-        bio: data.bio || data.biografija || ''
+        study_year: data.study_year || data.year_of_study || 1,
+        biography: data.biography || ''
       })
     }
   } catch (err) {
@@ -361,10 +360,10 @@ onMounted(() => {
 })
 
 const handleSubmit = async () => {
-  const { first_name, last_name, bio, study_year } = form
+  const { first_name, last_name, biography, study_year } = form
   
   if (!first_name.trim() || !last_name.trim()) return Object.assign(status, { message: 'Ime i prezime su obavezni.', isError: true })
-  if (bio.length > 500) return
+  if (biography?.length > 500) return
   
   isLoading.value = true
   Object.assign(status, { message: '', isError: false })
@@ -372,8 +371,8 @@ const handleSubmit = async () => {
   try {
     await api.patch('/profiles/me', { 
       full_name: `${first_name.trim()} ${last_name.trim()}`, 
-      biografija: bio, 
-      godina_studija: study_year 
+      biography: form.biography, 
+      year_of_study: study_year 
     })
 
     const { current_password, new_password, confirm_password } = security
@@ -388,6 +387,7 @@ const handleSubmit = async () => {
     showToast('Izmjene uspješno sačuvane!')
 
     await fetchProfileData() 
+    
   } catch (err) {
     Object.assign(status, { message: err.response?.data?.detail || err.message || 'Greška prilikom spašavanja.', isError: true })
   } finally {
@@ -400,7 +400,7 @@ async function onSave(file) {
   try {
     const data = await uploadAvatar(token, file)
     console.log('Response od backend-a:', data)
-    if(profile.value) profile.value.profilna_slika_url = data.profilna_slika_url
+    if(profile.value) profile.value.profile_picture_url = data.profile_picture_url
     successMessage.value = 'Profilna slika je uspjesno azurirana.'
     showToast('Profilna slika je uspješno ažurirana.')
     setTimeout(() => { successMessage.value = null }, 3000)
@@ -414,7 +414,7 @@ async function onRemove() {
   showModal.value = false
   try {
     await removeAvatar(token)
-    if(profile.value) profile.value.profilna_slika_url = null
+    if(profile.value) profile.value.profile_picture_url = null
     
     successMessage.value = 'Profilna slika je uklonjena.'
     showToast('Profilna slika je uklonjena.')

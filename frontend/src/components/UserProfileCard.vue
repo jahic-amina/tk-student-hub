@@ -4,8 +4,8 @@
       <div class="relative flex-shrink-0 cursor-pointer" @click="$emit('edit-avatar')">
         <div class="w-20 h-20 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center overflow-hidden border border-transparent dark:border-gray-600">
           <img
-            v-if="profile.profilna_slika_url"
-            :src="`http://localhost:8000${profile.profilna_slika_url}`"
+            v-if="profile.profile_picture_url"
+            :src="`http://localhost:8000${profile.profile_picture_url}`"
             class="w-full h-full object-cover"/>
           <span v-else class="text-white dark:text-gray-300 text-2xl font-bold">{{ initials }}</span>
         </div>

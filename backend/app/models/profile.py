@@ -9,11 +9,11 @@ class UserProfileResponse(SQLModel):
     full_name: str
     role: str
     created_at: Optional[datetime]
-    profilna_slika_url: Optional[str]
-    biografija: Optional[str] = None
+    profile_picture_url: Optional[str]
+    biography: Optional[str] = None
 
 class AvatarUploadResponse(SQLModel):
-    profilna_slika_url: str
+    profile_picture_url: str
 
 class AvatarDeleteResponse(SQLModel):
     message: str

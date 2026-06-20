@@ -25,7 +25,7 @@ def get_dashboard(
         },
         {
             "label": "Profilna slika",
-            "completed": bool(getattr(current_user, "profilna_slika_url", None)),
+            "completed": bool(getattr(current_user, "profile_picture_url", None)),
         },
     ]
 
@@ -44,9 +44,9 @@ def get_dashboard(
             "full_name": student_name,
             "role": current_user.role,
             "created_at": current_user.created_at,
-            "profilna_slika_url": getattr(current_user, "profilna_slika_url", None),
-            "biografija": getattr(current_user, "biografija", None),
-            "godina_studija": getattr(current_user, "godina_studija", None),
+            "profile_picture_url": getattr(current_user, "profile_picture_url", None),
+            "biography": getattr(current_user, "biography", None),
+            "year_of_study": getattr(current_user, "year_of_study", None),
         },
         "profile_status": {
             "completion_percent": profile_completion_percent,
