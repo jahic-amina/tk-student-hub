@@ -95,7 +95,7 @@
 
         <!-- Preuzmi dugme -->
         <div class="mb-6">
-            <DownloadButton :material-id="material.id" :full-width="true" />
+            <DownloadButton :material-id="material.id" :full-width="true" @downloaded="updateDownloadCount" class="flex-1" />
         </div>
 
         <!-- Komentari -->

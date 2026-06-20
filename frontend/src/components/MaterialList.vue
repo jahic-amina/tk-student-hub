@@ -1,11 +1,7 @@
 <template>
-  <div class="w-full flex flex-col md:flex-row gap-8 items-start justify-start py-6 pl-0 pr-4 md:-ml-24 lg:-ml-80 bg-transparent" style="max-width: none !important;">
+  <div class="w-full flex flex-col md:flex-row gap-8 items-start justify-start py-6 px-4">
 
-    <div class="w-full md:w-[280px] shrink-0 flex flex-col items-stretch justify-start gap-4 text-left">
-      <MaterialFilter @change="handleFilterChange" />
-    </div>
-
-    <div class="flex-grow min-w-0 w-full pl-4">
+    <div class="flex-grow min-w-0 w-full pr-4">
       <MaterialTabs v-if="userRole !== 'admin'" :activeTab="currentTab" @tab-change="handleTabChange" />
 
       <h1 class="text-2xl font-bold uppercase mb-1">Pregled materijala</h1>
@@ -69,10 +65,9 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import MaterialCard from './MaterialCard.vue'
-import { getMaterials } from '../services/api'
+import { getMaterials, getPublicMaterials, toggleBookmark } from '../services/api'
 import MaterialFilter from './MaterialFilter.vue'
 import MaterialTabs from './MaterilaTab.vue'
-import { toggleBookmark } from '../services/api'
 
 const materials = ref([])
 const loading = ref(true)
@@ -87,23 +82,25 @@ const trenutniFilteri = ref({})
 const materijalaPoStranici = 10
 
 async function loadMaterials(filters = {}, page = 1) {
-    loading.value = true
-    if (currentTab.value === 'favorites') {
-        const rezultat = await getMaterials({ ...filters, mine_only: false }, 1, 50)
-        materials.value = rezultat.items
-        trenutnastranica.value = 1
-    } else {
-        const aktivniFilteri = currentTab.value === 'mine'
-          ? { ...filters, mine_only: true }
-          : { ...filters, mine_only: false }
-
-        const rezultat = await getMaterials(aktivniFilteri, page)
-        materials.value = rezultat.items
-        ukupnoStranica.value = rezultat.total_pages
-        trenutnastranica.value = rezultat.page
-    }
-    loading.value = false
+  loading.value = true
+  if (currentTab.value === 'favorites') {
+    const rezultat = await getMaterials({ ...filters, mine_only: false }, 1, 50)
+    materials.value = rezultat.items
+    trenutnastranica.value = 1
+  } else if (currentTab.value === 'mine') {
+    const rezultat = await getMaterials({ ...filters, mine_only: true }, page)
+    materials.value = rezultat.items
+    ukupnoStranica.value = rezultat.total_pages
+    trenutnastranica.value = rezultat.page
+  } else {
+    const rezultat = await getPublicMaterials(filters, page)
+    materials.value = rezultat.items
+    ukupnoStranica.value = rezultat.total_pages
+    trenutnastranica.value = rezultat.page
+  }
+  loading.value = false
 }
+
 onMounted(() => {
   loadMaterials()
 })
@@ -115,11 +112,11 @@ function handleTabChange(tabId) {
 }
 
 function promijeniStranicu(novaStr) {
-    if (currentTab.value === 'all' || currentTab.value === 'mine') {
-        loadMaterials(trenutniFilteri.value, novaStr)
-    } else {
-        trenutnastranica.value = novaStr
-    }
+  if (currentTab.value === 'all' || currentTab.value === 'mine') {
+    loadMaterials(trenutniFilteri.value, novaStr)
+  } else {
+    trenutnastranica.value = novaStr
+  }
 }
 
 async function handleFilterChange(newFilters) {
@@ -145,41 +142,41 @@ const filteredMaterialsBookmark = computed(() => {
 
 // Lokalna paginacija samo za "mine" i "favorites"
 const ukupnoStranicaLokalno = computed(() => {
-    return Math.ceil(filteredMaterialsBookmark.value.length / materijalaPoStranici)
+  return Math.ceil(filteredMaterialsBookmark.value.length / materijalaPoStranici)
 })
 
 const prikazaniMaterijali = computed(() => {
-    if (currentTab.value === 'all' || currentTab.value === 'mine') {
-        return filteredMaterialsBookmark.value
-    }
-    const start = (trenutnastranica.value - 1) * materijalaPoStranici
-    const end = start + materijalaPoStranici
-    return filteredMaterialsBookmark.value.slice(start, end)
+  if (currentTab.value === 'all' || currentTab.value === 'mine') {
+    return filteredMaterialsBookmark.value
+  }
+  const start = (trenutnastranica.value - 1) * materijalaPoStranici
+  const end = start + materijalaPoStranici
+  return filteredMaterialsBookmark.value.slice(start, end)
 })
 
 const ukupnoStranicaPrikaz = computed(() => {
-    if (currentTab.value === 'all' || currentTab.value === 'mine') {
-        return ukupnoStranica.value
-    }
-    return ukupnoStranicaLokalno.value
+  if (currentTab.value === 'all' || currentTab.value === 'mine') {
+    return ukupnoStranica.value
+  }
+  return ukupnoStranicaLokalno.value
 })
 
 async function handleToggleBookmark(materialId) {
-    try {
-        const res = await toggleBookmark(materialId);
-        const material = materials.value.find(m => m.id === materialId);
-        if (material) {
-            material.is_bookmarked = res.is_bookmarked;
-        }
-    } catch (error) {
-        console.error("Greška kod bookmarka:", error);
+  try {
+    const res = await toggleBookmark(materialId);
+    const material = materials.value.find(m => m.id === materialId);
+    if (material) {
+      material.is_bookmarked = res.is_bookmarked;
     }
+  } catch (error) {
+    console.error("Greška kod bookmarka:", error);
+  }
 }
 
 async function handleDownloaded(materialId) {
-    const material = materials.value.find(m => m.id === materialId)
-    if (material) {
-        material.number_of_downloads += 1
-    }
+  const material = materials.value.find(m => m.id === materialId)
+  if (material) {
+    material.number_of_downloads += 1
+  }
 }
 </script>
