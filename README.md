@@ -80,7 +80,7 @@ Projekat je razvijen kroz rad više timova, gdje je svaki tim odgovoran za zaseb
 | PRojektni tim | Funkcionalnost | Folder | Članova tima |
 |-----|---------------|--------|---|
 | Tim 1 | Prakse i edukacije | `backend/app/routers/prakse.py`, `frontend/src/views/prakse/` | - |
-| Tim 2 | Materijali | `backend/app/routers/materials.py`, `frontend/src/views/materials/` | Lejla Kadušić, Amer Imamović, Marinela Mitić, Faris Ćosić |
+| Tim 2 | Materijali | `backend/app/routers/materials.py`, `frontend/src/views/materials/` | Lejla Kadušić, Amer Imamović, Marinela Mitić, Faris Ćosić  |
 | Tim 3 | Forum | `backend/app/routers/forum.py`, `frontend/src/views/forum/` | - |
 | Tim 4 | Profili & Dashboard | `backend/app/routers/profiles.py`, `frontend/src/views/profiles/` | - |
 
