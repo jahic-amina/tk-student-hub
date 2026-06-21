@@ -84,8 +84,7 @@ Authorization: Bearer YOUR_TOKEN_HERE
 ```
 
 ## Timovi i funkcionalnosti
-                                                                                                                                                                                                            |
-
+                                                                                                                                                                                                            
 | PRojektni tim | Funkcionalnost | Folder | Članova tima |
 |-----|---------------|--------|---|
 | Tim 1 | Prakse i edukacije | `backend/app/routers/ad.py`, `backend/app/routers/company.py`, `backend/app/routers/ad_bookmark.py`, `backend/app/routers/applications.py`, `backend/app/routers/notification.py`, `frontend/src/views/ads/`, `frontend/src/views/application/`, `frontend/src/views/company/` | - |
