@@ -17,14 +17,14 @@ from app.models.profile import UserProfileResponse, AvatarUploadResponse, Avatar
 
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
-    biografija: Optional[str] = None
-    godina_studija: Optional[int] = None  # stored as str in User model
+    biography: Optional[str] = None
+    year_of_study: Optional[int] = None  # stored as str in User model
 
 class UserResponse(BaseModel):
     id: int
     full_name: Optional[str]
-    biografija: Optional[str]
-    godina_studija: Optional[int]
+    biography: Optional[str]
+    year_of_study: Optional[int]
 
     class Config:
         from_attributes = True
@@ -56,7 +56,7 @@ def get_my_profile(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Vraća sve podatke o korisniku potrebne za frontend profil (slika, podaci, biografija).
+    Vraća sve podatke o korisniku potrebne za frontend profil (slika, podaci, biography).
     """
     return {
         "id": current_user.id,
@@ -64,9 +64,9 @@ def get_my_profile(
         "full_name": current_user.full_name,
         "role": current_user.role,
         "created_at": current_user.created_at,
-        "profilna_slika_url": current_user.profilna_slika_url,
-        "godina_studija": getattr(current_user, "godina_studija", 1),
-        "biografija": getattr(current_user, "biografija", "")
+        "profile_picture_url": current_user.profile_picture_url,
+        "year_of_study": getattr(current_user, "year_of_study", 1),
+        "biography": getattr(current_user, "biography", "")
     }
 
 # 2. Ažuriranje profila (tekstualni podaci)
@@ -92,8 +92,8 @@ def update_profile_me(
     return {
         "id": current_user.id,
         "full_name": current_user.full_name,
-        "biografija": getattr(current_user, "biografija", ""),
-        "godina_studija": getattr(current_user, "godina_studija", None)
+        "biography": getattr(current_user, "biography", ""),
+        "year_of_study": getattr(current_user, "year_of_study", None)
     }
 
 # 3. Promjena lozinke
@@ -147,12 +147,12 @@ async def upload_avatar(
     with open(os.path.join(UPLOAD_DIR, filename), "wb") as f:
         f.write(contents)
     
-    current_user.profilna_slika_url = f"/uploads/{filename}"
+    current_user.profile_picture_url = f"/uploads/{filename}"
     db.add(current_user)
     db.commit()
     db.refresh(current_user)
     
-    return {"profilna_slika_url": current_user.profilna_slika_url}
+    return {"profile_picture_url": current_user.profile_picture_url}
 
 # 5. Brisanje profilne slike
 @router.delete("/me/avatar", response_model=AvatarDeleteResponse)
@@ -160,14 +160,14 @@ def delete_avatar(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if not current_user.profilna_slika_url:
+    if not current_user.profile_picture_url:
         raise HTTPException(status_code=400, detail="Nema postavljenu profilnu sliku.")
     
-    file_path = current_user.profilna_slika_url.lstrip("/")
+    file_path = current_user.profile_picture_url.lstrip("/")
     if os.path.exists(file_path):
         os.remove(file_path)
     
-    current_user.profilna_slika_url = None
+    current_user.profile_picture_url = None
     db.add(current_user)
     db.commit()
     db.refresh(current_user)
@@ -177,9 +177,9 @@ def delete_avatar(
 class PublicProfileResponse(BaseModel):
     id: int
     full_name: str
-    biografija: Optional[str] = None
-    godina_studija: Optional[str] = None
-    profilna_slika_url: Optional[str] = None
+    biography: Optional[str] = None
+    year_of_study: Optional[str] = None
+    profile_picture_url: Optional[str] = None
 
     class Config:
         from_attributes = True

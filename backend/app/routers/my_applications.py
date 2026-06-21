@@ -6,10 +6,18 @@ from app.core.security import get_current_user
 from app.models.user import User
 from app.models.application import Application, ApplicationRead, ApplicationStatus
 from app.models.ad import Ad
-
+from pydantic import BaseModel
 router = APIRouter(prefix="/applications/me", tags=["My Applications"])
 
-@router.get("/all", response_model=List[ApplicationRead])
+from pydantic import BaseModel
+
+class StudentProfilApplicationResponse(BaseModel):
+    id: int
+    naziv: str
+    kompanija: str
+    status: ApplicationStatus
+
+@router.get("/all", response_model=List[StudentProfilApplicationResponse])
 def get_my_applications(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
