@@ -450,3 +450,166 @@ alembic stamp head
 ```
 
 ---
+
+
+### Tim 2 — Materijali (Faris Ćosić)
+
+### Modeli
+
+#### `Material`
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | int | Primarni ključ |
+| `title` | str | Naziv materijala |
+| `description` | str? | Opis materijala |
+| `file_path` | str | Putanja do fajla na serveru |
+| `file_type` | str | Tip materijala (npr. `PDF`, `PPT`) |
+| `status` | str | `pending` / `approved` / `rejected` / `deleted` |
+| `number_of_downloads` | int | Broj preuzimanja |
+| `thumbnail_path` | str? | Putanja do thumbnail slike |
+| `subject_id` | int | FK → `subjects.id` |
+| `user_id` | int | FK → `users.id` |
+| `created_at` | datetime | Datum kreiranja |
+
+#### `Subject`
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | int | Primarni ključ |
+| `name` | str | Naziv predmeta |
+| `study_year` | int | Godina studija (1–4) |
+
+#### `Comment`
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | int | Primarni ključ |
+| `content` | str | Tekst komentara (maks. 500 znakova) |
+| `material_id` | int | FK → `materials.id` |
+| `user_id` | int | FK → `users.id` |
+| `created_at` | datetime | Datum kreiranja |
+| `updated_at` | datetime? | Datum izmjene |
+
+#### `Rating`
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | int | Primarni ključ |
+| `rating` | int | Ocjena (1–5) |
+| `material_id` | int | FK → `materials.id` |
+| `user_id` | int | FK → `users.id` |
+
+#### `Download`
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | int | Primarni ključ |
+| `material_id` | int | FK → `materials.id` |
+| `user_id` | int | FK → `users.id` |
+| `downloaded_at` | datetime | Datum preuzimanja |
+
+#### `Bookmark`
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | int | Primarni ključ |
+| `material_id` | int | FK → `materials.id` |
+| `user_id` | int | FK → `users.id` |
+
+---
+
+### Endpointi
+
+#### `GET /materials/subjects`
+Vraća listu svih predmeta.
+
+- **Auth:** nije potrebna
+- **Response:** `Subject[]`
+
+---
+
+#### `GET /materials/pending`
+Vraća listu materijala koji čekaju odobrenje.
+
+- **Auth:** admin
+- **Response:** `MaterialsResponse[]`
+- **Greške:** `403` ako korisnik nije admin
+
+---
+
+#### `GET /materials/`
+Vraća paginirani spisak odobrenih materijala. Podržava filtriranje i prikaz samo vlastitih materijala.
+
+- **Auth:** opcionalna (potrebna za `mine_only`)
+- **Query params:**
+
+| Param | Tip | Opis |
+|---|---|---|
+| `years` | int[] | Filtriranje po godini studija |
+| `types` | str[] | Filtriranje po tipu fajla |
+| `subject_id` | int | Filtriranje po predmetu |
+| `mine_only` | bool | Prikazuje samo materijale prijavljenog korisnika |
+| `page` | int | Stranica (default: 1) |
+| `per_page` | int | Stavki po stranici (default: 10, maks: 50) |
+
+- **Response:** `PaginatedMaterialsResponse`
+
+---
+
+#### `GET /materials/public`
+Isti kao `GET /materials/` ali bez autentikacije — za neprijavljene korisnike.
+
+- **Auth:** nije potrebna
+- **Query params:** `years`, `types`, `subject_id`, `page`, `per_page`
+- **Response:** `PaginatedMaterialsResponse`
+
+---
+
+#### `GET /materials/{id}`
+Vraća detalje jednog materijala uključujući komentare i ocjene.
+
+- **Auth:** nije potrebna
+- **Response:** `MaterialDetailResponse`
+- **Greške:** `404` ako materijal ne postoji
+
+---
+
+#### `GET /materials/{id}/preview`
+Vraća fajl inline za pregled u browseru (bez preuzimanja).
+
+- **Auth:** nije potrebna
+- **Response:** `FileResponse` (inline)
+- **Greške:** `404` ako materijal ili fajl ne postoje
+
+---
+
+#### `PATCH /materials/{material_id}/approve`
+Admin odobrava materijal. Korisnik koji je postavio materijal dobiva notifikaciju.
+
+- **Auth:** admin
+- **Response:** `{ "message": "Materijal odobren." }`
+- **Greške:** `403`, `404`
+
+---
+
+#### `PATCH /materials/{material_id}/reject`
+Admin odbija materijal. Korisnik koji je postavio materijal dobiva notifikaciju.
+
+- **Auth:** admin
+- **Response:** `{ "message": "Materijal odbijen." }`
+- **Greške:** `403`, `404`
+
+---
+
+#### `PATCH /materials/{material_id}/update`
+Vlasnik materijala može izmijeniti naslov, opis, predmet, tip ili zamijeniti fajl. Ako se fajl zamijeni, status se vraća na `pending`.
+
+- **Auth:** vlasnik materijala
+- **Body (multipart/form-data):**
+
+| Polje | Tip | Obavezno |
+|---|---|---|
+| `title` | str | ne |
+| `description` | str | ne |
+| `subject_id` | int | ne |
+| `material_type` | str | ne |
+| `file` | UploadFile | ne |
+
+- **Dozvoljeni formati:** `.pdf`, `.doc`, `.docx`, `.ppt`, `.pptx`, `.zip`, `.txt`
+- **Response:** `{ "message": "Materijal ažuriran." }`
+- **Greške:** `403`, `404`, `400` (nedozvoljen format)
