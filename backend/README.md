@@ -422,8 +422,8 @@ Svi endpointi u ovom modulu zahtijevaju da korisnik bude autentifikovan. U zagla
 | `PATCH` | `/profiles/me/password` | `change_password` | Mijenja lozinku korisnika. Prije izmjene provjerava se ispravnost trenutne lozinke pomoću `pwd_context.verify()`, te da nova lozinka nije identična staroj |  200 OK, 400 Bad Request, 422 Unprocessable Entity, 500 Internal Server Error |
 | `POST` | `/profiles/me/avatar` | `upload_avatar` | Prima fajl slike (`UploadFile`), validira format (JPEG/PNG) i veličinu (maksimalno 5 MB), sprema fajl lokalno na server u `uploads/` folder pod jedinstvenim imenom (UUID), te u bazi ažurira putanju do slike | 200 OK, 400 Bad Request, 422 Unprocessable Entity, 401 Unauthorized, 500 Internal Server Error |
 | `DELETE` | `/profiles/me/avatar` | `delete_avatar` | Briše fajl profilne slike sa servera i postavlja vrijednost u bazi na `None` | 200 OK, 400 Bad Request, 401 Unauthorized, 500 Internal Server Error |
-| `GET` | `/profiles/public` | `public_profile` |Vraća listu svih aktivnih korisnika (`is_active = true`) kao javne profile. | 200 OK |
-| `GET` | `/profiles/{user_id}/public` | Vraća javni profil jednog korisnika po ID-u. Korisnik mora biti aktivan. | 200 OK, 404 Not Found |
+| `GET` | `/profiles/public` | `get_public_profiles` |Vraća listu svih aktivnih korisnika (`is_active = true`) kao javne profile. | 200 OK |
+| `GET` | `/profiles/{user_id}/public` | get_public_profile_by_id | Vraća javni profil jednog korisnika po ID-u. Korisnik mora biti aktivan. | 200 OK, 404 Not Found |
 
 #### Deaktivacija korisničkog profila od strane korisnika — router `account.py`
 
