@@ -24,8 +24,8 @@
           <div class="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div class="flex items-center gap-5">
               <img
-                v-if="dashboard.student.profilna_slika_url"
-                :src="apiBaseUrl + dashboard.student.profilna_slika_url"
+                v-if="dashboard.student.profile_picture_url"
+                :src="apiBaseUrl + dashboard.student.profile_picture_url"
                 alt="Profilna slika"
                 class="h-20 w-20 rounded-full object-cover"
               />
@@ -57,7 +57,7 @@
           </div>
 
           <p class="mt-5 text-gray-700">
-            {{ dashboard.student.biografija || "Još nisi dodao/la biografiju. Kratak opis može pomoći da profil izgleda potpunije." }}
+            {{ dashboard.student.biography || "Još nisi dodao/la biografiju. Kratak opis može pomoći da profil izgleda potpunije." }}
           </p>
         </section>
 

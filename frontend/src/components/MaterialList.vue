@@ -1,6 +1,10 @@
 <template>
   <div class="w-full flex flex-col md:flex-row gap-8 items-start justify-start py-6 px-4">
 
+    <div v-if="userRole !== 'admin'" class="hidden md:block">
+      <MaterialFilter @change="handleFilterChange" />
+    </div>
+
     <div class="flex-grow min-w-0 w-full pr-4">
       <MaterialTabs v-if="userRole !== 'admin'" :activeTab="currentTab" @tab-change="handleTabChange" />
 
@@ -83,6 +87,8 @@ const materijalaPoStranici = 10
 
 async function loadMaterials(filters = {}, page = 1) {
   loading.value = true
+  const token = localStorage.getItem('token')
+
   if (currentTab.value === 'favorites') {
     const rezultat = await getMaterials({ ...filters, mine_only: false }, 1, 50)
     materials.value = rezultat.items
@@ -93,7 +99,8 @@ async function loadMaterials(filters = {}, page = 1) {
     ukupnoStranica.value = rezultat.total_pages
     trenutnastranica.value = rezultat.page
   } else {
-    const rezultat = await getPublicMaterials(filters, page)
+    // If user is logged in, prefer the authenticated endpoint so bookmark state is included
+    const rezultat = token ? await getMaterials(filters, page) : await getPublicMaterials(filters, page)
     materials.value = rezultat.items
     ukupnoStranica.value = rezultat.total_pages
     trenutnastranica.value = rezultat.page

@@ -51,51 +51,60 @@ export default {
     }
   },
   methods: {
-    async handleLogin() {
-      this.loading = true
-      this.error = null
+  async handleLogin() {
+    this.loading = true
+    this.error = null
 
-      try {
-        // 1. Pozivamo backend za login
-        const response = await loginUser(this.email, this.password)
+    try {
+      const response = await loginUser(this.email, this.password)
 
-        // 2. Ako nam je backend dao token, lozinka je tačna
-        if (response && response.access_token) {
+      if (response && response.access_token) {
+        localStorage.setItem('token', response.access_token)
+        const user = await getMe(response.access_token)
 
-          localStorage.setItem('token', response.access_token)
-
-          // 3. Pokušavamo dohvatiti podatke
-          const user = await getMe(response.access_token)
-
-          // --- Provjeravamo da li je backend vratio 'detail' (grešku) ---
-          if ((user && user.detail) || (user && user.is_active === false)) {
-            // Znači da je backend blokirao pristup (403) i vratio poruku o deaktivaciji!
-            localStorage.removeItem('token') // Odmah brišemo token
-            this.error = 'Vaš nalog je deaktiviran. Molimo obratite se administratoru.'
-            this.loading = false
-            return
-          }
-          // Ako nema greške, snimi korisnika i prebaci ga na dashboard
-          if (user && user.full_name) {
-            localStorage.setItem('username', user.full_name)
-            localStorage.setItem('role', user.role)
-            localStorage.setItem('user_id', user.id)
-          }
-
-          window.dispatchEvent(new Event('user-login'))
-          this.$router.push('/dashboard')
-
-        } else {
-          // Ako odmah u startu nema tokena (pogrešna lozinka)
-          this.error = response.detail || 'Pogrešan email ili lozinka.'
+        if (user && user.full_name) {
+          localStorage.setItem('username', user.full_name)
+          localStorage.setItem('role', user.role)
+          localStorage.setItem('user_id', user.id)
         }
 
-      } catch (err) {
-        this.error = 'Došlo je do greške. Provjerite konekciju i pokušajte ponovo.'
+        window.dispatchEvent(new Event('user-login'))
+        this.$router.push('/dashboard')
+      } else {
+        this.error = 'Pogrešan email ili lozinka.'
+      }
+
+} catch (err) {
+      const errorMessage = err.message || '';
+      let serverPoruka = '';
+      try {
+        const parsedError = JSON.parse(errorMessage);
+        serverPoruka = parsedError.detail || ''; 
+      } catch (e) {
+        serverPoruka = errorMessage; 
+      }
+
+      if (serverPoruka.includes('Not authenticated') || serverPoruka.includes('pogrešan')) {
+        
+        this.error = 'Pogrešan email ili lozinka.';
+
+      } else if (serverPoruka.toLowerCase().includes('deaktiviran') || serverPoruka.toLowerCase().includes('inactive')) {
+        
+        localStorage.removeItem('token');
+        this.error = 'Vaš nalog je deaktiviran. Molimo obratite se administratoru.';
+
+      } else if (serverPoruka) {
+
+        this.error = serverPoruka;
+
+      } else {
+        
+        this.error = 'Došlo je do greške. Provjerite konekciju i pokušajte ponovo.';
+      }
       } finally {
         this.loading = false
       }
-    }
+    } 
   }
 }
 </script>

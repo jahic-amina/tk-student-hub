@@ -1,8 +1,8 @@
-"""init
+"""Initial migration
 
-Revision ID: 86ae47b2ca97
+Revision ID: 6374abbf460f
 Revises: 
-Create Date: 2026-06-17 22:46:57.987033
+Create Date: 2026-06-20 17:20:17.087424
 
 """
 from typing import Sequence, Union
@@ -11,10 +11,8 @@ from alembic import op
 import sqlalchemy as sa
 import sqlmodel
 
-
-
 # revision identifiers, used by Alembic.
-revision: str = '86ae47b2ca97'
+revision: str = '6374abbf460f'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -51,6 +49,15 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_forum_categories_name'), 'forum_categories', ['name'], unique=False)
+    op.create_table('forum_guidelines',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('title', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('content', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('order', sa.Integer(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=False),
+    sa.PrimaryKeyConstraint('id')
+    )
     op.create_table('forum_tags',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sqlmodel.sql.sqltypes.AutoString(length=50), nullable=False),
@@ -72,9 +79,9 @@ def upgrade() -> None:
     sa.Column('role', sa.Enum('member', 'mentor', 'admin', name='userrole'), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=False),
-    sa.Column('profilna_slika_url', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('biografija', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('godina_studija', sa.Integer(), nullable=True),
+    sa.Column('profile_picture_url', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('biography', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('year_of_study', sa.Integer(), nullable=True),
     sa.Column('deactivated_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
@@ -93,9 +100,11 @@ def upgrade() -> None:
     op.create_table('admin_announcements',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('admin_id', sa.Integer(), nullable=False),
+    sa.Column('title', sqlmodel.sql.sqltypes.AutoString(length=150), nullable=False),
     sa.Column('content', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('expires_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['admin_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -125,6 +134,31 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['company_id'], ['companies.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('forum_reputation_daily_logs',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('giver_id', sa.Integer(), nullable=False),
+    sa.Column('receiver_id', sa.Integer(), nullable=False),
+    sa.Column('points_given', sa.Integer(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['giver_id'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['receiver_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('forum_reputation_events',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('event_key', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('points_delta', sa.Integer(), nullable=False),
+    sa.Column('reason', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('source_type', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('source_id', sa.Integer(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('event_key', name='uq_forum_reputation_event_key')
+    )
+    op.create_index(op.f('ix_forum_reputation_events_event_key'), 'forum_reputation_events', ['event_key'], unique=False)
+    op.create_index(op.f('ix_forum_reputation_events_user_id'), 'forum_reputation_events', ['user_id'], unique=False)
     op.create_table('forum_topics',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('title', sqlmodel.sql.sqltypes.AutoString(length=200), nullable=False),
@@ -141,6 +175,31 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_forum_topics_title'), 'forum_topics', ['title'], unique=False)
+    op.create_table('forum_user_medals',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('medal_code', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('category', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('tier', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('is_secret', sa.Boolean(), nullable=False),
+    sa.Column('awarded_at', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('user_id', 'medal_code', name='uq_forum_user_medal')
+    )
+    op.create_index(op.f('ix_forum_user_medals_medal_code'), 'forum_user_medals', ['medal_code'], unique=False)
+    op.create_index(op.f('ix_forum_user_medals_user_id'), 'forum_user_medals', ['user_id'], unique=False)
+    op.create_table('forum_user_stats',
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('reputation_points', sa.Integer(), nullable=False),
+    sa.Column('topics_started_count', sa.Integer(), nullable=False),
+    sa.Column('answers_count', sa.Integer(), nullable=False),
+    sa.Column('best_answers_count', sa.Integer(), nullable=False),
+    sa.Column('night_topics_count', sa.Integer(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('user_id')
+    )
     op.create_table('materials',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('title', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
@@ -150,6 +209,7 @@ def upgrade() -> None:
     sa.Column('status', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('number_of_downloads', sa.Integer(), nullable=False),
+    sa.Column('thumbnail_path', sa.String(), nullable=True),
     sa.Column('subject_id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['subject_id'], ['subjects.id'], ),
@@ -203,11 +263,12 @@ def upgrade() -> None:
     op.create_index(op.f('ix_applications_ad_id'), 'applications', ['ad_id'], unique=False)
     op.create_index(op.f('ix_applications_user_id'), 'applications', ['user_id'], unique=False)
     op.create_table('bookmarks',
-    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('material_id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['material_id'], ['materials.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
-    sa.PrimaryKeyConstraint('user_id', 'material_id')
+    sa.PrimaryKeyConstraint('id')
     )
     op.create_table('comments',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -220,16 +281,27 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('downloads',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('material_id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('downloaded_at', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['material_id'], ['materials.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
     op.create_table('forum_comments',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('content', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('is_admin_notice', sa.Boolean(), nullable=False),
     sa.Column('is_best_answer', sa.Boolean(), nullable=False),
     sa.Column('is_deleted', sa.Boolean(), nullable=False),
+    sa.Column('parent_id', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.Column('topic_id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['parent_id'], ['forum_comments.id'], ),
     sa.ForeignKeyConstraint(['topic_id'], ['forum_topics.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -250,6 +322,30 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('topic_attachments',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('topic_id', sa.Integer(), nullable=False),
+    sa.Column('filename', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False),
+    sa.Column('file_path', sqlmodel.sql.sqltypes.AutoString(length=500), nullable=False),
+    sa.Column('file_size', sa.Integer(), nullable=False),
+    sa.Column('mime_type', sqlmodel.sql.sqltypes.AutoString(length=100), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['topic_id'], ['forum_topics.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_topic_attachments_topic_id'), 'topic_attachments', ['topic_id'], unique=False)
+    op.create_table('topic_dislikes',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('topic_id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['topic_id'], ['forum_topics.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('topic_id', 'user_id', name='unique_topic_dislike_per_user')
+    )
+    op.create_index(op.f('ix_topic_dislikes_topic_id'), 'topic_dislikes', ['topic_id'], unique=False)
+    op.create_index(op.f('ix_topic_dislikes_user_id'), 'topic_dislikes', ['user_id'], unique=False)
     op.create_table('topic_likes',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('topic_id', sa.Integer(), nullable=False),
@@ -269,10 +365,24 @@ def upgrade() -> None:
     sa.Column('reason', sqlmodel.sql.sqltypes.AutoString(length=100), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('status', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('action_taken', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('admin_explanation', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.ForeignKeyConstraint(['topic_id'], ['forum_topics.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('comment_attachments',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('comment_id', sa.Integer(), nullable=False),
+    sa.Column('filename', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False),
+    sa.Column('file_path', sqlmodel.sql.sqltypes.AutoString(length=500), nullable=False),
+    sa.Column('file_size', sa.Integer(), nullable=False),
+    sa.Column('mime_type', sqlmodel.sql.sqltypes.AutoString(length=100), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['comment_id'], ['forum_comments.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_comment_attachments_comment_id'), 'comment_attachments', ['comment_id'], unique=False)
     op.create_table('forum_comment_votes',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('comment_id', sa.Integer(), nullable=False),
@@ -284,20 +394,54 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('comment_id', 'user_id', name='unique_comment_vote_per_user')
     )
+    op.create_table('forum_notifications',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('recipient_user_id', sa.Integer(), nullable=False),
+    sa.Column('actor_user_id', sa.Integer(), nullable=False),
+    sa.Column('topic_id', sa.Integer(), nullable=False),
+    sa.Column('comment_id', sa.Integer(), nullable=True),
+    sa.Column('text', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('type', sa.Enum('TOPIC_LIKE', 'TOPIC_DISLIKE', 'TOPIC_REPLY', 'COMMENT_REPLY', 'MENTION', 'BEST_ANSWER', 'COMMENT_LIKE', 'COMMENT_DISLIKE', name='forumnotificationtype'), nullable=False),
+    sa.Column('is_read', sa.Boolean(), nullable=False),
+    sa.Column('is_hidden', sa.Boolean(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['actor_user_id'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['comment_id'], ['forum_comments.id'], ),
+    sa.ForeignKeyConstraint(['recipient_user_id'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['topic_id'], ['forum_topics.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_forum_notifications_actor_user_id'), 'forum_notifications', ['actor_user_id'], unique=False)
+    op.create_index(op.f('ix_forum_notifications_comment_id'), 'forum_notifications', ['comment_id'], unique=False)
+    op.create_index(op.f('ix_forum_notifications_recipient_user_id'), 'forum_notifications', ['recipient_user_id'], unique=False)
+    op.create_index(op.f('ix_forum_notifications_topic_id'), 'forum_notifications', ['topic_id'], unique=False)
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     """Downgrade schema."""
     # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_index(op.f('ix_forum_notifications_topic_id'), table_name='forum_notifications')
+    op.drop_index(op.f('ix_forum_notifications_recipient_user_id'), table_name='forum_notifications')
+    op.drop_index(op.f('ix_forum_notifications_comment_id'), table_name='forum_notifications')
+    op.drop_index(op.f('ix_forum_notifications_actor_user_id'), table_name='forum_notifications')
+    op.drop_table('forum_notifications')
     op.drop_table('forum_comment_votes')
+    op.drop_index(op.f('ix_comment_attachments_comment_id'), table_name='comment_attachments')
+    op.drop_table('comment_attachments')
     op.drop_table('topic_reports')
     op.drop_index(op.f('ix_topic_likes_user_id'), table_name='topic_likes')
     op.drop_index(op.f('ix_topic_likes_topic_id'), table_name='topic_likes')
     op.drop_table('topic_likes')
+    op.drop_index(op.f('ix_topic_dislikes_user_id'), table_name='topic_dislikes')
+    op.drop_index(op.f('ix_topic_dislikes_topic_id'), table_name='topic_dislikes')
+    op.drop_table('topic_dislikes')
+    op.drop_index(op.f('ix_topic_attachments_topic_id'), table_name='topic_attachments')
+    op.drop_table('topic_attachments')
     op.drop_table('ratings')
     op.drop_table('forum_topic_tags')
     op.drop_table('forum_comments')
+    op.drop_table('downloads')
     op.drop_table('comments')
     op.drop_table('bookmarks')
     op.drop_index(op.f('ix_applications_user_id'), table_name='applications')
@@ -310,8 +454,16 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_notifications_company_id'), table_name='notifications')
     op.drop_table('notifications')
     op.drop_table('materials')
+    op.drop_table('forum_user_stats')
+    op.drop_index(op.f('ix_forum_user_medals_user_id'), table_name='forum_user_medals')
+    op.drop_index(op.f('ix_forum_user_medals_medal_code'), table_name='forum_user_medals')
+    op.drop_table('forum_user_medals')
     op.drop_index(op.f('ix_forum_topics_title'), table_name='forum_topics')
     op.drop_table('forum_topics')
+    op.drop_index(op.f('ix_forum_reputation_events_user_id'), table_name='forum_reputation_events')
+    op.drop_index(op.f('ix_forum_reputation_events_event_key'), table_name='forum_reputation_events')
+    op.drop_table('forum_reputation_events')
+    op.drop_table('forum_reputation_daily_logs')
     op.drop_table('ads')
     op.drop_table('admin_announcements')
     op.drop_table('activity_logs')
@@ -321,6 +473,7 @@ def downgrade() -> None:
     op.drop_table('subjects')
     op.drop_index(op.f('ix_forum_tags_name'), table_name='forum_tags')
     op.drop_table('forum_tags')
+    op.drop_table('forum_guidelines')
     op.drop_index(op.f('ix_forum_categories_name'), table_name='forum_categories')
     op.drop_table('forum_categories')
     op.drop_index(op.f('ix_companies_tin'), table_name='companies')
