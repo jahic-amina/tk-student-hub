@@ -215,7 +215,6 @@ Definiše dozvoljene tipove aktivnosti koje se mogu logovati.
 
 | Vrijednost | Opis |
 |---|---|
-| `material_posted` | Materijal je objavljen |
 | `forum_comment` | Korisnik je komentarisao na forumu |
 | `internship_accepted` | Prihvaćena stažiranja |
 | `material_uploaded` | Materijal je uploadovan |
