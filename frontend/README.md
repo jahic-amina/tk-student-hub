@@ -581,3 +581,111 @@ Sam mehanizam prebacivanja teme (toggle koji postavlja `dark` klasu) razvio je d
 | `updateRating(materialId, rating)` | `PATCH /materials/{id}/rate` | Izmjena ocjene |
 
 Funkcije `rateMaterial` i `updateRating` vraćaju sirovi `response` (ne parsirani JSON) kako bi komponenta mogla razlikovati statuse (npr. `409` — već ocijenjeno). `downloadMaterial` dodaje `t={timestamp}` na URL radi izbjegavanja keširanja preglednika — bez toga se ponovljeno preuzimanje ne bi zabilježilo na backendu (browser bi servirao iz keša, ne bi pozvao backend).
+
+
+## Tim 2 — Materijali (Faris Ćosić) — Frontend
+
+### Pregled
+
+Ova dokumentacija opisuje frontend implementaciju koju je radio Faris Ćosić u okviru Tim 2 — modul Materijali. Implementacija obuhvata komponente za prikaz, pregled i upravljanje materijalima.
+
+Kod se nalazi u `frontend/src/views/materials/` i `frontend/src/components/`.
+
+---
+
+### Sprint 1
+
+#### Izrada MaterialCard komponente
+
+Kreirana komponenta `MaterialCard.vue` koja prikazuje osnovne informacije o materijalu: naslov, autora, datum, predmet, thumbnail, prosječnu ocjenu (zvjezdice) i broj preuzimanja. Komponenta podržava dva moda — standardni prikaz s Download/Delete dugmadima i pending mod s Odobri/Odbij dugmadima.
+
+**Props:**
+
+| Prop | Tip | Default | Opis |
+|---|---|---|---|
+| `material` | Object | — | Objekat materijala |
+| `pending` | Boolean | `false` | Ako je `true`, prikazuje Odobri/Odbij umjesto Download/Delete |
+| `userRole` | String | `'member'` | Rola prijavljenog korisnika |
+
+**Emits:** `click`, `deleted`, `approve`, `reject`, `toggle-bookmark`, `downloaded`
+
+#### Pregled materijala bez prijave
+
+Integrirana `getPublicMaterials()` API funkcija u `MaterialList.vue` za neprijavljene korisnike. Koristi `GET /materials/public` endpoint koji ne zahtijeva JWT token.
+
+#### Pregled materijala sa prijavom
+
+Integrirana `getMaterials()` API funkcija za prijavljene korisnike. Koristi `GET /materials/` endpoint koji uz svaki materijal vraća i `is_bookmarked` stanje. `MaterialList.vue` automatski bira između ova dva endpointa ovisno o tabu i prijavi korisnika.
+
+#### Detaljne informacije za materijal
+
+Kreirana komponenta `MaterialDetailView.vue` koja prikazuje sve detalje materijala: naslov, autora, datum, predmet, godinu, tip, thumbnail, opis, ocjene, komentare i broj preuzimanja. Integriran `DownloadButton`, `CommentList` i `MaterialRating`.
+
+---
+
+### Sprint 2
+
+#### Pregled detalja materijala
+
+Proširena `MaterialDetailView.vue` s dugmetom za inline pregled fajla u browseru bez preuzimanja. Dugme `PREGLEDAJ` prikazuje se samo za podržane ekstenzije (`.pdf`, `.txt`) i otvara fajl u novom tabu koristeći `GET /materials/{id}/preview` endpoint.
+
+#### Admin upravljanje materijalima
+
+Implementirana admin funkcionalnost u `MaterialDetailView.vue` — Odobri/Odbij dugmad vidljiva samo adminu kada je status materijala `pending`. Rola se čita iz `localStorage`. Nakon akcije prikazuje se `SuccessMessage` komponenta.
+
+
+#### Prikaz materijala na čekanju
+
+Kreirana komponenta `PendingMaterialList.vue` koja učitava sve pending materijale putem `GET /materials/pending` endpointa i prikazuje ih koristeći `MaterialCard` u pending modu.
+
+#### Odobravanje materijala
+
+Implementirana logika odobravanja i odbijanja u `PendingMaterialList.vue`. Nakon odobravanja ili odbijanja, materijal se lokalno uklanja iz liste bez ponovnog učitavanja stranice.
+
+```javascript
+async function handleApprove(id) {
+    await approveMaterial(id)
+    materials.value = materials.value.filter(m => m.id !== id)
+}
+
+async function handleReject(id) {
+    await rejectMaterial(id)
+    materials.value = materials.value.filter(m => m.id !== id)
+}
+```
+
+---
+
+### Sprint 3
+
+#### Ažuriranje materijala
+
+Dodana funkcionalnost inline uređivanja u `MaterialDetailView.vue`, vidljiva samo vlasniku materijala:
+
+- Toggle između prikaza i editovanja (dugmad Uredi / Spremi / Odustani)
+- Inline uređivanje naslova i opisa direktno u prikazu
+- Odabir godine studija i predmeta iz dropdown menija (predmeti filtrirani po odabranoj godini)
+- Drag-and-drop zamjena fajla ili odabir putem file input-a
+- Čuvanje originalnih vrijednosti i vraćanje pri otkazivanju
+- Nakon spremanja materijal se ponovo učitava s API-a
+
+```javascript
+function cancelEdit() {
+    material.value.title = originalTitle.value
+    material.value.description = originalDescription.value
+    isEditing.value = false
+    selectedFile.value = null
+}
+
+async function saveChanges() {
+    await updateMaterial(material.value.id, material.value.title, 
+        material.value.description, selectedFile.value, 
+        editSubjectId.value, editMaterialType.value)
+    material.value = await getMaterial(route.params.id)
+    isEditing.value = false
+}
+```
+
+#### - Preview materijala
+
+Implementirana logika za inline pregled fajla u `MaterialDetailView.vue`. Dugme `PREGLEDAJ` prikazuje se uvjetno na osnovu ekstenzije fajla, a fajl se otvara u novom tabu bez pokretanja preuzimanja.
