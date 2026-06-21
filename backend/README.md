@@ -636,3 +636,362 @@ alembic stamp head
 ```
 
 ---
+
+### Tim 2 — Materijali (Amer Imamović) — Backend
+
+#### Pregled
+
+Ova dokumentacija opisuje backend implementaciju koju je radio Amer Imamović u okviru Tim 2 — modul Materijali. Implementacija obuhvata brisanje materijala, toggle bookmark funkcionalnost i kompletne filtere za pretragu materijala po godini, tipu i predmetu.
+
+Sav kod se nalazi u `backend/app/routers/materials.py` i `backend/app/models/materials.py`.
+
+---
+
+#### Sprint 1 — Brisanje materijala
+
+### Model — `Material.status`
+
+Brisanje je implementirano kao **soft delete** — materijal se označava kao obrisan a ne briše se iz baze:
+
+```python
+status: str = Field(default="pending")  # pending, approved, rejected, deleted
+```
+
+### `DELETE /materials/{id}` — Zaštićen (JWT)
+
+Briše (označava kao obrisano) zadani materijal. Samo autor materijala ili admin mogu obrisati materijal.
+
+**Autentifikacija:** Zahtijeva JWT token (korisnik mora biti prijavljen)
+
+**Autorizacija:**
+- Admin može obrisati bilo koji materijal
+- Korisnik može obrisati samo vlastite materijale
+- Neovlašteni pristup vraća `403 Forbidden`
+
+**Request:**
+```
+DELETE /materials/{id}
+Authorization: Bearer <token>
+```
+
+**Response `204 No Content`:** Materijal uspješno označen kao obrisan (bez tijela odgovora)
+
+**Moguće greške:**
+| Status | Razlog |
+|---|---|
+| `401` | Korisnik nije prijavljen |
+| `403` | Nemate dozvolu za brisanje (nije autor ni admin) |
+| `404` | Materijal ne postoji |
+
+**Napomena:** Obrisani materijali nisu dostupni u javnom popisu, ali ako su ih već preuzeli korisnici, oni mogu pristupiti verziji koju su preuzeli.
+
+---
+
+#### Sprint 2 — Bookmark (Omiljeni materijali)
+
+### Model — `Bookmark`
+
+```python
+class Bookmark(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id")
+    material_id: int = Field(foreign_key="material.id")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+```
+
+Bookmark je vanjska tabela koja povezuje korisnike s materijalima kao "omiljeni". Svaki red predstavlja omiljenu relaciju između korisnika i materijala.
+
+### `POST /materials/{material_id}/bookmark` — Zaštićen (JWT)
+
+Toggle bookmark za materijal — ako je već bookmarkovan uklanja se, ako nije — dodaje se. Admini ne mogu bookmarkovati materijale.
+
+**Autentifikacija:** Zahtijeva JWT token
+
+**Request:**
+```
+POST /materials/42/bookmark
+Authorization: Bearer <token>
+```
+
+**Response (Toggle — dva mogućnostna odgovora):**
+
+Ako je materijal **dodat kao omiljeni**:
+```json
+{
+  "is_bookmarked": true
+}
+```
+
+Ako je materijal **uklonjen iz omiljenih**:
+```json
+{
+  "is_bookmarked": false
+}
+```
+
+**Moguće greške:**
+| Status | Razlog |
+|---|---|
+| `401` | Korisnik nije prijavljen |
+
+**Frontend integracija:** Kad korisnik klikne na zastavicu:
+1. Šalje se `POST` zahtjev na `/materials/{id}/bookmark`
+2. Backend vraća `is_bookmarked: true/false`
+3. Frontend ažurira svojstvo `material.is_bookmarked` u listi
+4. UI se osvježi da prikaže narandžastu (bookmarked) ili sivu (unbookmarked) zastavicu
+
+---
+
+#### Sprint 3 — Filteri (Godina, Tip, Predmet)
+
+### Filteri u `GET /materials/` i `GET /materials/public`
+
+Oba endpointa (`/materials/` za prijavljene i `/materials/public` za javni pristup) podržavaju sljedeće query parametare:
+
+**Query parametri:**
+```
+years       list[int]  — filtriranje po godini studija (npr. ?years=1&years=2)
+types       list[str]  — filtriranje po tipu materijala (npr. ?types=skripta&types=ispiti)
+subject_id  int        — filtriranje po ID-u predmeta (npr. ?subject_id=5)
+page        int        — broj stranice (default: 1, min: 1)
+per_page    int        — materijala po stranici (default: 10, max: 50)
+mine_only   bool       — samo vlastiti materijali (zahtijeva prijavu) — dostupno samo na /materials/
+```
+
+### Dozvoljeni tipovi materijala
+
+```python
+ALLOWED_TYPES = {
+    'skripta': 'Skripte',
+    'auditorne_vjezbe': 'Auditorne vježbe',
+    'laboratorijske_vjezbe': 'Laboratorijske vježbe',
+    'ispiti': 'Ispiti',
+    'projekat': 'Projekat'
+}
+```
+
+### Primjeri API poziva s filterima
+
+**Primjer 1: Materijali za 1. i 2. godinu:**
+```
+GET /materials/?years=1&years=2&page=1&per_page=10
+```
+
+**Primjer 2: Samo skripte za predmet ID=5:**
+```
+GET /materials/?subject_id=5&types=skripta&page=1
+```
+
+**Primjer 3: Ispiti i laboratorijske vježbe:**
+```
+GET /materials/?types=ispiti&types=laboratorijske_vjezbe
+```
+
+**Primjer 4: Kombinovani filteri - godina 3, tip skripta, predmet 10:**
+```
+GET /materials/?years=3&types=skripta&subject_id=10&page=1&per_page=20
+```
+
+### Implementaciona logika filtera
+
+Filteri se primjenjuju na SQL nivou prije paginacije:
+
+```python
+# Filtriranje po godini studija
+if years:
+    query = query.join(Subject, Material.subject_id == Subject.id).where(Subject.study_year.in_(years))
+
+# Filtriranje po tipu materijala
+if types:
+    query = query.where(Material.file_type.in_(types))
+
+# Filtriranje po predmetu
+if subject_id:
+    query = query.where(Material.subject_id == subject_id)
+```
+
+**Napomena:** Filteri se mogu kombinovati — svi aktivni filteri se primjenjuju zajedno (AND logika).
+
+---
+
+#### Bookmark stanje u listama materijala
+
+Kada je korisnik prijavljen, svaki materijal u API odgovoru sadrži polje `is_bookmarked`:
+
+```python
+user_bookmarks = session.exec(
+    select(Bookmark.material_id).where(Bookmark.user_id == current_user.id)
+).all()
+
+response = MaterialsResponse(
+    **material.model_dump(),
+    is_bookmarked=material.id in user_bookmarks,  # True ako je bookmarked
+)
+```
+
+**Javni endpoint (`/materials/public`)** ne šalje bookmark stanje jer nema informacije o korisniku — korisnici koji žele vidjeti svoje bookmarke trebaju koristiti `/materials/` s autentifikacijom.
+
+---
+
+
+### Tim 2 — Materijali (Faris Ćosić)
+
+### Modeli
+
+#### `Material`
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | int | Primarni ključ |
+| `title` | str | Naziv materijala |
+| `description` | str? | Opis materijala |
+| `file_path` | str | Putanja do fajla na serveru |
+| `file_type` | str | Tip materijala (npr. `PDF`, `PPT`) |
+| `status` | str | `pending` / `approved` / `rejected` / `deleted` |
+| `number_of_downloads` | int | Broj preuzimanja |
+| `thumbnail_path` | str? | Putanja do thumbnail slike |
+| `subject_id` | int | FK → `subjects.id` |
+| `user_id` | int | FK → `users.id` |
+| `created_at` | datetime | Datum kreiranja |
+
+#### `Subject`
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | int | Primarni ključ |
+| `name` | str | Naziv predmeta |
+| `study_year` | int | Godina studija (1–4) |
+
+#### `Comment`
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | int | Primarni ključ |
+| `content` | str | Tekst komentara (maks. 500 znakova) |
+| `material_id` | int | FK → `materials.id` |
+| `user_id` | int | FK → `users.id` |
+| `created_at` | datetime | Datum kreiranja |
+| `updated_at` | datetime? | Datum izmjene |
+
+#### `Rating`
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | int | Primarni ključ |
+| `rating` | int | Ocjena (1–5) |
+| `material_id` | int | FK → `materials.id` |
+| `user_id` | int | FK → `users.id` |
+
+#### `Download`
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | int | Primarni ključ |
+| `material_id` | int | FK → `materials.id` |
+| `user_id` | int | FK → `users.id` |
+| `downloaded_at` | datetime | Datum preuzimanja |
+
+#### `Bookmark`
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | int | Primarni ključ |
+| `material_id` | int | FK → `materials.id` |
+| `user_id` | int | FK → `users.id` |
+
+---
+
+### Endpointi
+
+#### `GET /materials/subjects`
+Vraća listu svih predmeta.
+
+- **Auth:** nije potrebna
+- **Response:** `Subject[]`
+
+---
+
+#### `GET /materials/pending`
+Vraća listu materijala koji čekaju odobrenje.
+
+- **Auth:** admin
+- **Response:** `MaterialsResponse[]`
+- **Greške:** `403` ako korisnik nije admin
+
+---
+
+#### `GET /materials/`
+Vraća paginirani spisak odobrenih materijala. Podržava filtriranje i prikaz samo vlastitih materijala.
+
+- **Auth:** opcionalna (potrebna za `mine_only`)
+- **Query params:**
+
+| Param | Tip | Opis |
+|---|---|---|
+| `years` | int[] | Filtriranje po godini studija |
+| `types` | str[] | Filtriranje po tipu fajla |
+| `subject_id` | int | Filtriranje po predmetu |
+| `mine_only` | bool | Prikazuje samo materijale prijavljenog korisnika |
+| `page` | int | Stranica (default: 1) |
+| `per_page` | int | Stavki po stranici (default: 10, maks: 50) |
+
+- **Response:** `PaginatedMaterialsResponse`
+
+---
+
+#### `GET /materials/public`
+Isti kao `GET /materials/` ali bez autentikacije — za neprijavljene korisnike.
+
+- **Auth:** nije potrebna
+- **Query params:** `years`, `types`, `subject_id`, `page`, `per_page`
+- **Response:** `PaginatedMaterialsResponse`
+
+---
+
+#### `GET /materials/{id}`
+Vraća detalje jednog materijala uključujući komentare i ocjene.
+
+- **Auth:** nije potrebna
+- **Response:** `MaterialDetailResponse`
+- **Greške:** `404` ako materijal ne postoji
+
+---
+
+#### `GET /materials/{id}/preview`
+Vraća fajl inline za pregled u browseru (bez preuzimanja).
+
+- **Auth:** nije potrebna
+- **Response:** `FileResponse` (inline)
+- **Greške:** `404` ako materijal ili fajl ne postoje
+
+---
+
+#### `PATCH /materials/{material_id}/approve`
+Admin odobrava materijal. Korisnik koji je postavio materijal dobiva notifikaciju.
+
+- **Auth:** admin
+- **Response:** `{ "message": "Materijal odobren." }`
+- **Greške:** `403`, `404`
+
+---
+
+#### `PATCH /materials/{material_id}/reject`
+Admin odbija materijal. Korisnik koji je postavio materijal dobiva notifikaciju.
+
+- **Auth:** admin
+- **Response:** `{ "message": "Materijal odbijen." }`
+- **Greške:** `403`, `404`
+
+---
+
+#### `PATCH /materials/{material_id}/update`
+Vlasnik materijala može izmijeniti naslov, opis, predmet, tip ili zamijeniti fajl. Ako se fajl zamijeni, status se vraća na `pending`.
+
+- **Auth:** vlasnik materijala
+- **Body (multipart/form-data):**
+
+| Polje | Tip | Obavezno |
+|---|---|---|
+| `title` | str | ne |
+| `description` | str | ne |
+| `subject_id` | int | ne |
+| `material_type` | str | ne |
+| `file` | UploadFile | ne |
+
+- **Dozvoljeni formati:** `.pdf`, `.doc`, `.docx`, `.ppt`, `.pptx`, `.zip`, `.txt`
+- **Response:** `{ "message": "Materijal ažuriran." }`
+- **Greške:** `403`, `404`, `400` (nedozvoljen format)
