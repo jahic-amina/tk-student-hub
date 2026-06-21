@@ -88,3 +88,4 @@ Projekat je razvijen kroz rad više timova, gdje je svaki tim odgovoran za zaseb
 - **Lejla Kadušić** — Upload materijala, komentari (CRUD), paginacija
 - **Amer Imamović** — Brisanje materijala, bookmark (omiljeni), filteri (godina, tip, predmet)
 - **Marinela Mitić** — Forma za dodavanje materijala s validacijom, preuzimanje materijala, ocjenjivanje (zvjezdice), thumbnail sličice, dark mode
+- **Faris Ćosić** - Pregled materijala, detaljan pregled materijala, odobravanje/odbijanje , preview, ažuriranje
