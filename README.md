@@ -2,15 +2,44 @@
 
 **TK Student Hub** — platforma za studente telekomunikacija koja omogućava dijeljenje materijala, korisnih linkova, učestvovanje u forumu i upravljaju svojim profilom.
 
+## O projektu
+
+TK Student Hub povezuje studente, kompanije i administratore platforme. Studenti mogu pratiti i dijeliti studijske materijale, prijavljivati se na prakse i oglase, učestvovati u diskusijama na forumu i pratiti vlastitu aktivnost na platformi. Kompanije mogu objavljivati oglase za prakse i upravljati prijavama. Administratori upravljaju korisnicima i kompanijama i odobravaju sadržaj.
+
+## Korisničke uloge
+
+| Uloga | Opis |
+|---|---|
+| Posjetilac | Neregistrovani korisnik koji pregledava javni sadržaj |
+| Student | Registrovani korisnik s punim pristupom funkcionalnostima platforme |
+| Administrator | Upravlja korisnicima i sadržajem platforme |
+
+Pored toga, kompanije imaju zaseban tip naloga za objavu oglasa i upravljanje prijavama.
+
+## Tehnologije
+
+**Backend:** FastAPI, SQLModel, SQLAlchemy, Alembic, SQLite, JWT autentifikacija
+
+**Frontend:** Vue 3, Vite, Tailwind CSS, Vue Router
+
 ## Struktura projekta
 
 ```
 tk-student-hub/
-  backend/       — FastAPI backend
-  frontend/      — Vue 3 frontend
+  backend/       - FastAPI backend
+  frontend/      - Vue 3 frontend
 ```
 
-Brzi koraci za pokretanje (zsh)
+## Preuzimanje projekta
+
+```bash
+git clone <url-repozitorija>
+cd tk-student-hub
+```
+
+## Brzi koraci za pokretanje (zsh)
+
+Za pokretanje cijele platforme potrebno je pokrenuti backend i frontend odvojeno, svaki u svom terminalu.
 
 Frontend:
 
@@ -34,19 +63,19 @@ API dokumentacija (kad backend radi): `http://127.0.0.1:8000/docs`
 
 Za detalje o frontend i backend specifičnim uputama pogledajte:
 
-- `frontend/README.md`
-- `backend/README.md`
+- `frontend/README.md` - instalacija, struktura, povezivanje s backendom,
+- `backend/README.md` - instalacija, konfiguracija, migracije, API.
 
-## Git Workflow
+## Autentifikacija
 
-- Radite na grani `dev` — ne raditi commit direktno na `main`
-- Konvencija za imenovanje grana: `timX/naziv-funkcionalnosti/naziv-featurea`
-  - Primjeri: `tim1/prakse/lista`, `tim2/materijali/upload`, `tim3/forum/novi-post`
-- Commit poruke trebaju biti smislene i opisivati šta je promijenjeno
-- Radite commit često — ne čekajte da sve bude gotovo pa onda jedan veliki commit
-- Pull request prema `main` grani se radi tek na kraju sprinta, nakon pregleda asistentice
+Platforma koristi JWT tokene. Nakon prijave token se čuva u `localStorage` i šalje sa svakim API pozivom u headeru:
+```
+Authorization: Bearer YOUR_TOKEN_HERE
+```
 
 ## Timovi i funkcionalnosti
+
+Projekat je razvijen kroz rad više timova, gdje je svaki tim odgovoran za zaseban funkcionalni dio platforme:
 
 | PRojektni tim | Funkcionalnost | Folder |
 |-----|---------------|--------|
@@ -55,15 +84,3 @@ Za detalje o frontend i backend specifičnim uputama pogledajte:
 | Tim 3 | Forum | `backend/app/routers/forum.py`, `frontend/src/views/forum/` |
 | Tim 4 | Profili & Dashboard | `backend/app/routers/profiles.py`, `frontend/src/views/profiles/` |
 
-## Tehnologije
-
-- **Backend:** Python, FastAPI, SQLModel, JWT
-- **Frontend:** Vue 3, Vite, Tailwind CSS, Vue Router
-- **Baza:** SQLite
-
-## Autentifikacija
-
-Platforma koristi JWT tokene. Nakon prijave token se čuva u `localStorage` i šalje sa svakim API pozivom u headeru:
-```
-Authorization: Bearer YOUR_TOKEN_HERE
-```
