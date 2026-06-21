@@ -435,6 +435,192 @@ Autorizacija je implementirana unutar poslovne logike endpointa:
 
 ---
 
+### Tim 2 — Materijali (Marinela Mitić)
+
+#### Pregled
+
+Ovaj dio dokumentacije opisuje backend implementaciju koju je radila Marinela Mitić u okviru Tim 2 — modul Materijali. Implementacija obuhvata preuzimanje materijala s bilježenjem korisnika, kompletnu funkcionalnost ocjenjivanja (sistem zvjezdica 1–5) i generisanje thumbnail sličica materijala.
+
+Sav kod se nalazi u `backend/app/routers/materials.py` i `backend/app/models/materials.py`.
+
+> **Napomena o podjeli rada unutar Tima 2:** Modul Materijali je razvijan u saradnji s kolegicom (upload, komentari, paginacija). Sekcija opisana ispod odnosi se isključivo na lično implementirani dio: **preuzimanje, ocjenjivanje, thumbnail**. Funkcija `validate_file_format` je zajednički rad (validacija formata fajla).
+
+---
+
+#### Sprint 1 — Preuzimanje materijala
+
+##### Model — `Download`
+
+Tabela koja bilježi koji je korisnik preuzeo koji materijal. Predstavlja temelj za pravilo "korisnik mora preuzeti materijal prije nego što ga može ocijeniti".
+
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | int | Primarni ključ |
+| `material_id` | int | FK → materials.id |
+| `user_id` | int | FK → users.id |
+| `downloaded_at` | datetime | Vrijeme preuzimanja (automatski) |
+
+##### Validacija formata fajla — `validate_file_format(file)` *(zajednički rad)*
+
+```python
+ALLOWED_FORMATS = {".pdf", ".doc", ".docx", ".ppt", ".pptx", ".zip", ".txt"}
+```
+
+Izvlači ekstenziju iz naziva fajla, pretvara je u mala slova i poredi sa skupom `ALLOWED_FORMATS`. Ako format nije podržan, baca `HTTP 400 Bad Request` s porukom koja navodi dozvoljene formate.
+
+##### `GET /materials/{id}/download` — Javno (s opcionalnim tokenom)
+
+Preuzimanje fajla materijala. Endpoint izvršava sljedeće korake redom:
+
+1. Provjerava da li materijal postoji (`404` ako ne)
+2. Provjerava da li je materijal obrisan — `status == "deleted"` → `404`
+3. Provjerava ulogu korisnika preko tokena — administrator može preuzeti i neodobrene materijale
+4. Ako materijal nije odobren i korisnik nije admin → `403`
+5. Provjerava da fajl fizički postoji na disku (`404` ako ne)
+6. Povećava brojač preuzimanja (`number_of_downloads`)
+7. Bilježi preuzimanje u `Download` tabelu — samo ako taj korisnik ranije nije zabilježen za isti materijal (sprječava duple zapise)
+8. Vraća fajl putem `FileResponse`
+
+**Prijenos tokena:** Token se prosljeđuje kao **query parametar** (`?token=...`), a ne kroz `Authorization` header. Razlog je tehnički — preuzimanje se pokreće iz preglednika, gdje nije moguće jednostavno dodati zaglavlje na zahtjev, pa se token prenosi kroz URL. Token je opcionalan: ako nije prisutan, preuzimanje i dalje radi (javno je dostupno), ali se preuzimanje ne bilježi za korisnika.
+
+**Mogući odgovori:**
+
+| Status | Razlog |
+|---|---|
+| `200` | Uspješno — vraća fajl |
+| `403` | Materijal nije odobren (a korisnik nije admin) |
+| `404` | Materijal ne postoji, obrisan je, ili fajl nije pronađen na serveru |
+
+##### `GET /materials/{id}/has-downloaded` — Zaštićen (JWT)
+
+Pomoćni endpoint koji vraća `true`/`false` — da li je trenutno prijavljeni korisnik već preuzeo dati materijal. Frontend ga koristi da odluči hoće li zvjezdice za ocjenjivanje biti aktivne ili zaključane.
+
+**Response `200 OK`:**
+```json
+{ "has_downloaded": true }
+```
+
+---
+
+#### Sprint 2 — Ocjenjivanje materijala (sistem zvjezdica)
+
+##### Model — `Rating`
+
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | int | Primarni ključ |
+| `rating` | int | Ocjena, validirana na nivou modela: `ge=1, le=5` |
+| `material_id` | int | FK → materials.id |
+| `user_id` | int | FK → users.id |
+
+Validacija `Field(ge=1, le=5)` osigurava da ocjena uvijek bude cijeli broj između 1 i 5, na nivou samog modela.
+
+##### `POST /materials/{id}/rate` — Zaštićen (JWT)
+
+Kreira novu ocjenu za materijal. Endpoint provodi sljedeće provjere redom:
+
+1. Postoji li materijal → `404` ako ne
+2. **Da li je korisnik preuzeo materijal** — provjerom u `Download` tabeli; ako nije → `403` ("Morate preuzeti materijal prije ocjenjivanja.")
+3. Da li je korisnik već ocijenio ovaj materijal → `409` ("Već ste ocijenili ovaj materijal.")
+4. Sprema novu ocjenu
+5. Šalje notifikaciju vlasniku materijala (osim ako korisnik ocjenjuje vlastiti materijal)
+
+**Request body:**
+```json
+{ "rating": 5, "material_id": 1 }
+```
+
+**Mogući odgovori:**
+
+| Status | Razlog |
+|---|---|
+| `201` | Ocjena uspješno kreirana |
+| `403` | Korisnik nije preuzeo materijal |
+| `404` | Materijal ne postoji |
+| `409` | Korisnik je već ocijenio materijal |
+
+##### `PATCH /materials/{id}/rate` — Zaštićen (JWT)
+
+Mijenja postojeću ocjenu korisnika. Provodi istu provjeru preuzimanja kao i kreiranje:
+
+1. Da li je korisnik preuzeo materijal → `403` ako nije
+2. Da li korisnik ima postojeću ocjenu koju mijenja → `404` ako ne postoji
+3. Ažurira vrijednost ocjene
+
+**Request body:**
+```json
+{ "rating": 4, "material_id": 1 }
+```
+
+**Mogući odgovori:**
+
+| Status | Razlog |
+|---|---|
+| `200` | Ocjena uspješno izmijenjena |
+| `403` | Korisnik nije preuzeo materijal |
+| `404` | Korisnik nema postojeću ocjenu |
+
+##### Pravila ocjenjivanja (sažetak)
+
+| Pravilo | Implementacija |
+|---|---|
+| Neprijavljeni korisnik ne može ocijeniti | Endpoint je zaštićen `Depends(get_current_user)` → `401` |
+| Korisnik mora preuzeti materijal prije ocjenjivanja (vrijedi i za studenta i za admina) | Provjera u `Download` tabeli → `403` |
+| Korisnik može ocijeniti materijal samo jednom | Provjera postojeće ocjene → `409`; izmjena ide kroz `PATCH` |
+| Korisnik može promijeniti svoju ocjenu | `PATCH /materials/{id}/rate` |
+
+> **Napomena:** Pravilo "korisnik ne može ocijeniti vlastiti materijal" provodi se na frontendu. Provjera vlasništva na backendu (`material.user_id == current_user.id → 403`) je moguća dopuna radi potpune dosljednosti zaštite.
+
+---
+
+#### Sprint 3 — Thumbnail sličice materijala
+
+##### Izmjena modela — polje `thumbnail_path`
+
+Dodano polje u `Material` model za čuvanje putanje generisane thumbnail sličice:
+
+```python
+thumbnail_path: Optional[str] = Field(default=None, sa_column=Column(String, nullable=True))
+```
+
+Polje je opcionalno (`nullable`) jer se thumbnail ne generiše za svaki materijal — ako generisanje ne uspije ili format nije podržan, vrijednost ostaje `None`.
+
+##### `generate_thumbnail(file_path)`
+
+Funkcija generiše PNG sličicu prve stranice dokumenta. Logika ovisi o tipu fajla:
+
+- **PDF** — otvara se bibliotekom `PyMuPDF` (`fitz`), uzima se prva stranica i renderuje u sliku na pola veličine (`Matrix(0.5, 0.5)`), te sprema kao PNG u `uploads/thumbnails/`.
+- **Office formati (PPTX, PPT, DOCX, DOC)** — fajl se prvo konvertuje u PDF pomoću LibreOffice (`soffice`) u headless modu, a zatim se thumbnail generiše iz tog PDF-a. Privremeni PDF se briše nakon korištenja.
+- **Ostali formati (ZIP, TXT)** — nemaju thumbnail; funkcija vraća `None`.
+
+Cijela funkcija je obavijena `try/except` blokom kako neuspjeh generisanja thumbnaila ne bi prekinuo proces uploada — u tom slučaju materijal se sprema bez thumbnaila.
+
+##### Prenosivost — pronalaženje LibreOffice instalacije
+
+Putanja do `soffice` izvršne datoteke pronalazi se automatski, umjesto da bude fiksno zadana, kako bi generisanje thumbnaila radilo neovisno o operativnom sistemu:
+
+```python
+soffice_bin = shutil.which("soffice") or shutil.which("libreoffice")
+if not soffice_bin:
+    return None
+```
+
+- `shutil.which("soffice")` — automatsko pronalaženje LibreOffice u sistemskom PATH-u (macOS / Linux / Windows)
+- `shutil.which("libreoffice")` — rezervna komanda (neke Linux distribucije koriste ovaj naziv)
+
+Ako LibreOffice nije instaliran, funkcija graciozno vraća `None` — PDF thumbnaili i dalje rade, samo Office formati ostaju bez sličice. Ovim pristupom thumbnail za Office formate radi na svakom operativnom sistemu bez ručne konfiguracije.
+
+##### Posluživanje thumbnail sličica
+
+Generisane sličice se poslužuju kao statički sadržaj putem `/thumbnails/` rute (konfigurisano u `app/main.py`), kako bi ih frontend mogao prikazati direktno preko URL-a.
+
+---
+
+#### Autentifikacija i autorizacija
+
+Zaštićeni endpointi (`/rate`, `/has-downloaded`) koriste `Depends(get_current_user)`, koji dekodira JWT iz `Authorization: Bearer <token>` zaglavlja i vraća `401` ako token nedostaje ili je neispravan.
+
+Endpoint za preuzimanje (`/download`) namjerno koristi **opcionalni token kroz query parametar** umjesto obaveznog zaglavlja, jer se poziva direktno iz preglednika. Kada je token prisutan, preuzimanje se bilježi za tog korisnika; kada nije, materijal se i dalje može preuzeti (javni pristup), ali bez bilježenja.
 #### Migracije baze podataka
 
 ```bash
