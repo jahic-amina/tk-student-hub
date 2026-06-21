@@ -493,6 +493,111 @@ Vraća se kao response na API pozive.
 
 ---
 
+### Application (Prijava)
+
+#### Tabela: `applications`
+
+---
+
+#### SQLModel — `Application` (tabela)
+
+| Polje                      | Tip                 | Opis                                     |
+| -------------------------- | ------------------- | ---------------------------------------- |
+| `id`                       | `int`               | Primarni ključ, auto-increment           |
+| `user_id`                  | `int`               | FK → `users.id` (indeksiran)             |
+| `ad_id`                    | `int`               | FK → `ads.id` (indeksiran)               |
+| `cv_path`                  | `str`               | Putanja do uploadovanog CV-a             |
+| `motivational_letter_path` | `str`               | Putanja do motivacionog pisma            |
+| `linkedin_url`             | `str \| None`       | LinkedIn profil (opcionalno)             |
+| `phone`                    | `str`               | Broj telefona                            |
+| `status`                   | `ApplicationStatus` | Status prijave (default: `pending`)      |
+| `admin_feedback`           | `str \| None`       | Povratna informacija admina (opcionalno) |
+| `is_archived`              | `bool`              | Arhivirana prijava (default: `false`)    |
+| `created_at`               | `datetime`          | Datum kreiranja (UTC, auto)              |
+| `updated_at`               | `datetime`          | Datum posljednje izmjene (UTC, auto)     |
+
+##### Relacije
+
+| Relacija | Model  | Opis                        |
+| -------- | ------ | --------------------------- |
+| `user`   | `User` | Student koji je aplicirao   |
+| `ad`     | `Ad`   | Oglas na koji je aplicirano |
+
+##### Ograničenja
+
+| Naziv        | Polja              | Opis                                               |
+| ------------ | ------------------ | -------------------------------------------------- |
+| `uq_user_ad` | `user_id`, `ad_id` | Student ne može aplicirati na isti oglas više puta |
+
+---
+
+#### Enum — `ApplicationStatus`
+
+| Vrijednost | Opis                            |
+| ---------- | ------------------------------- |
+| `pending`  | Prijava čeka pregled (default)  |
+| `accepted` | Prijava prihvaćena od kompanije |
+| `rejected` | Prijava odbijena od kompanije   |
+
+---
+
+#### Pydantic shema — `ApplicationCreate`
+
+Koristi se pri **kreiranju** prijave (`POST /applications/`).
+
+| Polje                      | Tip           | Validacija                                                      |
+| -------------------------- | ------------- | --------------------------------------------------------------- |
+| `ad_id`                    | `int`         | —                                                               |
+| `cv_path`                  | `str`         | Putanja dobijena nakon `POST /applications/upload-cv`           |
+| `motivational_letter_path` | `str`         | Putanja do motivacionog pisma                                   |
+| `linkedin_url`             | `str \| None` | Format: `https://linkedin.com/in/username`                      |
+| `phone`                    | `str`         | 7–20 karaktera, dozvoljeni: brojevi, `+`, `-`, razmaci, zagrade |
+
+---
+
+#### Pydantic shema — `ApplicationRead`
+
+Vraća se kao response na API pozive.
+
+| Polje                      | Tip                 | Opis |
+| -------------------------- | ------------------- | ---- |
+| `id`                       | `int`               | —    |
+| `user_id`                  | `int`               | —    |
+| `ad_id`                    | `int`               | —    |
+| `cv_path`                  | `str`               | —    |
+| `motivational_letter_path` | `str`               | —    |
+| `linkedin_url`             | `str \| None`       | —    |
+| `phone`                    | `str`               | —    |
+| `status`                   | `ApplicationStatus` | —    |
+| `admin_feedback`           | `str \| None`       | —    |
+| `is_archived`              | `bool`              | —    |
+| `created_at`               | `datetime`          | —    |
+| `updated_at`               | `datetime`          | —    |
+
+---
+
+#### Pydantic shema — `ApplicationUpdate`
+
+Koristi se pri **ažuriranju** prijave. Sva polja su opcionalna.
+
+| Polje            | Tip                         | Opis                                     |
+| ---------------- | --------------------------- | ---------------------------------------- |
+| `status`         | `ApplicationStatus \| None` | Novi status prijave                      |
+| `admin_feedback` | `str \| None`               | Povratna informacija uz promjenu statusa |
+| `is_archived`    | `bool \| None`              | Arhiviranje prijave                      |
+
+---
+
+#### Napomene
+
+- Kombinacija `user_id` + `ad_id` je **unique** — dupla prijava nije moguća, baza vraća grešku
+- `cv_path` i `motivational_letter_path` čuvaju relativne putanje do fajlova u `uploads/` folderu
+- `updated_at` se ne postavlja automatski pri izmjeni — potrebno ga je ručno setovati u servisu
+- Brisanje prijava je **soft delete** kroz arhiviranje — polje `is_archived` se postavlja na `true`
+- `linkedin_url` mora biti u formatu `https://linkedin.com/in/username` ili `https://www.linkedin.com/in/username`
+
+---
+
 ### AdBookmark (Sačuvani oglas)
 
 #### Tabela: `ad_bookmarks`
@@ -612,3 +717,683 @@ Koristi se pri **ažuriranju** notifikacije (`PATCH /notifications/{id}`). Sva p
 - `is_read` se postavlja na `true` kada korisnik / kompanija pročita notifikaciju
 - `created_at` se automatski postavlja na trenutni UTC timestamp pri kreiranju
 - Notifikacije se kreiraju interno kroz servis — nisu direktno dostupne kroz javni
+
+---
+
+## API Rute
+
+### Companies (Kompanije)
+
+**Base URL:** `/companies`  
+**Tag:** `Companies`
+
+---
+
+| Metoda   | Putanja                               | Opis                                    | Pristup   |
+| -------- | ------------------------------------- | --------------------------------------- | --------- |
+| `GET`    | `/companies/`                         | Lista svih odobrenih kompanija          | Javno     |
+| `GET`    | `/companies/admin`                    | Lista svih kompanija (bez filtera)      | Admin     |
+| `GET`    | `/companies/{company_id}`             | Detalji jedne kompanije                 | Javno     |
+| `POST`   | `/companies/`                         | Registracija nove kompanije             | Javno     |
+| `PUT`    | `/companies/{company_id}`             | Potpuno ažuriranje profila kompanije    | Kompanija |
+| `PATCH`  | `/companies/{company_id}`             | Parcijalno ažuriranje profila kompanije | Kompanija |
+| `PATCH`  | `/companies/{company_id}/status`      | Promjena statusa kompanije              | Admin     |
+| `PATCH`  | `/companies/{company_id}/restore`     | Vraćanje obrisane kompanije             | Admin     |
+| `PATCH`  | `/companies/{company_id}/upload-logo` | Upload logoa kompanije                  | Kompanija |
+| `DELETE` | `/companies/{company_id}`             | Soft delete kompanije                   | Admin     |
+
+---
+
+#### `GET /companies/`
+
+Vraća listu svih kompanija sa statusom `approved` koje nisu obrisane.
+
+- **Autentifikacija:** nije potrebna
+- **Response:** `List[CompanyRead]`
+
+---
+
+#### `GET /companies/admin`
+
+Vraća listu **svih** kompanija bez filtera po statusu ili `is_deleted`.
+
+- **Autentifikacija:** Admin JWT token
+- **Response:** `List[CompanyRead]`
+- **Greške:**
+  - `403` — korisnik nije admin
+
+---
+
+#### `GET /companies/{company_id}`
+
+Vraća detalje jedne kompanije. Kompanija mora biti `approved` i nije obrisana.
+
+- **Autentifikacija:** nije potrebna
+- **Response:** `CompanyRead`
+- **Greške:**
+  - `404` — kompanija nije pronađena, obrisana je ili nije odobrena
+
+---
+
+#### `POST /companies/`
+
+Registracija nove kompanije. Prima `multipart/form-data` zbog upload logoa.  
+Nakon registracije, svim adminima se šalje notifikacija.
+
+- **Autentifikacija:** nije potrebna
+- **Content-Type:** `multipart/form-data`
+- **Body:**
+
+| Polje          | Tip             | Opis                                  |
+| -------------- | --------------- | ------------------------------------- |
+| `company_name` | `string` (Form) | Naziv kompanije                       |
+| `tin`          | `string` (Form) | PDV/ID broj                           |
+| `website_url`  | `string` (Form) | Web stranica                          |
+| `address`      | `string` (Form) | Adresa sjedišta                       |
+| `description`  | `string` (Form) | Opis kompanije                        |
+| `email`        | `string` (Form) | Email adresa                          |
+| `phone_number` | `string` (Form) | Broj telefona                         |
+| `password`     | `string` (Form) | Lozinka                               |
+| `logo`         | `file` (File)   | Logo kompanije (PNG, JPG, JPEG, WebP) |
+
+- **Response:** `CompanyRead` — `201 Created`
+- **Greške:**
+  - `400` — email već postoji
+  - `400` — logo nije ispravan format
+
+---
+
+#### `PUT /companies/{company_id}`
+
+Potpuno ažuriranje profila kompanije. Polje `status` se ignoriše.
+
+- **Autentifikacija:** Kompanija JWT token
+- **Body:** `CompanyUpdate`
+- **Response:** `CompanyRead`
+- **Greške:**
+  - `403` — kompanija nema dozvolu za ažuriranje tuđeg profila
+
+---
+
+#### `PATCH /companies/{company_id}`
+
+Parcijalno ažuriranje profila — šalju se samo polja koja se mijenjaju. Polje `status` se ignoriše.
+
+- **Autentifikacija:** Kompanija JWT token
+- **Body:** `CompanyUpdate` (parcijalno)
+- **Response:** `CompanyRead`
+- **Greške:**
+  - `403` — kompanija nema dozvolu za ažuriranje tuđeg profila
+
+---
+
+#### `PATCH /companies/{company_id}/status`
+
+Promjena statusa kompanije od strane admina.  
+Ako se status mijenja u `approved`, kompaniji se šalje notifikacija.
+
+- **Autentifikacija:** Admin JWT token
+- **Body:** `CompanyStatus` (raw enum vrijednost)
+- **Response:** `CompanyRead`
+- **Greške:**
+  - `403` — korisnik nije admin
+  - `404` — kompanija nije pronađena ili je obrisana
+
+---
+
+#### `PATCH /companies/{company_id}/restore`
+
+Vraća soft-deletovanu kompaniju — postavlja `is_deleted` na `false`.
+
+- **Autentifikacija:** Admin JWT token
+- **Response:** `CompanyRead`
+- **Greške:**
+  - `403` — korisnik nije admin
+  - `404` — kompanija nije pronađena
+
+---
+
+#### `PATCH /companies/{company_id}/upload-logo`
+
+Upload novog logoa kompanije. Stari logo se briše sa diska.
+
+- **Autentifikacija:** Kompanija JWT token
+- **Content-Type:** `multipart/form-data`
+- **Body:**
+
+| Polje  | Tip           | Opis                             |
+| ------ | ------------- | -------------------------------- |
+| `logo` | `file` (File) | Novi logo (PNG, JPG, JPEG, WebP) |
+
+- **Response:** `CompanyRead`
+- **Greške:**
+  - `403` — kompanija nema dozvolu za ažuriranje tuđeg logoa
+  - `400` — logo nije ispravan format
+
+---
+
+#### `DELETE /companies/{company_id}`
+
+Soft delete kompanije — postavlja `is_deleted` na `true`, zapis ostaje u bazi.
+
+- **Autentifikacija:** Admin JWT token
+- **Response:** `CompanyRead`
+- **Greške:**
+  - `403` — korisnik nije admin
+  - `404` — kompanija nije pronađena ili je već obrisana
+
+---
+
+### Ads (Oglasi)
+
+**Base URL:** `/ads`  
+**Tag:** `Ads`
+
+---
+
+| Metoda   | Putanja                | Opis                                        | Pristup   |
+| -------- | ---------------------- | ------------------------------------------- | --------- |
+| `GET`    | `/ads/`                | Lista svih aktivnih oglasa (s filterima)    | Javno     |
+| `GET`    | `/ads/admin/list`      | Lista svih oglasa bez filtera (s filterima) | Admin     |
+| `GET`    | `/ads/{ad_id}`         | Detalji jednog oglasa                       | Javno     |
+| `POST`   | `/ads/`                | Kreiranje novog oglasa                      | Kompanija |
+| `PUT`    | `/ads/{ad_id}`         | Potpuno ažuriranje oglasa                   | Kompanija |
+| `PATCH`  | `/ads/{ad_id}`         | Parcijalno ažuriranje oglasa                | Kompanija |
+| `PATCH`  | `/ads/{ad_id}/status`  | Promjena statusa oglasa                     | Admin     |
+| `DELETE` | `/ads/{ad_id}`         | Soft delete oglasa                          | Kompanija |
+| `POST`   | `/ads/{ad_id}/restore` | Vraćanje obrisanog oglasa                   | Admin     |
+
+---
+
+#### `GET /ads/`
+
+Vraća listu svih aktivnih oglasa koji nisu obrisani. Podržava filtriranje i pretragu.  
+Pri dohvatanju automatski postavlja oglas na `expired` ako je deadline prošao.
+
+- **Autentifikacija:** nije potrebna
+- **Query parametri:**
+
+| Parametar    | Tip              | Opis                                             |
+| ------------ | ---------------- | ------------------------------------------------ |
+| `type`       | `AdType \| None` | Filter po tipu oglasa                            |
+| `field`      | `str \| None`    | Filter po oblasti                                |
+| `location`   | `str \| None`    | Filter po lokaciji                               |
+| `company_id` | `int \| None`    | Filter po kompaniji                              |
+| `search`     | `str \| None`    | Pretraga po naslovu ili opisu (case-insensitive) |
+
+- **Response:** `List[AdRead]`
+
+---
+
+#### `GET /ads/admin/list`
+
+Vraća listu **svih** oglasa bez filtera po statusu ili `is_deleted`. Podržava iste filtere kao javna ruta uz dodatni filter po statusu.
+
+- **Autentifikacija:** Admin JWT token
+- **Query parametri:**
+
+| Parametar    | Tip                | Opis                                             |
+| ------------ | ------------------ | ------------------------------------------------ |
+| `ad_status`  | `AdStatus \| None` | Filter po statusu oglasa                         |
+| `type`       | `AdType \| None`   | Filter po tipu oglasa                            |
+| `field`      | `str \| None`      | Filter po oblasti                                |
+| `location`   | `str \| None`      | Filter po lokaciji                               |
+| `company_id` | `int \| None`      | Filter po kompaniji                              |
+| `search`     | `str \| None`      | Pretraga po naslovu ili opisu (case-insensitive) |
+
+- **Response:** `List[AdRead]`
+- **Greške:**
+  - `403` — korisnik nije admin
+
+---
+
+#### `GET /ads/{ad_id}`
+
+Vraća detalje jednog oglasa. Oglas ne smije biti obrisan.  
+Automatski postavlja oglas na `expired` ako je deadline prošao.
+
+- **Autentifikacija:** nije potrebna
+- **Response:** `AdRead`
+- **Greške:**
+  - `404` — oglas nije pronađen ili je obrisan
+
+---
+
+#### `POST /ads/`
+
+Kreiranje novog oglasa. `company_id` se automatski uzima iz JWT tokena kompanije.  
+Nakon kreiranja, svim adminima se šalje notifikacija.
+
+- **Autentifikacija:** Kompanija JWT token
+- **Body:** `AdCreate`
+- **Response:** `AdRead` — `201 Created`
+
+---
+
+#### `PUT /ads/{ad_id}`
+
+Potpuno ažuriranje oglasa. Kompanija može ažurirati samo svoje oglase.  
+`updated_at` se automatski postavlja na trenutni UTC timestamp.
+
+- **Autentifikacija:** Kompanija JWT token
+- **Body:** `AdUpdate`
+- **Response:** `AdRead`
+- **Greške:**
+  - `403` — kompanija nije vlasnik oglasa
+  - `404` — oglas nije pronađen ili je obrisan
+
+---
+
+#### `PATCH /ads/{ad_id}`
+
+Parcijalno ažuriranje oglasa — šalju se samo polja koja se mijenjaju.  
+`updated_at` se automatski postavlja na trenutni UTC timestamp.
+
+- **Autentifikacija:** Kompanija JWT token
+- **Body:** `AdPatch` (parcijalno)
+- **Response:** `AdRead`
+- **Greške:**
+  - `403` — kompanija nije vlasnik oglasa
+  - `404` — oglas nije pronađen ili je obrisan
+
+---
+
+#### `PATCH /ads/{ad_id}/status`
+
+Promjena statusa oglasa od strane admina.  
+Ovisno o novom statusu, kompaniji se šalje notifikacija:
+
+- `active` → oglas je odobren
+- `rejected` / `changes_requested` → oglas je odbijen ili vraćen na doradu (uz komentar ako postoji)
+
+Ako je status `changes_requested`, automatski se postavlja `changes_requested_at`.
+
+- **Autentifikacija:** Admin JWT token
+- **Body:** `StatusUpdate`
+- **Response:** `AdRead`
+- **Greške:**
+  - `403` — korisnik nije admin
+  - `404` — oglas nije pronađen ili je obrisan
+
+---
+
+#### `DELETE /ads/{ad_id}`
+
+Soft delete oglasa — postavlja `is_deleted` na `true`, zapis ostaje u bazi.  
+`updated_at` se automatski postavlja na trenutni UTC timestamp.
+
+- **Autentifikacija:** Kompanija JWT token
+- **Response:** `204 No Content`
+- **Greške:**
+  - `403` — kompanija nije vlasnik oglasa
+  - `404` — oglas nije pronađen ili je već obrisan
+
+---
+
+#### `POST /ads/{ad_id}/restore`
+
+Vraća soft-deletovani oglas — postavlja `is_deleted` na `false` i status na `pending`.  
+`updated_at` se automatski postavlja na trenutni UTC timestamp.
+
+- **Autentifikacija:** Admin JWT token
+- **Response:** `AdRead`
+- **Greške:**
+  - `403` — korisnik nije admin
+  - `404` — oglas nije pronađen
+
+---
+
+### Applications (Prijave)
+
+**Base URL:** `/applications`  
+**Tag:** `Applications`
+
+---
+
+| Metoda   | Putanja                                              | Opis                                      | Pristup         |
+| -------- | ---------------------------------------------------- | ----------------------------------------- | --------------- |
+| `GET`    | `/applications/`                                     | Lista svih prijava (s filterima)          | Admin           |
+| `GET`    | `/applications/company/all`                          | Lista svih prijava za oglase kompanije    | Kompanija       |
+| `GET`    | `/applications/company/by-ad/{ad_id}`                | Lista prijava za određeni oglas kompanije | Kompanija       |
+| `GET`    | `/applications/company/application/{application_id}` | Detalji jedne prijave (kompanija)         | Kompanija       |
+| `GET`    | `/applications/{application_id}`                     | Detalji jedne prijave                     | Admin / Vlasnik |
+| `POST`   | `/applications/`                                     | Kreiranje nove prijave                    | Student         |
+| `POST`   | `/applications/upload-cv`                            | Upload CV-a                               | Student         |
+| `PATCH`  | `/applications/company/{application_id}`             | Ažuriranje statusa prijave                | Kompanija       |
+| `PATCH`  | `/applications/{application_id}`                     | Ažuriranje prijave                        | Admin           |
+| `DELETE` | `/applications/{application_id}`                     | Arhiviranje prijave                       | Admin           |
+
+---
+
+#### `GET /applications/`
+
+Vraća listu svih prijava. Podržava filtriranje po statusu, oglasu i arhiviranim prijavama.
+
+- **Autentifikacija:** Admin JWT token
+- **Query parametri:**
+
+| Parametar          | Tip                         | Opis                                          |
+| ------------------ | --------------------------- | --------------------------------------------- |
+| `app_status`       | `ApplicationStatus \| None` | Filter po statusu prijave                     |
+| `ad_id`            | `int \| None`               | Filter po oglasu                              |
+| `include_archived` | `bool`                      | Uključi arhivirane prijave (default: `false`) |
+
+- **Response:** `List[ApplicationRead]`
+- **Greške:**
+  - `403` — korisnik nije admin
+
+---
+
+#### `GET /applications/company/all`
+
+Vraća sve prijave za oglase trenutno prijavljene kompanije. Ne uključuje arhivirane prijave.
+
+- **Autentifikacija:** Kompanija JWT token
+- **Query parametri:**
+
+| Parametar    | Tip                         | Opis                      |
+| ------------ | --------------------------- | ------------------------- |
+| `app_status` | `ApplicationStatus \| None` | Filter po statusu prijave |
+
+- **Response:** `List[ApplicationRead]`
+
+---
+
+#### `GET /applications/company/by-ad/{ad_id}`
+
+Vraća prijave za određeni oglas koji pripada trenutnoj kompaniji. Podržava paginaciju.
+
+- **Autentifikacija:** Kompanija JWT token
+- **Query parametri:**
+
+| Parametar | Tip   | Opis                                       |
+| --------- | ----- | ------------------------------------------ |
+| `limit`   | `int` | Maksimalan broj rezultata (default: `100`) |
+| `offset`  | `int` | Pomak za paginaciju (default: `0`)         |
+
+- **Response:** `List[ApplicationRead]`
+- **Greške:**
+  - `403` — oglas ne pripada kompaniji
+  - `404` — oglas nije pronađen
+
+---
+
+#### `GET /applications/company/application/{application_id}`
+
+Vraća detalje jedne prijave za oglas koji pripada trenutnoj kompaniji.
+
+- **Autentifikacija:** Kompanija JWT token
+- **Response:** `ApplicationRead`
+- **Greške:**
+  - `403` — oglas ne pripada kompaniji
+  - `404` — prijava nije pronađena
+
+---
+
+#### `GET /applications/{application_id}`
+
+Vraća detalje jedne prijave. Student može vidjeti samo svoje prijave.
+
+- **Autentifikacija:** Admin ili Student JWT token
+- **Response:** `ApplicationRead`
+- **Greške:**
+  - `403` — korisnik nije admin niti vlasnik prijave
+  - `404` — prijava nije pronađena
+
+---
+
+#### `POST /applications/`
+
+Kreiranje nove prijave na oglas. Samo studenti (`member`) mogu aplicirati.  
+Oglas mora biti aktivan i deadline ne smije biti prošao.
+
+- **Autentifikacija:** Student JWT token
+- **Body:** `ApplicationCreate`
+- **Response:** `ApplicationRead` — `201 Created`
+- **Greške:**
+  - `400` — oglas nije aktivan ili mu je istekao deadline
+  - `403` — korisnik nije student
+  - `404` — oglas nije pronađen
+  - `409` — prijava za ovaj oglas već postoji
+
+---
+
+#### `POST /applications/upload-cv`
+
+Upload CV-a u PDF formatu. Vraća putanju fajla koja se koristi pri kreiranju prijave.
+
+- **Autentifikacija:** Student JWT token
+- **Content-Type:** `multipart/form-data`
+- **Body:**
+
+| Polje  | Tip           | Opis                        |
+| ------ | ------------- | --------------------------- |
+| `file` | `file` (File) | CV u PDF formatu (max 5 MB) |
+
+- **Response:** `{ "path": "uploads/applications/{filename}.pdf" }`
+- **Greške:**
+  - `400` — fajl nije PDF
+  - `400` — fajl prelazi limit od 5 MB
+
+---
+
+#### `PATCH /applications/company/{application_id}`
+
+Ažuriranje statusa prijave od strane kompanije.  
+Ovisno o novom statusu, studentu se šalje notifikacija:
+
+- `accepted` → prijava prihvaćena, loguje se aktivnost, oglas se automatski postavlja na `expired` ako su popunjena sva mjesta
+- `rejected` → prijava odbijena
+
+- **Autentifikacija:** Kompanija JWT token
+- **Body:** `ApplicationUpdate`
+- **Response:** `ApplicationRead`
+- **Greške:**
+  - `403` — oglas ne pripada kompaniji
+  - `404` — prijava nije pronađena
+
+---
+
+#### `PATCH /applications/{application_id}`
+
+Administratorsko ažuriranje prijave bez dodatnih provjera vlasništva.
+
+- **Autentifikacija:** Admin JWT token
+- **Body:** `ApplicationUpdate`
+- **Response:** `ApplicationRead`
+- **Greške:**
+  - `403` — korisnik nije admin
+  - `404` — prijava nije pronađena
+
+---
+
+#### `DELETE /applications/{application_id}`
+
+Arhiviranje prijave — postavlja `is_archived` na `true`, zapis ostaje u bazi.
+
+- **Autentifikacija:** Admin JWT token
+- **Response:** `204 No Content`
+- **Greške:**
+  - `403` — korisnik nije admin
+  - `404` — prijava nije pronađena
+
+---
+
+### Bookmarks (Sačuvani oglasi)
+
+**Base URL:** `/bookmarks`  
+**Tag:** `Bookmarks`
+
+> Sve rute su dostupne isključivo korisnicima s ulogom `member` (student).
+
+---
+
+| Metoda   | Putanja                    | Opis                        | Pristup |
+| -------- | -------------------------- | --------------------------- | ------- |
+| `POST`   | `/bookmarks/`              | Dodavanje oglasa u sačuvane | Student |
+| `GET`    | `/bookmarks/`              | Lista svih sačuvanih oglasa | Student |
+| `GET`    | `/bookmarks/{bookmark_id}` | Detalji jednog bookmarkа    | Student |
+| `DELETE` | `/bookmarks/{bookmark_id}` | Uklanjanje bookmarkа        | Student |
+
+---
+
+#### `POST /bookmarks/`
+
+Dodaje oglas u sačuvane za trenutno prijavljenog studenta.
+
+- **Autentifikacija:** Student JWT token
+- **Body:** `AdBookmarkCreate`
+- **Response:** `AdBookmarkRead` — `201 Created`
+- **Greške:**
+  - `400` — oglas je već bookmarkovan
+  - `403` — korisnik nije student
+
+---
+
+#### `GET /bookmarks/`
+
+Vraća listu svih sačuvanih oglasa trenutno prijavljenog studenta.
+
+- **Autentifikacija:** Student JWT token
+- **Response:** `List[AdBookmarkRead]`
+- **Greške:**
+  - `403` — korisnik nije student
+
+---
+
+#### `GET /bookmarks/{bookmark_id}`
+
+Vraća detalje jednog bookmarkа. Student može vidjeti samo svoje bookmarke.
+
+- **Autentifikacija:** Student JWT token
+- **Response:** `AdBookmarkRead`
+- **Greške:**
+  - `403` — korisnik nije student ili bookmark ne pripada njemu
+  - `404` — bookmark nije pronađen
+
+---
+
+#### `DELETE /bookmarks/{bookmark_id}`
+
+Trajno briše bookmark iz baze. Student može obrisati samo svoje bookmarke.
+
+- **Autentifikacija:** Student JWT token
+- **Response:** `204 No Content`
+- **Greške:**
+  - `403` — korisnik nije student ili bookmark ne pripada njemu
+  - `404` — bookmark nije pronađen
+
+---
+
+### Notifications (Notifikacije)
+
+**Base URL:** `/notifications`  
+**Tag:** `Notifications`
+
+> Rute podržavaju i korisnike (`User`) i kompanije (`Company`) kroz zajednički `get_current_actor` dependency koji automatski određuje tip aktera iz JWT tokena.
+
+---
+
+| Metoda             | Putanja                                 | Opis                            | Pristup              |
+| ------------------ | --------------------------------------- | ------------------------------- | -------------------- |
+| `POST`             | `/notifications/`                       | Kreiranje notifikacije          | Admin                |
+| `GET`              | `/notifications/me`                     | Lista mojih notifikacija        | Korisnik / Kompanija |
+| `POST\|PATCH\|PUT` | `/notifications/read-all`               | Označavanje svih kao pročitano  | Korisnik / Kompanija |
+| `POST\|PATCH\|PUT` | `/notifications/{notification_id}/read` | Označavanje jedne kao pročitano | Korisnik / Kompanija |
+| `DELETE`           | `/notifications/clear-all`              | Brisanje svih notifikacija      | Korisnik / Kompanija |
+| `GET`              | `/notifications/{notification_id}`      | Detalji jedne notifikacije      | Korisnik / Kompanija |
+| `PATCH`            | `/notifications/{notification_id}`      | Ažuriranje notifikacije         | Korisnik / Kompanija |
+| `DELETE`           | `/notifications/{notification_id}`      | Brisanje notifikacije           | Korisnik / Kompanija |
+
+---
+
+#### `POST /notifications/`
+
+Ručno kreiranje notifikacije. Isključivo za administratore.
+
+- **Autentifikacija:** Admin JWT token
+- **Body:** `NotificationCreate`
+- **Response:** `Notification` — `201 Created`
+- **Greške:**
+  - `403` — akter nije admin
+
+---
+
+#### `GET /notifications/me`
+
+Vraća sve notifikacije trenutno prijavljenog korisnika ili kompanije.  
+Sortiranje: nepročitane prve, zatim po datumu kreiranja (najnovije prvo).
+
+- **Autentifikacija:** Korisnik ili Kompanija JWT token
+- **Response:** `List[Notification]`
+
+---
+
+#### `POST|PATCH|PUT /notifications/read-all`
+
+Označava sve nepročitane notifikacije trenutnog aktera kao pročitane.
+
+- **Autentifikacija:** Korisnik ili Kompanija JWT token
+- **Response:** `{ "detail": "All notifications marked as read." }`
+
+---
+
+#### `POST|PATCH|PUT /notifications/{notification_id}/read`
+
+Označava jednu notifikaciju kao pročitanu.  
+Admin može označiti bilo koju notifikaciju, ostali akteri samo svoje.
+
+- **Autentifikacija:** Korisnik ili Kompanija JWT token
+- **Response:** `Notification`
+- **Greške:**
+  - `403` — notifikacija ne pripada akteru
+  - `404` — notifikacija nije pronađena
+
+---
+
+#### `DELETE /notifications/clear-all`
+
+Trajno briše sve notifikacije trenutnog aktera iz baze.
+
+- **Autentifikacija:** Korisnik ili Kompanija JWT token
+- **Response:** `204 No Content`
+
+---
+
+#### `GET /notifications/{notification_id}`
+
+Vraća detalje jedne notifikacije.  
+Admin može vidjeti bilo koju notifikaciju, ostali akteri samo svoje.
+
+- **Autentifikacija:** Korisnik ili Kompanija JWT token
+- **Response:** `Notification`
+- **Greške:**
+  - `403` — notifikacija ne pripada akteru
+  - `404` — notifikacija nije pronađena
+
+---
+
+#### `PATCH /notifications/{notification_id}`
+
+Parcijalno ažuriranje notifikacije — šalju se samo polja koja se mijenjaju.  
+Admin može ažurirati bilo koju notifikaciju, ostali akteri samo svoje.
+
+- **Autentifikacija:** Korisnik ili Kompanija JWT token
+- **Body:** `NotificationUpdate` (parcijalno)
+- **Response:** `Notification`
+- **Greške:**
+  - `403` — notifikacija ne pripada akteru
+  - `404` — notifikacija nije pronađena
+
+---
+
+#### `DELETE /notifications/{notification_id}`
+
+Trajno briše jednu notifikaciju iz baze.  
+Admin može obrisati bilo koju notifikaciju, ostali akteri samo svoje.
+
+- **Autentifikacija:** Korisnik ili Kompanija JWT token
+- **Response:** `204 No Content`
+- **Greške:**
+  - `403` — notifikacija ne pripada akteru
+  - `404` — notifikacija nije pronađena
