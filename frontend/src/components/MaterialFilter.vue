@@ -1,4 +1,4 @@
-<<template>
+<template>
   <div class="bg-white dark:bg-slate-800 p-5 rounded-lg shadow-sm border border-gray-100 dark:border-slate-700 w-64 min-w-[256px] max-w-[256px] flex-shrink-0 h-fit">
     <h2 class="text-lg font-bold mb-4 uppercase text-gray-800 dark:text-slate-100 border-b dark:border-slate-700 pb-2">Filteri</h2>
     <div class="mb-6">

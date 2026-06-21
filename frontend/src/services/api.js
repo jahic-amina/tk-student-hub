@@ -378,9 +378,26 @@ export async function getPublicMaterials(filters = {}, page = 1, perPage = 10) {
     if (filters.subject_id) params.append('subject_id', filters.subject_id);
     params.append('page', page);
     params.append('per_page', perPage);
-    const response = await fetch(`${BASE_URL}/materials/public?${params.toString()}`);
+  const url = `${BASE_URL}/materials/public?${params.toString()}`;
+  const token = localStorage.getItem('token');
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: token && token !== 'null' && token !== 'undefined' ? { Authorization: `Bearer ${token}` } : {}
+    });
+
+    if (response.status === 401) {
+      console.error("Niste ulogovani ili je token istekao");
+      return { items: [], total: 0, page: 1, per_page: perPage, total_pages: 0 };
+    }
+
     if (!response.ok) throw new Error('Greška');
     return response.json();
+  } catch (error) {
+    console.error('Greška u API pozivu (public materials):', error);
+    return { items: [], total: 0, page: 1, per_page: perPage, total_pages: 0 };
+  }
 }
 export async function toggleBookmark(materialId) {
   const token = localStorage.getItem("token");
@@ -432,8 +449,8 @@ export async function uploadAvatar(token, file) {
   })
   const data = await response.json()
   
-  if (data.profilna_slika_url) {
-    data.profilna_slika_url = data.profilna_slika_url + '?t=' + Date.now()
+  if (data.profile_picture_url) {
+    data.profile_picture_url = data.profile_picture_url + '?t=' + Date.now()
   }
   
   return data
