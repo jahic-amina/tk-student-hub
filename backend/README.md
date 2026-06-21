@@ -450,3 +450,199 @@ alembic stamp head
 ```
 
 ---
+
+### Tim 2 — Materijali (Amer Imamović) — Backend
+
+#### Pregled
+
+Ova dokumentacija opisuje backend implementaciju koju je radio Amer Imamović u okviru Tim 2 — modul Materijali. Implementacija obuhvata brisanje materijala, toggle bookmark funkcionalnost i kompletne filtere za pretragu materijala po godini, tipu i predmetu.
+
+Sav kod se nalazi u `backend/app/routers/materials.py` i `backend/app/models/materials.py`.
+
+---
+
+#### Sprint 1 — Brisanje materijala
+
+### Model — `Material.status`
+
+Brisanje je implementirano kao **soft delete** — materijal se označava kao obrisan a ne briše se iz baze:
+
+```python
+status: str = Field(default="pending")  # pending, approved, rejected, deleted
+```
+
+### `DELETE /materials/{id}` — Zaštićen (JWT)
+
+Briše (označava kao obrisano) zadani materijal. Samo autor materijala ili admin mogu obrisati materijal.
+
+**Autentifikacija:** Zahtijeva JWT token (korisnik mora biti prijavljen)
+
+**Autorizacija:**
+- Admin može obrisati bilo koji materijal
+- Korisnik može obrisati samo vlastite materijale
+- Neovlašteni pristup vraća `403 Forbidden`
+
+**Request:**
+```
+DELETE /materials/{id}
+Authorization: Bearer <token>
+```
+
+**Response `204 No Content`:** Materijal uspješno označen kao obrisan (bez tijela odgovora)
+
+**Moguće greške:**
+| Status | Razlog |
+|---|---|
+| `401` | Korisnik nije prijavljen |
+| `403` | Nemate dozvolu za brisanje (nije autor ni admin) |
+| `404` | Materijal ne postoji |
+
+**Napomena:** Obrisani materijali nisu dostupni u javnom popisu, ali ako su ih već preuzeli korisnici, oni mogu pristupiti verziji koju su preuzeli.
+
+---
+
+#### Sprint 2 — Bookmark (Omiljeni materijali)
+
+### Model — `Bookmark`
+
+```python
+class Bookmark(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id")
+    material_id: int = Field(foreign_key="material.id")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+```
+
+Bookmark je vanjska tabela koja povezuje korisnike s materijalima kao "omiljeni". Svaki red predstavlja omiljenu relaciju između korisnika i materijala.
+
+### `POST /materials/{material_id}/bookmark` — Zaštićen (JWT)
+
+Toggle bookmark za materijal — ako je već bookmarkovan uklanja se, ako nije — dodaje se. Admini ne mogu bookmarkovati materijale.
+
+**Autentifikacija:** Zahtijeva JWT token
+
+**Request:**
+```
+POST /materials/42/bookmark
+Authorization: Bearer <token>
+```
+
+**Response (Toggle — dva mogućnostna odgovora):**
+
+Ako je materijal **dodat kao omiljeni**:
+```json
+{
+  "is_bookmarked": true
+}
+```
+
+Ako je materijal **uklonjen iz omiljenih**:
+```json
+{
+  "is_bookmarked": false
+}
+```
+
+**Moguće greške:**
+| Status | Razlog |
+|---|---|
+| `401` | Korisnik nije prijavljen |
+
+**Frontend integracija:** Kad korisnik klikne na zastavicu:
+1. Šalje se `POST` zahtjev na `/materials/{id}/bookmark`
+2. Backend vraća `is_bookmarked: true/false`
+3. Frontend ažurira svojstvo `material.is_bookmarked` u listi
+4. UI se osvježi da prikaže narandžastu (bookmarked) ili sivu (unbookmarked) zastavicu
+
+---
+
+#### Sprint 3 — Filteri (Godina, Tip, Predmet)
+
+### Filteri u `GET /materials/` i `GET /materials/public`
+
+Oba endpointa (`/materials/` za prijavljene i `/materials/public` za javni pristup) podržavaju sljedeće query parametare:
+
+**Query parametri:**
+```
+years       list[int]  — filtriranje po godini studija (npr. ?years=1&years=2)
+types       list[str]  — filtriranje po tipu materijala (npr. ?types=skripta&types=ispiti)
+subject_id  int        — filtriranje po ID-u predmeta (npr. ?subject_id=5)
+page        int        — broj stranice (default: 1, min: 1)
+per_page    int        — materijala po stranici (default: 10, max: 50)
+mine_only   bool       — samo vlastiti materijali (zahtijeva prijavu) — dostupno samo na /materials/
+```
+
+### Dozvoljeni tipovi materijala
+
+```python
+ALLOWED_TYPES = {
+    'skripta': 'Skripte',
+    'auditorne_vjezbe': 'Auditorne vježbe',
+    'laboratorijske_vjezbe': 'Laboratorijske vježbe',
+    'ispiti': 'Ispiti',
+    'projekat': 'Projekat'
+}
+```
+
+### Primjeri API poziva s filterima
+
+**Primjer 1: Materijali za 1. i 2. godinu:**
+```
+GET /materials/?years=1&years=2&page=1&per_page=10
+```
+
+**Primjer 2: Samo skripte za predmet ID=5:**
+```
+GET /materials/?subject_id=5&types=skripta&page=1
+```
+
+**Primjer 3: Ispiti i laboratorijske vježbe:**
+```
+GET /materials/?types=ispiti&types=laboratorijske_vjezbe
+```
+
+**Primjer 4: Kombinovani filteri - godina 3, tip skripta, predmet 10:**
+```
+GET /materials/?years=3&types=skripta&subject_id=10&page=1&per_page=20
+```
+
+### Implementaciona logika filtera
+
+Filteri se primjenjuju na SQL nivou prije paginacije:
+
+```python
+# Filtriranje po godini studija
+if years:
+    query = query.join(Subject, Material.subject_id == Subject.id).where(Subject.study_year.in_(years))
+
+# Filtriranje po tipu materijala
+if types:
+    query = query.where(Material.file_type.in_(types))
+
+# Filtriranje po predmetu
+if subject_id:
+    query = query.where(Material.subject_id == subject_id)
+```
+
+**Napomena:** Filteri se mogu kombinovati — svi aktivni filteri se primjenjuju zajedno (AND logika).
+
+---
+
+#### Bookmark stanje u listama materijala
+
+Kada je korisnik prijavljen, svaki materijal u API odgovoru sadrži polje `is_bookmarked`:
+
+```python
+user_bookmarks = session.exec(
+    select(Bookmark.material_id).where(Bookmark.user_id == current_user.id)
+).all()
+
+response = MaterialsResponse(
+    **material.model_dump(),
+    is_bookmarked=material.id in user_bookmarks,  # True ako je bookmarked
+)
+```
+
+**Javni endpoint (`/materials/public`)** ne šalje bookmark stanje jer nema informacije o korisniku — korisnici koji žele vidjeti svoje bookmarke trebaju koristiti `/materials/` s autentifikacijom.
+
+---
