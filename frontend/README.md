@@ -119,7 +119,7 @@ Trenutno backend URL nije konfigurabilan putem environment varijabli - adresa je
 ## TIM 4 - detaljan opis funkcionalnosti
 
 Tim 4 je zadužen za dio platforme koji svakom registrovanom studentu pruža vlastiti profil i personalizovan pregled platforme - dashboard. Frontend ovog modula omogućava studentu da pregleda i uređuje svoje osnovne podatke i biografiju, postavi, promijeni ili ukloni profilnu sliku, te promijeni lozinku - sve direktno sa svoje profilne stranice. Na istoj stranici student ima pregled svoje nedavne aktivnosti na platformi (objavljeni materijali, komentari na forumu, prihvaćene prijave na prakse) i pregled praksi na koje je trenutno prijavljen.
-Korisnicima s administratorskom ulogom omogućen je poseban, zaštićen dio sučelja za pregled svih registrovanih korisnika platforme, sa mogućnošću pretrage po imenu ili emailu i filtriranja po ulozi i statusu naloga.
+Korisnicima s administratorskom ulogom omogućen je poseban, zaštićen dio sučelja za pregled svih registrovanih korisnika platforme, sa mogućnošću pretrage po imenu ili emailu i filtriranja po ulozi i statusu naloga. Osim toga, omogućeno mu je mijenjanje uloge i statusa korisnika, te trajno brisanje profila. Također ima i prikaz statistike registrovanih korisnika. 
 
 ### Struktura foldera
 
@@ -314,6 +314,10 @@ Stranica administratorskog pregleda korisnika:
 - Pretraga po imenu ili email adresi (u realnom vremenu)
 - Filtriranje po ulozi (`member` / `admin`)
 - Filtriranje po statusu naloga (aktivan / deaktiviran)
+- Aktivacija/deaktivacija naloga (Uz ograničenje da administrator ne može sam sebi deaktivirati nalog u admin panelu)
+- Promjena uloge naloga (Uz ograničenje da administrator ne može sam sebi promijeniti ulogu)
+- Trajno brisanje naloga (Uz ograničenje da administrator ne može obrisati svoj nalog)
+- Prikaz statistike registrovanih naloga
 
 Pretraga i filteri pozivaju `fetchUsers()` pri svakoj promjeni, bez osvježavanja stranice.
 
@@ -380,11 +384,20 @@ Zaštita postoji na dva nivoa:
 | `POST` | `/profiles/me/avatar` | ✅ JWT | Upload profilne slike (`multipart/form-data`, polje `file`) |
 | `DELETE` | `/profiles/me/avatar` | ✅ JWT | Uklanjanje profilne slike |
 | `GET` | `/uploads/{filename}` | ❌ | Statički pristup uploadanim slikama |
+| `PATCH` | `/profiles/me/password` | ✅ JWT | Promjena lozinke |
 | `GET` | `/api/users/me/activity` | ✅ JWT | Historija aktivnosti korisnika (`limit`, `offset`) |
 | `GET` | `/applications/me/all` | ✅ JWT | Aktivne prijave na prakse trenutnog korisnika |
 | `GET` | `/notifications/me` | ✅ JWT | Sve notifikacije korisnika |
 | `GET` | `/notifications/unread-count` | ✅ JWT | Broj nepročitanih notifikacija |
 | `POST` | `/notifications/read-all` | ✅ JWT | Označavanje svih notifikacija kao pročitanih |
 | `GET` | `/admin/users` | ✅ JWT (admin) | Lista svih korisnika, uz filtere (samo admin) |
+| `POST` | `/account/deactivate` | ✅ JWT | Deaktivacija vlastitog naloga |
+| `PATCH` | `/admin/users/{user_id}/role` | ✅ JWT (admin) | Promjena uloge korisnika |
+| `POST` | `/admin/users/{id}/deactivate` | ✅ JWT (admin) | Deaktivacija naloga od strane admina |
+| `POST` | `/admin/users/{id}/activate` | ✅ JWT (admin) | Aktivacija naloga od strane admina |
+| `DELETE` | `/admin/users/{user_id}` | ✅ JWT (admin) | Trajno brisanje naloga od strane admina |
+| `GET` | `/admin/stats` | ✅ JWT (admin) | Generiše statistike o regitrovanim nalozima |
+
+
 
 ---
