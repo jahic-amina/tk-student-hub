@@ -183,6 +183,7 @@ FastAPI automatski generiše interaktivnu dokumentaciju svih dostupnih endpointa
 | `companies` | Registracija i upravljanje profilima kompanija |
 | `notifications` | Sistem notifikacija za korisnike i kompanije |
 | `activity` | Historija nedavnih aktivnosti korisnika |
+| `admin` | Pregled i upravljanje korisnicima od strane administratora |
 
 Detaljan pregled svih dostupnih ruta i njihovih parametara dostupan je putem Swagger dokumentacije.
 
@@ -205,3 +206,36 @@ To će ubaciti 10 kompanija i 10 praksi za lokalno testiranje.
 ## Napomena o bazi podataka
 
 Razvojno okruženje koristi SQLite (`studenthub.db`), koja se automatski generše pri prvom pokretanju aplikacije. Fajl baze se ne commituje u git repozitorij.
+
+## Tim 4 funkcionalnosti
+
+### Upravljanje korisničkim profilom — router `profiles.py`
+
+Svi endpointi u ovom modulu zahtijevaju da korisnik bude autentifikovan. U zaglavlju (Headers) svakog zahtjeva potrebno je proslijediti JWT token: Authorization: Bearer <vaš_token>
+
+| Metoda | Putanja | Funkcija | Opis | Responses |
+|---|---|---|---|---|
+| GET | `/profiles/me` | `get_my_profile` | Vraća sve podatke trenutno prijavljenog korisnika potrebne za prikaz profila (ime, email, biografija, godina studija, URL profilne slike, datum registracije) | 200 OK, 401 Unauthorized, 403 Forbidden, 422 Unprocessable Entity, 500 Internal Server Error |
+| PATCH | `/profiles/me` | `update_profile_me` | Ažurira tekstualne podatke profila (ime, prezime, biografija, godina studija). Koristi `exclude_unset=True` kako bi se mijenjala samo polja koja su zaista poslana u zahtjevu | 200 OK, 422 Unprocessable Entity, 401 Unauthorized, 403 Forbidden, 500 Internal Server Error |
+| PATCH | `/profiles/me/password` | `change_password` | Mijenja lozinku korisnika. Prije izmjene provjerava se ispravnost trenutne lozinke pomoću `pwd_context.verify()`, te da nova lozinka nije identična staroj |  200 OK, 400 Bad Request, 422 Unprocessable Entity, 500 Internal Server Error |
+| POST | `/profiles/me/avatar` | `upload_avatar` | Prima fajl slike (`UploadFile`), validira format (JPEG/PNG) i veličinu (maksimalno 5 MB), sprema fajl lokalno na server u `uploads/` folder pod jedinstvenim imenom (UUID), te u bazi ažurira putanju do slike | 200 OK, 400 Bad Request, 422 Unprocessable Entity, 401 Unauthorized, 500 Internal Server Error |
+| DELETE | `/profiles/me/avatar` | `delete_avatar` | Briše fajl profilne slike sa servera i postavlja vrijednost u bazi na `None` | 200 OK, 400 Bad Request, 401 Unauthorized, 500 Internal Server Error |
+
+### Deaktivacija korisničkog profila od strane korisnika — router `account.py`
+
+| Metoda | Putanja | Funkcija | Opis | Responses |
+|---|---|---|---|---|
+| POST | `/account/deactivate` | `deactivate_account` | Vrši deaktivaciju profila uz prethodnu provjeru lozinke | 200 OK, 400 Bad Request, 401 Unauthorized, 500 Internal Server Error |
+
+### Upravljanje korisnicima od strane administratora — router `admin.py`
+
+Sve rute u ovom modulu su zaštićene funkcijom `require_admin`. Za pristup je neophodno proslijediti važeći JWT token u zaglavlju (Authorization: Bearer <token>) korisnika koji ima ulogu admin.
+
+| Metoda | Putanja | Funkcija | Opis | Responses |
+|---|---|---|---|---|
+| GET | `/admin/users` (opcioni query parametri) | `get_all_users` | Vraća listu svih registrovanih korisnika u sistemu uz mogućnost napredne pretrage i filtriranja | 200 OK, 401 Unauthorized, 403 Forbidden, 422 Unprocessable Entity, 500 Internal Server Error |
+| PATCH | `/admin/users/{user_id}/role` | `change_user_role` | Omogućava administratoru da promijeni ulogu drugom korisniku | 200 OK, 400 Bad Request, 422 Unprocessable Entity, 401 Unauthorized, 403 Forbidden, 404 Not Found |
+| POST | `/admin/users/{id}/deactivate` | `deactivate_user` | Omogućava administratoru da deaktivira korisnički račun (soft-delete) | 200 OK, 400 Bad Request, 422 Unprocessable Entity, 401 Unauthorized, 403 Forbidden, 404 Not Found |
+| POST | `/admin/users/{id}/activate` | `activate_user` | Omogućava administratoru da ponovo aktivira prethodno deaktiviran profil | 200 OK, 400 Bad Request, 422 Unprocessable Entity, 401 Unauthorized, 403 Forbidden, 404 Not Found |
+| DELETE | `/admin/users/{user_id}` | `delete_user` | Omogućava administratoru da potpuno i nepovratno uklanja korisnika (hard delete) iz baze podataka uz ugrađenu rollback zaštitu u slučaju greške na serveru | 200 OK, 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 500 Internal Server Error |
+| GET | `/admin/stats` (opcioni query parametri) | `get_platform_statistics` | Generiše ključne ststističke podatke o bazi korisnika. Broj novih registracija se računa dinamički na osnovu proslijeđenog vremenskog perioda. | 200 OK, 401 Unauthorized, 403 Forbidden, 422 Unprocessable Entity, 500 Internal Server Error |
