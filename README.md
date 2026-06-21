@@ -80,11 +80,11 @@ Projekat je razvijen kroz rad više timova, gdje je svaki tim odgovoran za zaseb
 | PRojektni tim | Funkcionalnost | Folder | Članova tima |
 |-----|---------------|--------|---|
 | Tim 1 | Prakse i edukacije | `backend/app/routers/prakse.py`, `frontend/src/views/prakse/` | - |
-| Tim 2 | Materijali | `backend/app/routers/materials.py`, `frontend/src/views/materials/` | Lejla Kadušić (Sprint 1-3), Amer Imamović (Sprint 4-6) |
+| Tim 2 | Materijali | `backend/app/routers/materials.py`, `frontend/src/views/materials/` | Lejla Kadušić, Amer Imamović, Marinela Mitić |
 | Tim 3 | Forum | `backend/app/routers/forum.py`, `frontend/src/views/forum/` | - |
 | Tim 4 | Profili & Dashboard | `backend/app/routers/profiles.py`, `frontend/src/views/profiles/` | - |
 
 **Tim 2 Opis:**
 - **Lejla Kadušić** — Upload materijala, komentari (CRUD), paginacija
 - **Amer Imamović** — Brisanje materijala, bookmark (omiljeni), filteri (godina, tip, predmet)
-
+- **Marinela Mitić** — Forma za dodavanje materijala s validacijom, preuzimanje materijala, ocjenjivanje (zvjezdice), thumbnail sličice, dark mode
