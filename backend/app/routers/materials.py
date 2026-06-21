@@ -121,8 +121,11 @@ def generate_thumbnail(file_path: str) -> Optional[str]:
         convertable = ('.pptx', '.ppt', '.docx', '.doc')
         if any(file_path.lower().endswith(ext) for ext in convertable):
             import subprocess
+            soffice_bin = shutil.which("soffice") or shutil.which("libreoffice")
+            if not soffice_bin:
+                return None
             result = subprocess.run([
-                            '/opt/homebrew/bin/soffice', '--headless', '--convert-to', 'pdf',
+                soffice_bin, '--headless', '--convert-to', 'pdf',
                 '--outdir', '/tmp', file_path
             ], capture_output=True, timeout=30)
             
@@ -267,26 +270,6 @@ def get_materials(
         per_page=per_page,
         total_pages=(total + per_page - 1) // per_page,
     )
-@router.get("/public", response_model=PaginatedMaterialsResponse)
-def get_public_materials(
-    session: Session = Depends(get_db),
-    years: Optional[list[int]] = Query(None),
-    types: Optional[list[str]] = Query(None),
-    subject_id: Optional[int] = Query(None),
-    page: int = Query(1, ge=1),
-    per_page: int = Query(10, ge=1, le=50),
-):
-    svi = get_materials_by_status(session, "approved", years=years, types=types, subject_id=subject_id)
-    total = len(svi)
-    start = (page - 1) * per_page
-    end = start + per_page
-    return PaginatedMaterialsResponse(
-        items=svi[start:end],
-        total=total,
-        page=page,
-        per_page=per_page,
-        total_pages=(total + per_page - 1) // per_page,
-    ) 
 
 @router.get("/{id}/preview")
 def preview_material(id: int, db: Session = Depends(get_db)):
@@ -682,7 +665,6 @@ def get_material(material_id: int, session: Session = Depends(get_db)):
     material.comments.sort(key=lambda c: c.created_at, reverse=True)
     avg = sum(r.rating for r in material.ratings) / len(material.ratings) if material.ratings else None
     count = len(material.ratings)
-    ext = material.file_path.split('.')[-1].lower() if material.file_path else None
 
     return MaterialDetailResponse(
         id=material.id,
@@ -699,7 +681,6 @@ def get_material(material_id: int, session: Session = Depends(get_db)):
         average_rating=round(avg, 1) if avg else None,
         rating_count=count,
         thumbnail_path=material.thumbnail_path,
-        file_extension=ext,
     )
 
 
