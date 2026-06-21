@@ -8,11 +8,12 @@ TK Student Hub povezuje studente, kompanije i administratore platforme. Studenti
 
 ## Korisničke uloge
 
-| Uloga | Opis |
-|---|---|
-| Posjetilac | Neregistrovani korisnik koji pregledava javni sadržaj |
-| Student | Registrovani korisnik s punim pristupom funkcionalnostima platforme |
-| Administrator | Upravlja korisnicima i sadržajem platforme |
+| Uloga         | Opis                                                                           |
+| ------------- | ------------------------------------------------------------------------------ |
+| Posjetilac    | Neregistrovani korisnik koji pregledava javni sadržaj                          |
+| Student       | Registrovani korisnik s punim pristupom funkcionalnostima platforme            |
+| Kompanija     | Registrovana kompanija koja postavlja u pravlja oglasima za prakse i edukacije |
+| Administrator | Upravlja korisnicima i sadržajem platforme                                     |
 
 Pored toga, kompanije imaju zaseban tip naloga za objavu oglasa i upravljanje prijavama.
 
@@ -77,6 +78,7 @@ Za detalje o frontend i backend specifičnim uputama pogledajte:
 ## Autentifikacija
 
 Platforma koristi JWT tokene. Nakon prijave token se čuva u `localStorage` i šalje sa svakim API pozivom u headeru:
+
 ```
 Authorization: Bearer YOUR_TOKEN_HERE
 ```
