@@ -66,7 +66,7 @@
                 </div>
                 <div class="flex-1">
                     <p class="text-sm text-gray-500 dark:text-slate-400 mb-3">{{ material.subject?.name }} • {{
-                        material.subject?.study_year }}. godina • {{ fileTypeLabels[material.file_type] ?? material.file_typematerial.file_type }}</p>
+                        material.subject?.study_year }}. godina • {{ fileTypeLabels[material.file_type] ?? material.file_type }}</p>
                     <h3 class="font-semibold mb-2 text-base">Detaljan opis</h3>
                     <template v-if="isEditing">
                         <textarea v-model="material.description" rows="4"
