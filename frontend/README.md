@@ -1942,4 +1942,3 @@ async function saveChanges() {
 #### - Preview materijala
 
 Implementirana logika za inline pregled fajla u `MaterialDetailView.vue`. Dugme `PREGLEDAJ` prikazuje se uvjetno na osnovu ekstenzije fajla, a fajl se otvara u novom tabu bez pokretanja preuzimanja.
-## Rute aplikacije
