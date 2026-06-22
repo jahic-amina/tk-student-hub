@@ -1,10 +1,5 @@
 <template>
   <div class="w-full flex flex-col md:flex-row gap-8 items-start justify-start py-6 px-4">
-
-    <div v-if="userRole !== 'admin'" class="hidden md:block">
-      <MaterialFilter @change="handleFilterChange" />
-    </div>
-
     <div class="flex-grow min-w-0 w-full pr-4">
       <MaterialTabs v-if="userRole !== 'admin'" :activeTab="currentTab" @tab-change="handleTabChange" />
 
@@ -63,6 +58,9 @@
         </div>
 
       </div>
+    </div>
+    <div class="w-full md:w-[280px] shrink-0 flex flex-col items-stretch justify-start gap-4 text-left">
+      <MaterialFilter @change="handleFilterChange" />
     </div>
   </div>
 </template>

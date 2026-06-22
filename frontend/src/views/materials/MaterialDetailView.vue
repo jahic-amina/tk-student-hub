@@ -59,10 +59,10 @@
             </div>
             <hr class="mb-4 dark:border-slate-700" />
             <!-- Thumbnail + Opis + Ocjena -->
-            <div class="flex gap-6 mb-6">
-                <div v-if="material.thumbnail_path" class="shrink-0">
+            <div class="flex flex-col sm:flex-row gap-6 mb-6">
+                <div v-if="material.thumbnail_path" class="shrink-0 w-full sm:w-48">
                     <img :src="`http://127.0.0.1:8000/thumbnails/${material.thumbnail_path.split('/').pop()}`"
-                        class="w-48 object-cover rounded-lg" alt="thumbnail" />
+                        class="w-full sm:w-48 object-cover rounded-lg" alt="thumbnail" />
                 </div>
                 <div class="flex-1">
                     <p class="text-sm text-gray-500 dark:text-slate-400 mb-3">{{ material.subject?.name }} • {{
