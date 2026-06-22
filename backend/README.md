@@ -723,6 +723,441 @@ Koristi se pri **ažuriranju** notifikacije (`PATCH /notifications/{id}`). Sva p
 
 ---
 
+## Forum Modeli Podataka
+
+### ForumCategory (Kategorija foruma)
+#### Tabela: `forum_categories`
+
+---
+
+#### SQLModel — `ForumCategory` (tabela)
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment (default: `None`) |
+| `name` | `str` | Naziv kategorije (indeksiran, max 100 karaktera) |
+| `color` | `str` | HEX kod boje za frontend prikaz (default: `#ff7a00`, max 20 karaktera) |
+| `description` | `str \| None` | Opis kategorije (opcionalno, max 255 karaktera, default: `None`) |
+
+##### Relacije
+| Relacija | Model | Opis |
+| :--- | :--- | :--- |
+| `topics` | `List[ForumTopic]` | Lista svih tema koje pripadaju ovoj kategoriji |
+
+---
+
+#### Pydantic shema — `ForumCategoryCreate`
+*Koristi se pri kreiranju nove kategorije (`POST /forum/categories`).*
+
+| Polje | Tip | Validacija / Default |
+| :--- | :--- | :--- |
+| `name` | `str` | Obavezno polje, max 100 karaktera |
+| `color` | `str` | Default: `#ff7a00`, max 20 karaktera |
+| `description` | `str \| None` | Opcionalno, max 255 karaktera |
+
+---
+
+#### Pydantic shema — `ForumCategoryUpdate`
+*Koristi se pri ažuriranju kategorije (`PATCH /forum/categories/{id}`). Sva polja su opcionalna.*
+
+| Polje | Tip | Validacija / Default |
+| :--- | :--- | :--- |
+| `name` | `str \| None` | Max 100 karaktera |
+| `color` | `str \| None` | Max 20 karaktera |
+| `description` | `str \| None` | Max 255 karaktera |
+
+---
+
+#### Pydantic shema — `ForumCategoryRead`
+*Vraća se kao response na API pozive.*
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int` | Jedinstveni identifikator |
+| `name` | `str` | Naziv kategorije |
+| `color` | `str` | HEX boja kategorije |
+| `description` | `str \| None` | Opis kategorije |
+
+---
+
+### ForumTopic (Tema foruma)
+#### Tabela: `forum_topics`
+
+---
+
+#### SQLModel — `ForumTopic` (tabela)
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment (default: `None`) |
+| `title` | `str` | Naslov teme (indeksiran, max 200 karaktera) |
+| `content` | `str` | Glavni tekst/sadržaj teme |
+| `views_count` | `int` | Broj pregleda teme (default: `0`) |
+| `is_locked` | `bool` | Flag da li je tema zaključana za nove komentare (default: `False`) |
+| `is_deleted` | `bool` | Soft delete flag (default: `False`) |
+| `created_at` | `datetime` | Datum kreiranja teme (auto generisano preko `datetime.utcnow`) |
+| `updated_at` | `datetime \| None` | Datum posljednje izmjene (default: `None`) |
+| `category_id` | `int` | Strani ključ -> `forum_categories.id` |
+| `user_id` | `int` | Strani ključ -> `users.id` (Autor teme) |
+
+##### Relacije
+| Relacija | Model | Opis |
+| :--- | :--- | :--- |
+| `category` | `ForumCategory \| None` | Objekt kategorije kojoj tema pripada |
+| `comments` | `List[ForumComment]` | Lista svih komentara na ovoj temi |
+
+---
+
+#### Pydantic shema — `ForumTopicCreate`
+*Koristi se pri kreiranju nove teme (`POST /forum/topics`).*
+
+| Polje | Tip | Validacija / Default |
+| :--- | :--- | :--- |
+| `title` | `str` | Obavezno, max 200 karaktera |
+| `content` | `str` | Obavezno tekstualno polje |
+| `category_id` | `int` | ID postojeće kategorije |
+
+---
+
+#### Pydantic shema — `ForumTopicRead`
+*Vraća se kao response na API pozive za teme (ne uključuje `is_deleted`).*
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int` | Jedinstveni identifikator teme |
+| `title` | `str` | Naslov teme |
+| `content` | `str` | Sadržaj teme |
+| `views_count` | `int` | Broj pregleda |
+| `is_locked` | `bool` | Status zaključavanja |
+| `created_at` | `datetime` | Vrijeme kreiranja |
+| `updated_at` | `datetime \| None` | Vrijeme izmjene |
+| `category_id` | `int` | ID kategorije |
+| `user_id` | `int` | ID autora |
+
+---
+
+### ForumComment (Komentar foruma)
+#### Tabela: `forum_comments`
+
+---
+
+#### SQLModel — `ForumComment` (tabela)
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment (default: `None`) |
+| `content` | `str` | Tekstualni sadržaj komentara |
+| `is_admin_notice` | `bool` | Da li je komentar zvanična napomena moderatora/admina (default: `False`) |
+| `is_best_answer` | `bool` | Da li je komentar označen kao prihvaćeno rješenje (default: `False`) |
+| `is_deleted` | `bool` | Soft delete flag (default: `False`) |
+| `parent_id` | `int \| None` | Strani ključ -> `forum_comments.id` (Omogućava ugniježdene odgovore) |
+| `created_at` | `datetime` | Datum kreiranja (auto generisano preko `datetime.utcnow`) |
+| `updated_at` | `datetime \| None` | Datum posljednje izmjene (default: `None`) |
+| `topic_id` | `int` | Strani ključ -> `forum_topics.id` |
+| `user_id` | `int` | Strani ključ -> `users.id` (Autor komentara) |
+
+##### Relacije
+| Relacija | Model | Opis |
+| :--- | :--- | :--- |
+| `topic` | `ForumTopic \| None` | Tema na kojoj se nalazi komentar |
+| `votes` | `List[ForumCommentVote]` | Svi glasovi (upvote/downvote) na ovom komentaru |
+| `replies` | `List[ForumComment]` | Samoreferencirajuća relacija (odgovori na ovaj komentar sa `lazy="select"`) |
+
+---
+
+### Interakcije i prateći modeli (Glasovi, Lajkovi, Tagovi)
+
+#### Tabela: `forum_comment_votes`
+*Čuva pojedinačne glasove korisnika za komentare (Upvote / Downvote).*
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment |
+| `comment_id` | `int` | Strani ključ -> `forum_comments.id` |
+| `user_id` | `int` | Strani ključ -> `users.id` |
+| `value` | `int` | Vrijednost glasa (npr. `1` za upvote, `-1` za downvote, default: `1`) |
+| `created_at` | `datetime` | Vrijeme glasanja |
+
+##### Ograničenja i Relacije
+- **Jedinstvenost:** `UniqueConstraint("comment_id", "user_id", name="unique_comment_vote_per_user")` sprečava duplo glasanje od strane istog korisnika.
+- **Relacija:** `comment` -> Poveznica nazad na `ForumComment` objekat.
+
+---
+
+#### Tabela: `topic_likes`
+*Čuva podatke o lajkovima na nivou cijele teme.*
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment |
+| `topic_id` | `int` | Strani ključ -> `forum_topics.id` (Indeksiran) |
+| `user_id` | `int` | Strani ključ -> `users.id` (Indeksiran) |
+| `created_at` | `datetime` | Vrijeme kreiranja lajka |
+
+##### Ograničenja
+- **Jedinstvenost:** `UniqueConstraint("topic_id", "user_id", name="unique_topic_like_per_user")`.
+
+---
+
+#### Tabela: `topic_dislikes`
+*Čuva podatke o dislajkovima na nivou cijele teme.*
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment |
+| `topic_id` | `int` | Strani ključ -> `forum_topics.id` (Indeksiran) |
+| `user_id` | `int` | Strani ključ -> `users.id` (Indeksiran) |
+| `created_at` | `datetime` | Vrijeme kreiranja dislajka |
+
+##### Ograničenja
+- **Jedinstvenost:** `UniqueConstraint("topic_id", "user_id", name="unique_topic_dislike_per_user")`.
+
+---
+
+#### Tabela: `forum_tags`
+*Katalog unikatnih tagova na forumu.*
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment |
+| `name` | `str` | Jedinstveno ime taga (indeksiran, unique, max 50 karaktera) |
+
+---
+
+#### Tabela: `forum_topic_tags`
+*Pivot tabela za Many-to-Many relaciju između tema i tagova.*
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `topic_id` | `int \| None` | Primarni ključ i Strani ključ -> `forum_topics.id` |
+| `tag_id` | `int \| None` | Primarni ključ i Strani ključ -> `forum_tags.id` |
+
+---
+
+### Prilozi (Attachments)
+
+#### Tabela: `topic_attachments`
+*Meta-podaci o fajlovima zakačenim uz forum teme.*
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment |
+| `topic_id` | `int` | Strani ključ -> `forum_topics.id` (Indeksiran) |
+| `filename` | `str` | Originalni naziv fajla (max 255 karaktera) |
+| `file_path` | `str` | Putanja do fajla na disku/storage-u (max 500 karaktera) |
+| `file_size` | `int` | Veličina fajla u bajtovima (`bytes`) |
+| `mime_type` | `str` | MIME tip fajla (max 100 karaktera, npr. `image/jpeg`) |
+| `created_at` | `datetime` | Vrijeme uploada |
+
+---
+
+#### Tabela: `comment_attachments`
+*Meta-podaci o fajlovima zakačenim uz pojedinačne komentare.*
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment |
+| `comment_id` | `int` | Strani ključ -> `forum_comments.id` (Indeksiran) |
+| `filename` | `str` | Originalni naziv fajla (max 255 karaktera) |
+| `file_path` | `str` | Putanja do fajla na disku/storage-u (max 500 karaktera) |
+| `file_size` | `int` | Veličina fajla u bajtovima |
+| `mime_type` | `str` | MIME tip fajla (max 100 karaktera) |
+| `created_at` | `datetime` | Vrijeme uploada |
+
+---
+
+### Moderacija i administracija
+
+#### Tabela: `topic_reports`
+*Prijave korisnika za teme koje krše pravila.*
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment |
+| `topic_id` | `int` | Strani ključ -> `forum_topics.id` |
+| `user_id` | `int` | Strani ključ -> `users.id` (Korisnik koji prijavljuje) |
+| `reason` | `str` | Razlog prijave (max 100 karaktera) |
+| `created_at` | `datetime` | Vrijeme kreiranja prijave |
+| `status` | `str` | Status prijave (default: `"pending"`) |
+| `action_taken` | `str \| None` | Akcija koju je admin preduzeo (default: `None`) |
+| `admin_explanation` | `str \| None` | Obrazloženje od strane administracije (default: `None`) |
+
+---
+
+#### Tabela: `admin_announcements`
+*Globalna obavještenja kreirana od strane administratora.*
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment |
+| `admin_id` | `int` | Strani ključ -> `users.id` (ID administratora) |
+| `title` | `str` | Naslov obavještenja (max 150 karaktera) |
+| `content` | `str` | Kompletan tekst/sadržaj obavještenja |
+| `is_active` | `bool` | Da li je obavještenje aktivno (default: `True`) |
+| `created_at` | `datetime` | Vrijeme kreiranja obavještenja |
+| `expires_at` | `datetime \| None`| Datum kada obavještenje ističe (opcionalno, default: `None`) |
+
+---
+
+#### Tabela: `forum_guidelines`
+*Pravilnik ponašanja na forumu.*
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment |
+| `title` | `str` | Naslov specifičnog pravila |
+| `content` | `str` | Detaljan tekstualni opis pravila |
+| `order` | `int` | Redoslijed sortiranja pri prikazu (default: `0`) |
+| `created_at` | `datetime` | Vrijeme kreiranja |
+| `updated_at` | `datetime` | Vrijeme zadnje izmjene |
+
+---
+
+#### Opšte napomene o sistemu modela
+1. **Upravljanje Vremenom:** Sva polja sa datumima (`created_at`, `updated_at`) automatski koriste UTC zonu preko `datetime.utcnow` prilikom upisa u bazu, ukoliko vrijednost nije eksplicitno proslijeđena.
+2. **Logičko Brisanje:** Teme (`ForumTopic`) i komentari (`ForumComment`) posjeduju polje `is_deleted`. Brisanje ovih entiteta na forumu treba raditi isključivo postavljanjem ovog flaga na `True` (soft delete) kako bi se očuvao integritet historije i povezanih relacija.
+
+---
+
+### ForumNotification (Notifikacije foruma)
+#### Tabela: `forum_notifications`
+
+---
+
+#### SQLModel — `ForumNotification` (tabela)
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment (default: `None`) |
+| `recipient_user_id` | `int` | Strani ključ -> `users.id` (Korisnik koji prima notifikaciju, indeksiran) |
+| `actor_user_id` | `int` | Strani ključ -> `users.id` (Korisnik koji je izazvao notifikaciju, indeksiran) |
+| `topic_id` | `int` | Strani ključ -> `forum_topics.id` (Tema na koju se odnosi notifikacija, indeksirana) |
+| `comment_id` | `int \| None` | Strani ključ -> `forum_comments.id` (Komentar na koji vodi klik, indeksiran, default: `None`) |
+| `text` | `str` | Tekstualni sadržaj i poruka notifikacije |
+| `type` | `ForumNotificationType` | Tip notifikacije (Enum vrijednost) |
+| `is_read` | `bool` | Flag da li je korisnik pročitao notifikaciju (default: `False`) |
+| `is_hidden` | `bool` | Flag za logičko sakrivanje nevažećih notifikacija (default: `False`) |
+| `created_at` | `datetime` | Vrijeme kreiranja notifikacije (auto generisano u UTC preko `datetime.now(timezone.utc)`) |
+
+---
+
+#### Enum — `ForumNotificationType`
+*Definiše sve podržane događaje koji okidaju slanje notifikacije unutar forum sistema.*
+
+| Vrijednost | Tip | Opis |
+| :--- | :--- | :--- |
+| `"topic_like"` | `str` | Korisnik je lajkovao temu |
+| `"topic_dislike"` | `str` | Korisnik je dislajkovao temu |
+| `"topic_reply"` | `str` | Dodan je novi komentar na temu čiji je korisnik autor |
+| `"comment_reply"` | `str` | Dodan je direktan odgovor (reply) na komentar korisnika |
+| `"mention"` | `str` | Korisnik je tagovan/spomenut unutar teksta |
+| `"best_answer"` | `str` | Korisnikov komentar je označen kao prihvaćeno rješenje teme |
+| `"comment_like"` | `str` | Korisnik je dobio pozitivan glas (upvote) na komentar |
+| `"comment_dislike"` | `str` | Korisnik je dobio negativan glas (downvote) na komentar |
+
+---
+
+#### Napomene o sistemu notifikacija
+1. **Upotreba `is_hidden` polja:** Ovaj flag rješava specifične slučajeve poništavanja akcija. Na primjer, ako autor teme označi komentar kao *best answer*, a zatim unutar par sekundi ukloni tu oznaku, sistem neće obrisati zapis iz baze nego će staru, nepročitanu notifikaciju postaviti na `is_hidden = True` kako se ne bi prikazivala u korisnikovom inboxu.
+2. **Rutiranje na frontendu:** Polje `comment_id` je opcionalno jer se za akcije poput `topic_like` i `topic_reply` (gdje se skače na vrh teme) koristi isključivo `topic_id`. Kada je `comment_id` prisutan, frontend ga koristi za automatsko skrolovanje i fokusiranje na tačan komentar u stablu diskusije.
+3. **Generisanje datuma:** Za razliku od ostalih modela koji koriste zastarjeli `datetime.utcnow`, ovaj model pravilno koristi modernu `timezone.utc` svjesnu fabriku za bilježenje tačnog vremena kreiranja zapisa.
+
+---
+
+### ForumReputation (Reputacija i statistika korisnika)
+
+#### Tabela: `forum_user_stats`
+
+---
+
+#### SQLModel — `ForumUserStats` (tabela)
+*Čuva trenutne bodove, nivo reputacije i agregiranu aktivnost pojedinačnog korisnika.*
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `user_id` | `int` | Primarni ključ i Strani ključ -> `users.id` (1:1 veza sa korisnikom) |
+| `reputation_points` | `int` | Trenutni ukupni bodovi reputacije korisnika (default: `0`) |
+| `topics_started_count` | `int` | Ukupan broj tema koje je korisnik pokrenuo (default: `0`) |
+| `answers_count` | `int` | Ukupan broj napisanih odgovora/komentara (default: `0`) |
+| `best_answers_count` | `int` | Broj komentara koji su označeni kao najbolji odgovor (default: `0`) |
+| `night_topics_count` | `int` | Broj tema pokrenutih tokom noćnih sati (default: `0`) |
+| `updated_at` | `datetime` | Vrijeme posljednjeg ažuriranja zapisa (auto generisano preko `utc_now`) |
+
+---
+
+#### Tabela: `forum_user_medals`
+*Čuva sve osvojene medalje i priznanja korisnika na forumu.*
+
+---
+
+#### SQLModel — `ForumUserMedal` (tabela)
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment (default: `None`) |
+| `user_id` | `int` | Strani ključ -> `users.id` (Vlasnik medalje, indeksiran) |
+| `medal_code` | `str` | Jedinstveni identifikacioni kod medalje (indeksiran) |
+| `category` | `str` | Kategorija medalje (npr. `activity`, `moderation`, `helpful`) |
+| `tier` | `str` | Nivo/Rang medalje (npr. `bronze`, `silver`, `gold`) |
+| `is_secret` | `bool` | Da li je medalja bila skrivena prije nego što je osvojena (default: `False`) |
+| `awarded_at` | `datetime` | Vrijeme dodjele priznanja (auto generisano preko `utc_now`) |
+
+##### Ograničenja
+| Naziv | Polja | Opis |
+| :--- | :--- | :--- |
+| `uq_forum_user_medal` | `user_id`, `medal_code` | Korisnik može osvojiti specifičnu medalju samo jednom |
+
+---
+
+#### Tabela: `forum_reputation_events`
+*Historijski dnevnik svih promjena reputacionih bodova radi transparentnosti i revizije.*
+
+---
+
+#### SQLModel — `ForumReputationEvent` (tabela)
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment (default: `None`) |
+| `user_id` | `int` | Strani ključ -> `users.id` (Korisnik kojem se mijenjaju bodovi, indeksiran) |
+| `event_key` | `str` | Jedinstveni identifikator događaja radi sprečavanja dupliranja (indeksiran) |
+| `points_delta` | `int` | Broj dodijeljenih ili oduzetih bodova (npr. `+10`, `-5`) |
+| `reason` | `str` | Opis i razlog promjene (npr. `received_best_answer`) |
+| `source_type` | `str \| None` | Tip entiteta koji je izvor promjene (npr. `comment`, `topic`, default: `None`) |
+| `source_id` | `int \| None` | ID entiteta koji je uzrokovao promjenu (default: `None`) |
+| `created_at` | `datetime` | Vrijeme upisa i obrade događaja (auto generisano preko `utc_now`) |
+
+##### Ograničenja
+| Naziv | Polja | Opis |
+| :--- | :--- | :--- |
+| `uq_forum_reputation_event_key` | `event_key` | Garantuje da se bodovi za isti kôd događaja ne mogu dodijeliti više puta |
+
+---
+
+#### Tabela: `forum_reputation_daily_logs`
+*Dnevni log interakcija koji služi kao anti-abuse (mehanizam zaštite od zloupotrebe).*
+
+---
+
+#### SQLModel — `ForumReputationDailyLog` (tabela)
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment (default: `None`) |
+| `giver_id` | `int` | Strani ključ -> `users.id` (Korisnik koji daje bodove / lajkuje objavu) |
+| `receiver_id` | `int` | Strani ključ -> `users.id` (Korisnik koji prima bodove / autor objave) |
+| `points_given` | `int` | Ukupan broj bodova prenijetih u okviru ove transakcije |
+| `created_at` | `datetime` | Vrijeme bilježenja aktivnosti (auto generisano preko `utc_now`) |
+
+---
+
+#### Napomene o reputacionom sistemu
+1. **Idempotentnost i sigurnost (`event_key`):** Svaki put kada korisnik izvrši akciju koja donosi bodove (npr. lajkovanje teme), generiše se unikatni `event_key` u formatu `like_topic_{topic_id}_{voter_id}`. Ako sistem pokuša ponovo unijeti isti ključ uslijed mrežnog kašnjenja ili spama, baza podataka će odbiti upis i spriječiti duplo dobijanje bodova.
+2. **Anti-Abuse sistem (Tiket 2):** Tabela `forum_reputation_daily_logs` se koristi za praćenje i limitiranje broja bodova koje Korisnik A može prenijeti Korisniku B unutar prozora od 24 sata. Ako se detektuje anomalija (npr. ciljano lajkovanje svih historijskih objava istog autora), sistem privremeno blokira prenos reputacije između ta dva računa.
+3. **Trajnost medalja:** Za razliku od stanja u `forum_user_stats` gdje bodovi reputacije mogu rasti i opadati u zavisnosti od reakcija zajednice, jednom osvojene medalje u tabeli `forum_user_medals` su trajne prirode i ne povlače se automatski padom bodova.
+4. **Vremenska sinkronizacija:** Svi modeli u ovom modulu koriste centralizovanu pomoćnu funkciju `utc_now()` koja osigurava vremensku zonu `timezone.utc` u skladu sa modernim standardima, čime se izbjegavaju problemi sa lokalnim vremenom servera.
+
+
 ## API Rute
 
 ### Companies (Kompanije)
@@ -1400,6 +1835,1233 @@ Admin može obrisati bilo koju notifikaciju, ostali akteri samo svoje.
 - **Greške:**
   - `403` — notifikacija ne pripada akteru
   - `404` — notifikacija nije pronađena
+
+---
+
+### Forum Topics (Teme na forumu)
+
+**Base URL:** `/forum/topics`  
+**Tag:** `Forum Topics`
+
+> Većina ruta podržava opcionalnu autentifikaciju (`current_user: Optional[User]`) — neprijavljeni korisnici mogu pregledati teme, dok prijavljeni dobijaju dodatne podatke (`is_liked`, `is_disliked`).
+
+---
+
+| Metoda             | Putanja                                       | Opis                                        | Pristup                  |
+| ------------------- | ---------------------------------------------- | -------------------------------------------- | ------------------------- |
+| `GET`               | `/forum/topics/`                               | Lista svih tema (filter, sort, paginacija)  | Javno / Korisnik           |
+| `GET`               | `/forum/topics/suggestions`                    | Prijedlozi tema (autocomplete)              | Javno                      |
+| `POST`              | `/forum/topics/`                               | Kreiranje nove teme                          | Korisnik                   |
+| `GET`               | `/forum/topics/popular`                        | Popularne teme za sidebar (zadnjih 7 dana)  | Javno / Korisnik           |
+| `GET`               | `/forum/topics/category-popular/{category_id}` | Popularne teme po kategoriji                | Javno / Korisnik           |
+| `GET`               | `/forum/topics/{topic_id}/related`             | Slične/povezane teme                         | Javno / Korisnik           |
+| `GET`               | `/forum/topics/reports/active`                 | Lista aktivnih (na čekanju) prijava         | Admin                      |
+| `GET`               | `/forum/topics/reports/handled`                | Lista riješenih prijava                      | Admin                      |
+| `PATCH`             | `/forum/topics/reports/{report_id}/action`     | Rješavanje prijave (accept/dismiss/resolve) | Admin                      |
+| `GET`               | `/forum/topics/announcements/active`           | Aktivne admin objave                         | Javno                      |
+| `GET`               | `/forum/topics/{topic_id}`                     | Detalji jedne teme                           | Javno / Korisnik           |
+| `PATCH`             | `/forum/topics/{topic_id}/view`                | Inkrementiranje broja pregleda               | Javno                      |
+| `PUT`               | `/forum/topics/{topic_id}`                     | Ažuriranje teme                              | Vlasnik teme / Admin       |
+| `DELETE`            | `/forum/topics/{id}`                           | Brisanje teme (soft delete)                  | Vlasnik teme / Admin       |
+| `POST`              | `/forum/topics/{topic_id}/report`              | Prijava teme                                  | Korisnik                   |
+
+---
+
+#### `GET /forum/topics/`
+
+Vraća paginiranu listu svih tema, sa mogućnošću filtriranja i sortiranja.
+
+- **Autentifikacija:** Opciono (Korisnik JWT token)
+- **Query parametri:**
+  - `category_id` (int, opciono) — filter po kategoriji
+  - `search` (str, opciono) — pretraga po naslovu i sadržaju (`ILIKE`)
+  - `page` (int, default `1`)
+  - `per_page` (int, default `5`)
+  - `sort_by` (str, default `"najnovije"`) — opcije: `"najnovije"`, `"najgledanije"`, `"najaktivnije"`
+  - `unanswered` (bool, default `False`) — prikazuje samo teme bez komentara
+  - `days_old` (int, opciono) — filter po starosti teme (broj dana od kreiranja)
+- **Response:** `{ "items": List[Topic], "total": int, "page": int, "per_page": int }`
+
+---
+
+#### `GET /forum/topics/suggestions`
+
+Vraća prijedloge tema za autocomplete pretragu po naslovu.
+
+- **Autentifikacija:** Nije potrebna
+- **Query parametri:**
+  - `search` (str, opciono)
+- **Response (bez `search`):**
+  `{ "popular": List[{id, title}], "active": List[{id, title}] }`
+  — top 3 najgledanije i top 3 najnovije teme
+- **Response (sa `search`):**
+  `{ "filtered": List[{id, title}] }`
+  — prvo pokušava pronaći teme čiji naslov *počinje* sa unesenim tekstom; ako nema rezultata, traži teme čiji naslov *sadrži* taj tekst (max 5 rezultata)
+
+---
+
+#### `POST /forum/topics/`
+
+Kreira novu temu na forumu, uz opcionalno dodavanje tagova.
+
+- **Autentifikacija:** Korisnik JWT token
+- **Body:** `ForumTopicCreate`
+  - `title` (str, 3–200 karaktera)
+  - `content` (str, min 10 karaktera)
+  - `category_id` (int)
+  - `tags` (List[Any], opciono) — može sadržati nazive tagova (string) koji se kreiraju ako ne postoje, ili postojeće ID-eve tagova
+- **Response:** `Topic` — `201 Created`
+- **Greške:**
+  - `404` — kategorija nije pronađena
+
+---
+
+#### `GET /forum/topics/popular`
+
+Vraća top 5 popularnih tema iz posljednjih 7 dana, rangirano po zbiru pregleda i broja komentara.
+
+- **Autentifikacija:** Opciono (Korisnik JWT token)
+- **Response:** `List[Topic]`
+
+---
+
+#### `GET /forum/topics/category-popular/{category_id}`
+
+Vraća top 5 popularnih tema unutar određene kategorije, rangirano po zbiru pregleda i broja komentara.
+
+- **Autentifikacija:** Opciono (Korisnik JWT token)
+- **Path parametri:** `category_id` (int)
+- **Response:** `List[Topic]`
+
+---
+
+#### `GET /forum/topics/{topic_id}/related`
+
+Vraća do 4 slične teme iz iste kategorije, na osnovu ključnih riječi iz naslova trenutne teme (riječi duže od 2 karaktera, bez interpunkcije).
+
+- **Autentifikacija:** Opciono (Korisnik JWT token)
+- **Path parametri:** `topic_id` (int)
+- **Response:** `List[Topic]`
+- **Greške:**
+  - `404` — tema nije pronađena
+
+---
+
+#### `GET /forum/topics/reports/active`
+
+Vraća listu prijava sa statusom `"pending"`, sortirano po datumu kreiranja (najnovije prvo). Isključivo za administratore.
+
+- **Autentifikacija:** Admin JWT token
+- **Response:** `List[{ report_id, reason, created_at, status, reporter_name, topic }]`
+- **Greške:**
+  - `403` — akter nije admin
+
+---
+
+#### `GET /forum/topics/reports/handled`
+
+Vraća listu riješenih prijava (status `"accepted"` ili `"dismissed"`), sortirano po datumu kreiranja (najnovije prvo). Isključivo za administratore.
+
+- **Autentifikacija:** Admin JWT token
+- **Response:** `List[{ report_id, reason, created_at, status, reporter_name, topic }]`
+- **Greške:**
+  - `403` — akter nije admin
+
+---
+
+#### `PATCH /forum/topics/reports/{report_id}/action`
+
+Rješava prijavu teme postavljanjem statusa i (opciono) admin objašnjenja. Ako je akcija `"accept"`, korisniku koji je prijavu podnio se povećava `reports_count`.
+
+- **Autentifikacija:** Admin JWT token
+- **Path parametri:** `report_id` (int)
+- **Query parametri:** `action` (str) — `"accept"`, `"dismiss"`, ili druga vrijednost (postavlja status `"resolved"`)
+- **Body:** `ReportActionPayload`
+  - `explanation` (str, opciono, max 500 karaktera)
+- **Response:** `{ "success": true, "message": str }`
+- **Greške:**
+  - `403` — akter nije admin
+  - `404` — prijava nije pronađena
+
+---
+
+#### `GET /forum/topics/announcements/active`
+
+Vraća sve aktivne admin objave koje nisu istekle, sortirano po datumu kreiranja (najnovije prvo).
+
+- **Autentifikacija:** Nije potrebna
+- **Response:** `List[AdminAnnouncement]`
+
+---
+
+#### `GET /forum/topics/{topic_id}`
+
+Vraća detalje jedne teme, uključujući komentare, tagove, priloge i statistiku. Obrisane teme (`is_deleted`) su vidljive samo administratorima.
+
+- **Autentifikacija:** Opciono (Korisnik JWT token)
+- **Path parametri:** `topic_id` (int)
+- **Response:** `{ id, title, content, views_count, likes_count, dislikes_count, is_liked, is_disliked, is_locked, created_at, updated_at, author, category, tags, attachments, comments, stats, is_deleted }`
+- **Greške:**
+  - `404` — tema nije pronađena (ili je obrisana, a korisnik nije admin)
+
+---
+
+#### `PATCH /forum/topics/{topic_id}/view`
+
+Inkrementira broj pregleda teme za 1.
+
+- **Autentifikacija:** Nije potrebna
+- **Path parametri:** `topic_id` (int)
+- **Response:** `{ "id": int, "views_count": int }`
+- **Greške:**
+  - `404` — tema nije pronađena ili je obrisana
+
+---
+
+#### `PUT /forum/topics/{topic_id}`
+
+Ažurira naslov i/ili sadržaj teme. Dozvoljeno vlasniku teme ili administratoru.
+
+- **Autentifikacija:** Korisnik JWT token
+- **Path parametri:** `topic_id` (int)
+- **Body:** `ForumTopicUpdate` (parcijalno)
+  - `title` (str, opciono, 3–200 karaktera)
+  - `content` (str, opciono, min 3 karaktera)
+- **Response:** `Topic`
+- **Greške:**
+  - `403` — korisnik nije vlasnik teme niti admin
+  - `404` — tema nije pronađena ili je obrisana
+
+---
+
+#### `DELETE /forum/topics/{id}`
+
+Briše temu (soft delete — postavlja `is_deleted = True`). Dozvoljeno vlasniku teme ili administratoru.
+
+- **Autentifikacija:** Korisnik JWT token
+- **Path parametri:** `id` (int)
+- **Response:** `{ "message": "Tema je uspješno obrisana.", "topic_id": int }`
+- **Greške:**
+  - `403` — korisnik nije vlasnik teme niti admin
+  - `404` — tema nije pronađena ili je već obrisana
+
+---
+
+#### `POST /forum/topics/{topic_id}/report`
+
+Prijavljuje temu administraciji uz razlog.
+
+- **Autentifikacija:** Korisnik JWT token
+- **Path parametri:** `topic_id` (int)
+- **Body:** `ReportCreate`
+  - `reason` (str, 3–100 karaktera)
+- **Response:** `{ "success": true }`
+- **Greške:**
+  - `404` — tema ne postoji ili je obrisana
+
+---
+
+### Forum Topic Likes (Lajkovi/Dislajkovi tema)
+
+**Base URL:** `/forum/topics`  
+**Tag:** `Forum Topic Likes`
+
+> Korisnik ne može lajkovati/dislajkovati sopstvenu temu. Lajk i dislajk se međusobno isključuju — postavljanje jednog automatski uklanja drugi. Akcije generišu/sakrivaju forum notifikacije vlasniku teme.
+
+---
+
+| Metoda | Putanja                          | Opis                          | Pristup  |
+| ------ | --------------------------------- | ------------------------------ | -------- |
+| `POST` | `/forum/topics/{topic_id}/like`    | Lajkovanje/uklanjanje lajka teme | Korisnik |
+| `POST` | `/forum/topics/{topic_id}/dislike` | Dislajkovanje/uklanjanje dislajka teme | Korisnik |
+
+---
+
+#### `POST /forum/topics/{topic_id}/like`
+
+Toggle akcija — ako korisnik već nije lajkovao temu, dodaje lajk (i uklanja postojeći dislajk ako postoji). Ako je tema već lajkovana od strane korisnika, lajk se uklanja. Vlasniku teme se kreira/sakriva notifikacija tipa `TOPIC_LIKE`.
+
+- **Autentifikacija:** Korisnik JWT token
+- **Path parametri:** `topic_id` (int)
+- **Response:** `{ topic_id, is_liked, is_disliked, liked, disliked, likes_count, dislikes_count, message }`
+- **Greške:**
+  - `404` — tema nije pronađena ili je obrisana
+  - `400` — korisnik pokušava lajkovati sopstvenu temu
+
+---
+
+#### `POST /forum/topics/{topic_id}/dislike`
+
+Toggle akcija — ako korisnik već nije dislajkovao temu, dodaje dislajk (i uklanja postojeći lajk ako postoji). Ako je tema već dislajkovana od strane korisnika, dislajk se uklanja. Vlasniku teme se kreira/sakriva notifikacija tipa `TOPIC_DISLIKE`.
+
+- **Autentifikacija:** Korisnik JWT token
+- **Path parametri:** `topic_id` (int)
+- **Response:** `{ topic_id, is_liked, is_disliked, liked, disliked, likes_count, dislikes_count, message }`
+- **Greške:**
+  - `404` — tema nije pronađena ili je obrisana
+  - `400` — korisnik pokušava dislajkovati sopstvenu temu
+
+---
+
+#### Helper funkcije (interno, nisu izložene kao rute)
+
+| Funkcija                          | Opis                                                              |
+| ----------------------------------- | -------------------------------------------------------------------- |
+| `get_topic_likes_count(db, topic_id)` | Vraća ukupan broj lajkova za temu                                |
+| `is_topic_liked_by_user(db, topic_id, user_id)` | Provjerava da li je korisnik lajkovao temu                |
+| `get_topic_dislikes_count(db, topic_id)` | Vraća ukupan broj dislajkova za temu                          |
+| `is_topic_disliked_by_user(db, topic_id, user_id)` | Provjerava da li je korisnik dislajkovao temu          |
+| `get_topic_reaction_response(db, topic_id, user_id)` | Sastavlja standardizovan odgovor sa statusom reakcija i brojevima |
+
+---
+
+### Forum Tags (Tagovi na forumu)
+
+**Base URL:** `/forum/tags`  
+**Tag:** `Forum Tags`
+
+---
+
+| Metoda | Putanja        | Opis                                  | Pristup |
+| ------ | --------------- | --------------------------------------- | ------- |
+| `GET`  | `/forum/tags/`   | Lista popularnih tagova (iznad prosjeka) | Javno   |
+
+---
+
+#### `GET /forum/tags/`
+
+Vraća listu tagova čija je popularnost (broj korištenja na temama) strogo iznad prosječnog broja korištenja svih tagova. Tagovi se prvo sortiraju po broju korištenja (opadajuće), uzima se top `limit`, zatim se računa prosjek i filtriraju samo oni iznad njega.
+
+- **Autentifikacija:** Nije potrebna
+- **Query parametri:**
+  - `limit` (int, default `20`) — maksimalan broj tagova koji se uzima u obzir prije filtriranja po prosjeku
+- **Response:** `List[{ id, name, usage_count }]`
+
+---
+
+### Forum Notifications (Notifikacije na forumu)
+
+**Base URL:** `/forum/notifications`  
+**Tag:** `Forum Notifications`
+
+---
+
+| Metoda   | Putanja                              | Opis                                   | Pristup  |
+| -------- | -------------------------------------- | ----------------------------------------- | -------- |
+| `GET`    | `/forum/notifications/me`              | Lista mojih forum notifikacija            | Korisnik |
+| `PATCH`  | `/forum/notifications/{notification_id}/read` | Označavanje jedne kao pročitano   | Korisnik |
+| `PATCH`  | `/forum/notifications/read-all`        | Označavanje svih kao pročitano            | Korisnik |
+| `DELETE` | `/forum/notifications/{notification_id}` | Brisanje notifikacije                  | Korisnik |
+
+---
+
+#### `GET /forum/notifications/me`
+
+Vraća sve forum notifikacije trenutno prijavljenog korisnika koje nisu sakrivene (`is_hidden == False`).  
+Sortiranje: nepročitane prve, zatim po datumu kreiranja (najnovije prvo).
+
+- **Autentifikacija:** Korisnik JWT token
+- **Response:** `List[ForumNotification]`
+
+---
+
+#### `PATCH /forum/notifications/{notification_id}/read`
+
+Označava jednu forum notifikaciju kao pročitanu. Dozvoljeno samo vlasniku notifikacije.
+
+- **Autentifikacija:** Korisnik JWT token
+- **Path parametri:** `notification_id` (int)
+- **Response:** `ForumNotification`
+- **Greške:**
+  - `403` — notifikacija ne pripada korisniku
+  - `404` — notifikacija nije pronađena
+
+---
+
+#### `PATCH /forum/notifications/read-all`
+
+Označava sve nepročitane i nesakrivene notifikacije trenutnog korisnika kao pročitane.
+
+- **Autentifikacija:** Korisnik JWT token
+- **Response:** `{ "message": "Sve forum notifikacije su označene kao pročitane.", "updated_count": int }`
+
+---
+
+#### `DELETE /forum/notifications/{notification_id}`
+
+Trajno briše jednu forum notifikaciju iz baze. Dozvoljeno samo vlasniku notifikacije.
+
+- **Autentifikacija:** Korisnik JWT token
+- **Path parametri:** `notification_id` (int)
+- **Response:** `204 No Content`
+- **Greške:**
+  - `403` — notifikacija ne pripada korisniku
+  - `404` — notifikacija nije pronađena
+
+---
+
+### Forum Comments (Komentari na forumu)
+
+**Base URL:** `/forum/comments`  
+**Tag:** `Forum Comments`
+
+> Komentari podržavaju neograničeno ugnježđavanje (reply na reply na reply...). Administratorska obavještenja (`is_admin_notice`) moraju biti glavni komentari i ne mogu primati odgovore. Akcije generišu forum notifikacije i bilježe aktivnost korisnika (`log_activity`) i reputaciju (`forum_reputation` servis).
+
+---
+
+| Metoda   | Putanja                                  | Opis                                          | Pristup           |
+| -------- | ------------------------------------------ | ----------------------------------------------- | ------------------ |
+| `POST`   | `/forum/comments/`                         | Kreiranje komentara/odgovora                    | Korisnik           |
+| `GET`    | `/forum/comments/topic/{topic_id}`         | Lista komentara za temu (stablo)               | Javno              |
+| `PATCH`  | `/forum/comments/{comment_id}/best-answer` | Označavanje/uklanjanje najboljeg odgovora      | Vlasnik teme       |
+| `POST`   | `/forum/comments/{comment_id}/vote`        | Glasanje na komentar (like/dislike)             | Korisnik           |
+| `DELETE` | `/forum/comments/{comment_id}`             | Brisanje komentara                              | Vlasnik / Admin    |
+| `PUT`    | `/forum/comments/{comment_id}`             | Ažuriranje komentara                            | Vlasnik / Admin    |
+| `POST`   | `/forum/comments/{topic_id}/admin-notice`  | Kreiranje administratorskog obavještenja        | Admin              |
+
+---
+
+#### `POST /forum/comments/`
+
+Kreira novi komentar ili odgovor na temu. Generiše notifikacije autoru teme (ili roditeljskog komentara) i korisnicima spomenutim putem `@username` (mentions).
+
+- **Autentifikacija:** Korisnik JWT token
+- **Body:** `ForumCommentCreate`
+  - `content` (str, min 2 karaktera)
+  - `topic_id` (int)
+  - `is_admin_notice` (bool, opciono, default `False`) — primjenjuje se samo ako je korisnik admin
+  - `parent_id` (int, opciono) — ID komentara na koji se odgovara
+- **Response:** `{ id, content, topic_id, parent_id, is_admin_notice, created_at, author }` — `201 Created`
+- **Greške:**
+  - `404` — tema nije pronađena ili je obrisana
+  - `400` — `is_admin_notice=True` uz postavljen `parent_id` (obavještenje ne može biti odgovor)
+  - `404` — komentar na koji se odgovara ne postoji
+  - `400` — pokušaj odgovora na administratorsko obavještenje
+
+---
+
+#### `GET /forum/comments/topic/{topic_id}`
+
+Vraća sve komentare teme organizovane u stablo (sa ugnježđenim odgovorima). Glavni komentari su sortirani po: admin obavještenja prva, zatim najbolji odgovor, zatim broj glasova (opadajuće), zatim datum kreiranja. Odgovori su rekurzivno sortirani po istom principu (bez glasova).
+
+- **Autentifikacija:** Nije potrebna
+- **Path parametri:** `topic_id` (int)
+- **Response:** `List[Comment]` (svaki sa `replies: List[Comment]`)
+- **Greške:**
+  - `404` — tema nije pronađena ili je obrisana
+
+---
+
+#### `PATCH /forum/comments/{comment_id}/best-answer`
+
+Postavlja ili uklanja status "najbolji odgovor" za komentar. Samo autor teme može označiti najbolji odgovor. Ako već postoji drugi najbolji odgovor, on se automatski poništava. Generiše/sakriva notifikaciju tipa `BEST_ANSWER` i ažurira reputaciju.
+
+- **Autentifikacija:** Korisnik JWT token
+- **Path parametri:** `comment_id` (int)
+- **Response:** `{ "id": int, "is_best_answer": bool }`
+- **Greške:**
+  - `404` — komentar ili tema nisu pronađeni
+  - `403` — korisnik nije autor teme
+
+---
+
+#### `POST /forum/comments/{comment_id}/vote`
+
+Glasa na komentar (like = `1`, dislike = `-1`). Ako korisnik ponovo pošalje istu vrijednost, glas se uklanja. Ako pošalje suprotnu vrijednost, glas se mijenja. Ažurira reputaciju autora komentara i generiše/sakriva odgovarajuće notifikacije (`COMMENT_LIKE` / `COMMENT_DISLIKE`).
+
+- **Autentifikacija:** Korisnik JWT token
+- **Path parametri:** `comment_id` (int)
+- **Body:** `VoteInput`
+  - `value` (int) — `1` za like, `-1` za dislike
+- **Response:** `{ "comment_id": int, "votes_count": int, "user_vote": int }` — `user_vote` je `0` ako je glas uklonjen
+- **Greške:**
+  - `400` — `value` nije `1` ili `-1`
+  - `404` — komentar ili tema nisu pronađeni
+
+---
+
+#### `DELETE /forum/comments/{comment_id}`
+
+Briše komentar. Ako komentar ima aktivne (neobrisane) odgovore, vrši se soft delete (`is_deleted = True`, sadržaj se prikazuje kao "deleted by user"). Ako nema odgovora, komentar se trajno briše iz baze, a njegovi eventualni obrisani odgovori se "otkače" (`parent_id = None`).
+
+- **Autentifikacija:** Korisnik JWT token
+- **Path parametri:** `comment_id` (int)
+- **Response:** `{ "message": "Komentar je uspješno obrisan.", "comment_id": int }`
+- **Greške:**
+  - `404` — komentar nije pronađen ili je već obrisan
+  - `403` — korisnik nije autor komentara niti admin
+
+---
+
+#### `PUT /forum/comments/{comment_id}`
+
+Ažurira sadržaj komentara. Ponovo provjerava `@username` mentions u odnosu na stari sadržaj i šalje notifikacije novo spomenutim korisnicima.
+
+- **Autentifikacija:** Korisnik JWT token
+- **Path parametri:** `comment_id` (int)
+- **Body:** `ForumCommentUpdate`
+  - `content` (str, min 2 karaktera)
+- **Response:** `{ "id": int, "content": str, "updated_at": datetime }`
+- **Greške:**
+  - `404` — komentar ili tema nisu pronađeni
+  - `403` — korisnik nije autor komentara niti admin
+
+---
+
+#### `POST /forum/comments/{topic_id}/admin-notice`
+
+Kreira administratorsko obavještenje kao glavni komentar teme (bez mogućnosti odgovora). Isključivo za administratore.
+
+- **Autentifikacija:** Admin JWT token
+- **Path parametri:** `topic_id` (int)
+- **Body:** `AdminNoticeCreate`
+  - `content` (str, min 3 karaktera)
+- **Response:** `{ "success": true, "id": int }` — `201 Created`
+- **Greške:**
+  - `403` — akter nije admin
+  - `404` — tema nije pronađena ili je obrisana
+
+---
+
+#### Helper funkcije (interno, nisu izložene kao rute)
+
+| Funkcija                                  | Opis                                                                  |
+| -------------------------------------------- | -------------------------------------------------------------------------- |
+| `get_comment_author_data(db, user_id)`        | Vraća podatke o autoru komentara (uključujući forum identitet/reputaciju) |
+| `get_comment_votes_count(db, comment_id)`      | Vraća zbir vrijednosti svih glasova na komentaru                       |
+| `get_comment_likes_count(db, comment_id)`      | Vraća broj lajkova komentara                                            |
+| `get_comment_dislikes_count(db, comment_id)`   | Vraća broj dislajkova komentara                                         |
+| `get_comments_count(db, topic_id)`             | Vraća broj neobrisanih komentara na temi                                |
+| `has_best_answer(db, topic_id)`                | Provjerava da li tema ima označen najbolji odgovor                     |
+| `get_topic_votes_count(db, topic_id)`          | Vraća zbir glasova svih komentara na temi                               |
+| `get_topic_comments(db, topic_id)`             | Vraća komentare teme organizovane u stablo (sa odgovorima i sortiranjem) |
+
+---
+
+### Forum Helpers (Zajedničke pomoćne funkcije)
+
+**Modul:** `app/routers/forum_helpers.py`
+
+> Ovaj modul ne sadrži API rute — sastoji se isključivo od pomoćnih funkcija koje koriste `forum_topics.py` i `forum_comments.py`, izdvojenih u zaseban modul radi izbjegavanja kružnog importa (circular import) između ta dva fajla.
+
+| Funkcija                                  | Opis                                                                       |
+| -------------------------------------------- | ----------------------------------------------------------------------------- |
+| `get_author_data(db, user_id)`                | Vraća osnovne podatke o autoru (`id`, `full_name`)                       |
+| `get_category_data(db, category_id)`          | Vraća podatke o kategoriji (`id`, `name`, `color`); fallback ako ne postoji |
+| `get_topic_tags(db, topic_id)`                | Vraća listu naziva tagova povezanih sa temom                              |
+| `get_comment_votes_count(db, comment_id)`      | Vraća zbir vrijednosti glasova na komentaru                               |
+| `get_comment_likes_count(db, comment_id)`      | Vraća broj lajkova komentara                                               |
+| `get_comment_dislikes_count(db, comment_id)`   | Vraća broj dislajkova komentara                                            |
+| `get_comments_count(db, topic_id)`             | Vraća broj neobrisanih komentara na temi                                   |
+| `has_best_answer(db, topic_id)`                | Provjerava da li tema ima označen najbolji odgovor                        |
+| `get_topic_votes_count(db, topic_id)`          | Vraća zbir glasova svih komentara na temi                                  |
+| `get_topic_comments(db, topic_id)`             | Vraća listu komentara teme (ravna lista, sortirana po najboljem odgovoru i broju glasova) |
+
+---
+
+### Forum Guidelines (Smjernice foruma)
+
+**Base URL:** `/forum/guidelines`  
+**Tag:** `Forum Guidelines`
+
+---
+
+| Metoda   | Putanja                          | Opis                          | Pristup |
+| -------- | ----------------------------------- | -------------------------------- | ------- |
+| `GET`    | `/forum/guidelines/`                | Lista svih smjernica            | Javno   |
+| `POST`   | `/forum/guidelines/`                | Kreiranje nove smjernice         | Admin   |
+| `PATCH`  | `/forum/guidelines/{guideline_id}`  | Ažuriranje smjernice             | Admin   |
+| `DELETE` | `/forum/guidelines/{guideline_id}`  | Brisanje smjernice               | Admin   |
+
+---
+
+#### `GET /forum/guidelines/`
+
+Vraća sve smjernice foruma, sortirane po polju `order` (rastuće), a zatim po `id`.
+
+- **Autentifikacija:** Nije potrebna
+- **Response:** `List[{ id, title, content, order, created_at, updated_at }]`
+
+---
+
+#### `POST /forum/guidelines/`
+
+Kreira novu smjernicu. Isključivo za administratore.
+
+- **Autentifikacija:** Admin JWT token
+- **Body:** `GuidelineCreate`
+  - `title` (str, 3–200 karaktera)
+  - `content` (str, min 3 karaktera)
+  - `order` (int, opciono, default `0`)
+- **Response:** `ForumGuideline` — `201 Created`
+- **Greške:**
+  - `403` — akter nije admin
+
+---
+
+#### `PATCH /forum/guidelines/{guideline_id}`
+
+Parcijalno ažurira smjernicu — šalju se samo polja koja se mijenjaju. Isključivo za administratore.
+
+- **Autentifikacija:** Admin JWT token
+- **Path parametri:** `guideline_id` (int)
+- **Body:** `GuidelineUpdate` (parcijalno)
+  - `title` (str, opciono, 3–200 karaktera)
+  - `content` (str, opciono, min 3 karaktera)
+  - `order` (int, opciono)
+- **Response:** `ForumGuideline`
+- **Greške:**
+  - `403` — akter nije admin
+  - `404` — smjernica nije pronađena
+
+---
+
+#### `DELETE /forum/guidelines/{guideline_id}`
+
+Trajno briše smjernicu. Isključivo za administratore.
+
+- **Autentifikacija:** Admin JWT token
+- **Path parametri:** `guideline_id` (int)
+- **Response:** `{ "success": true, "message": "Smjernica je obrisana." }`
+- **Greške:**
+  - `403` — akter nije admin
+  - `404` — smjernica nije pronađena
+
+---
+
+### Forum Attachments (Prilozi na forumu)
+
+**Base URL:** `/forum/attachments`  
+**Tag:** `Forum Attachments`
+
+> Dozvoljeni formati: `.jpg`, `.jpeg`, `.png`, `.pdf`, `.docx`, `.txt`. Maksimalna veličina fajla: **5 MB**. Maksimalan broj fajlova po temi/komentaru: **3**.
+
+---
+
+| Metoda | Putanja                                              | Opis                                  | Pristup  |
+| ------ | ------------------------------------------------------- | ---------------------------------------- | -------- |
+| `POST` | `/forum/attachments/topic/{topic_id}`                   | Upload priloga na temu                  | Korisnik |
+| `GET`  | `/forum/attachments/topic/{topic_id}`                   | Lista priloga teme                      | Javno    |
+| `GET`  | `/forum/attachments/topic/{topic_id}/download/{attachment_id}` | Preuzimanje priloga teme         | Javno    |
+| `POST` | `/forum/attachments/comment/{comment_id}`               | Upload priloga na komentar              | Korisnik |
+| `GET`  | `/forum/attachments/comment/{comment_id}`               | Lista priloga komentara                 | Javno    |
+| `GET`  | `/forum/attachments/comment/{comment_id}/download/{attachment_id}` | Preuzimanje priloga komentara | Javno    |
+
+---
+
+#### `POST /forum/attachments/topic/{topic_id}`
+
+Upload jednog ili više fajlova kao priloga teme. Fajlovi se čuvaju na disku (`uploads/forum/topics/`) sa jedinstvenim nazivom (`{topic_id}_{timestamp}_{original_filename}`).
+
+- **Autentifikacija:** Korisnik JWT token
+- **Path parametri:** `topic_id` (int)
+- **Body:** `multipart/form-data` — `files: List[UploadFile]`
+- **Response:** `{ "uploaded": List[{ id, filename, file_size }] }` — `201 Created`
+- **Greške:**
+  - `404` — tema nije pronađena ili je obrisana
+  - `400` — prekoračen maksimalan broj fajlova po temi (3)
+  - `400` — format fajla nije dozvoljen
+  - `400` — fajl prelazi maksimalnu veličinu (5 MB)
+
+---
+
+#### `GET /forum/attachments/topic/{topic_id}`
+
+Vraća listu priloga vezanih za temu.
+
+- **Autentifikacija:** Nije potrebna
+- **Path parametri:** `topic_id` (int)
+- **Response:** `List[{ id, filename, file_size, mime_type }]`
+
+---
+
+#### `GET /forum/attachments/topic/{topic_id}/download/{attachment_id}`
+
+Preuzima fajl priloga teme sa servera.
+
+- **Autentifikacija:** Nije potrebna
+- **Path parametri:** `topic_id` (int), `attachment_id` (int)
+- **Response:** `FileResponse` (binarni sadržaj fajla)
+- **Greške:**
+  - `404` — prilog nije pronađen, ne pripada navedenoj temi, ili fajl ne postoji na serveru
+
+---
+
+#### `POST /forum/attachments/comment/{comment_id}`
+
+Upload jednog ili više fajlova kao priloga komentara. Fajlovi se čuvaju na disku (`uploads/forum/comments/`) sa jedinstvenim nazivom (`{comment_id}_{timestamp}_{original_filename}`).
+
+- **Autentifikacija:** Korisnik JWT token
+- **Path parametri:** `comment_id` (int)
+- **Body:** `multipart/form-data` — `files: List[UploadFile]`
+- **Response:** `{ "uploaded": List[{ id, filename, file_size }] }` — `201 Created`
+- **Greške:**
+  - `404` — komentar nije pronađen ili je obrisan
+  - `400` — prekoračen maksimalan broj fajlova po komentaru (3)
+  - `400` — format fajla nije dozvoljen
+  - `400` — fajl prelazi maksimalnu veličinu (5 MB)
+
+---
+
+#### `GET /forum/attachments/comment/{comment_id}`
+
+Vraća listu priloga vezanih za komentar.
+
+- **Autentifikacija:** Nije potrebna
+- **Path parametri:** `comment_id` (int)
+- **Response:** `List[{ id, filename, file_size, mime_type }]`
+
+---
+
+#### `GET /forum/attachments/comment/{comment_id}/download/{attachment_id}`
+
+Preuzima fajl priloga komentara sa servera.
+
+- **Autentifikacija:** Nije potrebna
+- **Path parametri:** `comment_id` (int), `attachment_id` (int)
+- **Response:** `FileResponse` (binarni sadržaj fajla)
+- **Greške:**
+  - `404` — prilog nije pronađen, ne pripada navedenom komentaru, ili fajl ne postoji na serveru
+
+---
+
+### Forum Admin (Administracija foruma)
+
+**Base URL:** `/forum/admin`  
+**Tag:** `Forum Admin`
+
+> Sve rute zahtijevaju administratorsku ulogu kroz `get_current_admin` dependency, koji baca `403` ako akter nije admin.
+
+---
+
+| Metoda   | Putanja                                       | Opis                                          | Pristup |
+| -------- | ------------------------------------------------ | ------------------------------------------------ | ------- |
+| `GET`    | `/forum/admin/users`                             | Lista svih korisnika                             | Admin   |
+| `PATCH`  | `/forum/admin/users/{user_id}/role`              | Promjena uloge korisnika                         | Admin   |
+| `GET`    | `/forum/admin/reports`                           | Lista prijava (filter po statusu)                | Admin   |
+| `DELETE` | `/forum/admin/reports/{report_id}`               | Odbacivanje prijave (status → resolved)         | Admin   |
+| `PATCH`  | `/forum/admin/reports/{report_id}/resolve`       | Rješavanje prijave (accept/dismiss)             | Admin   |
+| `PATCH`  | `/forum/admin/reports/{report_id}/reopen`        | Ponovno otvaranje riješene prijave              | Admin   |
+| `PATCH`  | `/forum/admin/topics/{topic_id}/lock`            | Zaključavanje/otključavanje teme                | Admin   |
+| `POST`   | `/forum/admin/announcements`                     | Kreiranje globalnog obavještenja                | Admin   |
+| `GET`    | `/forum/admin/announcements/all`                 | Lista svih obavještenja (uključujući neaktivna) | Admin   |
+| `PATCH`  | `/forum/admin/announcements/{ann_id}`            | Ažuriranje obavještenja                          | Admin   |
+| `DELETE` | `/forum/admin/announcements/{ann_id}`            | Deaktiviranje obavještenja                       | Admin   |
+| `POST`   | `/forum/admin/topics/{topic_id}/pull-to-reports` | Admin ručno povlači temu u prijave              | Admin   |
+
+---
+
+#### `GET /forum/admin/users`
+
+Vraća listu svih korisnika u sistemu.
+
+- **Autentifikacija:** Admin JWT token
+- **Response:** `List[{ id, email, full_name, role }]`
+- **Greške:**
+  - `403` — akter nije admin
+
+---
+
+#### `PATCH /forum/admin/users/{user_id}/role`
+
+Mijenja ulogu korisnika.
+
+- **Autentifikacija:** Admin JWT token
+- **Path parametri:** `user_id` (int)
+- **Query parametri:** `role` (str) — mora odgovarati jednoj od vrijednosti enum-a `UserRole`
+- **Response:** `{ "message": "Uloga promijenjena u {role}" }`
+- **Greške:**
+  - `403` — akter nije admin
+  - `400` — nevažeća uloga
+  - `404` — korisnik nije pronađen
+
+---
+
+#### `GET /forum/admin/reports`
+
+Vraća listu prijava filtriranih po statusu, sa podacima o pripadajućoj temi.
+
+- **Autentifikacija:** Admin JWT token
+- **Query parametri:** `status` (str, default `"pending"`) — `"pending"` ili `"resolved"`
+- **Response:** `List[{ id, report_id, reason, created_at, status, action_taken, admin_explanation, topic: { id, title, content } }]`
+- **Greške:**
+  - `403` — akter nije admin
+  - `400` — nevažeći status
+
+---
+
+#### `DELETE /forum/admin/reports/{report_id}`
+
+Odbacuje prijavu postavljanjem statusa na `"resolved"` (bez postavljanja `action_taken`/`admin_explanation`).
+
+- **Autentifikacija:** Admin JWT token
+- **Path parametri:** `report_id` (int)
+- **Response:** `{ "success": true }`
+- **Greške:**
+  - `403` — akter nije admin
+
+---
+
+#### `PATCH /forum/admin/reports/{report_id}/resolve`
+
+Rješava prijavu sa akcijom i objašnjenjem. Ako je akcija `"accept"`, prijavljena tema se soft-briše (`is_deleted = True`).
+
+- **Autentifikacija:** Admin JWT token
+- **Path parametri:** `report_id` (int)
+- **Body:** `{ "action": "accept" | "dismiss", "explanation": str }`
+- **Response:** `{ "success": true }`
+- **Greške:**
+  - `403` — akter nije admin
+  - `404` — prijava nije pronađena
+  - `400` — prijava je već riješena
+  - `400` — nevažeća akcija
+
+---
+
+#### `PATCH /forum/admin/reports/{report_id}/reopen`
+
+Ponovo otvara riješenu prijavu (status → `"pending"`, briše `action_taken` i `admin_explanation`). Ako je pripadajuća tema bila obrisana zbog te prijave, vraća se (`is_deleted = False`).
+
+- **Autentifikacija:** Admin JWT token
+- **Path parametri:** `report_id` (int)
+- **Response:** `{ "success": true, "report_id": int }`
+- **Greške:**
+  - `403` — akter nije admin
+  - `404` — prijava nije pronađena
+  - `400` — prijava je već aktivna (status `"pending"`)
+
+---
+
+#### `PATCH /forum/admin/topics/{topic_id}/lock`
+
+Mijenja status zaključanosti teme (toggle).
+
+- **Autentifikacija:** Admin JWT token
+- **Path parametri:** `topic_id` (int)
+- **Response:** `{ "is_locked": bool }`
+- **Greške:**
+  - `403` — akter nije admin
+  - `404` — tema nije pronađena
+
+---
+
+#### `POST /forum/admin/announcements`
+
+Kreira novo globalno obavještenje. Sva prethodno aktivna obavještenja se automatski deaktiviraju (samo jedno može biti aktivno u datom trenutku).
+
+- **Autentifikacija:** Admin JWT token
+- **Body:** `{ "title": str, "content": str, "duration_days": int }` — `duration_days <= 0` znači da obavještenje ne ističe
+- **Response:** `{ "success": true, "announcement": AdminAnnouncement }`
+- **Greške:**
+  - `403` — akter nije admin
+
+---
+
+#### `GET /forum/admin/announcements/all`
+
+Vraća sva obavještenja (aktivna, neaktivna i istekla), sortirano po datumu kreiranja (najnovije prvo).
+
+- **Autentifikacija:** Admin JWT token
+- **Response:** `List[AdminAnnouncement]`
+- **Greške:**
+  - `403` — akter nije admin
+
+---
+
+#### `PATCH /forum/admin/announcements/{ann_id}`
+
+Parcijalno ažurira obavještenje — šalju se samo polja koja se mijenjaju. Postavljanje `duration_days <= 0` ili izostavljanje uklanja datum isteka (obavještenje postaje beskonačno).
+
+- **Autentifikacija:** Admin JWT token
+- **Path parametri:** `ann_id` (int)
+- **Body:** `{ "title"?: str, "content"?: str, "duration_days"?: int, "is_active"?: bool }`
+- **Response:** `{ "success": true, "announcement": AdminAnnouncement }`
+- **Greške:**
+  - `403` — akter nije admin
+  - `404` — obavještenje nije pronađeno
+
+---
+
+#### `DELETE /forum/admin/announcements/{ann_id}`
+
+Deaktivira obavještenje (`is_active = False`), ne briše ga trajno iz baze.
+
+- **Autentifikacija:** Admin JWT token
+- **Path parametri:** `ann_id` (int)
+- **Response:** `{ "success": true }`
+- **Greške:**
+  - `403` — akter nije admin
+
+---
+
+#### `POST /forum/admin/topics/{topic_id}/pull-to-reports`
+
+Omogućava administratoru da ručno povuče temu u sistem prijava na pregled (bez čekanja na korisničku prijavu), kreiranjem nove prijave u njegovo ime.
+
+- **Autentifikacija:** Admin JWT token
+- **Path parametri:** `topic_id` (int)
+- **Response:** `{ "success": true, "report_id": int }` — `201 Created`
+- **Greške:**
+  - `403` — akter nije admin
+  - `404` — tema nije pronađena ili je obrisana
+  - `400` — tema već ima aktivnu (pending) prijavu
+
+---
+
+### Forum Categories (Kategorije foruma)
+
+**Base URL:** `/forum/categories`  
+**Tag:** `Forum Categories`
+
+---
+
+| Metoda | Putanja              | Opis                                         | Pristup |
+| ------ | ---------------------- | ----------------------------------------------- | ------- |
+| `GET`  | `/forum/categories/`    | Lista kategorija sa brojem tema po kategoriji   | Javno   |
+
+---
+
+#### `GET /forum/categories/`
+
+Vraća sve kategorije foruma sa brojem neobrisanih tema u svakoj.
+
+- **Autentifikacija:** Nije potrebna
+- **Response:** `List[{ id, name, color, description, topic_count }]`
+
+---
+
+#### Helper funkcije (interno, nisu izložene kao rute)
+
+| Funkcija                              | Opis                                                                 |
+| ---------------------------------------- | ------------------------------------------------------------------------- |
+| `get_category_data(db, category_id)`      | Vraća podatke o kategoriji (`id`, `name`, `color`); fallback "Bez kategorije" ako ne postoji |
+
+---
+
+# Forum Services
+
+---
+
+## Forum Notification Service
+
+**Fajl:** `app/services/forum_notification.py`
+
+Servis za kreiranje i upravljanje notifikacijama unutar foruma, uključujući detekciju @mention-a u tekstu.
+
+---
+
+### Konstante i regex
+
+| Konstanta | Vrijednost | Opis |
+|-----------|-----------|------|
+| `MENTION_REGEX` | `(?<!\w)@([A-Za-z0-9_.-]{2,80})` | Regex za detekciju @username mention-a u tekstu |
+
+---
+
+### Funkcije
+
+---
+
+#### `get_user_display_name(user: User) -> str`
+
+Vraća ime korisnika za prikaz u notifikacijama.
+
+- **Prioritet:** `full_name` → `username` → `"Kolega"` (fallback)
+- **Povratna vrijednost:** `str`
+
+---
+
+#### `extract_mentions(text: str) -> Set[str]`
+
+Pronalazi sve @mention-e u tekstu i vraća ih kao skup lowercased stringova.
+
+- **Parametri:** `text` — tekst u kojem se traže mention-i
+- **Povratna vrijednost:** `Set[str]` — skup korisničkih imena (bez `@`, lowercase)
+- **Napomena:** Ako je `text` prazan ili `None`, vraća prazan skup
+
+---
+
+#### `create_forum_notification(...) -> Optional[ForumNotification]`
+
+Kreira novu forum notifikaciju i dodaje je u trenutnu transakciju. **Ne poziva `commit`** — to radi endpoint koji ga poziva.
+
+| Parametar | Tip | Opis |
+|-----------|-----|------|
+| `db` | `Session` | SQLModel sesija |
+| `recipient_user_id` | `int` | ID korisnika koji prima notifikaciju |
+| `actor_user_id` | `int` | ID korisnika koji je inicirao akciju |
+| `topic_id` | `int` | ID teme vezane za notifikaciju |
+| `notification_type` | `ForumNotificationType` | Tip notifikacije (enum) |
+| `text` | `str` | Tekst notifikacije |
+| `comment_id` | `Optional[int]` | ID komentara (opcionalno) |
+| `prevent_duplicate` | `bool` | Ako je `True`, provjeri da li ista notifikacija već postoji |
+
+- **Povratna vrijednost:** `ForumNotification` ili `None`
+- **Vraća `None` ako:**
+  - korisnik pokušava notificirati samog sebe (`recipient_user_id == actor_user_id`)
+  - `prevent_duplicate=True` i identična notifikacija već postoji i nije skrivena
+
+---
+
+#### `hide_forum_notification(...) -> None`
+
+Sakriva (soft-delete) notifikacije koje odgovaraju zadanim filterima postavljanjem `is_hidden = True`.
+
+| Parametar | Tip | Opis |
+|-----------|-----|------|
+| `db` | `Session` | SQLModel sesija |
+| `recipient_user_id` | `int` | ID primaoca |
+| `actor_user_id` | `int` | ID aktera |
+| `topic_id` | `int` | ID teme |
+| `notification_type` | `ForumNotificationType` | Tip notifikacije |
+| `comment_id` | `Optional[int]` | ID komentara (opcionalno) |
+| `only_unread` | `bool` | Ako je `True`, sakriva samo nepročitane notifikacije |
+
+- **Povratna vrijednost:** `None`
+- **Napomena:** Funkcija ne poziva `commit` — to radi endpoint koji je poziva
+
+---
+
+#### `notify_mentions(db, text, actor_user, topic, comment_id, old_text) -> None`
+
+Pronalazi nove @mention-e u tekstu i šalje notifikacije pogođenim korisnicima.
+
+| Parametar | Tip | Opis |
+|-----------|-----|------|
+| `db` | `Session` | SQLModel sesija |
+| `text` | `str` | Novi tekst (tema ili komentar) |
+| `actor_user` | `User` | Korisnik koji je napravio izmjenu |
+| `topic` | `ForumTopic` | Tema u kojoj se mention pojavljuje |
+| `comment_id` | `Optional[int]` | ID komentara ako mention dolazi iz komentara |
+| `old_text` | `Optional[str]` | Prethodni tekst — mention-i koji su već bili u njemu se ne šalju ponovo |
+
+- **Povratna vrijednost:** `None`
+- **Logika:** Šalju se notifikacije samo za `new_mentions - old_mentions` (novi mention-i koji ranije nisu bili prisutni)
+- **Korisničko ime:** Izvlači se iz e-mail adrese korisnika (dio ispred `@`). Npr. `ima.osm@gmail.com` → mention je `@ima.osm`
+- **Anti-duplikat:** Svaki mention šalje se s `prevent_duplicate=True` — isti mention neće biti poslan dva puta
+
+---
+
+---
+
+## Forum Reputation Service
+
+**Fajl:** `app/services/forum_reputation.py`
+
+Servis za upravljanje reputacijom korisnika na forumu — dodjela i oduzimanje bodova, nivoi, medalje i anti-abuse zaštita.
+
+---
+
+### Konfiguracija
+
+#### Timezone
+
+```python
+SARAJEVO_TIMEZONE = ZoneInfo("Europe/Sarajevo")
+```
+
+Koristi se za određivanje lokalnog vremena pri provjeri noćnih tema.
+
+---
+
+#### Nivoi i titule (`LEVEL_RULES`)
+
+| Nivo | Min. bodova | Titula |
+|------|------------|--------|
+| 1 | 0 | Novi član |
+| 2 | 101 | Aktivni član |
+| 3 | 251 | Poznavalac |
+| 4 | 501 | Mentor zajednice |
+| 5 | 1001 | Legenda foruma |
+
+---
+
+#### Medalje (`MEDAL_RULES`)
+
+| Kategorija | Bronze | Silver | Gold |
+|------------|--------|--------|------|
+| `best_answers` | 1 | 5 | 15 |
+| `topics_started` | 3 | 10 | 25 |
+| `reputation` | 100 | 500 | 1000 |
+| `night_owl` | 1 | 3 | 10 |
+
+> Medalja `night_owl` je tajna (`is_secret=True`) i ne prikazuje se korisniku dok je ne osvoji.
+
+---
+
+### Pomoćne funkcije
+
+---
+
+#### `get_level_info(points: int) -> dict`
+
+Vraća nivo i titulu korisnika na osnovu broja bodova.
+
+- **Povratna vrijednost:** `{ "level": int, "title": str }`
+- **Napomena:** Negativni bodovi tretiraju se kao `0`
+
+---
+
+#### `get_role_label(role) -> str`
+
+Prevodi internu ulogu korisnika u prikazni label.
+
+| Interna uloga | Label |
+|--------------|-------|
+| `member`, `student` | Student |
+| `mentor`, `author` | Autor |
+| `admin` | Admin |
+
+---
+
+#### `get_or_create_stats(db, user_id) -> ForumUserStats`
+
+Dohvata ili kreira `ForumUserStats` zapis za korisnika. Poziva `db.flush()` pri kreiranju.
+
+---
+
+#### `reputation_event_exists(db, event_key) -> bool`
+
+Provjerava da li je reputacijski događaj s datim `event_key` već registrovan (idempotentnost).
+
+---
+
+#### `award_eligible_medals(db, stats) -> None`
+
+Provjeri da li korisnik ispunjava uvjete za novu medalju i dodijeli je ako je još nema. Poziva se automatski nakon svake izmjene `ForumUserStats`.
+
+---
+
+#### `is_night_topic(created_at) -> bool`
+
+Provjerava je li tema kreirana između **03:00 i 05:00** po sarajevskom vremenu.
+
+- **Povratna vrijednost:** `bool`
+- **Napomena:** Ako `created_at` nije zadano, koristi trenutno UTC vrijeme
+
+---
+
+### Glavna funkcija
+
+---
+
+#### `register_activity(db, *, user_id, event_key, points_delta, reason, source_type, source_id, counters, giver_id) -> ForumUserStats`
+
+Centralna funkcija za sve dodjele i oduzimanja bodova. Sadrži anti-abuse zaštite.
+
+| Parametar | Tip | Opis |
+|-----------|-----|------|
+| `db` | `Session` | SQLModel sesija |
+| `user_id` | `int` | ID korisnika koji prima bodove |
+| `event_key` | `str` | Jedinstveni ključ događaja (idempotentnost) |
+| `points_delta` | `int` | Pozitivan ili negativan broj bodova |
+| `reason` | `str` | Opis razloga dodjele |
+| `source_type` | `Optional[str]` | Tip izvora (`"forum_topic"`, `"forum_comment"`) |
+| `source_id` | `Optional[int]` | ID izvora |
+| `counters` | `Optional[dict[str, int]]` | Brojači na `ForumUserStats` koje treba ažurirati (npr. `{"answers_count": 1}`) |
+| `giver_id` | `Optional[int]` | ID korisnika koji inicira dodjelu bodova |
+
+**Anti-abuse zaštite:**
+
+1. **Idempotentnost** — ako `event_key` već postoji u bazi, funkcija odmah vraća trenutni `stats` bez ikakvih izmjena.
+2. **Vlastiti sadržaj** — ako je `giver_id == user_id`, `points_delta` se postavlja na `0` (bodovi se ne dodjeljuju, ali se `counters` i dalje ažuriraju).
+3. **Dnevni limit** — jedan korisnik može prenijeti maksimalno **+30 bodova** drugom korisniku u periodu od 24 sata. Ako je limit prekoračen, bodovi se proporcionalno reduciraju ili u potpunosti odbijaju. Svaki prenos koji prođe filter bilježi se u `ForumReputationDailyLog`.
+
+- **Povratna vrijednost:** `ForumUserStats`
+- **Napomena:** Automatski poziva `award_eligible_medals()` i `db.flush()` na kraju
+
+---
+
+### Registracija specifičnih aktivnosti
+
+---
+
+#### `register_topic_created(db, *, user_id, topic_id, created_at) -> ForumUserStats`
+
+Dodjeljuje **+10 bodova** za kreiranje teme. Ako je tema kreirana između 03:00–05:00 po sarajevskom vremenu, uvećava i `night_topics_count`.
+
+- **Uvijek koristi `giver_id=0`** (sistem, bez anti-abuse provjere per-giver)
+
+---
+
+#### `register_answer_created(db, *, user_id, comment_id) -> ForumUserStats`
+
+Dodjeljuje **+3 boda** za pisanje odgovora na forumu. Uvećava `answers_count`.
+
+---
+
+#### `register_best_answer(db, *, user_id, giver_id, comment_id) -> ForumUserStats`
+
+Dodjeljuje **+25 bodova** za odgovor označen kao najbolji. Uvećava `best_answers_count`.
+
+- **`giver_id`** je autor teme — ako označi vlastiti komentar kao najbolji, bodovi se poništavaju (anti-abuse)
+
+---
+
+#### `remove_reputation_points(db, *, user_id, event_key, points, reason, source_type, source_id) -> ForumUserStats`
+
+Oduzima bodove korisniku (npr. brisanje sadržaja). Interna omotač za `register_activity` s negativnim `points_delta`.
+
+---
+
+#### `register_comment_vote(db, *, user_id, giver_id, comment_id, vote_value) -> ForumUserStats`
+
+Registruje lajk ili dislajk na komentar.
+
+| `vote_value` | Bodovi | Razlog |
+|-------------|--------|--------|
+| `1` (lajk) | +5 | Dobijen lajk na komentar |
+| `-1` (dislajk) | -2 | Dobijen dislajk na komentar |
+
+- Podliježe svim anti-abuse zaštitama (vlastiti glas, dnevni limit)
+
+---
+
+#### `rollback_comment_vote(db, *, user_id, giver_id, comment_id, previous_value) -> ForumUserStats`
+
+Poništava prethodni glas kada korisnik klikne ponovo na istu opciju (toggle ponašanje).
+
+| `previous_value` | Rollback delta |
+|-----------------|---------------|
+| `1` (lajk) | -5 |
+| `-1` (dislajk) | +2 |
+
+- Koristi `giver_id=0` — ne bilježi se u dnevni limit (rollback je neutralna operacija)
+- `event_key` sadrži timestamp kako bi bio jedinstven i prošao idempotentnost provjeru
+
+---
+
+### Frontend helper
+
+---
+
+#### `get_user_forum_identity(db, user) -> dict`
+
+Vraća sve podatke potrebne frontendu za prikaz profila korisnika na forumu.
+
+**Povratna vrijednost:**
+
+```json
+{
+  "role": "Student | Autor | Admin",
+  "level": 1,
+  "title": "Novi član",
+  "reputation_points": 120,
+  "medals": [
+    {
+      "code": "topics_started_bronze",
+      "category": "topics_started",
+      "category_name": "Pokrenute teme",
+      "tier": "bronze",
+      "tier_name": "Bronzana",
+      "icon_key": "topics_started_bronze",
+      "is_secret": false,
+      "awarded_at": "2024-01-15T10:30:00Z"
+    }
+  ]
+}
+```
+
 
 ## Tim 4 funkcionalnosti
 
