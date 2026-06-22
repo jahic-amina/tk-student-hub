@@ -218,10 +218,12 @@ def upload_material(
             ))
         db.commit()
         subject = db.get(Subject, subject_id)
+        
+        #za biljezenje aktivnosti korisnika
         log_activity(
             db,
             current_user.id,
-            ActivityType.material_posted,
+            ActivityType.material_uploaded,
             new_material.title,
             f"{subject.name if subject else ''} · {file_type.upper()}",
             new_material.id 

@@ -449,8 +449,8 @@ export async function uploadAvatar(token, file) {
   })
   const data = await response.json()
   
-  if (data.profilna_slika_url) {
-    data.profilna_slika_url = data.profilna_slika_url + '?t=' + Date.now()
+  if (data.profile_picture_url) {
+    data.profile_picture_url = data.profile_picture_url + '?t=' + Date.now()
   }
   
   return data
