@@ -1,6 +1,5 @@
 <template>
     <div class="max-w-2xl mx-auto py-8 px-4 dark:text-slate-100">
-        <!-- Nazad dugme -->
 
         <div class="flex gap-3 mb-6">
             <button @click="goBack()"
@@ -53,35 +52,109 @@
                         <h2 class="text-xl font-bold">{{ material.title }}</h2>
                     </template>
                     <p class="text-sm text-gray-400 dark:text-slate-400">Postavio: {{ material.user?.full_name }}</p>
-                    <p class="text-sm text-gray-400 dark:text-slate-400">Datum: {{ formatDate(material.created_at) }}
-                    </p>
+                    <p class="text-sm text-gray-400 dark:text-slate-400">Datum: {{ formatDate(material.created_at) }}</p>
                 </div>
             </div>
+
             <hr class="mb-4 dark:border-slate-700" />
+
             <!-- Thumbnail + Opis + Ocjena -->
             <div class="flex flex-col sm:flex-row gap-6 mb-6">
                 <div v-if="material.thumbnail_path" class="shrink-0 w-full sm:w-48">
                     <img :src="`http://127.0.0.1:8000/thumbnails/${material.thumbnail_path.split('/').pop()}`"
                         class="w-full sm:w-48 object-cover rounded-lg" alt="thumbnail" />
                 </div>
+
                 <div class="flex-1">
-                    <p class="text-sm text-gray-500 dark:text-slate-400 mb-3">{{ material.subject?.name }} • {{
-                        material.subject?.study_year }}. godina • {{ fileTypeLabels[material.file_type] ?? material.file_type }}</p>
+                    <p class="text-sm text-gray-500 dark:text-slate-400 mb-3">
+                        {{ material.subject?.name }} • {{ material.subject?.study_year }}. godina •
+                        {{ fileTypeLabels[material.file_type] ?? material.file_type }}
+                    </p>
                     <h3 class="font-semibold mb-2 text-base">Detaljan opis</h3>
+
                     <template v-if="isEditing">
                         <textarea v-model="material.description" rows="4"
                             class="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none mb-4" />
+
+                        <!-- Zamijeni fajl -->
+                        <div class="mb-4 mt-2">
+                            <h3 class="font-semibold mb-2">Zamijeni fajl (opcionalno)</h3>
+                            <div @click="fileInput.click()"
+                                @dragover.prevent="isDragging = true"
+                                @dragleave.prevent="isDragging = false"
+                                @drop.prevent="onFileDrop"
+                                :class="[
+                                    'border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors',
+                                    isDragging
+                                        ? 'border-primary bg-orange-50 dark:bg-orange-950'
+                                        : 'border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800'
+                                ]">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 mx-auto mb-2 text-gray-400"
+                                    fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5 5 5M12 5v10" />
+                                </svg>
+                                <p class="text-gray-700 dark:text-slate-300 font-medium">Prevucite fajl ovdje ili kliknite da odaberete</p>
+                                <p class="text-sm text-gray-500 dark:text-slate-400 mt-1">Podržani formati: PDF, DOC, DOCX, TXT, PPT, PPTX, ZIP</p>
+                                <p v-if="selectedFile" class="text-sm text-primary font-medium mt-3">
+                                    Odabran: {{ selectedFile.name }}
+                                </p>
+                            </div>
+                            <input ref="fileInput" type="file" @change="onFileChange"
+                                accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.txt" class="hidden" />
+                        </div>
+
+                        <!-- Tip materijala -->
+                        <div class="mb-4">
+                            <h3 class="font-semibold mb-2">Tip materijala</h3>
+                            <select v-model="editMaterialType"
+                                class="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-primary">
+                                <option value="">Odaberite tip</option>
+                                <option value="skripta">Skripta</option>
+                                <option value="auditorne_vjezbe">Auditorne vježbe</option>
+                                <option value="laboratorijske_vjezbe">Laboratorijske vježbe</option>
+                                <option value="ispiti">Ispiti</option>
+                                <option value="projekat">Projekat</option>
+                            </select>
+                        </div>
+
+                        <!-- Godina studija -->
+                        <div class="mb-4">
+                            <h3 class="font-semibold mb-2">Godina studija</h3>
+                            <select v-model="editYear"
+                                class="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-primary">
+                                <option value="">Odaberite godinu</option>
+                                <option value="1">1. godina</option>
+                                <option value="2">2. godina</option>
+                                <option value="3">3. godina</option>
+                                <option value="4">4. godina</option>
+                            </select>
+                        </div>
+
+                        <!-- Predmet -->
+                        <div class="mb-4">
+                            <h3 class="font-semibold mb-2">Predmet</h3>
+                            <select v-model="editSubjectId"
+                                class="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-primary">
+                                <option value="">Odaberite predmet</option>
+                                <option v-for="subject in filteredSubjects" :key="subject.id" :value="subject.id">
+                                    {{ subject.name }}
+                                </option>
+                            </select>
+                        </div>
                     </template>
+
                     <template v-else>
                         <p class="text-gray-600 dark:text-slate-400 text-sm mb-4">{{ material.description }}</p>
                     </template>
+
                     <MaterialRating :material-id="material.id" :parent-has-downloaded="hasDownloaded" />
                 </div>
             </div>
+
             <!-- Preuzmi -->
             <div class="mb-6">
-                <p class="text-sm text-gray-500 dark:text-slate-400 mb-2">Broj preuzimanja: {{
-                    material.number_of_downloads }}</p>
+                <p class="text-sm text-gray-500 dark:text-slate-400 mb-2">Broj preuzimanja: {{ material.number_of_downloads }}</p>
                 <div class="flex gap-3">
                     <DownloadButton :material-id="material.id" :full-width="true" @downloaded="updateDownloadCount"
                         class="w-full" />
@@ -199,7 +272,7 @@ async function saveChanges() {
     try {
         await updateMaterial(material.value.id, material.value.title, material.value.description, selectedFile.value, editSubjectId.value, editMaterialType.value)
         material.value = await getMaterial(route.params.id) // Ponovo učitaj materijal nakon spremanja
-        successMessage.value = 'Promjene su sačuvane!'
+        successMessage.value = 'Promjene su sačuvane! Materijal na odobravanju.'
         successTitle.value = 'Uspjeh!'
         successIcon.value = '✅'
         isEditing.value = false

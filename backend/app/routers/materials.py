@@ -467,13 +467,20 @@ def update_material(
     if material_type:
         material.file_type = material_type
     if file:
-        validate_file_format(file)
-        if os.path.exists(material.file_path):
-            os.remove(material.file_path)
-        new_file_path = save_file_to_disk(file)
-        material.file_path = new_file_path
-        material.file_type = file.content_type
-        material.status = "pending"  
+        if file:
+            validate_file_format(file)
+            if os.path.exists(material.file_path):
+                os.remove(material.file_path)
+            if material.thumbnail_path and os.path.exists(material.thumbnail_path):
+                os.remove(material.thumbnail_path)
+            
+            new_file_path = save_file_to_disk(file)
+            new_thumbnail_path = generate_thumbnail(new_file_path)
+            
+            material.file_path = new_file_path
+            material.thumbnail_path = new_thumbnail_path
+       
+    material.status = "pending"  
     session.add(material)
     session.commit()
     session.refresh(material)
