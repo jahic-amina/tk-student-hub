@@ -84,14 +84,19 @@ Authorization: Bearer YOUR_TOKEN_HERE
 ```
 
 ## Timovi i funkcionalnosti
+                                                                                                                                                                                                            
+| PRojektni tim | Funkcionalnost | Folder | Članova tima |
+|-----|---------------|--------|---|
+| Tim 1 | Prakse i edukacije | `backend/app/routers/ad.py`, `backend/app/routers/company.py`, `backend/app/routers/ad_bookmark.py`, `backend/app/routers/applications.py`, `backend/app/routers/notification.py`, `frontend/src/views/ads/`, `frontend/src/views/application/`, `frontend/src/views/company/` | - |
+| Tim 2 | Materijali | `backend/app/routers/materials.py`, `frontend/src/views/materials/` | Lejla Kadušić, Amer Imamović, Marinela Mitić, Faris Ćosić  |
+| Tim 3 | Forum | `backend/app/routers/forum.py`, `frontend/src/views/forum/` | - |
+| Tim 4 | Profili & Dashboard | `backend/app/routers/profiles.py`, `frontend/src/views/profiles/` | - |
 
-| Projektni tim | Funkcionalnost      | Folder                                                                                                                                                                                                                                                                         |
-| ------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Tim 1         | Prakse i edukacije  | `backend/app/routers/ad.py`, `backend/app/routers/company.py`, `backend/app/routers/ad_bookmark.py`, `backend/app/routers/applications.py`, `backend/app/routers/notification.py`, `frontend/src/views/ads/`, `frontend/src/views/application/`, `frontend/src/views/company/` |
-| Tim 2         | Materijali          | `backend/app/routers/materials.py`, `frontend/src/views/materials/`                                                                                                                                                                                                            |
-| Tim 3         | Forum               | `backend/app/routers/forum.py`, `frontend/src/views/forum/`                                                                                                                                                                                                                    |
-| Tim 4         | Profili & Dashboard | `backend/app/routers/profiles.py`, `frontend/src/views/profiles/`                                                                                                                                                                                                              |
-
+**Tim 2 Opis:**
+- **Lejla Kadušić** — Upload materijala, komentari (CRUD), paginacija
+- **Amer Imamović** — Brisanje materijala, bookmark (omiljeni), filteri (godina, tip, predmet)
+- **Marinela Mitić** — Forma za dodavanje materijala s validacijom, preuzimanje materijala, ocjenjivanje (zvjezdice), thumbnail sličice, dark mode
+- **Faris Ćosić** - Pregled materijala, detaljan pregled materijala, odobravanje/odbijanje , preview, ažuriranje
 ## Tehnologije
 
 - **Backend:** Python, FastAPI, SQLModel, JWT
