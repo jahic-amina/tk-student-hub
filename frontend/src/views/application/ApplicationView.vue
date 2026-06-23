@@ -1,61 +1,61 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-b from-orange-50 via-white to-white">
+  <div class="min-h-screen bg-gradient-to-b from-orange-50 via-white to-white dark:from-slate-900/50 dark:via-slate-900 dark:to-slate-900 transition-colors duration-200">
     <div class="max-w-3xl mx-auto px-4 sm:px-6 py-8 md:py-12">
       <div class="mb-6">
-        <button @click="$router.back()" class="text-sm font-semibold text-orange-600 hover:text-orange-700 transition">
+        <button @click="$router.back()" class="text-sm font-semibold text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 transition bg-transparent border-none cursor-pointer">
           ← Nazad
         </button>
       </div>
 
-      <div v-if="!ad" class="rounded-3xl border border-gray-100 bg-white shadow-sm p-8 text-center text-gray-500">
+      <div v-if="!ad" class="rounded-3xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm p-8 text-center text-gray-500 dark:text-slate-400">
         Učitavanje detalja oglasa...
       </div>
 
       <div v-else>
-        <div class="rounded-3xl border border-gray-100 bg-white shadow-sm p-6 sm:p-8 mb-6">
-          <h1 class="text-3xl font-bold text-gray-900 mb-2">Prijava za: {{ ad.title }}</h1>
-          <p class="text-gray-600">
-            <router-link :to="`/companies/${ad.company_id}`" class="text-orange-600 hover:text-orange-700 font-medium">
+        <div class="rounded-3xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm p-6 sm:p-8 mb-6">
+          <h1 class="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-2">Prijava za: {{ ad.title }}</h1>
+          <p class="text-gray-600 dark:text-slate-400">
+            <router-link :to="`/companies/${ad.company_id}`" class="text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 font-medium no-underline">
               {{ ad.company }}
             </router-link>
           </p>
         </div>
 
-        <div class="rounded-3xl border border-gray-100 bg-white shadow-sm p-6 sm:p-8">
+        <div class="rounded-3xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm p-6 sm:p-8">
           <form @submit.prevent="submitApplication" class="space-y-6">
             <!-- Errors -->
-            <div v-if="error" class="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
+            <div v-if="error" class="rounded-2xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/20 p-4 text-red-700 dark:text-red-400">
               {{ error }}
             </div>
 
             <!-- Success Message -->
-            <div v-if="successMessage" class="rounded-2xl border border-green-200 bg-green-50 p-4 text-green-700">
+            <div v-if="successMessage" class="rounded-2xl border border-green-200 dark:border-green-900/50 bg-green-50 dark:bg-green-950/20 p-4 text-green-700 dark:text-green-400">
               {{ successMessage }}
             </div>
 
             <!-- Phone Number -->
             <div>
-              <label class="block text-sm font-bold text-gray-900 mb-2">Telefonski broj *</label>
+              <label class="block text-sm font-bold text-gray-900 dark:text-slate-200 mb-2">Telefonski broj *</label>
               <input
                 v-model="form.phone"
                 type="tel"
                 placeholder="+387 61 234 567"
                 required
-                class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                class="w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               />
-              <p class="text-xs text-gray-500 mt-1">Npr. +387 61 123 456 ili 061 123 456</p>
+              <p class="text-xs text-gray-500 dark:text-slate-400 mt-1">Npr. +387 61 123 456 ili 061 123 456</p>
             </div>
 
             <!-- CV Upload -->
             <div>
-              <label class="block text-sm font-bold text-gray-900 mb-2">CV/Životopis *</label>
+              <label class="block text-sm font-bold text-gray-900 dark:text-slate-200 mb-2">CV/Životopis *</label>
               <div
                 @dragover.prevent="cvDragActive = true"
                 @dragleave="cvDragActive = false"
                 @drop.prevent="handleCvDrop"
                 :class="[
                   'rounded-lg border-2 border-dashed p-6 text-center cursor-pointer transition',
-                  cvDragActive ? 'border-orange-500 bg-orange-50' : 'border-gray-300 hover:border-orange-300'
+                  cvDragActive ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/20' : 'border-gray-300 dark:border-slate-700 hover:border-orange-300 dark:hover:border-orange-500/50'
                 ]"
                 @click="$refs.cvInput.click()"
               >
@@ -67,23 +67,23 @@
                   class="hidden"
                   required
                 />
-                <div v-if="!form.cvFile" class="text-gray-600">
+                <div v-if="!form.cvFile" class="text-gray-600 dark:text-slate-400">
                   <p class="font-medium">Klikni da odabereš fajl ili povuci i pusti ovdje</p>
-                  <p class="text-xs text-gray-500 mt-1">PDF (max 5MB)</p>
+                  <p class="text-xs text-gray-500 dark:text-slate-500 mt-1">PDF (max 5MB)</p>
                 </div>
-                <div v-else class="text-green-600">
+                <div v-else class="text-green-600 dark:text-green-400">
                   <p class="font-medium">✓ {{ form.cvFile.name }}</p>
                   <button
                     type="button"
                     @click.stop="form.cvFile = null; cvUploadProgress = 0"
-                    class="text-xs text-orange-600 hover:text-orange-700 mt-1 underline"
+                    class="text-xs text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 mt-1 underline bg-transparent border-none cursor-pointer"
                   >
                     Ukloni
                   </button>
                 </div>
                 <div v-if="cvUploadProgress > 0 && cvUploadProgress < 100" class="mt-2">
-                  <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div class="bg-orange-600 h-2 rounded-full transition" :style="{ width: cvUploadProgress + '%' }"></div>
+                  <div class="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
+                    <div class="bg-orange-600 dark:bg-orange-500 h-2 rounded-full transition" :style="{ width: cvUploadProgress + '%' }"></div>
                   </div>
                 </div>
               </div>
@@ -91,14 +91,14 @@
 
             <!-- Motivational Letter Upload -->
             <div>
-              <label class="block text-sm font-bold text-gray-900 mb-2">Motivaciono pismo *</label>
+              <label class="block text-sm font-bold text-gray-900 dark:text-slate-200 mb-2">Motivaciono pismo *</label>
               <div
                 @dragover.prevent="letterDragActive = true"
                 @dragleave="letterDragActive = false"
                 @drop.prevent="handleLetterDrop"
                 :class="[
                   'rounded-lg border-2 border-dashed p-6 text-center cursor-pointer transition',
-                  letterDragActive ? 'border-orange-500 bg-orange-50' : 'border-gray-300 hover:border-orange-300'
+                  letterDragActive ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/20' : 'border-gray-300 dark:border-slate-700 hover:border-orange-300 dark:hover:border-orange-500/50'
                 ]"
                 @click="$refs.letterInput.click()"
               >
@@ -110,23 +110,23 @@
                   class="hidden"
                   required
                 />
-                <div v-if="!form.letterFile" class="text-gray-600">
+                <div v-if="!form.letterFile" class="text-gray-600 dark:text-slate-400">
                   <p class="font-medium">Klikni da odabereš fajl ili povuci i pusti ovdje</p>
-                  <p class="text-xs text-gray-500 mt-1">PDF (max 5MB)</p>
+                  <p class="text-xs text-gray-500 dark:text-slate-500 mt-1">PDF (max 5MB)</p>
                 </div>
-                <div v-else class="text-green-600">
+                <div v-else class="text-green-600 dark:text-green-400">
                   <p class="font-medium">✓ {{ form.letterFile.name }}</p>
                   <button
                     type="button"
                     @click.stop="form.letterFile = null; letterUploadProgress = 0"
-                    class="text-xs text-orange-600 hover:text-orange-700 mt-1 underline"
+                    class="text-xs text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 mt-1 underline bg-transparent border-none cursor-pointer"
                   >
                     Ukloni
                   </button>
                 </div>
                 <div v-if="letterUploadProgress > 0 && letterUploadProgress < 100" class="mt-2">
-                  <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div class="bg-orange-600 h-2 rounded-full transition" :style="{ width: letterUploadProgress + '%' }"></div>
+                  <div class="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
+                    <div class="bg-orange-600 dark:bg-orange-500 h-2 rounded-full transition" :style="{ width: letterUploadProgress + '%' }"></div>
                   </div>
                 </div>
               </div>
@@ -134,21 +134,21 @@
 
             <!-- LinkedIn URL -->
             <div>
-              <label class="block text-sm font-bold text-gray-900 mb-2">LinkedIn profil (opciono)</label>
+              <label class="block text-sm font-bold text-gray-900 dark:text-slate-200 mb-2">LinkedIn profil (opciono)</label>
               <input
                 v-model="form.linkedinUrl"
                 type="url"
                 placeholder="https://linkedin.com/in/tvoje-ime"
-                class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                class="w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               />
-              <p class="text-xs text-gray-500 mt-1">Npr. https://linkedin.com/in/marko-markovic</p>
+              <p class="text-xs text-gray-500 dark:text-slate-400 mt-1">Npr. https://linkedin.com/in/marko-markovic</p>
             </div>
 
             <!-- Submit Button -->
             <button
               type="submit"
               :disabled="loading || !form.cvFile || !form.letterFile || !form.phone"
-              class="w-full bg-orange-600 text-white py-3 rounded-lg hover:bg-orange-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              class="w-full bg-orange-600 text-white py-3 rounded-lg hover:bg-orange-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed border-none cursor-pointer"
             >
               {{ loading ? 'Slanje prijave...' : 'Pošalji prijavu' }}
             </button>

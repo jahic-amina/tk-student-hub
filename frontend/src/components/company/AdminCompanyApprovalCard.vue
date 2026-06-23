@@ -1,11 +1,11 @@
 <template>
-  <div class="relative bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col gap-4">
+  <div class="relative bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-6 flex flex-col gap-4">
     <div class="flex items-start justify-between gap-2">
       <div>
-        <h2 class="text-base font-bold text-gray-900">{{ company.company_name }}</h2>
-        <p class="text-xs text-gray-400 mt-0.5">{{ company.email }}</p>
+        <h2 class="text-base font-bold text-gray-900 dark:text-slate-100">{{ company.company_name }}</h2>
+        <p class="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{{ company.email }}</p>
       </div>
-      <span v-if="company.is_deleted" class="text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap bg-gray-100 text-gray-700">
+      <span v-if="company.is_deleted" class="text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300">
         Obrisano
       </span>
       <span v-else :class="statusBadgeClass(company.status)">
@@ -13,31 +13,31 @@
       </span>
     </div>
 
-    <div class="text-xs text-gray-500 space-y-1">
-      <p><span class="font-semibold text-gray-700">TIN:</span> {{ company.tin }}</p>
-      <p><span class="font-semibold text-gray-700">Adresa:</span> {{ company.address }}</p>
+    <div class="text-xs text-gray-500 dark:text-slate-400 space-y-1">
+      <p><span class="font-semibold text-gray-700 dark:text-slate-300">TIN:</span> {{ company.tin }}</p>
+      <p><span class="font-semibold text-gray-700 dark:text-slate-300">Adresa:</span> {{ company.address }}</p>
       <p>
-        <span class="font-semibold text-gray-700">Web:</span>
-        <a :href="company.website_url" target="_blank" class="text-orange-500 hover:underline ml-1">
+        <span class="font-semibold text-gray-700 dark:text-slate-300">Web:</span>
+        <a :href="company.website_url" target="_blank" class="text-orange-500 dark:text-orange-400 hover:underline ml-1">
           {{ company.website_url }}
         </a>
       </p>
     </div>
 
-    <p class="text-xs text-gray-500 leading-relaxed line-clamp-3">{{ company.description }}</p>
+    <p class="text-xs text-gray-500 dark:text-slate-400 leading-relaxed line-clamp-3">{{ company.description }}</p>
 
     <div v-if="!company.is_deleted && company.status === 'pending'" class="flex gap-2 mt-auto">
       <button
         @click="$emit('approve', company)"
         :disabled="company.updating"
-        class="flex-1 py-2 rounded-lg bg-green-50 text-green-700 text-xs font-semibold hover:bg-green-100 transition disabled:opacity-50"
+        class="flex-1 py-2 rounded-lg bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400 text-xs font-semibold hover:bg-green-100 dark:hover:bg-green-900/40 transition disabled:opacity-50"
       >
         {{ company.updating === 'approved' ? 'Slanje...' : 'Odobri' }}
       </button>
       <button
         @click="$emit('reject', company)"
         :disabled="company.updating"
-        class="flex-1 py-2 rounded-lg bg-red-50 text-red-700 text-xs font-semibold hover:bg-red-100 transition disabled:opacity-50"
+        class="flex-1 py-2 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 text-xs font-semibold hover:bg-red-100 dark:hover:bg-red-900/40 transition disabled:opacity-50"
       >
         {{ company.updating === 'denied' ? 'Slanje...' : 'Odbij' }}
       </button>
@@ -48,7 +48,7 @@
         v-if="!company.is_deleted"
         @click="$emit('delete', company)"
         :disabled="company.updating"
-        class="p-2 rounded-full bg-red-50 text-red-600 hover:bg-red-100 transition disabled:opacity-50"
+        class="p-2 rounded-full bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition disabled:opacity-50"
         :title="company.updating === 'deleting' ? 'Brisanje...' : 'Obriši'"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -59,7 +59,7 @@
         v-else
         @click="$emit('restore', company)"
         :disabled="company.updating"
-        class="p-2 rounded-full bg-green-50 text-green-600 hover:bg-green-100 transition disabled:opacity-50"
+        class="p-2 rounded-full bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40 transition disabled:opacity-50"
         :title="company.updating === 'restoring' ? 'Vraćanje...' : 'Vrati'"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -92,9 +92,9 @@ export default {
     },
     statusBadgeClass(status) {
       const base = 'text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap'
-      if (status === 'approved') return `${base} bg-green-50 text-green-700`
-      if (status === 'denied') return `${base} bg-red-50 text-red-700`
-      return `${base} bg-yellow-50 text-yellow-700`
+      if (status === 'approved') return `${base} bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-400`
+      if (status === 'denied') return `${base} bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400`
+      return `${base} bg-yellow-50 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-400`
     }
   }
 }

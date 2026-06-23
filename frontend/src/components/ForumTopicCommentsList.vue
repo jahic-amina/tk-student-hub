@@ -233,7 +233,8 @@ async function handleDeleteComment(comment) {
 // ─── Submit edit ──────────────────────────────────────────────────────────────
 async function handleSubmitEdit(commentId, newContent) {
   try {
-    await updateComment(commentId, { content: newContent });
+    await updateComment(commentId, newContent);
+    
     editingCommentId.value = null;
     editContent.value = '';
     emit('refresh');

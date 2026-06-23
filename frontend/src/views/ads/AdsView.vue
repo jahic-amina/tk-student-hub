@@ -1,15 +1,15 @@
 <template>
-  <div class="bg-gray-50 min-h-screen font-sans">
+  <div class="bg-gray-50 dark:bg-slate-900 min-h-screen font-sans transition-colors duration-200">
 
     <HeroBanner />
 
     <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 md:py-8">
 
-      <div class="flex gap-4 md:gap-6 border-b border-gray-200 pb-0 mb-6 overflow-x-auto no-scrollbar text-sm font-medium whitespace-nowrap">
+      <div class="flex gap-4 md:gap-6 border-b border-gray-200 dark:border-slate-700 pb-0 mb-6 overflow-x-auto no-scrollbar text-sm font-medium whitespace-nowrap">
         <button
           v-for="tab in ['Sve', 'Prakse', 'Edukacije', 'Stipendije', 'Aktuelno']"
           :key="tab"
-          :class="['pb-3 px-1 transition-all border-b-2 text-xs sm:text-sm', currentTab === tab ? 'border-orange-500 text-orange-600 font-bold' : 'border-transparent text-gray-500 hover:text-gray-700']"
+          :class="['pb-3 px-1 transition-all border-b-2 text-xs sm:text-sm bg-transparent border-none cursor-pointer', currentTab === tab ? 'border-orange-500 text-orange-600 dark:text-orange-400 font-bold' : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200']"
           @click="currentTab = tab">
           {{ tab }}
         </button>
@@ -23,7 +23,7 @@
       />
 
       <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
-        <h2 class="text-base sm:text-lg font-bold text-gray-800 text-center sm:text-left">
+        <h2 class="text-base sm:text-lg font-bold text-gray-800 dark:text-slate-100 text-center sm:text-left">
           {{ filteredAds.length }} aktivnih oglasa
         </h2>
         
@@ -31,20 +31,20 @@
           v-if="isStudent"
           @click="showOnlySaved = !showOnlySaved"
           :class="[
-            'w-full sm:w-auto text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-lg transition shadow-sm text-center',
-            showOnlySaved ? 'bg-gray-800 hover:bg-gray-900 text-white' : 'bg-orange-500 hover:bg-orange-600 text-white'
+            'w-full sm:w-auto text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-lg transition shadow-sm text-center border-none cursor-pointer',
+            showOnlySaved ? 'bg-gray-800 dark:bg-slate-700 hover:bg-gray-900 dark:hover:bg-slate-600 text-white' : 'bg-orange-500 hover:bg-orange-600 text-white'
           ]"
         >
           {{ showOnlySaved ? 'Prikaži sve oglase' : 'Sačuvane prilike' }}
         </button>
       </div>
 
-      <div v-if="loading" class="text-center py-12 text-gray-500 font-medium text-sm">
+      <div v-if="loading" class="text-center py-12 text-gray-500 dark:text-slate-400 font-medium text-sm">
         Učitavanje oglasa...
       </div>
 
-      <div v-else-if="errorMessage" class="text-center py-10 px-4 bg-white rounded-xl border border-dashed border-red-300">
-        <p class="text-red-500 font-medium text-base sm:text-lg">{{ errorMessage }}</p>
+      <div v-else-if="errorMessage" class="text-center py-10 px-4 bg-white dark:bg-slate-800 rounded-xl border border-dashed border-red-300 dark:border-red-900/50">
+        <p class="text-red-500 dark:text-red-400 font-medium text-base sm:text-lg">{{ errorMessage }}</p>
       </div>
 
       <div v-else-if="filteredAds.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -58,11 +58,11 @@
         />
       </div>
 
-      <div v-else class="text-center py-10 px-4 bg-white rounded-xl border border-dashed border-gray-300">
-        <p class="text-gray-500 font-medium text-base sm:text-lg">
+      <div v-else class="text-center py-10 px-4 bg-white dark:bg-slate-800 rounded-xl border border-dashed border-gray-300 dark:border-slate-700">
+        <p class="text-gray-500 dark:text-slate-300 font-medium text-base sm:text-lg">
           {{ showOnlySaved ? 'Nemate nijednu sačuvanu priliku za odabrane filtere.' : 'Nema pronađenih oglasa za traženi pojam.' }}
         </p>
-        <p class="text-gray-400 text-xs sm:text-sm mt-1">Pokušajte sa nekom drugom ključnom riječi ili filterom.</p>
+        <p class="text-gray-400 dark:text-slate-500 text-xs sm:text-sm mt-1">Pokušajte sa nekom drugom ključnom riječi ili filterom.</p>
       </div>
 
     </div>
