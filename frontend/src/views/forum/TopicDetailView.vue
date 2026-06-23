@@ -147,7 +147,7 @@ const handleAdminNotice = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-6 transition-colors duration-200">
+  <div class="min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-6 transition-colors duration-300">
     <div class="max-w-7xl mx-auto">
 
       <div class="mb-8">
