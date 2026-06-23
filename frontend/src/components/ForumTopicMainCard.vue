@@ -238,7 +238,7 @@ function handleFormSubmit({ content, files = [], clearForm }) {
 
 <template>
   <div
-    class="bg-white dark:bg-slate-800 rounded-xl border shadow-sm p-6 mb-6 transition-colors duration-200"
+    class="bg-white dark:bg-slate-900 rounded-xl border shadow-sm p-6 mb-6 transition-colors duration-200"
     :class="topic.is_locked ? 'border-amber-300 dark:border-amber-900 bg-amber-50/10' : 'border-gray-200 dark:border-slate-700'"
   >
     <div v-if="isEditingTopic" class="flex flex-col gap-3 mb-4">
@@ -300,7 +300,8 @@ function handleFormSubmit({ content, files = [], clearForm }) {
 
     <div class="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700 flex flex-col gap-2">
       <div class="flex items-center w-full gap-2">
-        <div class="topic-votes">
+        
+        <div v-if="!isAdmin" class="topic-votes">
           <button
             type="button"
             class="topic-vote-btn"
@@ -330,7 +331,7 @@ function handleFormSubmit({ content, files = [], clearForm }) {
         </div>
 
         <button
-          v-if="!topic.is_locked"
+          v-if="!topic.is_locked && !isAdmin"
           @click="isReplyingToTopic = !isReplyingToTopic"
           class="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-white bg-orange-500 hover:bg-orange-400 transition-all duration-200 px-2 py-1 rounded-md shadow-sm border-none cursor-pointer"
           :class="{ 'bg-orange-600 ring-2 ring-orange-300 dark:ring-orange-900': isReplyingToTopic }"

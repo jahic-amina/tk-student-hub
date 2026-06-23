@@ -231,7 +231,7 @@ watch(currentMode, (newMode) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-3 transition-colors duration-200">
+  <div class="min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-3 transition-colors duration-300">
     <div class="max-w-7xl mx-auto">
 
       <div class="flex justify-between items-center mb-5 border-b border-gray-200 dark:border-slate-800 py-2 pt-4 -mt-2">
