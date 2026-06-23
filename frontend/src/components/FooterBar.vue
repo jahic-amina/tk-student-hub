@@ -14,6 +14,7 @@ export default {
   name: 'AppFooter',
   computed: {
     isCompanyLoggedIn() {
+      this.$route;
       return !!localStorage.getItem('company_token')
     }
   }
