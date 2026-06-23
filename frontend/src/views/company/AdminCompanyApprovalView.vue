@@ -1,17 +1,17 @@
 <template>
-  <div class="min-h-screen bg-gray-50 py-10 px-4 font-sans">
+  <div class="min-h-screen bg-gray-50 dark:bg-slate-900 py-10 px-4 font-sans transition-colors duration-200">
     <div class="max-w-6xl mx-auto">
 
       <div class="mb-8">
-        <h1 class="text-2xl sm:text-3xl font-black text-gray-900">Upravljanje kompanijama</h1>
-        <p class="text-gray-500 mt-1 text-sm">Pregled i odobravanje registrovanih kompanija.</p>
+        <h1 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-slate-100">Upravljanje kompanijama</h1>
+        <p class="text-gray-500 dark:text-slate-400 mt-1 text-sm">Pregled i odobravanje registrovanih kompanija.</p>
       </div>
 
-      <div v-if="loading" class="text-center py-12 text-gray-500 text-sm font-medium">
+      <div v-if="loading" class="text-center py-12 text-gray-500 dark:text-slate-400 text-sm font-medium">
         Učitavanje kompanija...
       </div>
 
-      <div v-else-if="errorMessage" class="p-6 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-sm">
+      <div v-else-if="errorMessage" class="p-6 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-2xl text-red-700 dark:text-red-400 text-sm">
         {{ errorMessage }}
       </div>
 
@@ -21,14 +21,14 @@
             v-for="filter in ['Sve', 'Na čekanju', 'Odobrene', 'Odbijene', 'Obrisane']"
             :key="filter"
             @click="activeFilter = filter"
-            :class="['px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition', activeFilter === filter ? 'bg-orange-500 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50']"
+            :class="['px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-transparent border cursor-pointer', activeFilter === filter ? 'bg-orange-500 dark:bg-orange-600 border-transparent text-white' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700/50']"
           >
             {{ filter }}
             <span class="ml-1 opacity-70">({{ filterCount(filter) }})</span>
           </button>
         </div>
 
-        <div v-if="filteredCompanies.length === 0" class="text-center py-10 text-gray-400 text-sm">
+        <div v-if="filteredCompanies.length === 0" class="text-center py-10 text-gray-400 dark:text-slate-500 text-sm">
           Nema kompanija u ovoj kategoriji.
         </div>
 

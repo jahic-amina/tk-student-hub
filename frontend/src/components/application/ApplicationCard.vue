@@ -1,13 +1,13 @@
 <template>
   <div
-    class="rounded-2xl border bg-white p-5 shadow-sm transition-all duration-200"
+    class="rounded-2xl border bg-white dark:bg-slate-800 p-5 shadow-sm transition-all duration-200 border-gray-100 dark:border-slate-700"
     :class="cardBorderClass"
   >
     <!-- Header -->
     <div class="flex items-start justify-between mb-4">
       <div>
-        <p class="text-sm font-bold text-gray-900">Aplikant #{{ application.user_id }}</p>
-        <p v-if="application.created_at" class="text-xs text-gray-400 mt-0.5">
+        <p class="text-sm font-bold text-gray-900 dark:text-slate-100">Aplikant #{{ application.user_id }}</p>
+        <p v-if="application.created_at" class="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
           {{ formatDate(application.created_at) }}
         </p>
       </div>
@@ -20,7 +20,7 @@
     <div class="space-y-2 mb-5">
       <div v-if="application.phone" class="flex items-center gap-2 text-sm">
         <span class="text-gray-400">📞</span>
-        <span class="text-gray-700 font-medium">{{ application.phone }}</span>
+        <span class="text-gray-700 dark:text-slate-300 font-medium">{{ application.phone }}</span>
       </div>
       <div v-if="application.linkedin_url" class="flex items-center gap-2 text-sm">
         <span class="text-gray-400">🔗</span>
@@ -28,7 +28,7 @@
           :href="application.linkedin_url"
           target="_blank"
           rel="noopener"
-          class="text-blue-600 hover:text-blue-700 font-medium hover:underline truncate max-w-[200px]"
+          class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium hover:underline truncate max-w-[200px]"
         >
           LinkedIn profil
         </a>
@@ -37,7 +37,7 @@
         <span class="text-gray-400">📄</span>
         <button
           @click="openPdf(cvUrl, 'CV')"
-          class="text-orange-600 hover:text-orange-700 font-semibold hover:underline"
+          class="text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 font-semibold hover:underline"
         >
           Preuzmi CV
         </button>
@@ -46,7 +46,7 @@
         <span class="text-gray-400">✉️</span>
         <button
           @click="openPdf(motivationalLetterUrl, 'Propratno pismo')"
-          class="text-orange-600 hover:text-orange-700 font-semibold hover:underline"
+          class="text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 font-semibold hover:underline"
         >
           Propratno pismo
         </button>
@@ -56,7 +56,7 @@
     <!-- Existing admin feedback -->
     <div
       v-if="application.admin_feedback && application.status === 'rejected'"
-      class="mb-4 rounded-xl bg-red-50 border border-red-100 p-3 text-xs text-red-700"
+      class="mb-4 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/50 p-3 text-xs text-red-700 dark:text-red-400"
     >
       <span class="font-semibold block mb-1">Povratna informacija:</span>
       {{ application.admin_feedback }}
@@ -68,7 +68,7 @@
         v-model="feedback"
         placeholder="Povratna informacija za kandidata (opciono)..."
         rows="3"
-        class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 resize-none focus:outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100 transition"
+        class="w-full rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700/50 px-3 py-2 text-sm text-gray-800 dark:text-slate-100 resize-none focus:outline-none focus:border-orange-300 dark:focus:border-orange-500 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-950/50 transition"
       />
     </div>
 
@@ -78,7 +78,7 @@
         <button
           @click="handleAccept"
           :disabled="loading"
-          class="flex-1 bg-green-50 hover:bg-green-100 disabled:opacity-50 text-green-700 font-bold py-2.5 rounded-xl text-sm transition"
+          class="flex-1 bg-green-50 dark:bg-green-950/40 hover:bg-green-100 dark:hover:bg-green-900/40 disabled:opacity-50 text-green-700 dark:text-green-400 font-bold py-2.5 rounded-xl text-sm transition"
         >
           <span v-if="loading && accepting">...</span>
           <span v-else>✓ Prihvati</span>
@@ -88,8 +88,8 @@
           :disabled="loading"
           class="flex-1 font-bold py-2.5 rounded-xl text-sm transition disabled:opacity-50"
           :class="showRejectForm
-            ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            : 'bg-red-50 text-red-600 hover:bg-red-100'"
+            ? 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600'
+            : 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40'"
         >
           {{ showRejectForm ? '✕ Odustani' : '✗ Odbij' }}
         </button>
@@ -105,7 +105,7 @@
       </button>
     </div>
 
-    <div v-else class="text-xs text-gray-400 text-center pt-1">
+    <div v-else class="text-xs text-gray-400 dark:text-slate-500 text-center pt-1">
       Odluka je već donesena za ovu prijavu.
     </div>
 
@@ -120,23 +120,23 @@
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="closePdf" />
 
         <!-- Modal -->
-        <div class="relative z-10 flex flex-col bg-white rounded-2xl shadow-2xl w-[90vw] max-w-4xl h-[90vh]">
+        <div class="relative z-10 flex flex-col bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-[90vw] max-w-4xl h-[90vh] border border-transparent dark:border-slate-700">
           
           <!-- Modal header -->
-          <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
-            <p class="font-bold text-gray-900 text-sm">{{ pdfModal.title }}</p>
+          <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-700 shrink-0">
+            <p class="font-bold text-gray-900 dark:text-slate-100 text-sm">{{ pdfModal.title }}</p>
             <div class="flex items-center gap-3">
               <a
                 :href="pdfModal.url"
                 target="_blank"
                 rel="noopener"
-                class="text-xs font-semibold text-orange-600 hover:text-orange-700 transition"
+                class="text-xs font-semibold text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 transition"
               >
                 Otvori u novom tabu ↗
               </a>
               <button
                 @click="closePdf"
-                class="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-800 transition"
+                class="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 transition"
                 title="Zatvori"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -149,7 +149,7 @@
           <!-- PDF iframe -->
           <iframe
             :src="pdfModal.url"
-            class="flex-1 w-full rounded-b-2xl"
+            class="flex-1 w-full rounded-b-2xl bg-white dark:bg-slate-100"
             frameborder="0"
           />
         </div>
@@ -202,21 +202,21 @@ export default {
     },
     statusBadgeClass() {
       const map = {
-        pending: 'bg-amber-50 text-amber-600',
-        accepted: 'bg-green-50 text-green-600',
-        rejected: 'bg-red-50 text-red-600',
-        under_review: 'bg-blue-50 text-blue-600'
+        pending: 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400',
+        accepted: 'bg-green-50 text-green-600 dark:bg-green-950/40 dark:text-green-400',
+        rejected: 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400',
+        under_review: 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400'
       }
-      return map[this.application.status] || 'bg-gray-100 text-gray-600'
+      return map[this.application.status] || 'bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-300'
     },
     cardBorderClass() {
       const map = {
-        accepted: 'border-green-200',
-        rejected: 'border-red-100',
-        pending: 'border-gray-100',
-        under_review: 'border-blue-100'
+        accepted: 'border-green-200 dark:border-green-900/60',
+        rejected: 'border-red-100 dark:border-red-900/40',
+        pending: 'border-gray-100 dark:border-slate-700',
+        under_review: 'border-blue-100 dark:border-blue-900/40'
       }
-      return map[this.application.status] || 'border-gray-100'
+      return map[this.application.status] || 'border-gray-100 dark:border-slate-700'
     }
   },
   methods: {

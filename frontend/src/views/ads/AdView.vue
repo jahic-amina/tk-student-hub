@@ -1,17 +1,17 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-b from-orange-50 via-white to-white">
+  <div class="min-h-screen bg-gradient-to-b from-orange-50 via-white to-white dark:from-slate-900/50 dark:via-slate-900 dark:to-slate-900 transition-colors duration-200">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 py-8 md:py-12">
       <div class="mb-6">
-        <router-link to="/ads" class="text-sm font-semibold text-orange-600 hover:text-orange-700 transition">
+        <router-link to="/ads" class="text-sm font-semibold text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 transition">
           ← Nazad na listu oglasa
         </router-link>
       </div>
 
-      <div v-if="loading" class="rounded-3xl border border-gray-100 bg-white shadow-sm p-8 text-center text-gray-500">
+      <div v-if="loading" class="rounded-3xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm p-8 text-center text-gray-500 dark:text-slate-400">
         Učitavanje detalja oglasa...
       </div>
 
-      <div v-else-if="errorMessage" class="rounded-3xl border border-red-100 bg-red-50 p-8 text-red-700">
+      <div v-else-if="errorMessage" class="rounded-3xl border border-red-100 dark:border-red-900/50 bg-red-50 dark:bg-red-950/20 p-8 text-red-700 dark:text-red-400">
         {{ errorMessage }}
       </div>
 
@@ -19,12 +19,12 @@
         
         <div class="grid gap-6 lg:grid-cols-[1.6fr_0.9fr] items-start">
           
-          <section class="rounded-3xl border border-gray-100 bg-white shadow-sm p-6 sm:p-8 relative">
+          <section class="rounded-3xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm p-6 sm:p-8 relative">
             
             <button 
               v-if="isUserLoggedIn && !isCompanyLoggedIn && !isAdmin"
               @click.prevent="toggleBookmark" 
-              class="absolute top-6 right-6 focus:outline-none transition-transform hover:scale-110 active:scale-95 z-10"
+              class="absolute top-6 right-6 focus:outline-none transition-transform hover:scale-110 active:scale-95 z-10 bg-transparent border-none cursor-pointer"
               title="Sačuvaj oglas"
             >
               <svg 
@@ -35,7 +35,7 @@
                 stroke="currentColor" 
                 :class="[
                   'w-8 h-8 transition-colors duration-300', 
-                  bookmarkId ? 'text-orange-500' : 'text-gray-300 hover:text-orange-400'
+                  bookmarkId ? 'text-orange-500 dark:text-orange-400' : 'text-gray-300 dark:text-slate-600 hover:text-orange-400 dark:hover:text-orange-500'
                 ]"
               >
                 <path stroke-linecap="round" stroke-linejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
@@ -47,145 +47,145 @@
               <span :class="getStatusClass(ad.statusLabel)">{{ ad.statusLabel }}</span>
             </div>
 
-            <h1 class="text-2xl sm:text-4xl font-black text-gray-900 leading-tight mb-3 pr-12">
+            <h1 class="text-2xl sm:text-4xl font-black text-gray-900 dark:text-slate-100 leading-tight mb-3 pr-12">
               {{ ad.title }}
             </h1>
 
-            <p class="text-base sm:text-lg text-gray-600 font-medium mb-6">
-              <router-link :to="`/companies/${ad.company_id}`" class="hover:text-orange-500 transition-colors">
+            <p class="text-base sm:text-lg text-gray-600 dark:text-slate-400 font-medium mb-6">
+              <router-link :to="`/companies/${ad.company_id}`" class="hover:text-orange-500 dark:hover:text-orange-400 transition-colors">
                 {{ ad.company }}
               </router-link>
             </p>
 
             <div class="grid sm:grid-cols-3 gap-3 mb-8">
-              <div class="rounded-2xl bg-gray-50 border border-gray-100 p-4">
-                <p class="text-xs uppercase tracking-wide text-gray-400 font-semibold mb-1">Lokacija</p>
-                <p class="text-sm font-bold text-gray-900">{{ ad.location || 'Nije navedeno' }}</p>
+              <div class="rounded-2xl bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-700/50 p-4">
+                <p class="text-xs uppercase tracking-wide text-gray-400 dark:text-slate-500 font-semibold mb-1">Lokacija</p>
+                <p class="text-sm font-bold text-gray-990 dark:text-slate-200">{{ ad.location || 'Nije navedeno' }}</p>
               </div>
-              <div class="rounded-2xl bg-gray-50 border border-gray-100 p-4">
-                <p class="text-xs uppercase tracking-wide text-gray-400 font-semibold mb-1">Trajanje</p>
-                <p class="text-sm font-bold text-gray-900">{{ ad.duration || 'Nije navedeno' }}</p>
+              <div class="rounded-2xl bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-700/50 p-4">
+                <p class="text-xs uppercase tracking-wide text-gray-400 dark:text-slate-500 font-semibold mb-1">Trajanje</p>
+                <p class="text-sm font-bold text-gray-900 dark:text-slate-200">{{ ad.duration || 'Nije navedeno' }}</p>
               </div>
-              <div class="rounded-2xl bg-gray-50 border border-gray-100 p-4">
-                <p class="text-xs uppercase tracking-wide text-gray-400 font-semibold mb-1">Naknada</p>
-                <p class="text-sm font-bold text-gray-900">{{ ad.compensation || 'Nije navedeno' }}</p>
+              <div class="rounded-2xl bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-700/50 p-4">
+                <p class="text-xs uppercase tracking-wide text-gray-400 dark:text-slate-500 font-semibold mb-1">Naknada</p>
+                <p class="text-sm font-bold text-gray-900 dark:text-slate-200">{{ ad.compensation || 'Nije navedeno' }}</p>
               </div>
             </div>
 
-            <div class="space-y-6 text-gray-700">
+            <div class="space-y-6 text-gray-700 dark:text-slate-300">
               <div>
-                <h2 class="text-lg font-bold text-gray-900 mb-2">Opis oglasa</h2>
+                <h2 class="text-lg font-bold text-gray-900 dark:text-slate-100 mb-2">Opis oglasa</h2>
                 <p class="leading-7 whitespace-pre-line">{{ ad.description }}</p>
               </div>
 
               <div v-if="ad.requirements">
-                <h2 class="text-lg font-bold text-gray-900 mb-2">Uslovi</h2>
+                <h2 class="text-lg font-bold text-gray-900 dark:text-slate-100 mb-2">Uslovi</h2>
                 <p class="leading-7 whitespace-pre-line">{{ ad.requirements }}</p>
               </div>
 
               <div v-if="ad.benefits">
-                <h2 class="text-lg font-bold text-gray-900 mb-2">Benefiti</h2>
+                <h2 class="text-lg font-bold text-gray-900 dark:text-slate-100 mb-2">Benefiti</h2>
                 <p class="leading-7 whitespace-pre-line">{{ ad.benefits }}</p>
               </div>
             </div>
           </section>
 
-          <aside v-if="!isCompanyLoggedIn" class="rounded-3xl border border-gray-100 bg-white shadow-sm p-6 sm:p-8">
+          <aside v-if="!isCompanyLoggedIn" class="rounded-3xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm p-6 sm:p-8">
             <template v-if="isUserLoggedIn && !isCompanyLoggedIn">
-              <h2 class="text-lg font-bold text-gray-900 mb-4">Brzi pregled</h2>
+              <h2 class="text-lg font-bold text-gray-900 dark:text-slate-100 mb-4">Brzi pregled</h2>
 
               <div class="space-y-4 text-sm">
                 <div>
-                  <p class="text-gray-400 font-semibold mb-1">Oblast</p>
-                  <p class="text-gray-900 font-medium">{{ ad.field || 'Nije navedeno' }}</p>
+                  <p class="text-gray-400 dark:text-slate-500 font-semibold mb-1">Oblast</p>
+                  <p class="text-gray-900 dark:text-slate-200 font-medium">{{ ad.field || 'Nije navedeno' }}</p>
                 </div>
                 <div>
-                  <p class="text-gray-400 font-semibold mb-1">Tagovi</p>
+                  <p class="text-gray-400 dark:text-slate-500 font-semibold mb-1">Tagovi</p>
                   <div class="flex flex-wrap gap-2">
                     <span
                       v-for="tag in ad.tags"
                       :key="tag"
-                      class="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-semibold"
+                      class="bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 px-3 py-1 rounded-full text-xs font-semibold"
                     >
                       {{ tag }}
                     </span>
                   </div>
                 </div>
                 <div>
-                  <p class="text-gray-400 font-semibold mb-1">Broj mjesta</p>
-                  <p class="text-gray-900 font-medium">{{ ad.spots || 'Nije navedeno' }}</p>
+                  <p class="text-gray-400 dark:text-slate-500 font-semibold mb-1">Broj mjesta</p>
+                  <p class="text-gray-900 dark:text-slate-200 font-medium">{{ ad.spots || 'Nije navedeno' }}</p>
                 </div>
                 <div>
-                  <p class="text-gray-400 font-semibold mb-1">Rok prijave</p>
-                  <p class="text-gray-900 font-medium">{{ ad.deadline || 'Nije navedeno' }}</p>
+                  <p class="text-gray-400 dark:text-slate-500 font-semibold mb-1">Rok prijave</p>
+                  <p class="text-gray-900 dark:text-slate-200 font-medium">{{ ad.deadline || 'Nije navedeno' }}</p>
                 </div>
               </div>
 
               <router-link
                 :to="`/ads/${ad.id}/apply`"
-                class="block mt-6 bg-orange-600 text-white py-3 rounded-lg hover:bg-orange-700 transition font-semibold text-center"
+                class="block mt-6 bg-orange-600 text-white py-3 rounded-lg hover:bg-orange-700 transition font-semibold text-center text-sm no-underline"
               >
                 Pošalji prijavu
               </router-link>
             </template>
 
             <template v-else-if="!isUserLoggedIn && !isCompanyLoggedIn">
-              <h2 class="text-lg font-bold text-gray-900 mb-4">Zainteresovan?</h2>
-              <div class="rounded-2xl bg-orange-50 border border-orange-100 p-4 mb-4">
-                <p class="text-sm font-semibold text-orange-900 mb-2">Prijavite se za ovu poziciju</p>
-                <p class="text-sm text-orange-800 leading-6 mb-4">
+              <h2 class="text-lg font-bold text-gray-900 dark:text-slate-100 mb-4">Zainteresovan?</h2>
+              <div class="rounded-2xl bg-orange-50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/50 p-4 mb-4">
+                <p class="text-sm font-semibold text-orange-900 dark:text-orange-400 mb-2">Prijavite se za ovu poziciju</p>
+                <p class="text-sm text-orange-800 dark:text-slate-300 leading-6 mb-4">
                   Trebate biti prijavljeni da biste poslali prijavu za ovu poziciju.
                 </p>
                 <router-link
                   to="/login"
-                  class="block bg-orange-600 text-white py-2 rounded-lg hover:bg-orange-700 transition font-semibold text-center"
+                  class="block bg-orange-600 text-white py-2 rounded-lg hover:bg-orange-700 transition font-semibold text-center text-sm no-underline"
                 >
                   Prijavi se
                 </router-link>
               </div>
 
-              <h2 class="text-lg font-bold text-gray-900 mb-4 mt-6">Brzi pregled</h2>
+              <h2 class="text-lg font-bold text-gray-900 dark:text-slate-100 mb-4 mt-6">Brzi pregled</h2>
               <div class="space-y-4 text-sm">
                 <div>
-                  <p class="text-gray-400 font-semibold mb-1">Oblast</p>
-                  <p class="text-gray-900 font-medium">{{ ad.field || 'Nije navedeno' }}</p>
+                  <p class="text-gray-400 dark:text-slate-500 font-semibold mb-1">Oblast</p>
+                  <p class="text-gray-900 dark:text-slate-200 font-medium">{{ ad.field || 'Nije navedeno' }}</p>
                 </div>
                 <div>
-                  <p class="text-gray-400 font-semibold mb-1">Tagovi</p>
+                  <p class="text-gray-400 dark:text-slate-500 font-semibold mb-1">Tagovi</p>
                   <div class="flex flex-wrap gap-2">
                     <span
                       v-for="tag in ad.tags"
                       :key="tag"
-                      class="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-semibold"
+                      class="bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 px-3 py-1 rounded-full text-xs font-semibold"
                     >
                       {{ tag }}
                     </span>
                   </div>
                 </div>
                 <div>
-                  <p class="text-gray-400 font-semibold mb-1">Broj mjesta</p>
-                  <p class="text-gray-900 font-medium">{{ ad.spots || 'Nije navedeno' }}</p>
+                  <p class="text-gray-400 dark:text-slate-500 font-semibold mb-1">Broj mjesta</p>
+                  <p class="text-gray-900 dark:text-slate-200 font-medium">{{ ad.spots || 'Nije navedeno' }}</p>
                 </div>
                 <div>
-                  <p class="text-gray-400 font-semibold mb-1">Rok prijave</p>
-                  <p class="text-gray-900 font-medium">{{ ad.deadline || 'Nije navedeno' }}</p>
+                  <p class="text-gray-400 dark:text-slate-500 font-semibold mb-1">Rok prijave</p>
+                  <p class="text-gray-900 dark:text-slate-200 font-medium">{{ ad.deadline || 'Nije navedeno' }}</p>
                 </div>
               </div>
             </template>
           </aside>
         </div>
 
-        <section v-if="isAdmin || isCompanyLoggedIn" class="rounded-3xl border border-gray-100 bg-white shadow-sm p-6 sm:p-8 w-full">
-          <h2 class="text-2xl font-bold text-gray-900 mb-6">Prijave ({{ applications.length }}) · Broj mjesta: {{ ad.spots }}</h2>
-          <div v-if="loadingApplications" class="text-center text-gray-500 py-8">
+        <section v-if="isAdmin || isCompanyLoggedIn" class="rounded-3xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm p-6 sm:p-8 w-full">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-6">Prijave ({{ applications.length }}) · Broj mjesta: {{ ad.spots }}</h2>
+          <div v-if="loadingApplications" class="text-center text-gray-500 dark:text-slate-400 py-8">
             Učitavanje prijava...
           </div>
 
-          <div v-else-if="applicationsError" class="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
+          <div v-else-if="applicationsError" class="rounded-2xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/20 p-4 text-red-700 dark:text-red-400">
             {{ applicationsError }}
           </div>
 
-          <div v-else-if="applications.length === 0" class="rounded-2xl border border-yellow-200 bg-yellow-50 p-4 text-yellow-700">
+          <div v-else-if="applications.length === 0" class="rounded-2xl border border-yellow-200 dark:border-yellow-900/50 bg-yellow-50 dark:bg-yellow-950/20 p-4 text-yellow-700 dark:text-yellow-400">
             <p class="text-sm font-medium">Nema prijava za ovaj oglas.</p>
           </div>
 
@@ -268,14 +268,14 @@ export default {
   },
   methods: {
     getTypeClass(typeLabel) {
-      if (typeLabel === 'Praksa') return `bg-blue-50 text-blue-600 ${BASE_BADGE}`
-      if (typeLabel === 'Edukacija') return `bg-indigo-50 text-indigo-600 ${BASE_BADGE}`
-      return `bg-amber-50 text-amber-600 ${BASE_BADGE}`
+      if (typeLabel === 'Praksa') return `bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 ${BASE_BADGE}`
+      if (typeLabel === 'Edukacija') return `bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 ${BASE_BADGE}`
+      return `bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 ${BASE_BADGE}`
     },
     getStatusClass(statusLabel) {
-      if (statusLabel === 'Aktivan') return `bg-green-50 text-green-600 ${BASE_BADGE}`
-      if (statusLabel === 'Istekao') return `bg-orange-50 text-orange-600 ${BASE_BADGE}`
-      return `bg-red-50 text-red-600 ${BASE_BADGE}`
+      if (statusLabel === 'Aktivan') return `bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400 ${BASE_BADGE}`
+      if (statusLabel === 'Istekao') return `bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 ${BASE_BADGE}`
+      return `bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 ${BASE_BADGE}`
     },
     async fetchAd() {
       this.loading = true

@@ -1,18 +1,18 @@
 <template>
-  <div class="min-h-screen bg-gray-50 py-10 px-4 font-sans text-gray-800">
+  <div class="min-h-screen bg-gray-50 dark:bg-slate-900 py-10 px-4 font-sans text-gray-800 dark:text-slate-200">
     <div class="max-w-6xl mx-auto">
       
       <!-- Zaglavlje usklađeno sa stilom kompanija -->
       <div class="mb-8">
-        <h1 class="text-2xl sm:text-3xl font-black text-gray-900">Upravljanje oglasima</h1>
-        <p class="text-gray-500 mt-1 text-sm">Pregled, odobravanje i odbijanje oglasa za praksu.</p>
+        <h1 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-slate-100">Upravljanje oglasima</h1>
+        <p class="text-gray-500 dark:text-slate-400 mt-1 text-sm">Pregled, odobravanje i odbijanje oglasa za praksu.</p>
       </div>
 
-      <div v-if="loading" class="text-center py-12 text-gray-500 text-sm font-medium">
+      <div v-if="loading" class="text-center py-12 text-gray-500 dark:text-slate-400 text-sm font-medium">
         Učitavanje oglasa...
       </div>
 
-      <div v-else-if="errorMessage" class="p-6 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-sm">
+      <div v-else-if="errorMessage" class="p-6 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-2xl text-red-700 dark:text-red-400 text-sm">
         {{ errorMessage }}
       </div>
 
@@ -23,7 +23,7 @@
             v-for="filter in ['Sve', 'Na čekanju', 'Odobreni', 'Odbijeni', 'Obrisani']"
             :key="filter"
             @click="activeFilter = filter"
-            :class="['px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition', activeFilter === filter ? 'bg-orange-500 text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50']"
+            :class="['px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition', activeFilter === filter ? 'bg-orange-500 text-white shadow-sm' : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700']"
           >
             {{ filter }}
             <span class="ml-1 opacity-70">({{ filterCount(filter) }})</span>
@@ -31,7 +31,7 @@
         </div>
 
         <!-- Poruka ako je kategorija prazna -->
-        <div v-if="filteredAds.length === 0" class="text-center py-10 text-gray-400 text-sm">
+        <div v-if="filteredAds.length === 0" class="text-center py-10 text-gray-400 dark:text-slate-500 text-sm">
           Nema oglasa u ovoj kategoriji.
         </div>
 
@@ -40,18 +40,18 @@
           <div 
             v-for="ad in filteredAds" 
             :key="ad.id" 
-            class="relative bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col gap-4 justify-between"
+            class="relative bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-6 flex flex-col gap-4 justify-between"
           >
             <!-- Gornji dio kartice: Naslov i Status -->
             <div class="flex items-start justify-between gap-2">
               <div>
-                <h2 class="text-base font-bold text-gray-900 leading-tight line-clamp-2">{{ ad.title }}</h2>
-                <p class="text-xs font-bold text-orange-500 mt-0.5">
+                <h2 class="text-base font-bold text-gray-900 dark:text-slate-100 leading-tight line-clamp-2">{{ ad.title }}</h2>
+                <p class="text-xs font-bold text-orange-500 dark:text-orange-400 mt-0.5">
                   {{ ad.company_name || `Kompanija ID: ${ad.company_id}` }}
                 </p>
               </div>
               
-              <span v-if="ad.is_deleted" class="text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap bg-gray-100 text-gray-700">
+              <span v-if="ad.is_deleted" class="text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300">
                 Obrisano
               </span>
               <span v-else :class="statusBadgeClass(ad.status)">
@@ -60,11 +60,11 @@
             </div>
 
             <!-- Srednji dio kartice: Detalji oglasa -->
-            <div class="text-xs text-gray-500 space-y-1">
-              <p><span class="font-semibold text-gray-700">📍 Lokacija:</span> {{ ad.location }}</p>
-              <p><span class="font-semibold text-gray-700">💼 Oblast:</span> {{ ad.field }}</p>
-              <p><span class="font-semibold text-gray-700">⏳ Rok prijave:</span> <span class="text-gray-700 font-medium">{{ ad.deadline }}</span></p>
-              <p v-if="ad.duration_months"><span class="font-semibold text-gray-700">📅 Trajanje:</span> {{ ad.duration_months }} mj.</p>
+            <div class="text-xs text-gray-500 dark:text-slate-400 space-y-1">
+              <p><span class="font-semibold text-gray-700 dark:text-slate-300">📍 Lokacija:</span> {{ ad.location }}</p>
+              <p><span class="font-semibold text-gray-700 dark:text-slate-300">💼 Oblast:</span> {{ ad.field }}</p>
+              <p><span class="font-semibold text-gray-700 dark:text-slate-300">⏳ Rok prijave:</span> <span class="text-gray-700 dark:text-slate-300 font-medium">{{ ad.deadline }}</span></p>
+              <p v-if="ad.duration_months"><span class="font-semibold text-gray-700 dark:text-slate-300">📅 Trajanje:</span> {{ ad.duration_months }} mj.</p>
             </div>
 
             <!-- Akcije za odobravanje/odbijanje (Prikazuju se samo ako oglas čeka i nije obrisan) -->
@@ -72,14 +72,14 @@
               <button
                 @click="updateAdStatusHandler(ad, 'active')"
                 :disabled="ad.updating"
-                class="flex-1 py-2 rounded-lg bg-green-50 text-green-700 text-xs font-semibold hover:bg-green-100 transition disabled:opacity-50"
+                class="flex-1 py-2 rounded-lg bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400 text-xs font-semibold hover:bg-green-100 dark:hover:bg-green-900/40 transition disabled:opacity-50"
               >
                 {{ ad.updating === 'active' ? 'Slanje...' : 'Odobri' }}
               </button>
               <button
                 @click="updateAdStatusHandler(ad, 'rejected')"
                 :disabled="ad.updating"
-                class="flex-1 py-2 rounded-lg bg-red-50 text-red-700 text-xs font-semibold hover:bg-red-100 transition disabled:opacity-50"
+                class="flex-1 py-2 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 text-xs font-semibold hover:bg-red-100 dark:hover:bg-red-900/40 transition disabled:opacity-50"
               >
                 {{ ad.updating === 'rejected' ? 'Slanje...' : 'Odbij' }}
               </button>
@@ -91,7 +91,7 @@
                 v-if="!ad.is_deleted"
                 @click="deleteAdHandler(ad)"
                 :disabled="ad.updating"
-                class="p-2 rounded-full bg-red-50 text-red-600 hover:bg-red-100 transition disabled:opacity-50"
+                class="p-2 rounded-full bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition disabled:opacity-50"
                 :title="ad.updating === 'deleting' ? 'Brisanje...' : 'Obriši'"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -102,7 +102,7 @@
                 v-else
                 @click="restoreAdHandler(ad)"
                 :disabled="ad.updating"
-                class="p-2 rounded-full bg-green-50 text-green-600 hover:bg-green-100 transition disabled:opacity-50"
+                class="p-2 rounded-full bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40 transition disabled:opacity-50"
                 :title="ad.updating === 'restoring' ? 'Vraćanje...' : 'Vrati'"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -160,9 +160,9 @@ export default {
     },
     statusBadgeClass(status) {
       const base = 'text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap'
-      if (status === 'active') return `${base} bg-green-50 text-green-700`
-      if (status === 'rejected') return `${base} bg-red-50 text-red-700`
-      return `${base} bg-yellow-50 text-yellow-700`
+      if (status === 'active') return `${base} bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-400`
+      if (status === 'rejected') return `${base} bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400`
+      return `${base} bg-yellow-50 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-400`
     },
     filterCount(filter) {
       if (filter === 'Sve') return this.ads.length
