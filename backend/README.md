@@ -723,439 +723,7 @@ Koristi se pri **ažuriranju** notifikacije (`PATCH /notifications/{id}`). Sva p
 
 ---
 
-## Forum Modeli Podataka
 
-### ForumCategory (Kategorija foruma)
-#### Tabela: `forum_categories`
-
----
-
-#### SQLModel — `ForumCategory` (tabela)
-
-| Polje | Tip | Opis |
-| :--- | :--- | :--- |
-| `id` | `int \| None` | Primarni ključ, auto-increment (default: `None`) |
-| `name` | `str` | Naziv kategorije (indeksiran, max 100 karaktera) |
-| `color` | `str` | HEX kod boje za frontend prikaz (default: `#ff7a00`, max 20 karaktera) |
-| `description` | `str \| None` | Opis kategorije (opcionalno, max 255 karaktera, default: `None`) |
-
-##### Relacije
-| Relacija | Model | Opis |
-| :--- | :--- | :--- |
-| `topics` | `List[ForumTopic]` | Lista svih tema koje pripadaju ovoj kategoriji |
-
----
-
-#### Pydantic shema — `ForumCategoryCreate`
-*Koristi se pri kreiranju nove kategorije (`POST /forum/categories`).*
-
-| Polje | Tip | Validacija / Default |
-| :--- | :--- | :--- |
-| `name` | `str` | Obavezno polje, max 100 karaktera |
-| `color` | `str` | Default: `#ff7a00`, max 20 karaktera |
-| `description` | `str \| None` | Opcionalno, max 255 karaktera |
-
----
-
-#### Pydantic shema — `ForumCategoryUpdate`
-*Koristi se pri ažuriranju kategorije (`PATCH /forum/categories/{id}`). Sva polja su opcionalna.*
-
-| Polje | Tip | Validacija / Default |
-| :--- | :--- | :--- |
-| `name` | `str \| None` | Max 100 karaktera |
-| `color` | `str \| None` | Max 20 karaktera |
-| `description` | `str \| None` | Max 255 karaktera |
-
----
-
-#### Pydantic shema — `ForumCategoryRead`
-*Vraća se kao response na API pozive.*
-
-| Polje | Tip | Opis |
-| :--- | :--- | :--- |
-| `id` | `int` | Jedinstveni identifikator |
-| `name` | `str` | Naziv kategorije |
-| `color` | `str` | HEX boja kategorije |
-| `description` | `str \| None` | Opis kategorije |
-
----
-
-### ForumTopic (Tema foruma)
-#### Tabela: `forum_topics`
-
----
-
-#### SQLModel — `ForumTopic` (tabela)
-
-| Polje | Tip | Opis |
-| :--- | :--- | :--- |
-| `id` | `int \| None` | Primarni ključ, auto-increment (default: `None`) |
-| `title` | `str` | Naslov teme (indeksiran, max 200 karaktera) |
-| `content` | `str` | Glavni tekst/sadržaj teme |
-| `views_count` | `int` | Broj pregleda teme (default: `0`) |
-| `is_locked` | `bool` | Flag da li je tema zaključana za nove komentare (default: `False`) |
-| `is_deleted` | `bool` | Soft delete flag (default: `False`) |
-| `created_at` | `datetime` | Datum kreiranja teme (auto generisano preko `datetime.utcnow`) |
-| `updated_at` | `datetime \| None` | Datum posljednje izmjene (default: `None`) |
-| `category_id` | `int` | Strani ključ -> `forum_categories.id` |
-| `user_id` | `int` | Strani ključ -> `users.id` (Autor teme) |
-
-##### Relacije
-| Relacija | Model | Opis |
-| :--- | :--- | :--- |
-| `category` | `ForumCategory \| None` | Objekt kategorije kojoj tema pripada |
-| `comments` | `List[ForumComment]` | Lista svih komentara na ovoj temi |
-
----
-
-#### Pydantic shema — `ForumTopicCreate`
-*Koristi se pri kreiranju nove teme (`POST /forum/topics`).*
-
-| Polje | Tip | Validacija / Default |
-| :--- | :--- | :--- |
-| `title` | `str` | Obavezno, max 200 karaktera |
-| `content` | `str` | Obavezno tekstualno polje |
-| `category_id` | `int` | ID postojeće kategorije |
-
----
-
-#### Pydantic shema — `ForumTopicRead`
-*Vraća se kao response na API pozive za teme (ne uključuje `is_deleted`).*
-
-| Polje | Tip | Opis |
-| :--- | :--- | :--- |
-| `id` | `int` | Jedinstveni identifikator teme |
-| `title` | `str` | Naslov teme |
-| `content` | `str` | Sadržaj teme |
-| `views_count` | `int` | Broj pregleda |
-| `is_locked` | `bool` | Status zaključavanja |
-| `created_at` | `datetime` | Vrijeme kreiranja |
-| `updated_at` | `datetime \| None` | Vrijeme izmjene |
-| `category_id` | `int` | ID kategorije |
-| `user_id` | `int` | ID autora |
-
----
-
-### ForumComment (Komentar foruma)
-#### Tabela: `forum_comments`
-
----
-
-#### SQLModel — `ForumComment` (tabela)
-
-| Polje | Tip | Opis |
-| :--- | :--- | :--- |
-| `id` | `int \| None` | Primarni ključ, auto-increment (default: `None`) |
-| `content` | `str` | Tekstualni sadržaj komentara |
-| `is_admin_notice` | `bool` | Da li je komentar zvanična napomena moderatora/admina (default: `False`) |
-| `is_best_answer` | `bool` | Da li je komentar označen kao prihvaćeno rješenje (default: `False`) |
-| `is_deleted` | `bool` | Soft delete flag (default: `False`) |
-| `parent_id` | `int \| None` | Strani ključ -> `forum_comments.id` (Omogućava ugniježdene odgovore) |
-| `created_at` | `datetime` | Datum kreiranja (auto generisano preko `datetime.utcnow`) |
-| `updated_at` | `datetime \| None` | Datum posljednje izmjene (default: `None`) |
-| `topic_id` | `int` | Strani ključ -> `forum_topics.id` |
-| `user_id` | `int` | Strani ključ -> `users.id` (Autor komentara) |
-
-##### Relacije
-| Relacija | Model | Opis |
-| :--- | :--- | :--- |
-| `topic` | `ForumTopic \| None` | Tema na kojoj se nalazi komentar |
-| `votes` | `List[ForumCommentVote]` | Svi glasovi (upvote/downvote) na ovom komentaru |
-| `replies` | `List[ForumComment]` | Samoreferencirajuća relacija (odgovori na ovaj komentar sa `lazy="select"`) |
-
----
-
-### Interakcije i prateći modeli (Glasovi, Lajkovi, Tagovi)
-
-#### Tabela: `forum_comment_votes`
-*Čuva pojedinačne glasove korisnika za komentare (Upvote / Downvote).*
-
-| Polje | Tip | Opis |
-| :--- | :--- | :--- |
-| `id` | `int \| None` | Primarni ključ, auto-increment |
-| `comment_id` | `int` | Strani ključ -> `forum_comments.id` |
-| `user_id` | `int` | Strani ključ -> `users.id` |
-| `value` | `int` | Vrijednost glasa (npr. `1` za upvote, `-1` za downvote, default: `1`) |
-| `created_at` | `datetime` | Vrijeme glasanja |
-
-##### Ograničenja i Relacije
-- **Jedinstvenost:** `UniqueConstraint("comment_id", "user_id", name="unique_comment_vote_per_user")` sprečava duplo glasanje od strane istog korisnika.
-- **Relacija:** `comment` -> Poveznica nazad na `ForumComment` objekat.
-
----
-
-#### Tabela: `topic_likes`
-*Čuva podatke o lajkovima na nivou cijele teme.*
-
-| Polje | Tip | Opis |
-| :--- | :--- | :--- |
-| `id` | `int \| None` | Primarni ključ, auto-increment |
-| `topic_id` | `int` | Strani ključ -> `forum_topics.id` (Indeksiran) |
-| `user_id` | `int` | Strani ključ -> `users.id` (Indeksiran) |
-| `created_at` | `datetime` | Vrijeme kreiranja lajka |
-
-##### Ograničenja
-- **Jedinstvenost:** `UniqueConstraint("topic_id", "user_id", name="unique_topic_like_per_user")`.
-
----
-
-#### Tabela: `topic_dislikes`
-*Čuva podatke o dislajkovima na nivou cijele teme.*
-
-| Polje | Tip | Opis |
-| :--- | :--- | :--- |
-| `id` | `int \| None` | Primarni ključ, auto-increment |
-| `topic_id` | `int` | Strani ključ -> `forum_topics.id` (Indeksiran) |
-| `user_id` | `int` | Strani ključ -> `users.id` (Indeksiran) |
-| `created_at` | `datetime` | Vrijeme kreiranja dislajka |
-
-##### Ograničenja
-- **Jedinstvenost:** `UniqueConstraint("topic_id", "user_id", name="unique_topic_dislike_per_user")`.
-
----
-
-#### Tabela: `forum_tags`
-*Katalog unikatnih tagova na forumu.*
-
-| Polje | Tip | Opis |
-| :--- | :--- | :--- |
-| `id` | `int \| None` | Primarni ključ, auto-increment |
-| `name` | `str` | Jedinstveno ime taga (indeksiran, unique, max 50 karaktera) |
-
----
-
-#### Tabela: `forum_topic_tags`
-*Pivot tabela za Many-to-Many relaciju između tema i tagova.*
-
-| Polje | Tip | Opis |
-| :--- | :--- | :--- |
-| `topic_id` | `int \| None` | Primarni ključ i Strani ključ -> `forum_topics.id` |
-| `tag_id` | `int \| None` | Primarni ključ i Strani ključ -> `forum_tags.id` |
-
----
-
-### Prilozi (Attachments)
-
-#### Tabela: `topic_attachments`
-*Meta-podaci o fajlovima zakačenim uz forum teme.*
-
-| Polje | Tip | Opis |
-| :--- | :--- | :--- |
-| `id` | `int \| None` | Primarni ključ, auto-increment |
-| `topic_id` | `int` | Strani ključ -> `forum_topics.id` (Indeksiran) |
-| `filename` | `str` | Originalni naziv fajla (max 255 karaktera) |
-| `file_path` | `str` | Putanja do fajla na disku/storage-u (max 500 karaktera) |
-| `file_size` | `int` | Veličina fajla u bajtovima (`bytes`) |
-| `mime_type` | `str` | MIME tip fajla (max 100 karaktera, npr. `image/jpeg`) |
-| `created_at` | `datetime` | Vrijeme uploada |
-
----
-
-#### Tabela: `comment_attachments`
-*Meta-podaci o fajlovima zakačenim uz pojedinačne komentare.*
-
-| Polje | Tip | Opis |
-| :--- | :--- | :--- |
-| `id` | `int \| None` | Primarni ključ, auto-increment |
-| `comment_id` | `int` | Strani ključ -> `forum_comments.id` (Indeksiran) |
-| `filename` | `str` | Originalni naziv fajla (max 255 karaktera) |
-| `file_path` | `str` | Putanja do fajla na disku/storage-u (max 500 karaktera) |
-| `file_size` | `int` | Veličina fajla u bajtovima |
-| `mime_type` | `str` | MIME tip fajla (max 100 karaktera) |
-| `created_at` | `datetime` | Vrijeme uploada |
-
----
-
-### Moderacija i administracija
-
-#### Tabela: `topic_reports`
-*Prijave korisnika za teme koje krše pravila.*
-
-| Polje | Tip | Opis |
-| :--- | :--- | :--- |
-| `id` | `int \| None` | Primarni ključ, auto-increment |
-| `topic_id` | `int` | Strani ključ -> `forum_topics.id` |
-| `user_id` | `int` | Strani ključ -> `users.id` (Korisnik koji prijavljuje) |
-| `reason` | `str` | Razlog prijave (max 100 karaktera) |
-| `created_at` | `datetime` | Vrijeme kreiranja prijave |
-| `status` | `str` | Status prijave (default: `"pending"`) |
-| `action_taken` | `str \| None` | Akcija koju je admin preduzeo (default: `None`) |
-| `admin_explanation` | `str \| None` | Obrazloženje od strane administracije (default: `None`) |
-
----
-
-#### Tabela: `admin_announcements`
-*Globalna obavještenja kreirana od strane administratora.*
-
-| Polje | Tip | Opis |
-| :--- | :--- | :--- |
-| `id` | `int \| None` | Primarni ključ, auto-increment |
-| `admin_id` | `int` | Strani ključ -> `users.id` (ID administratora) |
-| `title` | `str` | Naslov obavještenja (max 150 karaktera) |
-| `content` | `str` | Kompletan tekst/sadržaj obavještenja |
-| `is_active` | `bool` | Da li je obavještenje aktivno (default: `True`) |
-| `created_at` | `datetime` | Vrijeme kreiranja obavještenja |
-| `expires_at` | `datetime \| None`| Datum kada obavještenje ističe (opcionalno, default: `None`) |
-
----
-
-#### Tabela: `forum_guidelines`
-*Pravilnik ponašanja na forumu.*
-
-| Polje | Tip | Opis |
-| :--- | :--- | :--- |
-| `id` | `int \| None` | Primarni ključ, auto-increment |
-| `title` | `str` | Naslov specifičnog pravila |
-| `content` | `str` | Detaljan tekstualni opis pravila |
-| `order` | `int` | Redoslijed sortiranja pri prikazu (default: `0`) |
-| `created_at` | `datetime` | Vrijeme kreiranja |
-| `updated_at` | `datetime` | Vrijeme zadnje izmjene |
-
----
-
-#### Opšte napomene o sistemu modela
-1. **Upravljanje Vremenom:** Sva polja sa datumima (`created_at`, `updated_at`) automatski koriste UTC zonu preko `datetime.utcnow` prilikom upisa u bazu, ukoliko vrijednost nije eksplicitno proslijeđena.
-2. **Logičko Brisanje:** Teme (`ForumTopic`) i komentari (`ForumComment`) posjeduju polje `is_deleted`. Brisanje ovih entiteta na forumu treba raditi isključivo postavljanjem ovog flaga na `True` (soft delete) kako bi se očuvao integritet historije i povezanih relacija.
-
----
-
-### ForumNotification (Notifikacije foruma)
-#### Tabela: `forum_notifications`
-
----
-
-#### SQLModel — `ForumNotification` (tabela)
-
-| Polje | Tip | Opis |
-| :--- | :--- | :--- |
-| `id` | `int \| None` | Primarni ključ, auto-increment (default: `None`) |
-| `recipient_user_id` | `int` | Strani ključ -> `users.id` (Korisnik koji prima notifikaciju, indeksiran) |
-| `actor_user_id` | `int` | Strani ključ -> `users.id` (Korisnik koji je izazvao notifikaciju, indeksiran) |
-| `topic_id` | `int` | Strani ključ -> `forum_topics.id` (Tema na koju se odnosi notifikacija, indeksirana) |
-| `comment_id` | `int \| None` | Strani ključ -> `forum_comments.id` (Komentar na koji vodi klik, indeksiran, default: `None`) |
-| `text` | `str` | Tekstualni sadržaj i poruka notifikacije |
-| `type` | `ForumNotificationType` | Tip notifikacije (Enum vrijednost) |
-| `is_read` | `bool` | Flag da li je korisnik pročitao notifikaciju (default: `False`) |
-| `is_hidden` | `bool` | Flag za logičko sakrivanje nevažećih notifikacija (default: `False`) |
-| `created_at` | `datetime` | Vrijeme kreiranja notifikacije (auto generisano u UTC preko `datetime.now(timezone.utc)`) |
-
----
-
-#### Enum — `ForumNotificationType`
-*Definiše sve podržane događaje koji okidaju slanje notifikacije unutar forum sistema.*
-
-| Vrijednost | Tip | Opis |
-| :--- | :--- | :--- |
-| `"topic_like"` | `str` | Korisnik je lajkovao temu |
-| `"topic_dislike"` | `str` | Korisnik je dislajkovao temu |
-| `"topic_reply"` | `str` | Dodan je novi komentar na temu čiji je korisnik autor |
-| `"comment_reply"` | `str` | Dodan je direktan odgovor (reply) na komentar korisnika |
-| `"mention"` | `str` | Korisnik je tagovan/spomenut unutar teksta |
-| `"best_answer"` | `str` | Korisnikov komentar je označen kao prihvaćeno rješenje teme |
-| `"comment_like"` | `str` | Korisnik je dobio pozitivan glas (upvote) na komentar |
-| `"comment_dislike"` | `str` | Korisnik je dobio negativan glas (downvote) na komentar |
-
----
-
-#### Napomene o sistemu notifikacija
-1. **Upotreba `is_hidden` polja:** Ovaj flag rješava specifične slučajeve poništavanja akcija. Na primjer, ako autor teme označi komentar kao *best answer*, a zatim unutar par sekundi ukloni tu oznaku, sistem neće obrisati zapis iz baze nego će staru, nepročitanu notifikaciju postaviti na `is_hidden = True` kako se ne bi prikazivala u korisnikovom inboxu.
-2. **Rutiranje na frontendu:** Polje `comment_id` je opcionalno jer se za akcije poput `topic_like` i `topic_reply` (gdje se skače na vrh teme) koristi isključivo `topic_id`. Kada je `comment_id` prisutan, frontend ga koristi za automatsko skrolovanje i fokusiranje na tačan komentar u stablu diskusije.
-3. **Generisanje datuma:** Za razliku od ostalih modela koji koriste zastarjeli `datetime.utcnow`, ovaj model pravilno koristi modernu `timezone.utc` svjesnu fabriku za bilježenje tačnog vremena kreiranja zapisa.
-
----
-
-### ForumReputation (Reputacija i statistika korisnika)
-
-#### Tabela: `forum_user_stats`
-
----
-
-#### SQLModel — `ForumUserStats` (tabela)
-*Čuva trenutne bodove, nivo reputacije i agregiranu aktivnost pojedinačnog korisnika.*
-
-| Polje | Tip | Opis |
-| :--- | :--- | :--- |
-| `user_id` | `int` | Primarni ključ i Strani ključ -> `users.id` (1:1 veza sa korisnikom) |
-| `reputation_points` | `int` | Trenutni ukupni bodovi reputacije korisnika (default: `0`) |
-| `topics_started_count` | `int` | Ukupan broj tema koje je korisnik pokrenuo (default: `0`) |
-| `answers_count` | `int` | Ukupan broj napisanih odgovora/komentara (default: `0`) |
-| `best_answers_count` | `int` | Broj komentara koji su označeni kao najbolji odgovor (default: `0`) |
-| `night_topics_count` | `int` | Broj tema pokrenutih tokom noćnih sati (default: `0`) |
-| `updated_at` | `datetime` | Vrijeme posljednjeg ažuriranja zapisa (auto generisano preko `utc_now`) |
-
----
-
-#### Tabela: `forum_user_medals`
-*Čuva sve osvojene medalje i priznanja korisnika na forumu.*
-
----
-
-#### SQLModel — `ForumUserMedal` (tabela)
-
-| Polje | Tip | Opis |
-| :--- | :--- | :--- |
-| `id` | `int \| None` | Primarni ključ, auto-increment (default: `None`) |
-| `user_id` | `int` | Strani ključ -> `users.id` (Vlasnik medalje, indeksiran) |
-| `medal_code` | `str` | Jedinstveni identifikacioni kod medalje (indeksiran) |
-| `category` | `str` | Kategorija medalje (npr. `activity`, `moderation`, `helpful`) |
-| `tier` | `str` | Nivo/Rang medalje (npr. `bronze`, `silver`, `gold`) |
-| `is_secret` | `bool` | Da li je medalja bila skrivena prije nego što je osvojena (default: `False`) |
-| `awarded_at` | `datetime` | Vrijeme dodjele priznanja (auto generisano preko `utc_now`) |
-
-##### Ograničenja
-| Naziv | Polja | Opis |
-| :--- | :--- | :--- |
-| `uq_forum_user_medal` | `user_id`, `medal_code` | Korisnik može osvojiti specifičnu medalju samo jednom |
-
----
-
-#### Tabela: `forum_reputation_events`
-*Historijski dnevnik svih promjena reputacionih bodova radi transparentnosti i revizije.*
-
----
-
-#### SQLModel — `ForumReputationEvent` (tabela)
-
-| Polje | Tip | Opis |
-| :--- | :--- | :--- |
-| `id` | `int \| None` | Primarni ključ, auto-increment (default: `None`) |
-| `user_id` | `int` | Strani ključ -> `users.id` (Korisnik kojem se mijenjaju bodovi, indeksiran) |
-| `event_key` | `str` | Jedinstveni identifikator događaja radi sprečavanja dupliranja (indeksiran) |
-| `points_delta` | `int` | Broj dodijeljenih ili oduzetih bodova (npr. `+10`, `-5`) |
-| `reason` | `str` | Opis i razlog promjene (npr. `received_best_answer`) |
-| `source_type` | `str \| None` | Tip entiteta koji je izvor promjene (npr. `comment`, `topic`, default: `None`) |
-| `source_id` | `int \| None` | ID entiteta koji je uzrokovao promjenu (default: `None`) |
-| `created_at` | `datetime` | Vrijeme upisa i obrade događaja (auto generisano preko `utc_now`) |
-
-##### Ograničenja
-| Naziv | Polja | Opis |
-| :--- | :--- | :--- |
-| `uq_forum_reputation_event_key` | `event_key` | Garantuje da se bodovi za isti kôd događaja ne mogu dodijeliti više puta |
-
----
-
-#### Tabela: `forum_reputation_daily_logs`
-*Dnevni log interakcija koji služi kao anti-abuse (mehanizam zaštite od zloupotrebe).*
-
----
-
-#### SQLModel — `ForumReputationDailyLog` (tabela)
-
-| Polje | Tip | Opis |
-| :--- | :--- | :--- |
-| `id` | `int \| None` | Primarni ključ, auto-increment (default: `None`) |
-| `giver_id` | `int` | Strani ključ -> `users.id` (Korisnik koji daje bodove / lajkuje objavu) |
-| `receiver_id` | `int` | Strani ključ -> `users.id` (Korisnik koji prima bodove / autor objave) |
-| `points_given` | `int` | Ukupan broj bodova prenijetih u okviru ove transakcije |
-| `created_at` | `datetime` | Vrijeme bilježenja aktivnosti (auto generisano preko `utc_now`) |
-
----
-
-#### Napomene o reputacionom sistemu
-1. **Idempotentnost i sigurnost (`event_key`):** Svaki put kada korisnik izvrši akciju koja donosi bodove (npr. lajkovanje teme), generiše se unikatni `event_key` u formatu `like_topic_{topic_id}_{voter_id}`. Ako sistem pokuša ponovo unijeti isti ključ uslijed mrežnog kašnjenja ili spama, baza podataka će odbiti upis i spriječiti duplo dobijanje bodova.
-2. **Anti-Abuse sistem (Tiket 2):** Tabela `forum_reputation_daily_logs` se koristi za praćenje i limitiranje broja bodova koje Korisnik A može prenijeti Korisniku B unutar prozora od 24 sata. Ako se detektuje anomalija (npr. ciljano lajkovanje svih historijskih objava istog autora), sistem privremeno blokira prenos reputacije između ta dva računa.
-3. **Trajnost medalja:** Za razliku od stanja u `forum_user_stats` gdje bodovi reputacije mogu rasti i opadati u zavisnosti od reakcija zajednice, jednom osvojene medalje u tabeli `forum_user_medals` su trajne prirode i ne povlače se automatski padom bodova.
-4. **Vremenska sinkronizacija:** Svi modeli u ovom modulu koriste centralizovanu pomoćnu funkciju `utc_now()` koja osigurava vremensku zonu `timezone.utc` u skladu sa modernim standardima, čime se izbjegavaju problemi sa lokalnim vremenom servera.
 
 
 ## API Rute
@@ -1837,6 +1405,1597 @@ Admin može obrisati bilo koju notifikaciju, ostali akteri samo svoje.
   - `404` — notifikacija nije pronađena
 
 ---
+
+
+## Tim 4 funkcionalnosti
+
+### Enum - `ActivityType`
+
+Definiše dozvoljene tipove aktivnosti koje se mogu logovati.
+
+| Vrijednost | Opis |
+|---|---|
+| `forum_comment` | Korisnik je komentarisao na forumu |
+| `internship_accepted` | Prihvaćena stažiranja |
+| `material_uploaded` | Materijal je uploadovan |
+| `forum_answer` | Odgovor na forumu |
+
+---
+
+### SQLModel - `ActivityLog` (tabela: `activity_logs`)
+
+Glavna tabela za čuvanje logova aktivnosti korisnika.
+
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | `int` | Primarni ključ, auto-increment |
+| `user_id` | `int (FK)` | ID korisnika (foreign key → users.id) |
+| `activity_type` | `ActivityType` | Tip aktivnosti (enum) |
+| `title` | `str` | Naslov aktivnosti |
+| `subtitle` | `str \| None` | Podnaslov (opcionalno) |
+| `entity_id` | `int \| None` | ID povezanog entiteta (opcionalno) |
+| `created_at` | `datetime` | Datum kreiranja (UTC, auto) |
+
+---
+
+### Response Modeli
+
+#### `ActivityResponse`
+
+Pydantic model koji se vraća za pojedinačni log aktivnosti.
+
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | `int` | ID aktivnosti |
+| `activity_type` | `ActivityType` | Tip aktivnosti |
+| `title` | `str` | Naslov |
+| `subtitle` | `str \| None` | Podnaslov (opcionalno) |
+| `entity_id` | `int \| None` | ID entiteta (opcionalno) |
+| `created_at` | `datetime` | Datum kreiranja |
+
+#### `ActivityListResponse`
+
+
+| Polje | Tip | Opis |
+|---|---|---|
+| `items` | `list[ActivityResponse]` | Lista aktivnosti |
+| `total` | `int` | Ukupan broj zapisa |
+| `has_more` | `bool` | Da li ima još zapisa za učitati |
+
+---
+
+ ### API Rute 
+
+**Base URL:** `/api/users/me`  
+**Tag:** `activity`
+
+| Metoda | Putanja | Opis | Pristup |
+|---|---|---|---|
+| `GET` | `/api/users/me/activity` | Lista aktivnosti trenutnog korisnika (paginirana) | Korisnik |
+
+---
+
+#### `GET /api/users/me/activity`
+
+Vraća paginiranu listu aktivnosti trenutno prijavljenog korisnika, sortirano od najnovijeg.
+
+**Query parametri:**
+
+| Parametar | Tip | Default | Opis |
+|---|---|---|---|
+| `limit` | `int` | `3` | Broj rezultata po stranici (max: 20) |
+| `offset` | `int` | `0` | Pomak od početka liste |
+
+- **Autentifikacija:** JWT token (prijavljeni korisnik)
+- **Response:** `ActivityListResponse`
+
+---
+
+### Servis - `log_activity`
+
+Pomoćna funkcija koja se poziva iz ostalih servisa/rutera kako bi se zabilježila aktivnost korisnika. Interno hvata greške i radi rollback kako ne bi blokirala glavni tok aplikacije.
+
+| Parametar | Tip | Opis |
+|---|---|---|
+| `db` | `Session` | SQLAlchemy sesija |
+| `user_id` | `int` | ID korisnika čija se aktivnost loguje |
+| `activity_type` | `ActivityType` | Tip aktivnosti (enum) |
+| `title` | `str` | Naslov aktivnosti |
+| `subtitle` | `str` | Podnaslov (opcionalno) |
+| `entity_id` | `int` | ID entiteta (opcionalno) |
+
+---
+
+## Notifikacije
+
+Modul za upravljanje notifikacijama korisnika. Notifikacije se kreiraju automatski od strane sistema i šalju korisnicima na osnovu različitih događaja na platformi.
+
+---
+
+### SQLAlchemy Model — `Notification` (tabela: `notifications`)
+
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | `int` | Primarni ključ, auto-increment |
+| `user_id` | `int (FK)` | ID korisnika (foreign key → users.id, CASCADE) |
+| `type` | `NotificationTypes` | Tip notifikacije (enum) |
+| `message` | `str (255)` | Tekst notifikacije |
+| `link` | `str \| None` | Opcioni link na koji notifikacija upućuje |
+| `reference_id` | `int \| None` | ID referenciranog entiteta (opcionalno) |
+| `is_read` | `bool` | Da li je notifikacija pročitana (default: `false`) |
+| `created_at` | `datetime` | Datum kreiranja (UTC, auto) |
+
+> **Indeks:** `ix_notifications_user_unread` — kompozitni indeks na `(user_id, is_read)` za brzo dohvatanje nepročitanih notifikacija.
+
+---
+
+### Pydantic Modeli
+
+#### `NotificationOut`
+
+Response model koji se šalje klijentu.
+
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | `int` | ID notifikacije |
+| `type` | `NotificationType` | Tip notifikacije |
+| `message` | `str` | Tekst notifikacije |
+| `link` | `str \| None` | Opcioni link |
+| `is_read` | `bool` | Status čitanja |
+| `created_at` | `datetime` | Datum kreiranja |
+
+#### `NotificationCreate`
+
+Model za kreiranje nove notifikacije (interno, server-side).
+
+| Polje | Tip | Opis |
+|---|---|---|
+| `user_id` | `int` | ID korisnika primatelja |
+| `type` | `NotificationType` | Tip notifikacije |
+| `message` | `str` | Tekst notifikacije |
+| `link` | `str \| None` | Opcioni link (opcionalno) |
+| `reference_id` | `int \| None` | ID entiteta (opcionalno) |
+
+#### `UnreadCountOut` / `MarkAllReadOut`
+
+| Model | Polje | Tip | Opis |
+|---|---|---|---|
+| `UnreadCountOut` | `count` | `int` | Broj nepročitanih notifikacija |
+| `MarkAllReadOut` | `updated` | `int` | Broj ažuriranih (označenih kao pročitanih) |
+
+---
+
+
+## Profil Korisnika
+
+Modul za upravljanje korisničkim profilom. Omogućava pregled i ažuriranje profila, upload i brisanje profilne slike, uređivanje profila, promjenu lozinke i deaktivaciju.
+
+---
+
+### SQLModel Modeli
+
+#### `UserProfileResponse`
+
+Response model za prikaz podataka korisničkog profila.
+
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | `int` | ID korisnika |
+| `email` | `str` | Email adresa |
+| `full_name` | `str` | Puno ime |
+| `role` | `str` | Uloga korisnika |
+| `created_at` | `datetime \| None` | Datum registracije |
+| `profilna_slika_url` | `str \| None` | URL profilne slike |
+| `biografija` | `str \| None` | Biografija korisnika (opcionalno) |
+
+#### `AvatarUploadResponse` / `AvatarDeleteResponse`
+
+| Model | Polje | Tip | Opis |
+|---|---|---|---|
+| `AvatarUploadResponse` | `profilna_slika_url` | `str` | URL novopostavljene slike |
+| `AvatarDeleteResponse` | `message` | `str` | Poruka potvrde brisanja |
+
+#### `PublicProfileResponse`
+
+Javni profil koji je vidljiv svim prijavljenim korisnicima.
+
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | `int` | ID korisnika |
+| `full_name` | `str` | Puno ime |
+| `biografija` | `str \| None` | Biografija (opcionalno) |
+| `godina_studija` | `str \| None` | Godina studija (opcionalno) |
+| `profilna_slika_url` | `str \| None` | URL profilne slike |
+
+--- 
+
+### API Rute
+
+#### Upravljanje korisničkim profilom — router `profiles.py`
+
+Svi endpointi u ovom modulu zahtijevaju da korisnik bude autentifikovan. U zaglavlju (Headers) svakog zahtjeva potrebno je proslijediti JWT token: Authorization: Bearer <vaš_token>
+
+| Metoda | Putanja | Funkcija | Opis | Responses |
+|---|---|---|---|---|
+| `GET` | `/profiles/me` | `get_my_profile` | Vraća sve podatke trenutno prijavljenog korisnika potrebne za prikaz profila (ime, email, biografija, godina studija, URL profilne slike, datum registracije) | 200 OK, 401 Unauthorized, 403 Forbidden, 422 Unprocessable Entity, 500 Internal Server Error |
+| `PATCH` | `/profiles/me` | `update_profile_me` | Ažurira tekstualne podatke profila (ime, prezime, biografija, godina studija). Koristi `exclude_unset=True` kako bi se mijenjala samo polja koja su zaista poslana u zahtjevu | 200 OK, 422 Unprocessable Entity, 401 Unauthorized, 403 Forbidden, 500 Internal Server Error |
+| `PATCH` | `/profiles/me/password` | `change_password` | Mijenja lozinku korisnika. Prije izmjene provjerava se ispravnost trenutne lozinke pomoću `pwd_context.verify()`, te da nova lozinka nije identična staroj |  200 OK, 400 Bad Request, 422 Unprocessable Entity, 500 Internal Server Error |
+| `POST` | `/profiles/me/avatar` | `upload_avatar` | Prima fajl slike (`UploadFile`), validira format (JPEG/PNG) i veličinu (maksimalno 5 MB), sprema fajl lokalno na server u `uploads/` folder pod jedinstvenim imenom (UUID), te u bazi ažurira putanju do slike | 200 OK, 400 Bad Request, 422 Unprocessable Entity, 401 Unauthorized, 500 Internal Server Error |
+| `DELETE` | `/profiles/me/avatar` | `delete_avatar` | Briše fajl profilne slike sa servera i postavlja vrijednost u bazi na `None` | 200 OK, 400 Bad Request, 401 Unauthorized, 500 Internal Server Error |
+| `GET` | `/profiles/public` | `get_public_profiles` |Vraća listu svih aktivnih korisnika (`is_active = true`) kao javne profile. | 200 OK |
+| `GET` | `/profiles/{user_id}/public` | `get_public_profile_by_id` | Vraća javni profil jednog korisnika po ID-u. Korisnik mora biti aktivan. | 200 OK, 404 Not Found |
+
+#### Deaktivacija korisničkog profila od strane korisnika — router `account.py`
+
+| Metoda | Putanja | Funkcija | Opis | Responses |
+|---|---|---|---|---|
+| POST | `/account/deactivate` | `deactivate_account` | Vrši deaktivaciju profila uz prethodnu provjeru lozinke | 200 OK, 400 Bad Request, 401 Unauthorized, 500 Internal Server Error |
+
+---
+
+## Admin
+
+Modul za administraciju korisnika. Dostupan isključivo adminima.
+
+---
+
+### Pydantic Modeli
+
+#### `UserAdminResponse`
+
+Response model za prikaz korisnika u admin panelu.
+
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | `int` | ID korisnika |
+| `full_name` | `str` | Puno ime |
+| `email` | `str` | Email adresa |
+| `role` | `UserRole` | Uloga korisnika (enum) |
+| `is_active` | `bool` | Status aktivnosti korisnika |
+
+#### `UsersListResponse`
+
+Model za listu korisnika s metapodacima.
+
+| Polje | Tip | Opis |
+|---|---|---|
+| `users` | `list[UserAdminResponse]` | Lista korisnika |
+| `total` | `int` | Ukupan broj korisnika u listi |
+| `prikazano` | `int` | Broj prikazanih korisnika |
+
+---
+
+
+### API Rute
+
+Sve rute u ovom modulu su zaštićene funkcijom `require_admin`. Za pristup je neophodno proslijediti važeći JWT token u zaglavlju (Authorization: Bearer <token>) korisnika koji ima ulogu admin.
+
+| Metoda | Putanja | Funkcija | Opis | Responses |
+|---|---|---|---|---|
+| GET | `/admin/users` (opcioni query parametri) | `get_all_users` | Vraća listu svih registrovanih korisnika u sistemu uz mogućnost napredne pretrage i filtriranja | 200 OK, 401 Unauthorized, 403 Forbidden, 422 Unprocessable Entity, 500 Internal Server Error |
+| PATCH | `/admin/users/{user_id}/role` | `change_user_role` | Omogućava administratoru da promijeni ulogu drugom korisniku | 200 OK, 400 Bad Request, 422 Unprocessable Entity, 401 Unauthorized, 403 Forbidden, 404 Not Found |
+| POST | `/admin/users/{id}/deactivate` | `deactivate_user` | Omogućava administratoru da deaktivira korisnički račun (soft-delete) | 200 OK, 400 Bad Request, 422 Unprocessable Entity, 401 Unauthorized, 403 Forbidden, 404 Not Found |
+| POST | `/admin/users/{id}/activate` | `activate_user` | Omogućava administratoru da ponovo aktivira prethodno deaktiviran profil | 200 OK, 400 Bad Request, 422 Unprocessable Entity, 401 Unauthorized, 403 Forbidden, 404 Not Found |
+| DELETE | `/admin/users/{user_id}` | `delete_user` | Omogućava administratoru da potpuno i nepovratno uklanja korisnika (hard delete) iz baze podataka uz ugrađenu rollback zaštitu u slučaju greške na serveru | 200 OK, 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 500 Internal Server Error |
+| GET | `/admin/stats` (opcioni query parametri) | `get_platform_statistics` | Generiše ključne stastističke podatke o bazi korisnika. Broj novih registracija se računa dinamički na osnovu proslijeđenog vremenskog perioda. | 200 OK, 401 Unauthorized, 403 Forbidden, 422 Unprocessable Entity, 500 Internal Server Error |
+
+
+## Dokumentacija modula
+
+### Tim 2 — Materijali (Lejla Kadušić)
+
+
+#### Pregled
+
+Ova dokumentacija opisuje backend implementaciju koju je radila Lejla Kadušić u okviru Tim 2 — modul Materijali. Implementacija obuhvata upload materijala i kompletnu funkcionalnost komentara, uključujući paginaciju liste materijala.
+
+Sav kod se nalazi u `backend/app/routers/materials.py` i `backend/app/models/materials.py`.
+
+---
+
+#### Sprint 1 — Upload materijala
+
+### Dozvoljeni formati
+
+```python
+ALLOWED_FORMATS = {".pdf", ".doc", ".docx", ".ppt", ".pptx", ".zip", ".txt"}
+```
+
+Skup dozvoljenih ekstenzija fajlova. Pored PDF, DOC i DOCX koji su bili eksplicitno navedeni u zahtjevima, dodani su i PPT, PPTX i TXT kao uobičajeni akademski formati.
+
+### `validate_file_format(file)`
+
+Izvlači ekstenziju iz naziva fajla i poredi s `ALLOWED_FORMATS`. Baca `HTTP 400 Bad Request` ako format nije podržan, s porukom koja navodi dozvoljene formate.
+
+### `save_file_to_disk(file)`
+
+Sprema uploadovani fajl u `uploads/` direktorij. Direktorij se automatski kreira ako ne postoji (`os.makedirs(..., exist_ok=True)`). Svaki fajl dobija `uuid.uuid4()` prefiks kako bi se spriječila kolizija fajlova istog naziva — originalni naziv ostaje vidljiv korisnicima.
+
+### `POST /materials/upload` — Zaštićen (JWT)
+
+Upload novog materijala na platformu. Endpoint:
+1. Validira format fajla
+2. Provjerava duplikate (isti naziv od istog korisnika, ili isti fajl)
+3. Sprema fajl na disk
+4. Kreira zapis u bazi
+5. Ako upis u bazu ne uspije — automatski briše fajl s diska (rollback mehanizam)
+6. Šalje notifikaciju svim adminima o novom materijalu na čekanju
+
+**Headers:**
+```
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+```
+
+**Request (form-data):**
+```
+title        string   — naziv materijala
+description  string   — opis
+subject_id   int      — ID predmeta
+file_type    string   — tip (skripta, auditorne_vjezbe, laboratorijske_vjezbe, ispiti, projekat)
+file         file     — fajl koji se uploaduje
+```
+
+**Response `200 OK`:** vraća `Material` objekt
+
+**Moguće greške:**
+| Status | Razlog |
+|---|---|
+| `400` | Nedozvoljeni format fajla |
+| `401` | Korisnik nije prijavljen |
+| `409` | Duplikat naziva ili fajla |
+| `500` | Greška pri upisu u bazu |
+
+---
+
+#### Sprint 2 — Komentari (GET, POST, DELETE)
+
+### Model — `Comment`
+
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | int | Primarni ključ |
+| `content` | str | Tekst komentara (max 500 karaktera) |
+| `created_at` | datetime | Datum kreiranja (automatski) |
+| `updated_at` | datetime/None | Datum izmjene (None dok se ne uredi) |
+| `material_id` | int | FK → materials.id |
+| `user_id` | int | FK → users.id |
+
+### `GET /materials/{material_id}/comments` — Javno
+
+Vraća listu svih komentara za materijal, sortiranih od najnovijeg prema najstarijem (`ORDER BY created_at DESC`). Koristi `selectinload(Comment.user)` za eager loading podataka o autoru. Endpoint je javan — komentare mogu vidjeti i neprijavljeni korisnici.
+
+**Response `200 OK`:**
+```json
+[
+  {
+    "id": 3,
+    "user_id": 7,
+    "material_id": 1,
+    "content": "Odličan materijal!",
+    "created_at": "2026-05-18T22:00:00",
+    "updated_at": null,
+    "user": { "id": 7, "full_name": "Ime Prezime" }
+  }
+]
+```
+
+### `POST /materials/{material_id}/comments` — Zaštićen (JWT)
+
+Kreira novi komentar. Tekst se trimuje (`strip()`), pa validira:
+- Ne smije biti prazan → `400 Bad Request`
+- Ne smije prelaziti 500 karaktera → `400 Bad Request`
+
+Nakon uspješnog upisa vraća novi komentar s učitanim podacima o autoru.
+
+**Request body:**
+```json
+{ "content": "Tekst komentara", "material_id": 1 }
+```
+
+**Response `201 Created`:**
+```json
+{
+  "id": 4,
+  "user_id": 7,
+  "material_id": 1,
+  "content": "Tekst komentara",
+  "created_at": "2026-06-01T10:00:00",
+  "updated_at": null,
+  "user": { "id": 7, "full_name": "Ime Prezime" }
+}
+```
+
+**Moguće greške:**
+| Status | Razlog |
+|---|---|
+| `400` | Prazan tekst ili duži od 500 karaktera |
+| `401` | Korisnik nije prijavljen |
+| `404` | Materijal ne postoji |
+
+### `DELETE /materials/{material_id}/comments/{comment_id}` — Zaštićen (JWT)
+
+Briše komentar. Implementirana stroga autorizacija:
+- Ako korisnik nije ni autor ni admin → `403 Forbidden`
+- Ako komentar ne postoji ili ne pripada tom materijalu → `404 Not Found`
+- Nakon uspješnog brisanja → `204 No Content` (bez tijela odgovora)
+
+**Moguće greške:**
+| Status | Razlog |
+|---|---|
+| `401` | Nije prijavljen |
+| `403` | Nije autor komentara ni admin |
+| `404` | Komentar ne postoji |
+
+---
+
+#### Sprint 3 — Uređivanje komentara i paginacija
+
+### Izmjena modela — polje `updated_at`
+
+Dodano polje `updated_at` u `Comment` model:
+```python
+updated_at: Optional[datetime] = Field(default=None)
+```
+Inicijalno je `None` i postavlja se tek pri prvom uređivanju. Pokrenuta Alembic migracija da se polje doda u bazu.
+
+### `PATCH /materials/{material_id}/comments/{comment_id}` — Zaštićen (JWT)
+
+Uređuje postojeći komentar. Samo autor komentara može ga urediti — pokušaj uređivanja tuđeg komentara vraća `403 Forbidden`. Primjenjuje se ista validacija kao pri kreiranju. Nakon uspješnog uređivanja upisuje se `datetime.utcnow()` u polje `updated_at`.
+
+**Request body:**
+```json
+{ "content": "Ažurirani tekst", "material_id": 1 }
+```
+
+**Response `200 OK`:** vraća ažurirani `CommentResponse` s popunjenim `updated_at`
+
+**Moguće greške:**
+| Status | Razlog |
+|---|---|
+| `400` | Prazan tekst ili duži od 500 karaktera |
+| `401` | Nije prijavljen |
+| `403` | Nije autor komentara |
+| `404` | Komentar ne postoji |
+
+### Paginacija — `PaginatedMaterialsResponse` model
+
+```python
+class PaginatedMaterialsResponse(SQLModel):
+    items: list[MaterialsResponse]
+    total: int
+    page: int
+    per_page: int
+    total_pages: int
+```
+
+### `GET /materials/` — Zaštićen (JWT, opcionalno)
+
+Dodan `page` i `per_page` query parametar. Paginacija se radi na nivou Python liste (ne SQL `LIMIT/OFFSET`) — dohvate se svi rezultati, pa se isjecaju:
+
+```python
+start = (page - 1) * per_page
+end = start + per_page
+return PaginatedMaterialsResponse(
+    items=svi[start:end],
+    total=total,
+    page=page,
+    per_page=per_page,
+    total_pages=(total + per_page - 1) // per_page,
+)
+```
+
+**Query parametri:**
+```
+page        int        — broj stranice (default: 1, min: 1)
+per_page    int        — materijala po stranici (default: 10, max: 50)
+years       list[int]  — filtriranje po godini studija
+types       list[str]  — filtriranje po tipu materijala
+subject_id  int        — filtriranje po predmetu
+mine_only   bool       — samo vlastiti materijali (zahtijeva prijavu)
+```
+
+---
+
+#### Autentifikacija i autorizacija
+
+Svi zaštićeni endpointi koriste `Depends(get_current_user)` koji dekodira JWT iz `Authorization: Bearer <token>` headera. Ako token nedostaje ili je neispravan — automatski `401 Unauthorized`.
+
+Autorizacija je implementirana unutar poslovne logike endpointa:
+- Brisanje komentara: `komentar.user_id != current_user.id` i `current_user.role != UserRole.admin` → `403`
+- Uređivanje komentara: `comment.user_id != current_user.id` → `403`
+
+---
+
+### Tim 2 — Materijali (Marinela Mitić)
+
+#### Pregled
+
+Ovaj dio dokumentacije opisuje backend implementaciju koju je radila Marinela Mitić u okviru Tim 2 — modul Materijali. Implementacija obuhvata preuzimanje materijala s bilježenjem korisnika, kompletnu funkcionalnost ocjenjivanja (sistem zvjezdica 1–5) i generisanje thumbnail sličica materijala.
+
+Sav kod se nalazi u `backend/app/routers/materials.py` i `backend/app/models/materials.py`.
+
+> **Napomena o podjeli rada unutar Tima 2:** Modul Materijali je razvijan u saradnji s kolegama. Sekcija opisana ispod odnosi se isključivo na lično implementirani dio: **preuzimanje, ocjenjivanje, thumbnail**. Funkcija `validate_file_format` je zajednički rad (validacija formata fajla).
+
+---
+
+#### Sprint 1 — Preuzimanje materijala
+
+##### Model — `Download`
+
+Tabela koja bilježi koji je korisnik preuzeo koji materijal. Predstavlja temelj za pravilo "korisnik mora preuzeti materijal prije nego što ga može ocijeniti".
+
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | int | Primarni ključ |
+| `material_id` | int | FK → materials.id |
+| `user_id` | int | FK → users.id |
+| `downloaded_at` | datetime | Vrijeme preuzimanja (automatski) |
+
+##### Validacija formata fajla — `validate_file_format(file)` *(zajednički rad)*
+
+```python
+ALLOWED_FORMATS = {".pdf", ".doc", ".docx", ".ppt", ".pptx", ".zip", ".txt"}
+```
+
+Izvlači ekstenziju iz naziva fajla, pretvara je u mala slova i poredi sa skupom `ALLOWED_FORMATS`. Ako format nije podržan, baca `HTTP 400 Bad Request` s porukom koja navodi dozvoljene formate.
+
+---
+
+##### `GET /materials/{id}/download` — Javno (s opcionalnim tokenom)
+
+Preuzimanje fajla materijala uz bilježenje korisnika i povećanje brojača preuzimanja.
+
+**Auth:** Opcionalna — token se prosljeđuje kao **query parametar** (`?token=...`), a ne kroz `Authorization` zaglavlje, jer se preuzimanje pokreće direktno iz preglednika gdje nije moguće jednostavno dodati zaglavlje. Ako je token prisutan, preuzimanje se bilježi za tog korisnika; ako nije, materijal se i dalje može preuzeti (javni pristup), ali bez bilježenja.
+
+**Tok izvršavanja:**
+1. Provjera da materijal postoji (`404` ako ne)
+2. Provjera da materijal nije obrisan — `status == "deleted"` → `404`
+3. Provjera uloge preko tokena — administrator može preuzeti i neodobrene materijale
+4. Ako materijal nije odobren i korisnik nije admin → `403`
+5. Provjera da fajl fizički postoji na disku (`404` ako ne)
+6. Povećanje brojača `number_of_downloads`
+7. Bilježenje u `Download` tabelu — samo ako korisnik ranije nije zabilježen za isti materijal (sprječava duplikate)
+8. Vraćanje fajla putem `FileResponse`
+
+**Request:**
+```
+GET /materials/5/download?token=<token>
+```
+
+**Response `200 OK`:** vraća fajl (binarni sadržaj) sa zaglavljem `Content-Disposition` koje sadrži originalni naziv fajla.
+
+**Mogući odgovori:**
+
+| Status | Razlog |
+|---|---|
+| `200` | Uspješno — vraća fajl |
+| `403` | Materijal nije odobren (a korisnik nije admin) |
+| `404` | Materijal ne postoji, obrisan je, ili fajl nije pronađen na serveru |
+
+> **Napomena:** Sam `Download` model bilježi preuzimanja već u Sprintu 1, ali se kao **uslov za ocjenjivanje** (provjera "je li korisnik preuzeo") koristi tek u Sprintu 3.
+
+---
+
+#### Sprint 2 — Ocjenjivanje materijala (sistem zvjezdica)
+
+##### Model — `Rating`
+
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | int | Primarni ključ |
+| `rating` | int | Ocjena, validirana na nivou modela: `ge=1, le=5` |
+| `material_id` | int | FK → materials.id |
+| `user_id` | int | FK → users.id |
+
+Validacija `Field(ge=1, le=5)` osigurava da ocjena uvijek bude cijeli broj između 1 i 5, na nivou samog modela (prije nego što podaci dođu do baze).
+
+---
+
+##### `POST /materials/{id}/rate` — Zaštićen (JWT)
+
+Kreira novu ocjenu za materijal.
+
+**Auth:** Obavezna (JWT).
+
+**Tok provjera (redom):**
+1. Postoji li materijal → `404` ako ne
+2. Da li je korisnik već ocijenio ovaj materijal → `409`
+3. Spremanje nove ocjene
+4. Slanje notifikacije vlasniku materijala (osim ako korisnik ocjenjuje vlastiti materijal)
+
+> **Napomena:** Provjera "da li je korisnik preuzeo materijal" (`403`) dodana je u Sprintu 3 i opisana je u tom dijelu. U Sprintu 2 endpoint je radio ocjenjivanje bez tog uslova.
+
+**Request:**
+```
+POST /materials/5/rate
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{ "rating": 5, "material_id": 5 }
+```
+
+**Response `201 Created`:**
+```json
+{
+  "id": 12,
+  "rating": 5,
+  "material_id": 5,
+  "user_id": 7
+}
+```
+
+**Mogući odgovori:**
+
+| Status | Razlog |
+|---|---|
+| `201` | Ocjena uspješno kreirana |
+| `401` | Korisnik nije prijavljen |
+| `403` | Korisnik nije preuzeo materijal |
+| `404` | Materijal ne postoji |
+| `409` | Korisnik je već ocijenio materijal |
+
+---
+
+##### `PATCH /materials/{id}/rate` — Zaštićen (JWT)
+
+Mijenja postojeću ocjenu korisnika. Provodi istu provjeru preuzimanja kao i kreiranje.
+
+**Auth:** Obavezna (JWT).
+
+**Tok provjera (redom):**
+1. Da li je korisnik preuzeo materijal → `403` ako nije *(provjera dodana u Sprintu 3)*
+2. Da li korisnik ima postojeću ocjenu koju mijenja → `404` ako ne postoji
+3. Ažuriranje vrijednosti ocjene
+
+**Request:**
+```
+PATCH /materials/5/rate
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{ "rating": 4, "material_id": 5 }
+```
+
+**Response `200 OK`:**
+```json
+{
+  "id": 12,
+  "rating": 4,
+  "material_id": 5,
+  "user_id": 7
+}
+```
+
+**Mogući odgovori:**
+
+| Status | Razlog |
+|---|---|
+| `200` | Ocjena uspješno izmijenjena |
+| `401` | Korisnik nije prijavljen |
+| `403` | Korisnik nije preuzeo materijal |
+| `404` | Korisnik nema postojeću ocjenu |
+
+---
+
+##### Pravila ocjenjivanja (sažetak)
+
+| Pravilo | Implementacija |
+|---|---|
+| Neprijavljeni korisnik ne može ocijeniti | Endpoint je zaštićen `Depends(get_current_user)` → `401` |
+| Korisnik mora preuzeti materijal prije ocjenjivanja (vrijedi i za studenta i za admina) | Provjera u `Download` tabeli → `403` *(dodano u Sprintu 3)* |
+| Korisnik može ocijeniti materijal samo jednom | Provjera postojeće ocjene → `409`; izmjena ide kroz `PATCH` |
+| Korisnik može promijeniti svoju ocjenu | `PATCH /materials/{id}/rate` |
+| Ocjena mora biti 1–5 | `Field(ge=1, le=5)` na modelu |
+
+> **Napomena:** Pravilo "korisnik ne može ocijeniti vlastiti materijal" provodi se na frontendu. Na backendu se vlasništvo koristi samo za preskakanje notifikacije (vlasnik ne dobija obavijest da je vlastiti materijal ocijenjen). Provjera vlasništva i na backendu (`material.user_id == current_user.id → 403`) moguća je dopuna radi potpune dosljednosti zaštite.
+
+---
+
+#### Sprint 3 — Thumbnail, provjera preuzimanja za ocjenu
+
+##### Provjera "korisnik mora preuzeti prije ocjenjivanja"
+
+U Sprintu 3 dodan je uslov za ocjenjivanje: korisnik mora preuzeti materijal prije nego što ga može ocijeniti. U endpointima `POST /materials/{id}/rate` i `PATCH /materials/{id}/rate` dodana je provjera u `Download` tabeli — ako korisnik nije zabilježen kao da je preuzeo materijal, vraća se `403`:
+
+```python
+download = db.exec(
+    select(Download).where(
+        Download.material_id == id,
+        Download.user_id == current_user.id
+    )
+).first()
+if not download:
+    raise HTTPException(status_code=403, detail="Morate preuzeti materijal prije ocjenjivanja.")
+```
+
+Ova provjera oslanja se na `Download` model (iz Sprinta 1) i vrijedi jednako za studenta i za admina.
+
+##### `GET /materials/{id}/has-downloaded` — Zaštićen (JWT)
+
+Pomoćni endpoint koji vraća `true`/`false` — da li je trenutno prijavljeni korisnik već preuzeo dati materijal. Frontend ga koristi da odluči hoće li zvjezdice za ocjenjivanje biti aktivne ili zaključane.
+
+**Auth:** Obavezna (JWT kroz `Authorization: Bearer <token>` zaglavlje). Za razliku od `/download`, ovaj endpoint poziva frontend JavaScript, koji bez problema može poslati zaglavlje.
+
+**Request:**
+```
+GET /materials/5/has-downloaded
+Authorization: Bearer <token>
+```
+
+**Response `200 OK`:**
+```json
+{ "has_downloaded": true }
+```
+
+| Status | Razlog |
+|---|---|
+| `200` | Uspješno — vraća stanje |
+| `401` | Korisnik nije prijavljen |
+
+---
+
+#### Sprint 3 — Thumbnail sličice materijala
+
+##### Izmjena modela — polje `thumbnail_path`
+
+Dodano polje u `Material` model za čuvanje putanje generisane thumbnail sličice:
+
+```python
+thumbnail_path: Optional[str] = Field(default=None, sa_column=Column(String, nullable=True))
+```
+
+Polje je opcionalno (`nullable`) jer se thumbnail ne generiše za svaki materijal — ako generisanje ne uspije ili format nije podržan, vrijednost ostaje `None`.
+
+##### `generate_thumbnail(file_path)`
+
+Funkcija generiše PNG sličicu prve stranice dokumenta. Logika ovisi o tipu fajla:
+
+- **PDF** — otvara se bibliotekom `PyMuPDF` (`fitz`), uzima se prva stranica i renderuje u sliku na pola veličine (`Matrix(0.5, 0.5)`), te sprema kao PNG u `uploads/thumbnails/`.
+- **Office formati (PPTX, PPT, DOCX, DOC)** — fajl se prvo konvertuje u PDF pomoću LibreOffice (`soffice`) u headless modu, a zatim se thumbnail generiše iz tog PDF-a. Privremeni PDF se briše nakon korištenja.
+- **Ostali formati (ZIP, TXT)** — nemaju thumbnail; funkcija vraća `None`.
+
+Cijela funkcija je obavijena `try/except` blokom kako neuspjeh generisanja thumbnaila ne bi prekinuo proces uploada — u tom slučaju materijal se sprema bez thumbnaila.
+
+##### Prenosivost — pronalaženje LibreOffice instalacije
+
+Putanja do `soffice` izvršne datoteke pronalazi se automatski, umjesto da bude fiksno zadana, kako bi generisanje thumbnaila radilo neovisno o operativnom sistemu:
+
+```python
+soffice_bin = shutil.which("soffice") or shutil.which("libreoffice")
+if not soffice_bin:
+    return None
+```
+
+- `shutil.which("soffice")` — automatsko pronalaženje LibreOffice u sistemskom PATH-u (macOS / Linux / Windows)
+- `shutil.which("libreoffice")` — rezervna komanda (neke Linux distribucije koriste ovaj naziv)
+
+Ako LibreOffice nije instaliran, funkcija graciozno vraća `None` — PDF thumbnaili i dalje rade, samo Office formati ostaju bez sličice. Ovim pristupom thumbnail za Office formate radi na svakom operativnom sistemu bez ručne konfiguracije.
+
+##### Posluživanje thumbnail sličica
+
+Generisane sličice se poslužuju kao statički sadržaj putem `/thumbnails/` rute (konfigurisano u `app/main.py`), kako bi ih frontend mogao prikazati direktno preko URL-a.
+
+---
+
+#### Autentifikacija i autorizacija
+
+Zaštićeni endpointi (`/rate`, `/has-downloaded`) koriste `Depends(get_current_user)`, koji dekodira JWT iz `Authorization: Bearer <token>` zaglavlja i vraća `401` ako token nedostaje ili je neispravan.
+
+Endpoint za preuzimanje (`/download`) namjerno koristi **opcionalni token kroz query parametar** umjesto obaveznog zaglavlja, jer se poziva direktno iz preglednika. Kada je token prisutan, preuzimanje se bilježi za tog korisnika; kada nije, materijal se i dalje može preuzeti (javni pristup), ali bez bilježenja.
+
+---
+
+#### Migracije baze podataka
+
+```bash
+cd backend
+source venv/bin/activate
+alembic revision --autogenerate -m "opis promjene"
+alembic upgrade head
+```
+
+---
+
+### Tim 2 — Materijali (Amer Imamović) — Backend
+
+#### Pregled
+
+Ova dokumentacija opisuje backend implementaciju koju je radio Amer Imamović u okviru Tim 2 — modul Materijali. Implementacija obuhvata brisanje materijala, toggle bookmark funkcionalnost i kompletne filtere za pretragu materijala po godini, tipu i predmetu.
+
+Sav kod se nalazi u `backend/app/routers/materials.py` i `backend/app/models/materials.py`.
+
+---
+
+#### Sprint 1 — Brisanje materijala
+
+### Model — `Material.status`
+
+Brisanje je implementirano kao **soft delete** — materijal se označava kao obrisan a ne briše se iz baze:
+
+```python
+status: str = Field(default="pending")  # pending, approved, rejected, deleted
+```
+
+### `DELETE /materials/{id}` — Zaštićen (JWT)
+
+Briše (označava kao obrisano) zadani materijal. Samo autor materijala ili admin mogu obrisati materijal.
+
+**Autentifikacija:** Zahtijeva JWT token (korisnik mora biti prijavljen)
+
+**Autorizacija:**
+- Admin može obrisati bilo koji materijal
+- Korisnik može obrisati samo vlastite materijale
+- Neovlašteni pristup vraća `403 Forbidden`
+
+**Request:**
+```
+DELETE /materials/{id}
+Authorization: Bearer <token>
+```
+
+**Response `204 No Content`:** Materijal uspješno označen kao obrisan (bez tijela odgovora)
+
+**Moguće greške:**
+| Status | Razlog |
+|---|---|
+| `401` | Korisnik nije prijavljen |
+| `403` | Nemate dozvolu za brisanje (nije autor ni admin) |
+| `404` | Materijal ne postoji |
+
+**Napomena:** Obrisani materijali nisu dostupni u javnom popisu, ali ako su ih već preuzeli korisnici, oni mogu pristupiti verziji koju su preuzeli.
+
+---
+
+#### Sprint 2 — Bookmark (Omiljeni materijali)
+
+### Model — `Bookmark`
+
+```python
+class Bookmark(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id")
+    material_id: int = Field(foreign_key="material.id")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+```
+
+Bookmark je vanjska tabela koja povezuje korisnike s materijalima kao "omiljeni". Svaki red predstavlja omiljenu relaciju između korisnika i materijala.
+
+### `POST /materials/{material_id}/bookmark` — Zaštićen (JWT)
+
+Toggle bookmark za materijal — ako je već bookmarkovan uklanja se, ako nije — dodaje se. Admini ne mogu bookmarkovati materijale.
+
+**Autentifikacija:** Zahtijeva JWT token
+
+**Request:**
+```
+POST /materials/42/bookmark
+Authorization: Bearer <token>
+```
+
+**Response (Toggle — dva mogućnostna odgovora):**
+
+Ako je materijal **dodat kao omiljeni**:
+```json
+{
+  "is_bookmarked": true
+}
+```
+
+Ako je materijal **uklonjen iz omiljenih**:
+```json
+{
+  "is_bookmarked": false
+}
+```
+
+**Moguće greške:**
+| Status | Razlog |
+|---|---|
+| `401` | Korisnik nije prijavljen |
+
+**Frontend integracija:** Kad korisnik klikne na zastavicu:
+1. Šalje se `POST` zahtjev na `/materials/{id}/bookmark`
+2. Backend vraća `is_bookmarked: true/false`
+3. Frontend ažurira svojstvo `material.is_bookmarked` u listi
+4. UI se osvježi da prikaže narandžastu (bookmarked) ili sivu (unbookmarked) zastavicu
+
+---
+
+#### Sprint 3 — Filteri (Godina, Tip, Predmet)
+
+### Filteri u `GET /materials/` i `GET /materials/public`
+
+Oba endpointa (`/materials/` za prijavljene i `/materials/public` za javni pristup) podržavaju sljedeće query parametare:
+
+**Query parametri:**
+```
+years       list[int]  — filtriranje po godini studija (npr. ?years=1&years=2)
+types       list[str]  — filtriranje po tipu materijala (npr. ?types=skripta&types=ispiti)
+subject_id  int        — filtriranje po ID-u predmeta (npr. ?subject_id=5)
+page        int        — broj stranice (default: 1, min: 1)
+per_page    int        — materijala po stranici (default: 10, max: 50)
+mine_only   bool       — samo vlastiti materijali (zahtijeva prijavu) — dostupno samo na /materials/
+```
+
+### Dozvoljeni tipovi materijala
+
+```python
+ALLOWED_TYPES = {
+    'skripta': 'Skripte',
+    'auditorne_vjezbe': 'Auditorne vježbe',
+    'laboratorijske_vjezbe': 'Laboratorijske vježbe',
+    'ispiti': 'Ispiti',
+    'projekat': 'Projekat'
+}
+```
+
+### Primjeri API poziva s filterima
+
+**Primjer 1: Materijali za 1. i 2. godinu:**
+```
+GET /materials/?years=1&years=2&page=1&per_page=10
+```
+
+**Primjer 2: Samo skripte za predmet ID=5:**
+```
+GET /materials/?subject_id=5&types=skripta&page=1
+```
+
+**Primjer 3: Ispiti i laboratorijske vježbe:**
+```
+GET /materials/?types=ispiti&types=laboratorijske_vjezbe
+```
+
+**Primjer 4: Kombinovani filteri - godina 3, tip skripta, predmet 10:**
+```
+GET /materials/?years=3&types=skripta&subject_id=10&page=1&per_page=20
+```
+
+### Implementaciona logika filtera
+
+Filteri se primjenjuju na SQL nivou prije paginacije:
+
+```python
+# Filtriranje po godini studija
+if years:
+    query = query.join(Subject, Material.subject_id == Subject.id).where(Subject.study_year.in_(years))
+
+# Filtriranje po tipu materijala
+if types:
+    query = query.where(Material.file_type.in_(types))
+
+# Filtriranje po predmetu
+if subject_id:
+    query = query.where(Material.subject_id == subject_id)
+```
+
+**Napomena:** Filteri se mogu kombinovati — svi aktivni filteri se primjenjuju zajedno (AND logika).
+
+---
+
+#### Bookmark stanje u listama materijala
+
+Kada je korisnik prijavljen, svaki materijal u API odgovoru sadrži polje `is_bookmarked`:
+
+```python
+user_bookmarks = session.exec(
+    select(Bookmark.material_id).where(Bookmark.user_id == current_user.id)
+).all()
+
+response = MaterialsResponse(
+    **material.model_dump(),
+    is_bookmarked=material.id in user_bookmarks,  # True ako je bookmarked
+)
+```
+
+**Javni endpoint (`/materials/public`)** ne šalje bookmark stanje jer nema informacije o korisniku — korisnici koji žele vidjeti svoje bookmarke trebaju koristiti `/materials/` s autentifikacijom.
+
+---
+
+### Tim 2 — Materijali (Faris Ćosić)
+
+### Modeli
+
+#### `Material`
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | int | Primarni ključ |
+| `title` | str | Naziv materijala |
+| `description` | str? | Opis materijala |
+| `file_path` | str | Putanja do fajla na serveru |
+| `file_type` | str | Tip materijala (npr. `PDF`, `PPT`) |
+| `status` | str | `pending` / `approved` / `rejected` / `deleted` |
+| `number_of_downloads` | int | Broj preuzimanja |
+| `thumbnail_path` | str? | Putanja do thumbnail slike |
+| `subject_id` | int | FK → `subjects.id` |
+| `user_id` | int | FK → `users.id` |
+| `created_at` | datetime | Datum kreiranja |
+
+#### `Subject`
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | int | Primarni ključ |
+| `name` | str | Naziv predmeta |
+| `study_year` | int | Godina studija (1–4) |
+
+#### `Comment`
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | int | Primarni ključ |
+| `content` | str | Tekst komentara (maks. 500 znakova) |
+| `material_id` | int | FK → `materials.id` |
+| `user_id` | int | FK → `users.id` |
+| `created_at` | datetime | Datum kreiranja |
+| `updated_at` | datetime? | Datum izmjene |
+
+#### `Rating`
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | int | Primarni ključ |
+| `rating` | int | Ocjena (1–5) |
+| `material_id` | int | FK → `materials.id` |
+| `user_id` | int | FK → `users.id` |
+
+#### `Download`
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | int | Primarni ključ |
+| `material_id` | int | FK → `materials.id` |
+| `user_id` | int | FK → `users.id` |
+| `downloaded_at` | datetime | Datum preuzimanja |
+
+#### `Bookmark`
+| Polje | Tip | Opis |
+|---|---|---|
+| `id` | int | Primarni ključ |
+| `material_id` | int | FK → `materials.id` |
+| `user_id` | int | FK → `users.id` |
+
+---
+
+### Endpointi
+
+#### `GET /materials/subjects`
+Vraća listu svih predmeta.
+
+- **Auth:** nije potrebna
+- **Response:** `Subject[]`
+
+---
+
+#### `GET /materials/pending`
+Vraća listu materijala koji čekaju odobrenje.
+
+- **Auth:** admin
+- **Response:** `MaterialsResponse[]`
+- **Greške:** `403` ako korisnik nije admin
+
+---
+
+#### `GET /materials/`
+Vraća paginirani spisak odobrenih materijala. Podržava filtriranje i prikaz samo vlastitih materijala.
+
+- **Auth:** opcionalna (potrebna za `mine_only`)
+- **Query params:**
+
+| Param | Tip | Opis |
+|---|---|---|
+| `years` | int[] | Filtriranje po godini studija |
+| `types` | str[] | Filtriranje po tipu fajla |
+| `subject_id` | int | Filtriranje po predmetu |
+| `mine_only` | bool | Prikazuje samo materijale prijavljenog korisnika |
+| `page` | int | Stranica (default: 1) |
+| `per_page` | int | Stavki po stranici (default: 10, maks: 50) |
+
+- **Response:** `PaginatedMaterialsResponse`
+
+---
+
+#### `GET /materials/public`
+Isti kao `GET /materials/` ali bez autentikacije — za neprijavljene korisnike.
+
+- **Auth:** nije potrebna
+- **Query params:** `years`, `types`, `subject_id`, `page`, `per_page`
+- **Response:** `PaginatedMaterialsResponse`
+
+---
+
+#### `GET /materials/{id}`
+Vraća detalje jednog materijala uključujući komentare i ocjene.
+
+- **Auth:** nije potrebna
+- **Response:** `MaterialDetailResponse`
+- **Greške:** `404` ako materijal ne postoji
+
+---
+
+#### `GET /materials/{id}/preview`
+Vraća fajl inline za pregled u browseru (bez preuzimanja).
+
+- **Auth:** nije potrebna
+- **Response:** `FileResponse` (inline)
+- **Greške:** `404` ako materijal ili fajl ne postoje
+
+---
+
+#### `PATCH /materials/{material_id}/approve`
+Admin odobrava materijal. Korisnik koji je postavio materijal dobiva notifikaciju.
+
+- **Auth:** admin
+- **Response:** `{ "message": "Materijal odobren." }`
+- **Greške:** `403`, `404`
+
+---
+
+#### `PATCH /materials/{material_id}/reject`
+Admin odbija materijal. Korisnik koji je postavio materijal dobiva notifikaciju.
+
+- **Auth:** admin
+- **Response:** `{ "message": "Materijal odbijen." }`
+- **Greške:** `403`, `404`
+
+---
+
+#### `PATCH /materials/{material_id}/update`
+Vlasnik materijala može izmijeniti naslov, opis, predmet, tip ili zamijeniti fajl. Ako se fajl zamijeni, status se vraća na `pending`.
+
+- **Auth:** vlasnik materijala
+- **Body (multipart/form-data):**
+
+| Polje | Tip | Obavezno |
+|---|---|---|
+| `title` | str | ne |
+| `description` | str | ne |
+| `subject_id` | int | ne |
+| `material_type` | str | ne |
+| `file` | UploadFile | ne |
+
+- **Dozvoljeni formati:** `.pdf`, `.doc`, `.docx`, `.ppt`, `.pptx`, `.zip`, `.txt`
+- **Response:** `{ "message": "Materijal ažuriran." }`
+- **Greške:** `403`, `404`, `400` (nedozvoljen format)
+
+
+### Tim 3 - Forum
+---
+### Forum Modeli Podataka
+---
+
+### ForumCategory (Kategorija foruma)
+#### Tabela: `forum_categories`
+
+---
+
+#### SQLModel — `ForumCategory` (tabela)
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment (default: `None`) |
+| `name` | `str` | Naziv kategorije (indeksiran, max 100 karaktera) |
+| `color` | `str` | HEX kod boje za frontend prikaz (default: `#ff7a00`, max 20 karaktera) |
+| `description` | `str \| None` | Opis kategorije (opcionalno, max 255 karaktera, default: `None`) |
+
+##### Relacije
+| Relacija | Model | Opis |
+| :--- | :--- | :--- |
+| `topics` | `List[ForumTopic]` | Lista svih tema koje pripadaju ovoj kategoriji |
+
+---
+
+#### Pydantic shema — `ForumCategoryCreate`
+*Koristi se pri kreiranju nove kategorije (`POST /forum/categories`).*
+
+| Polje | Tip | Validacija / Default |
+| :--- | :--- | :--- |
+| `name` | `str` | Obavezno polje, max 100 karaktera |
+| `color` | `str` | Default: `#ff7a00`, max 20 karaktera |
+| `description` | `str \| None` | Opcionalno, max 255 karaktera |
+
+---
+
+#### Pydantic shema — `ForumCategoryUpdate`
+*Koristi se pri ažuriranju kategorije (`PATCH /forum/categories/{id}`). Sva polja su opcionalna.*
+
+| Polje | Tip | Validacija / Default |
+| :--- | :--- | :--- |
+| `name` | `str \| None` | Max 100 karaktera |
+| `color` | `str \| None` | Max 20 karaktera |
+| `description` | `str \| None` | Max 255 karaktera |
+
+---
+
+#### Pydantic shema — `ForumCategoryRead`
+*Vraća se kao response na API pozive.*
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int` | Jedinstveni identifikator |
+| `name` | `str` | Naziv kategorije |
+| `color` | `str` | HEX boja kategorije |
+| `description` | `str \| None` | Opis kategorije |
+
+---
+
+### ForumTopic (Tema foruma)
+#### Tabela: `forum_topics`
+
+---
+
+#### SQLModel — `ForumTopic` (tabela)
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment (default: `None`) |
+| `title` | `str` | Naslov teme (indeksiran, max 200 karaktera) |
+| `content` | `str` | Glavni tekst/sadržaj teme |
+| `views_count` | `int` | Broj pregleda teme (default: `0`) |
+| `is_locked` | `bool` | Flag da li je tema zaključana za nove komentare (default: `False`) |
+| `is_deleted` | `bool` | Soft delete flag (default: `False`) |
+| `created_at` | `datetime` | Datum kreiranja teme (auto generisano preko `datetime.utcnow`) |
+| `updated_at` | `datetime \| None` | Datum posljednje izmjene (default: `None`) |
+| `category_id` | `int` | Strani ključ -> `forum_categories.id` |
+| `user_id` | `int` | Strani ključ -> `users.id` (Autor teme) |
+
+##### Relacije
+| Relacija | Model | Opis |
+| :--- | :--- | :--- |
+| `category` | `ForumCategory \| None` | Objekt kategorije kojoj tema pripada |
+| `comments` | `List[ForumComment]` | Lista svih komentara na ovoj temi |
+
+---
+
+#### Pydantic shema — `ForumTopicCreate`
+*Koristi se pri kreiranju nove teme (`POST /forum/topics`).*
+
+| Polje | Tip | Validacija / Default |
+| :--- | :--- | :--- |
+| `title` | `str` | Obavezno, max 200 karaktera |
+| `content` | `str` | Obavezno tekstualno polje |
+| `category_id` | `int` | ID postojeće kategorije |
+
+---
+
+#### Pydantic shema — `ForumTopicRead`
+*Vraća se kao response na API pozive za teme (ne uključuje `is_deleted`).*
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int` | Jedinstveni identifikator teme |
+| `title` | `str` | Naslov teme |
+| `content` | `str` | Sadržaj teme |
+| `views_count` | `int` | Broj pregleda |
+| `is_locked` | `bool` | Status zaključavanja |
+| `created_at` | `datetime` | Vrijeme kreiranja |
+| `updated_at` | `datetime \| None` | Vrijeme izmjene |
+| `category_id` | `int` | ID kategorije |
+| `user_id` | `int` | ID autora |
+
+---
+
+### ForumComment (Komentar foruma)
+#### Tabela: `forum_comments`
+
+---
+
+#### SQLModel — `ForumComment` (tabela)
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment (default: `None`) |
+| `content` | `str` | Tekstualni sadržaj komentara |
+| `is_admin_notice` | `bool` | Da li je komentar zvanična napomena moderatora/admina (default: `False`) |
+| `is_best_answer` | `bool` | Da li je komentar označen kao prihvaćeno rješenje (default: `False`) |
+| `is_deleted` | `bool` | Soft delete flag (default: `False`) |
+| `parent_id` | `int \| None` | Strani ključ -> `forum_comments.id` (Omogućava ugniježdene odgovore) |
+| `created_at` | `datetime` | Datum kreiranja (auto generisano preko `datetime.utcnow`) |
+| `updated_at` | `datetime \| None` | Datum posljednje izmjene (default: `None`) |
+| `topic_id` | `int` | Strani ključ -> `forum_topics.id` |
+| `user_id` | `int` | Strani ključ -> `users.id` (Autor komentara) |
+
+##### Relacije
+| Relacija | Model | Opis |
+| :--- | :--- | :--- |
+| `topic` | `ForumTopic \| None` | Tema na kojoj se nalazi komentar |
+| `votes` | `List[ForumCommentVote]` | Svi glasovi (upvote/downvote) na ovom komentaru |
+| `replies` | `List[ForumComment]` | Samoreferencirajuća relacija (odgovori na ovaj komentar sa `lazy="select"`) |
+
+---
+
+### Interakcije i prateći modeli (Glasovi, Lajkovi, Tagovi)
+
+#### Tabela: `forum_comment_votes`
+*Čuva pojedinačne glasove korisnika za komentare (Upvote / Downvote).*
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment |
+| `comment_id` | `int` | Strani ključ -> `forum_comments.id` |
+| `user_id` | `int` | Strani ključ -> `users.id` |
+| `value` | `int` | Vrijednost glasa (npr. `1` za upvote, `-1` za downvote, default: `1`) |
+| `created_at` | `datetime` | Vrijeme glasanja |
+
+##### Ograničenja i Relacije
+- **Jedinstvenost:** `UniqueConstraint("comment_id", "user_id", name="unique_comment_vote_per_user")` sprečava duplo glasanje od strane istog korisnika.
+- **Relacija:** `comment` -> Poveznica nazad na `ForumComment` objekat.
+
+---
+
+#### Tabela: `topic_likes`
+*Čuva podatke o lajkovima na nivou cijele teme.*
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment |
+| `topic_id` | `int` | Strani ključ -> `forum_topics.id` (Indeksiran) |
+| `user_id` | `int` | Strani ključ -> `users.id` (Indeksiran) |
+| `created_at` | `datetime` | Vrijeme kreiranja lajka |
+
+##### Ograničenja
+- **Jedinstvenost:** `UniqueConstraint("topic_id", "user_id", name="unique_topic_like_per_user")`.
+
+---
+
+#### Tabela: `topic_dislikes`
+*Čuva podatke o dislajkovima na nivou cijele teme.*
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment |
+| `topic_id` | `int` | Strani ključ -> `forum_topics.id` (Indeksiran) |
+| `user_id` | `int` | Strani ključ -> `users.id` (Indeksiran) |
+| `created_at` | `datetime` | Vrijeme kreiranja dislajka |
+
+##### Ograničenja
+- **Jedinstvenost:** `UniqueConstraint("topic_id", "user_id", name="unique_topic_dislike_per_user")`.
+
+---
+
+#### Tabela: `forum_tags`
+*Katalog unikatnih tagova na forumu.*
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment |
+| `name` | `str` | Jedinstveno ime taga (indeksiran, unique, max 50 karaktera) |
+
+---
+
+#### Tabela: `forum_topic_tags`
+*Pivot tabela za Many-to-Many relaciju između tema i tagova.*
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `topic_id` | `int \| None` | Primarni ključ i Strani ključ -> `forum_topics.id` |
+| `tag_id` | `int \| None` | Primarni ključ i Strani ključ -> `forum_tags.id` |
+
+---
+
+### Prilozi (Attachments)
+
+#### Tabela: `topic_attachments`
+*Meta-podaci o fajlovima zakačenim uz forum teme.*
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment |
+| `topic_id` | `int` | Strani ključ -> `forum_topics.id` (Indeksiran) |
+| `filename` | `str` | Originalni naziv fajla (max 255 karaktera) |
+| `file_path` | `str` | Putanja do fajla na disku/storage-u (max 500 karaktera) |
+| `file_size` | `int` | Veličina fajla u bajtovima (`bytes`) |
+| `mime_type` | `str` | MIME tip fajla (max 100 karaktera, npr. `image/jpeg`) |
+| `created_at` | `datetime` | Vrijeme uploada |
+
+---
+
+#### Tabela: `comment_attachments`
+*Meta-podaci o fajlovima zakačenim uz pojedinačne komentare.*
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment |
+| `comment_id` | `int` | Strani ključ -> `forum_comments.id` (Indeksiran) |
+| `filename` | `str` | Originalni naziv fajla (max 255 karaktera) |
+| `file_path` | `str` | Putanja do fajla na disku/storage-u (max 500 karaktera) |
+| `file_size` | `int` | Veličina fajla u bajtovima |
+| `mime_type` | `str` | MIME tip fajla (max 100 karaktera) |
+| `created_at` | `datetime` | Vrijeme uploada |
+
+---
+
+### Moderacija i administracija
+
+#### Tabela: `topic_reports`
+*Prijave korisnika za teme koje krše pravila.*
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment |
+| `topic_id` | `int` | Strani ključ -> `forum_topics.id` |
+| `user_id` | `int` | Strani ključ -> `users.id` (Korisnik koji prijavljuje) |
+| `reason` | `str` | Razlog prijave (max 100 karaktera) |
+| `created_at` | `datetime` | Vrijeme kreiranja prijave |
+| `status` | `str` | Status prijave (default: `"pending"`) |
+| `action_taken` | `str \| None` | Akcija koju je admin preduzeo (default: `None`) |
+| `admin_explanation` | `str \| None` | Obrazloženje od strane administracije (default: `None`) |
+
+---
+
+#### Tabela: `admin_announcements`
+*Globalna obavještenja kreirana od strane administratora.*
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment |
+| `admin_id` | `int` | Strani ključ -> `users.id` (ID administratora) |
+| `title` | `str` | Naslov obavještenja (max 150 karaktera) |
+| `content` | `str` | Kompletan tekst/sadržaj obavještenja |
+| `is_active` | `bool` | Da li je obavještenje aktivno (default: `True`) |
+| `created_at` | `datetime` | Vrijeme kreiranja obavještenja |
+| `expires_at` | `datetime \| None`| Datum kada obavještenje ističe (opcionalno, default: `None`) |
+
+---
+
+#### Tabela: `forum_guidelines`
+*Pravilnik ponašanja na forumu.*
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment |
+| `title` | `str` | Naslov specifičnog pravila |
+| `content` | `str` | Detaljan tekstualni opis pravila |
+| `order` | `int` | Redoslijed sortiranja pri prikazu (default: `0`) |
+| `created_at` | `datetime` | Vrijeme kreiranja |
+| `updated_at` | `datetime` | Vrijeme zadnje izmjene |
+
+---
+
+#### Opšte napomene o sistemu modela
+1. **Upravljanje Vremenom:** Sva polja sa datumima (`created_at`, `updated_at`) automatski koriste UTC zonu preko `datetime.utcnow` prilikom upisa u bazu, ukoliko vrijednost nije eksplicitno proslijeđena.
+2. **Logičko Brisanje:** Teme (`ForumTopic`) i komentari (`ForumComment`) posjeduju polje `is_deleted`. Brisanje ovih entiteta na forumu treba raditi isključivo postavljanjem ovog flaga na `True` (soft delete) kako bi se očuvao integritet historije i povezanih relacija.
+
+---
+
+### ForumNotification (Notifikacije foruma)
+#### Tabela: `forum_notifications`
+
+---
+
+#### SQLModel — `ForumNotification` (tabela)
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment (default: `None`) |
+| `recipient_user_id` | `int` | Strani ključ -> `users.id` (Korisnik koji prima notifikaciju, indeksiran) |
+| `actor_user_id` | `int` | Strani ključ -> `users.id` (Korisnik koji je izazvao notifikaciju, indeksiran) |
+| `topic_id` | `int` | Strani ključ -> `forum_topics.id` (Tema na koju se odnosi notifikacija, indeksirana) |
+| `comment_id` | `int \| None` | Strani ključ -> `forum_comments.id` (Komentar na koji vodi klik, indeksiran, default: `None`) |
+| `text` | `str` | Tekstualni sadržaj i poruka notifikacije |
+| `type` | `ForumNotificationType` | Tip notifikacije (Enum vrijednost) |
+| `is_read` | `bool` | Flag da li je korisnik pročitao notifikaciju (default: `False`) |
+| `is_hidden` | `bool` | Flag za logičko sakrivanje nevažećih notifikacija (default: `False`) |
+| `created_at` | `datetime` | Vrijeme kreiranja notifikacije (auto generisano u UTC preko `datetime.now(timezone.utc)`) |
+
+---
+
+#### Enum — `ForumNotificationType`
+*Definiše sve podržane događaje koji okidaju slanje notifikacije unutar forum sistema.*
+
+| Vrijednost | Tip | Opis |
+| :--- | :--- | :--- |
+| `"topic_like"` | `str` | Korisnik je lajkovao temu |
+| `"topic_dislike"` | `str` | Korisnik je dislajkovao temu |
+| `"topic_reply"` | `str` | Dodan je novi komentar na temu čiji je korisnik autor |
+| `"comment_reply"` | `str` | Dodan je direktan odgovor (reply) na komentar korisnika |
+| `"mention"` | `str` | Korisnik je tagovan/spomenut unutar teksta |
+| `"best_answer"` | `str` | Korisnikov komentar je označen kao prihvaćeno rješenje teme |
+| `"comment_like"` | `str` | Korisnik je dobio pozitivan glas (upvote) na komentar |
+| `"comment_dislike"` | `str` | Korisnik je dobio negativan glas (downvote) na komentar |
+
+---
+
+#### Napomene o sistemu notifikacija
+1. **Upotreba `is_hidden` polja:** Ovaj flag rješava specifične slučajeve poništavanja akcija. Na primjer, ako autor teme označi komentar kao *best answer*, a zatim unutar par sekundi ukloni tu oznaku, sistem neće obrisati zapis iz baze nego će staru, nepročitanu notifikaciju postaviti na `is_hidden = True` kako se ne bi prikazivala u korisnikovom inboxu.
+2. **Rutiranje na frontendu:** Polje `comment_id` je opcionalno jer se za akcije poput `topic_like` i `topic_reply` (gdje se skače na vrh teme) koristi isključivo `topic_id`. Kada je `comment_id` prisutan, frontend ga koristi za automatsko skrolovanje i fokusiranje na tačan komentar u stablu diskusije.
+3. **Generisanje datuma:** Za razliku od ostalih modela koji koriste zastarjeli `datetime.utcnow`, ovaj model pravilno koristi modernu `timezone.utc` svjesnu fabriku za bilježenje tačnog vremena kreiranja zapisa.
+
+---
+
+### ForumReputation (Reputacija i statistika korisnika)
+
+#### Tabela: `forum_user_stats`
+
+---
+
+#### SQLModel — `ForumUserStats` (tabela)
+*Čuva trenutne bodove, nivo reputacije i agregiranu aktivnost pojedinačnog korisnika.*
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `user_id` | `int` | Primarni ključ i Strani ključ -> `users.id` (1:1 veza sa korisnikom) |
+| `reputation_points` | `int` | Trenutni ukupni bodovi reputacije korisnika (default: `0`) |
+| `topics_started_count` | `int` | Ukupan broj tema koje je korisnik pokrenuo (default: `0`) |
+| `answers_count` | `int` | Ukupan broj napisanih odgovora/komentara (default: `0`) |
+| `best_answers_count` | `int` | Broj komentara koji su označeni kao najbolji odgovor (default: `0`) |
+| `night_topics_count` | `int` | Broj tema pokrenutih tokom noćnih sati (default: `0`) |
+| `updated_at` | `datetime` | Vrijeme posljednjeg ažuriranja zapisa (auto generisano preko `utc_now`) |
+
+---
+
+#### Tabela: `forum_user_medals`
+*Čuva sve osvojene medalje i priznanja korisnika na forumu.*
+
+---
+
+#### SQLModel — `ForumUserMedal` (tabela)
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment (default: `None`) |
+| `user_id` | `int` | Strani ključ -> `users.id` (Vlasnik medalje, indeksiran) |
+| `medal_code` | `str` | Jedinstveni identifikacioni kod medalje (indeksiran) |
+| `category` | `str` | Kategorija medalje (npr. `activity`, `moderation`, `helpful`) |
+| `tier` | `str` | Nivo/Rang medalje (npr. `bronze`, `silver`, `gold`) |
+| `is_secret` | `bool` | Da li je medalja bila skrivena prije nego što je osvojena (default: `False`) |
+| `awarded_at` | `datetime` | Vrijeme dodjele priznanja (auto generisano preko `utc_now`) |
+
+##### Ograničenja
+| Naziv | Polja | Opis |
+| :--- | :--- | :--- |
+| `uq_forum_user_medal` | `user_id`, `medal_code` | Korisnik može osvojiti specifičnu medalju samo jednom |
+
+---
+
+#### Tabela: `forum_reputation_events`
+*Historijski dnevnik svih promjena reputacionih bodova radi transparentnosti i revizije.*
+
+---
+
+#### SQLModel — `ForumReputationEvent` (tabela)
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment (default: `None`) |
+| `user_id` | `int` | Strani ključ -> `users.id` (Korisnik kojem se mijenjaju bodovi, indeksiran) |
+| `event_key` | `str` | Jedinstveni identifikator događaja radi sprečavanja dupliranja (indeksiran) |
+| `points_delta` | `int` | Broj dodijeljenih ili oduzetih bodova (npr. `+10`, `-5`) |
+| `reason` | `str` | Opis i razlog promjene (npr. `received_best_answer`) |
+| `source_type` | `str \| None` | Tip entiteta koji je izvor promjene (npr. `comment`, `topic`, default: `None`) |
+| `source_id` | `int \| None` | ID entiteta koji je uzrokovao promjenu (default: `None`) |
+| `created_at` | `datetime` | Vrijeme upisa i obrade događaja (auto generisano preko `utc_now`) |
+
+##### Ograničenja
+| Naziv | Polja | Opis |
+| :--- | :--- | :--- |
+| `uq_forum_reputation_event_key` | `event_key` | Garantuje da se bodovi za isti kôd događaja ne mogu dodijeliti više puta |
+
+---
+
+#### Tabela: `forum_reputation_daily_logs`
+*Dnevni log interakcija koji služi kao anti-abuse (mehanizam zaštite od zloupotrebe).*
+
+---
+
+#### SQLModel — `ForumReputationDailyLog` (tabela)
+
+| Polje | Tip | Opis |
+| :--- | :--- | :--- |
+| `id` | `int \| None` | Primarni ključ, auto-increment (default: `None`) |
+| `giver_id` | `int` | Strani ključ -> `users.id` (Korisnik koji daje bodove / lajkuje objavu) |
+| `receiver_id` | `int` | Strani ključ -> `users.id` (Korisnik koji prima bodove / autor objave) |
+| `points_given` | `int` | Ukupan broj bodova prenijetih u okviru ove transakcije |
+| `created_at` | `datetime` | Vrijeme bilježenja aktivnosti (auto generisano preko `utc_now`) |
+
+---
+
+#### Napomene o reputacionom sistemu
+1. **Idempotentnost i sigurnost (`event_key`):** Svaki put kada korisnik izvrši akciju koja donosi bodove (npr. lajkovanje teme), generiše se unikatni `event_key` u formatu `like_topic_{topic_id}_{voter_id}`. Ako sistem pokuša ponovo unijeti isti ključ uslijed mrežnog kašnjenja ili spama, baza podataka će odbiti upis i spriječiti duplo dobijanje bodova.
+2. **Anti-Abuse sistem (Tiket 2):** Tabela `forum_reputation_daily_logs` se koristi za praćenje i limitiranje broja bodova koje Korisnik A može prenijeti Korisniku B unutar prozora od 24 sata. Ako se detektuje anomalija (npr. ciljano lajkovanje svih historijskih objava istog autora), sistem privremeno blokira prenos reputacije između ta dva računa.
+3. **Trajnost medalja:** Za razliku od stanja u `forum_user_stats` gdje bodovi reputacije mogu rasti i opadati u zavisnosti od reakcija zajednice, jednom osvojene medalje u tabeli `forum_user_medals` su trajne prirode i ne povlače se automatski padom bodova.
+4. **Vremenska sinkronizacija:** Svi modeli u ovom modulu koriste centralizovanu pomoćnu funkciju `utc_now()` koja osigurava vremensku zonu `timezone.utc` u skladu sa modernim standardima, čime se izbjegavaju problemi sa lokalnim vremenom servera.
+
+---
+
+### Forum API Rute
 
 ### Forum Topics (Teme na forumu)
 
@@ -3061,1152 +4220,3 @@ Vraća sve podatke potrebne frontendu za prikaz profila korisnika na forumu.
   ]
 }
 ```
-
-
-## Tim 4 funkcionalnosti
-
-### Enum - `ActivityType`
-
-Definiše dozvoljene tipove aktivnosti koje se mogu logovati.
-
-| Vrijednost | Opis |
-|---|---|
-| `forum_comment` | Korisnik je komentarisao na forumu |
-| `internship_accepted` | Prihvaćena stažiranja |
-| `material_uploaded` | Materijal je uploadovan |
-| `forum_answer` | Odgovor na forumu |
-
----
-
-### SQLModel - `ActivityLog` (tabela: `activity_logs`)
-
-Glavna tabela za čuvanje logova aktivnosti korisnika.
-
-| Polje | Tip | Opis |
-|---|---|---|
-| `id` | `int` | Primarni ključ, auto-increment |
-| `user_id` | `int (FK)` | ID korisnika (foreign key → users.id) |
-| `activity_type` | `ActivityType` | Tip aktivnosti (enum) |
-| `title` | `str` | Naslov aktivnosti |
-| `subtitle` | `str \| None` | Podnaslov (opcionalno) |
-| `entity_id` | `int \| None` | ID povezanog entiteta (opcionalno) |
-| `created_at` | `datetime` | Datum kreiranja (UTC, auto) |
-
----
-
-### Response Modeli
-
-#### `ActivityResponse`
-
-Pydantic model koji se vraća za pojedinačni log aktivnosti.
-
-| Polje | Tip | Opis |
-|---|---|---|
-| `id` | `int` | ID aktivnosti |
-| `activity_type` | `ActivityType` | Tip aktivnosti |
-| `title` | `str` | Naslov |
-| `subtitle` | `str \| None` | Podnaslov (opcionalno) |
-| `entity_id` | `int \| None` | ID entiteta (opcionalno) |
-| `created_at` | `datetime` | Datum kreiranja |
-
-#### `ActivityListResponse`
-
-
-| Polje | Tip | Opis |
-|---|---|---|
-| `items` | `list[ActivityResponse]` | Lista aktivnosti |
-| `total` | `int` | Ukupan broj zapisa |
-| `has_more` | `bool` | Da li ima još zapisa za učitati |
-
----
-
- ### API Rute 
-
-**Base URL:** `/api/users/me`  
-**Tag:** `activity`
-
-| Metoda | Putanja | Opis | Pristup |
-|---|---|---|---|
-| `GET` | `/api/users/me/activity` | Lista aktivnosti trenutnog korisnika (paginirana) | Korisnik |
-
----
-
-#### `GET /api/users/me/activity`
-
-Vraća paginiranu listu aktivnosti trenutno prijavljenog korisnika, sortirano od najnovijeg.
-
-**Query parametri:**
-
-| Parametar | Tip | Default | Opis |
-|---|---|---|---|
-| `limit` | `int` | `3` | Broj rezultata po stranici (max: 20) |
-| `offset` | `int` | `0` | Pomak od početka liste |
-
-- **Autentifikacija:** JWT token (prijavljeni korisnik)
-- **Response:** `ActivityListResponse`
-
----
-
-### Servis - `log_activity`
-
-Pomoćna funkcija koja se poziva iz ostalih servisa/rutera kako bi se zabilježila aktivnost korisnika. Interno hvata greške i radi rollback kako ne bi blokirala glavni tok aplikacije.
-
-| Parametar | Tip | Opis |
-|---|---|---|
-| `db` | `Session` | SQLAlchemy sesija |
-| `user_id` | `int` | ID korisnika čija se aktivnost loguje |
-| `activity_type` | `ActivityType` | Tip aktivnosti (enum) |
-| `title` | `str` | Naslov aktivnosti |
-| `subtitle` | `str` | Podnaslov (opcionalno) |
-| `entity_id` | `int` | ID entiteta (opcionalno) |
-
----
-
-## Notifikacije
-
-Modul za upravljanje notifikacijama korisnika. Notifikacije se kreiraju automatski od strane sistema i šalju korisnicima na osnovu različitih događaja na platformi.
-
----
-
-### SQLAlchemy Model — `Notification` (tabela: `notifications`)
-
-| Polje | Tip | Opis |
-|---|---|---|
-| `id` | `int` | Primarni ključ, auto-increment |
-| `user_id` | `int (FK)` | ID korisnika (foreign key → users.id, CASCADE) |
-| `type` | `NotificationTypes` | Tip notifikacije (enum) |
-| `message` | `str (255)` | Tekst notifikacije |
-| `link` | `str \| None` | Opcioni link na koji notifikacija upućuje |
-| `reference_id` | `int \| None` | ID referenciranog entiteta (opcionalno) |
-| `is_read` | `bool` | Da li je notifikacija pročitana (default: `false`) |
-| `created_at` | `datetime` | Datum kreiranja (UTC, auto) |
-
-> **Indeks:** `ix_notifications_user_unread` — kompozitni indeks na `(user_id, is_read)` za brzo dohvatanje nepročitanih notifikacija.
-
----
-
-### Pydantic Modeli
-
-#### `NotificationOut`
-
-Response model koji se šalje klijentu.
-
-| Polje | Tip | Opis |
-|---|---|---|
-| `id` | `int` | ID notifikacije |
-| `type` | `NotificationType` | Tip notifikacije |
-| `message` | `str` | Tekst notifikacije |
-| `link` | `str \| None` | Opcioni link |
-| `is_read` | `bool` | Status čitanja |
-| `created_at` | `datetime` | Datum kreiranja |
-
-#### `NotificationCreate`
-
-Model za kreiranje nove notifikacije (interno, server-side).
-
-| Polje | Tip | Opis |
-|---|---|---|
-| `user_id` | `int` | ID korisnika primatelja |
-| `type` | `NotificationType` | Tip notifikacije |
-| `message` | `str` | Tekst notifikacije |
-| `link` | `str \| None` | Opcioni link (opcionalno) |
-| `reference_id` | `int \| None` | ID entiteta (opcionalno) |
-
-#### `UnreadCountOut` / `MarkAllReadOut`
-
-| Model | Polje | Tip | Opis |
-|---|---|---|---|
-| `UnreadCountOut` | `count` | `int` | Broj nepročitanih notifikacija |
-| `MarkAllReadOut` | `updated` | `int` | Broj ažuriranih (označenih kao pročitanih) |
-
----
-
-
-## Profil Korisnika
-
-Modul za upravljanje korisničkim profilom. Omogućava pregled i ažuriranje profila, upload i brisanje profilne slike, uređivanje profila, promjenu lozinke i deaktivaciju.
-
----
-
-### SQLModel Modeli
-
-#### `UserProfileResponse`
-
-Response model za prikaz podataka korisničkog profila.
-
-| Polje | Tip | Opis |
-|---|---|---|
-| `id` | `int` | ID korisnika |
-| `email` | `str` | Email adresa |
-| `full_name` | `str` | Puno ime |
-| `role` | `str` | Uloga korisnika |
-| `created_at` | `datetime \| None` | Datum registracije |
-| `profilna_slika_url` | `str \| None` | URL profilne slike |
-| `biografija` | `str \| None` | Biografija korisnika (opcionalno) |
-
-#### `AvatarUploadResponse` / `AvatarDeleteResponse`
-
-| Model | Polje | Tip | Opis |
-|---|---|---|---|
-| `AvatarUploadResponse` | `profilna_slika_url` | `str` | URL novopostavljene slike |
-| `AvatarDeleteResponse` | `message` | `str` | Poruka potvrde brisanja |
-
-#### `PublicProfileResponse`
-
-Javni profil koji je vidljiv svim prijavljenim korisnicima.
-
-| Polje | Tip | Opis |
-|---|---|---|
-| `id` | `int` | ID korisnika |
-| `full_name` | `str` | Puno ime |
-| `biografija` | `str \| None` | Biografija (opcionalno) |
-| `godina_studija` | `str \| None` | Godina studija (opcionalno) |
-| `profilna_slika_url` | `str \| None` | URL profilne slike |
-
---- 
-
-### API Rute
-
-#### Upravljanje korisničkim profilom — router `profiles.py`
-
-Svi endpointi u ovom modulu zahtijevaju da korisnik bude autentifikovan. U zaglavlju (Headers) svakog zahtjeva potrebno je proslijediti JWT token: Authorization: Bearer <vaš_token>
-
-| Metoda | Putanja | Funkcija | Opis | Responses |
-|---|---|---|---|---|
-| `GET` | `/profiles/me` | `get_my_profile` | Vraća sve podatke trenutno prijavljenog korisnika potrebne za prikaz profila (ime, email, biografija, godina studija, URL profilne slike, datum registracije) | 200 OK, 401 Unauthorized, 403 Forbidden, 422 Unprocessable Entity, 500 Internal Server Error |
-| `PATCH` | `/profiles/me` | `update_profile_me` | Ažurira tekstualne podatke profila (ime, prezime, biografija, godina studija). Koristi `exclude_unset=True` kako bi se mijenjala samo polja koja su zaista poslana u zahtjevu | 200 OK, 422 Unprocessable Entity, 401 Unauthorized, 403 Forbidden, 500 Internal Server Error |
-| `PATCH` | `/profiles/me/password` | `change_password` | Mijenja lozinku korisnika. Prije izmjene provjerava se ispravnost trenutne lozinke pomoću `pwd_context.verify()`, te da nova lozinka nije identična staroj |  200 OK, 400 Bad Request, 422 Unprocessable Entity, 500 Internal Server Error |
-| `POST` | `/profiles/me/avatar` | `upload_avatar` | Prima fajl slike (`UploadFile`), validira format (JPEG/PNG) i veličinu (maksimalno 5 MB), sprema fajl lokalno na server u `uploads/` folder pod jedinstvenim imenom (UUID), te u bazi ažurira putanju do slike | 200 OK, 400 Bad Request, 422 Unprocessable Entity, 401 Unauthorized, 500 Internal Server Error |
-| `DELETE` | `/profiles/me/avatar` | `delete_avatar` | Briše fajl profilne slike sa servera i postavlja vrijednost u bazi na `None` | 200 OK, 400 Bad Request, 401 Unauthorized, 500 Internal Server Error |
-| `GET` | `/profiles/public` | `get_public_profiles` |Vraća listu svih aktivnih korisnika (`is_active = true`) kao javne profile. | 200 OK |
-| `GET` | `/profiles/{user_id}/public` | `get_public_profile_by_id` | Vraća javni profil jednog korisnika po ID-u. Korisnik mora biti aktivan. | 200 OK, 404 Not Found |
-
-#### Deaktivacija korisničkog profila od strane korisnika — router `account.py`
-
-| Metoda | Putanja | Funkcija | Opis | Responses |
-|---|---|---|---|---|
-| POST | `/account/deactivate` | `deactivate_account` | Vrši deaktivaciju profila uz prethodnu provjeru lozinke | 200 OK, 400 Bad Request, 401 Unauthorized, 500 Internal Server Error |
-
----
-
-## Admin
-
-Modul za administraciju korisnika. Dostupan isključivo adminima.
-
----
-
-### Pydantic Modeli
-
-#### `UserAdminResponse`
-
-Response model za prikaz korisnika u admin panelu.
-
-| Polje | Tip | Opis |
-|---|---|---|
-| `id` | `int` | ID korisnika |
-| `full_name` | `str` | Puno ime |
-| `email` | `str` | Email adresa |
-| `role` | `UserRole` | Uloga korisnika (enum) |
-| `is_active` | `bool` | Status aktivnosti korisnika |
-
-#### `UsersListResponse`
-
-Model za listu korisnika s metapodacima.
-
-| Polje | Tip | Opis |
-|---|---|---|
-| `users` | `list[UserAdminResponse]` | Lista korisnika |
-| `total` | `int` | Ukupan broj korisnika u listi |
-| `prikazano` | `int` | Broj prikazanih korisnika |
-
----
-
-
-### API Rute
-
-Sve rute u ovom modulu su zaštićene funkcijom `require_admin`. Za pristup je neophodno proslijediti važeći JWT token u zaglavlju (Authorization: Bearer <token>) korisnika koji ima ulogu admin.
-
-| Metoda | Putanja | Funkcija | Opis | Responses |
-|---|---|---|---|---|
-| GET | `/admin/users` (opcioni query parametri) | `get_all_users` | Vraća listu svih registrovanih korisnika u sistemu uz mogućnost napredne pretrage i filtriranja | 200 OK, 401 Unauthorized, 403 Forbidden, 422 Unprocessable Entity, 500 Internal Server Error |
-| PATCH | `/admin/users/{user_id}/role` | `change_user_role` | Omogućava administratoru da promijeni ulogu drugom korisniku | 200 OK, 400 Bad Request, 422 Unprocessable Entity, 401 Unauthorized, 403 Forbidden, 404 Not Found |
-| POST | `/admin/users/{id}/deactivate` | `deactivate_user` | Omogućava administratoru da deaktivira korisnički račun (soft-delete) | 200 OK, 400 Bad Request, 422 Unprocessable Entity, 401 Unauthorized, 403 Forbidden, 404 Not Found |
-| POST | `/admin/users/{id}/activate` | `activate_user` | Omogućava administratoru da ponovo aktivira prethodno deaktiviran profil | 200 OK, 400 Bad Request, 422 Unprocessable Entity, 401 Unauthorized, 403 Forbidden, 404 Not Found |
-| DELETE | `/admin/users/{user_id}` | `delete_user` | Omogućava administratoru da potpuno i nepovratno uklanja korisnika (hard delete) iz baze podataka uz ugrađenu rollback zaštitu u slučaju greške na serveru | 200 OK, 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 500 Internal Server Error |
-| GET | `/admin/stats` (opcioni query parametri) | `get_platform_statistics` | Generiše ključne stastističke podatke o bazi korisnika. Broj novih registracija se računa dinamički na osnovu proslijeđenog vremenskog perioda. | 200 OK, 401 Unauthorized, 403 Forbidden, 422 Unprocessable Entity, 500 Internal Server Error |
-
-
-## Dokumentacija modula
-
-### Tim 2 — Materijali (Lejla Kadušić)
-
-
-#### Pregled
-
-Ova dokumentacija opisuje backend implementaciju koju je radila Lejla Kadušić u okviru Tim 2 — modul Materijali. Implementacija obuhvata upload materijala i kompletnu funkcionalnost komentara, uključujući paginaciju liste materijala.
-
-Sav kod se nalazi u `backend/app/routers/materials.py` i `backend/app/models/materials.py`.
-
----
-
-#### Sprint 1 — Upload materijala
-
-### Dozvoljeni formati
-
-```python
-ALLOWED_FORMATS = {".pdf", ".doc", ".docx", ".ppt", ".pptx", ".zip", ".txt"}
-```
-
-Skup dozvoljenih ekstenzija fajlova. Pored PDF, DOC i DOCX koji su bili eksplicitno navedeni u zahtjevima, dodani su i PPT, PPTX i TXT kao uobičajeni akademski formati.
-
-### `validate_file_format(file)`
-
-Izvlači ekstenziju iz naziva fajla i poredi s `ALLOWED_FORMATS`. Baca `HTTP 400 Bad Request` ako format nije podržan, s porukom koja navodi dozvoljene formate.
-
-### `save_file_to_disk(file)`
-
-Sprema uploadovani fajl u `uploads/` direktorij. Direktorij se automatski kreira ako ne postoji (`os.makedirs(..., exist_ok=True)`). Svaki fajl dobija `uuid.uuid4()` prefiks kako bi se spriječila kolizija fajlova istog naziva — originalni naziv ostaje vidljiv korisnicima.
-
-### `POST /materials/upload` — Zaštićen (JWT)
-
-Upload novog materijala na platformu. Endpoint:
-1. Validira format fajla
-2. Provjerava duplikate (isti naziv od istog korisnika, ili isti fajl)
-3. Sprema fajl na disk
-4. Kreira zapis u bazi
-5. Ako upis u bazu ne uspije — automatski briše fajl s diska (rollback mehanizam)
-6. Šalje notifikaciju svim adminima o novom materijalu na čekanju
-
-**Headers:**
-```
-Authorization: Bearer <token>
-Content-Type: multipart/form-data
-```
-
-**Request (form-data):**
-```
-title        string   — naziv materijala
-description  string   — opis
-subject_id   int      — ID predmeta
-file_type    string   — tip (skripta, auditorne_vjezbe, laboratorijske_vjezbe, ispiti, projekat)
-file         file     — fajl koji se uploaduje
-```
-
-**Response `200 OK`:** vraća `Material` objekt
-
-**Moguće greške:**
-| Status | Razlog |
-|---|---|
-| `400` | Nedozvoljeni format fajla |
-| `401` | Korisnik nije prijavljen |
-| `409` | Duplikat naziva ili fajla |
-| `500` | Greška pri upisu u bazu |
-
----
-
-#### Sprint 2 — Komentari (GET, POST, DELETE)
-
-### Model — `Comment`
-
-| Polje | Tip | Opis |
-|---|---|---|
-| `id` | int | Primarni ključ |
-| `content` | str | Tekst komentara (max 500 karaktera) |
-| `created_at` | datetime | Datum kreiranja (automatski) |
-| `updated_at` | datetime/None | Datum izmjene (None dok se ne uredi) |
-| `material_id` | int | FK → materials.id |
-| `user_id` | int | FK → users.id |
-
-### `GET /materials/{material_id}/comments` — Javno
-
-Vraća listu svih komentara za materijal, sortiranih od najnovijeg prema najstarijem (`ORDER BY created_at DESC`). Koristi `selectinload(Comment.user)` za eager loading podataka o autoru. Endpoint je javan — komentare mogu vidjeti i neprijavljeni korisnici.
-
-**Response `200 OK`:**
-```json
-[
-  {
-    "id": 3,
-    "user_id": 7,
-    "material_id": 1,
-    "content": "Odličan materijal!",
-    "created_at": "2026-05-18T22:00:00",
-    "updated_at": null,
-    "user": { "id": 7, "full_name": "Ime Prezime" }
-  }
-]
-```
-
-### `POST /materials/{material_id}/comments` — Zaštićen (JWT)
-
-Kreira novi komentar. Tekst se trimuje (`strip()`), pa validira:
-- Ne smije biti prazan → `400 Bad Request`
-- Ne smije prelaziti 500 karaktera → `400 Bad Request`
-
-Nakon uspješnog upisa vraća novi komentar s učitanim podacima o autoru.
-
-**Request body:**
-```json
-{ "content": "Tekst komentara", "material_id": 1 }
-```
-
-**Response `201 Created`:**
-```json
-{
-  "id": 4,
-  "user_id": 7,
-  "material_id": 1,
-  "content": "Tekst komentara",
-  "created_at": "2026-06-01T10:00:00",
-  "updated_at": null,
-  "user": { "id": 7, "full_name": "Ime Prezime" }
-}
-```
-
-**Moguće greške:**
-| Status | Razlog |
-|---|---|
-| `400` | Prazan tekst ili duži od 500 karaktera |
-| `401` | Korisnik nije prijavljen |
-| `404` | Materijal ne postoji |
-
-### `DELETE /materials/{material_id}/comments/{comment_id}` — Zaštićen (JWT)
-
-Briše komentar. Implementirana stroga autorizacija:
-- Ako korisnik nije ni autor ni admin → `403 Forbidden`
-- Ako komentar ne postoji ili ne pripada tom materijalu → `404 Not Found`
-- Nakon uspješnog brisanja → `204 No Content` (bez tijela odgovora)
-
-**Moguće greške:**
-| Status | Razlog |
-|---|---|
-| `401` | Nije prijavljen |
-| `403` | Nije autor komentara ni admin |
-| `404` | Komentar ne postoji |
-
----
-
-#### Sprint 3 — Uređivanje komentara i paginacija
-
-### Izmjena modela — polje `updated_at`
-
-Dodano polje `updated_at` u `Comment` model:
-```python
-updated_at: Optional[datetime] = Field(default=None)
-```
-Inicijalno je `None` i postavlja se tek pri prvom uređivanju. Pokrenuta Alembic migracija da se polje doda u bazu.
-
-### `PATCH /materials/{material_id}/comments/{comment_id}` — Zaštićen (JWT)
-
-Uređuje postojeći komentar. Samo autor komentara može ga urediti — pokušaj uređivanja tuđeg komentara vraća `403 Forbidden`. Primjenjuje se ista validacija kao pri kreiranju. Nakon uspješnog uređivanja upisuje se `datetime.utcnow()` u polje `updated_at`.
-
-**Request body:**
-```json
-{ "content": "Ažurirani tekst", "material_id": 1 }
-```
-
-**Response `200 OK`:** vraća ažurirani `CommentResponse` s popunjenim `updated_at`
-
-**Moguće greške:**
-| Status | Razlog |
-|---|---|
-| `400` | Prazan tekst ili duži od 500 karaktera |
-| `401` | Nije prijavljen |
-| `403` | Nije autor komentara |
-| `404` | Komentar ne postoji |
-
-### Paginacija — `PaginatedMaterialsResponse` model
-
-```python
-class PaginatedMaterialsResponse(SQLModel):
-    items: list[MaterialsResponse]
-    total: int
-    page: int
-    per_page: int
-    total_pages: int
-```
-
-### `GET /materials/` — Zaštićen (JWT, opcionalno)
-
-Dodan `page` i `per_page` query parametar. Paginacija se radi na nivou Python liste (ne SQL `LIMIT/OFFSET`) — dohvate se svi rezultati, pa se isjecaju:
-
-```python
-start = (page - 1) * per_page
-end = start + per_page
-return PaginatedMaterialsResponse(
-    items=svi[start:end],
-    total=total,
-    page=page,
-    per_page=per_page,
-    total_pages=(total + per_page - 1) // per_page,
-)
-```
-
-**Query parametri:**
-```
-page        int        — broj stranice (default: 1, min: 1)
-per_page    int        — materijala po stranici (default: 10, max: 50)
-years       list[int]  — filtriranje po godini studija
-types       list[str]  — filtriranje po tipu materijala
-subject_id  int        — filtriranje po predmetu
-mine_only   bool       — samo vlastiti materijali (zahtijeva prijavu)
-```
-
----
-
-#### Autentifikacija i autorizacija
-
-Svi zaštićeni endpointi koriste `Depends(get_current_user)` koji dekodira JWT iz `Authorization: Bearer <token>` headera. Ako token nedostaje ili je neispravan — automatski `401 Unauthorized`.
-
-Autorizacija je implementirana unutar poslovne logike endpointa:
-- Brisanje komentara: `komentar.user_id != current_user.id` i `current_user.role != UserRole.admin` → `403`
-- Uređivanje komentara: `comment.user_id != current_user.id` → `403`
-
----
-
-### Tim 2 — Materijali (Marinela Mitić)
-
-#### Pregled
-
-Ovaj dio dokumentacije opisuje backend implementaciju koju je radila Marinela Mitić u okviru Tim 2 — modul Materijali. Implementacija obuhvata preuzimanje materijala s bilježenjem korisnika, kompletnu funkcionalnost ocjenjivanja (sistem zvjezdica 1–5) i generisanje thumbnail sličica materijala.
-
-Sav kod se nalazi u `backend/app/routers/materials.py` i `backend/app/models/materials.py`.
-
-> **Napomena o podjeli rada unutar Tima 2:** Modul Materijali je razvijan u saradnji s kolegama. Sekcija opisana ispod odnosi se isključivo na lično implementirani dio: **preuzimanje, ocjenjivanje, thumbnail**. Funkcija `validate_file_format` je zajednički rad (validacija formata fajla).
-
----
-
-#### Sprint 1 — Preuzimanje materijala
-
-##### Model — `Download`
-
-Tabela koja bilježi koji je korisnik preuzeo koji materijal. Predstavlja temelj za pravilo "korisnik mora preuzeti materijal prije nego što ga može ocijeniti".
-
-| Polje | Tip | Opis |
-|---|---|---|
-| `id` | int | Primarni ključ |
-| `material_id` | int | FK → materials.id |
-| `user_id` | int | FK → users.id |
-| `downloaded_at` | datetime | Vrijeme preuzimanja (automatski) |
-
-##### Validacija formata fajla — `validate_file_format(file)` *(zajednički rad)*
-
-```python
-ALLOWED_FORMATS = {".pdf", ".doc", ".docx", ".ppt", ".pptx", ".zip", ".txt"}
-```
-
-Izvlači ekstenziju iz naziva fajla, pretvara je u mala slova i poredi sa skupom `ALLOWED_FORMATS`. Ako format nije podržan, baca `HTTP 400 Bad Request` s porukom koja navodi dozvoljene formate.
-
----
-
-##### `GET /materials/{id}/download` — Javno (s opcionalnim tokenom)
-
-Preuzimanje fajla materijala uz bilježenje korisnika i povećanje brojača preuzimanja.
-
-**Auth:** Opcionalna — token se prosljeđuje kao **query parametar** (`?token=...`), a ne kroz `Authorization` zaglavlje, jer se preuzimanje pokreće direktno iz preglednika gdje nije moguće jednostavno dodati zaglavlje. Ako je token prisutan, preuzimanje se bilježi za tog korisnika; ako nije, materijal se i dalje može preuzeti (javni pristup), ali bez bilježenja.
-
-**Tok izvršavanja:**
-1. Provjera da materijal postoji (`404` ako ne)
-2. Provjera da materijal nije obrisan — `status == "deleted"` → `404`
-3. Provjera uloge preko tokena — administrator može preuzeti i neodobrene materijale
-4. Ako materijal nije odobren i korisnik nije admin → `403`
-5. Provjera da fajl fizički postoji na disku (`404` ako ne)
-6. Povećanje brojača `number_of_downloads`
-7. Bilježenje u `Download` tabelu — samo ako korisnik ranije nije zabilježen za isti materijal (sprječava duplikate)
-8. Vraćanje fajla putem `FileResponse`
-
-**Request:**
-```
-GET /materials/5/download?token=<token>
-```
-
-**Response `200 OK`:** vraća fajl (binarni sadržaj) sa zaglavljem `Content-Disposition` koje sadrži originalni naziv fajla.
-
-**Mogući odgovori:**
-
-| Status | Razlog |
-|---|---|
-| `200` | Uspješno — vraća fajl |
-| `403` | Materijal nije odobren (a korisnik nije admin) |
-| `404` | Materijal ne postoji, obrisan je, ili fajl nije pronađen na serveru |
-
-> **Napomena:** Sam `Download` model bilježi preuzimanja već u Sprintu 1, ali se kao **uslov za ocjenjivanje** (provjera "je li korisnik preuzeo") koristi tek u Sprintu 3.
-
----
-
-#### Sprint 2 — Ocjenjivanje materijala (sistem zvjezdica)
-
-##### Model — `Rating`
-
-| Polje | Tip | Opis |
-|---|---|---|
-| `id` | int | Primarni ključ |
-| `rating` | int | Ocjena, validirana na nivou modela: `ge=1, le=5` |
-| `material_id` | int | FK → materials.id |
-| `user_id` | int | FK → users.id |
-
-Validacija `Field(ge=1, le=5)` osigurava da ocjena uvijek bude cijeli broj između 1 i 5, na nivou samog modela (prije nego što podaci dođu do baze).
-
----
-
-##### `POST /materials/{id}/rate` — Zaštićen (JWT)
-
-Kreira novu ocjenu za materijal.
-
-**Auth:** Obavezna (JWT).
-
-**Tok provjera (redom):**
-1. Postoji li materijal → `404` ako ne
-2. Da li je korisnik već ocijenio ovaj materijal → `409`
-3. Spremanje nove ocjene
-4. Slanje notifikacije vlasniku materijala (osim ako korisnik ocjenjuje vlastiti materijal)
-
-> **Napomena:** Provjera "da li je korisnik preuzeo materijal" (`403`) dodana je u Sprintu 3 i opisana je u tom dijelu. U Sprintu 2 endpoint je radio ocjenjivanje bez tog uslova.
-
-**Request:**
-```
-POST /materials/5/rate
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{ "rating": 5, "material_id": 5 }
-```
-
-**Response `201 Created`:**
-```json
-{
-  "id": 12,
-  "rating": 5,
-  "material_id": 5,
-  "user_id": 7
-}
-```
-
-**Mogući odgovori:**
-
-| Status | Razlog |
-|---|---|
-| `201` | Ocjena uspješno kreirana |
-| `401` | Korisnik nije prijavljen |
-| `403` | Korisnik nije preuzeo materijal |
-| `404` | Materijal ne postoji |
-| `409` | Korisnik je već ocijenio materijal |
-
----
-
-##### `PATCH /materials/{id}/rate` — Zaštićen (JWT)
-
-Mijenja postojeću ocjenu korisnika. Provodi istu provjeru preuzimanja kao i kreiranje.
-
-**Auth:** Obavezna (JWT).
-
-**Tok provjera (redom):**
-1. Da li je korisnik preuzeo materijal → `403` ako nije *(provjera dodana u Sprintu 3)*
-2. Da li korisnik ima postojeću ocjenu koju mijenja → `404` ako ne postoji
-3. Ažuriranje vrijednosti ocjene
-
-**Request:**
-```
-PATCH /materials/5/rate
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{ "rating": 4, "material_id": 5 }
-```
-
-**Response `200 OK`:**
-```json
-{
-  "id": 12,
-  "rating": 4,
-  "material_id": 5,
-  "user_id": 7
-}
-```
-
-**Mogući odgovori:**
-
-| Status | Razlog |
-|---|---|
-| `200` | Ocjena uspješno izmijenjena |
-| `401` | Korisnik nije prijavljen |
-| `403` | Korisnik nije preuzeo materijal |
-| `404` | Korisnik nema postojeću ocjenu |
-
----
-
-##### Pravila ocjenjivanja (sažetak)
-
-| Pravilo | Implementacija |
-|---|---|
-| Neprijavljeni korisnik ne može ocijeniti | Endpoint je zaštićen `Depends(get_current_user)` → `401` |
-| Korisnik mora preuzeti materijal prije ocjenjivanja (vrijedi i za studenta i za admina) | Provjera u `Download` tabeli → `403` *(dodano u Sprintu 3)* |
-| Korisnik može ocijeniti materijal samo jednom | Provjera postojeće ocjene → `409`; izmjena ide kroz `PATCH` |
-| Korisnik može promijeniti svoju ocjenu | `PATCH /materials/{id}/rate` |
-| Ocjena mora biti 1–5 | `Field(ge=1, le=5)` na modelu |
-
-> **Napomena:** Pravilo "korisnik ne može ocijeniti vlastiti materijal" provodi se na frontendu. Na backendu se vlasništvo koristi samo za preskakanje notifikacije (vlasnik ne dobija obavijest da je vlastiti materijal ocijenjen). Provjera vlasništva i na backendu (`material.user_id == current_user.id → 403`) moguća je dopuna radi potpune dosljednosti zaštite.
-
----
-
-#### Sprint 3 — Thumbnail, provjera preuzimanja za ocjenu
-
-##### Provjera "korisnik mora preuzeti prije ocjenjivanja"
-
-U Sprintu 3 dodan je uslov za ocjenjivanje: korisnik mora preuzeti materijal prije nego što ga može ocijeniti. U endpointima `POST /materials/{id}/rate` i `PATCH /materials/{id}/rate` dodana je provjera u `Download` tabeli — ako korisnik nije zabilježen kao da je preuzeo materijal, vraća se `403`:
-
-```python
-download = db.exec(
-    select(Download).where(
-        Download.material_id == id,
-        Download.user_id == current_user.id
-    )
-).first()
-if not download:
-    raise HTTPException(status_code=403, detail="Morate preuzeti materijal prije ocjenjivanja.")
-```
-
-Ova provjera oslanja se na `Download` model (iz Sprinta 1) i vrijedi jednako za studenta i za admina.
-
-##### `GET /materials/{id}/has-downloaded` — Zaštićen (JWT)
-
-Pomoćni endpoint koji vraća `true`/`false` — da li je trenutno prijavljeni korisnik već preuzeo dati materijal. Frontend ga koristi da odluči hoće li zvjezdice za ocjenjivanje biti aktivne ili zaključane.
-
-**Auth:** Obavezna (JWT kroz `Authorization: Bearer <token>` zaglavlje). Za razliku od `/download`, ovaj endpoint poziva frontend JavaScript, koji bez problema može poslati zaglavlje.
-
-**Request:**
-```
-GET /materials/5/has-downloaded
-Authorization: Bearer <token>
-```
-
-**Response `200 OK`:**
-```json
-{ "has_downloaded": true }
-```
-
-| Status | Razlog |
-|---|---|
-| `200` | Uspješno — vraća stanje |
-| `401` | Korisnik nije prijavljen |
-
----
-
-#### Sprint 3 — Thumbnail sličice materijala
-
-##### Izmjena modela — polje `thumbnail_path`
-
-Dodano polje u `Material` model za čuvanje putanje generisane thumbnail sličice:
-
-```python
-thumbnail_path: Optional[str] = Field(default=None, sa_column=Column(String, nullable=True))
-```
-
-Polje je opcionalno (`nullable`) jer se thumbnail ne generiše za svaki materijal — ako generisanje ne uspije ili format nije podržan, vrijednost ostaje `None`.
-
-##### `generate_thumbnail(file_path)`
-
-Funkcija generiše PNG sličicu prve stranice dokumenta. Logika ovisi o tipu fajla:
-
-- **PDF** — otvara se bibliotekom `PyMuPDF` (`fitz`), uzima se prva stranica i renderuje u sliku na pola veličine (`Matrix(0.5, 0.5)`), te sprema kao PNG u `uploads/thumbnails/`.
-- **Office formati (PPTX, PPT, DOCX, DOC)** — fajl se prvo konvertuje u PDF pomoću LibreOffice (`soffice`) u headless modu, a zatim se thumbnail generiše iz tog PDF-a. Privremeni PDF se briše nakon korištenja.
-- **Ostali formati (ZIP, TXT)** — nemaju thumbnail; funkcija vraća `None`.
-
-Cijela funkcija je obavijena `try/except` blokom kako neuspjeh generisanja thumbnaila ne bi prekinuo proces uploada — u tom slučaju materijal se sprema bez thumbnaila.
-
-##### Prenosivost — pronalaženje LibreOffice instalacije
-
-Putanja do `soffice` izvršne datoteke pronalazi se automatski, umjesto da bude fiksno zadana, kako bi generisanje thumbnaila radilo neovisno o operativnom sistemu:
-
-```python
-soffice_bin = shutil.which("soffice") or shutil.which("libreoffice")
-if not soffice_bin:
-    return None
-```
-
-- `shutil.which("soffice")` — automatsko pronalaženje LibreOffice u sistemskom PATH-u (macOS / Linux / Windows)
-- `shutil.which("libreoffice")` — rezervna komanda (neke Linux distribucije koriste ovaj naziv)
-
-Ako LibreOffice nije instaliran, funkcija graciozno vraća `None` — PDF thumbnaili i dalje rade, samo Office formati ostaju bez sličice. Ovim pristupom thumbnail za Office formate radi na svakom operativnom sistemu bez ručne konfiguracije.
-
-##### Posluživanje thumbnail sličica
-
-Generisane sličice se poslužuju kao statički sadržaj putem `/thumbnails/` rute (konfigurisano u `app/main.py`), kako bi ih frontend mogao prikazati direktno preko URL-a.
-
----
-
-#### Autentifikacija i autorizacija
-
-Zaštićeni endpointi (`/rate`, `/has-downloaded`) koriste `Depends(get_current_user)`, koji dekodira JWT iz `Authorization: Bearer <token>` zaglavlja i vraća `401` ako token nedostaje ili je neispravan.
-
-Endpoint za preuzimanje (`/download`) namjerno koristi **opcionalni token kroz query parametar** umjesto obaveznog zaglavlja, jer se poziva direktno iz preglednika. Kada je token prisutan, preuzimanje se bilježi za tog korisnika; kada nije, materijal se i dalje može preuzeti (javni pristup), ali bez bilježenja.
-
----
-
-#### Migracije baze podataka
-
-```bash
-cd backend
-source venv/bin/activate
-alembic revision --autogenerate -m "opis promjene"
-alembic upgrade head
-```
-
----
-
-### Tim 2 — Materijali (Amer Imamović) — Backend
-
-#### Pregled
-
-Ova dokumentacija opisuje backend implementaciju koju je radio Amer Imamović u okviru Tim 2 — modul Materijali. Implementacija obuhvata brisanje materijala, toggle bookmark funkcionalnost i kompletne filtere za pretragu materijala po godini, tipu i predmetu.
-
-Sav kod se nalazi u `backend/app/routers/materials.py` i `backend/app/models/materials.py`.
-
----
-
-#### Sprint 1 — Brisanje materijala
-
-### Model — `Material.status`
-
-Brisanje je implementirano kao **soft delete** — materijal se označava kao obrisan a ne briše se iz baze:
-
-```python
-status: str = Field(default="pending")  # pending, approved, rejected, deleted
-```
-
-### `DELETE /materials/{id}` — Zaštićen (JWT)
-
-Briše (označava kao obrisano) zadani materijal. Samo autor materijala ili admin mogu obrisati materijal.
-
-**Autentifikacija:** Zahtijeva JWT token (korisnik mora biti prijavljen)
-
-**Autorizacija:**
-- Admin može obrisati bilo koji materijal
-- Korisnik može obrisati samo vlastite materijale
-- Neovlašteni pristup vraća `403 Forbidden`
-
-**Request:**
-```
-DELETE /materials/{id}
-Authorization: Bearer <token>
-```
-
-**Response `204 No Content`:** Materijal uspješno označen kao obrisan (bez tijela odgovora)
-
-**Moguće greške:**
-| Status | Razlog |
-|---|---|
-| `401` | Korisnik nije prijavljen |
-| `403` | Nemate dozvolu za brisanje (nije autor ni admin) |
-| `404` | Materijal ne postoji |
-
-**Napomena:** Obrisani materijali nisu dostupni u javnom popisu, ali ako su ih već preuzeli korisnici, oni mogu pristupiti verziji koju su preuzeli.
-
----
-
-#### Sprint 2 — Bookmark (Omiljeni materijali)
-
-### Model — `Bookmark`
-
-```python
-class Bookmark(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="user.id")
-    material_id: int = Field(foreign_key="material.id")
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-```
-
-Bookmark je vanjska tabela koja povezuje korisnike s materijalima kao "omiljeni". Svaki red predstavlja omiljenu relaciju između korisnika i materijala.
-
-### `POST /materials/{material_id}/bookmark` — Zaštićen (JWT)
-
-Toggle bookmark za materijal — ako je već bookmarkovan uklanja se, ako nije — dodaje se. Admini ne mogu bookmarkovati materijale.
-
-**Autentifikacija:** Zahtijeva JWT token
-
-**Request:**
-```
-POST /materials/42/bookmark
-Authorization: Bearer <token>
-```
-
-**Response (Toggle — dva mogućnostna odgovora):**
-
-Ako je materijal **dodat kao omiljeni**:
-```json
-{
-  "is_bookmarked": true
-}
-```
-
-Ako je materijal **uklonjen iz omiljenih**:
-```json
-{
-  "is_bookmarked": false
-}
-```
-
-**Moguće greške:**
-| Status | Razlog |
-|---|---|
-| `401` | Korisnik nije prijavljen |
-
-**Frontend integracija:** Kad korisnik klikne na zastavicu:
-1. Šalje se `POST` zahtjev na `/materials/{id}/bookmark`
-2. Backend vraća `is_bookmarked: true/false`
-3. Frontend ažurira svojstvo `material.is_bookmarked` u listi
-4. UI se osvježi da prikaže narandžastu (bookmarked) ili sivu (unbookmarked) zastavicu
-
----
-
-#### Sprint 3 — Filteri (Godina, Tip, Predmet)
-
-### Filteri u `GET /materials/` i `GET /materials/public`
-
-Oba endpointa (`/materials/` za prijavljene i `/materials/public` za javni pristup) podržavaju sljedeće query parametare:
-
-**Query parametri:**
-```
-years       list[int]  — filtriranje po godini studija (npr. ?years=1&years=2)
-types       list[str]  — filtriranje po tipu materijala (npr. ?types=skripta&types=ispiti)
-subject_id  int        — filtriranje po ID-u predmeta (npr. ?subject_id=5)
-page        int        — broj stranice (default: 1, min: 1)
-per_page    int        — materijala po stranici (default: 10, max: 50)
-mine_only   bool       — samo vlastiti materijali (zahtijeva prijavu) — dostupno samo na /materials/
-```
-
-### Dozvoljeni tipovi materijala
-
-```python
-ALLOWED_TYPES = {
-    'skripta': 'Skripte',
-    'auditorne_vjezbe': 'Auditorne vježbe',
-    'laboratorijske_vjezbe': 'Laboratorijske vježbe',
-    'ispiti': 'Ispiti',
-    'projekat': 'Projekat'
-}
-```
-
-### Primjeri API poziva s filterima
-
-**Primjer 1: Materijali za 1. i 2. godinu:**
-```
-GET /materials/?years=1&years=2&page=1&per_page=10
-```
-
-**Primjer 2: Samo skripte za predmet ID=5:**
-```
-GET /materials/?subject_id=5&types=skripta&page=1
-```
-
-**Primjer 3: Ispiti i laboratorijske vježbe:**
-```
-GET /materials/?types=ispiti&types=laboratorijske_vjezbe
-```
-
-**Primjer 4: Kombinovani filteri - godina 3, tip skripta, predmet 10:**
-```
-GET /materials/?years=3&types=skripta&subject_id=10&page=1&per_page=20
-```
-
-### Implementaciona logika filtera
-
-Filteri se primjenjuju na SQL nivou prije paginacije:
-
-```python
-# Filtriranje po godini studija
-if years:
-    query = query.join(Subject, Material.subject_id == Subject.id).where(Subject.study_year.in_(years))
-
-# Filtriranje po tipu materijala
-if types:
-    query = query.where(Material.file_type.in_(types))
-
-# Filtriranje po predmetu
-if subject_id:
-    query = query.where(Material.subject_id == subject_id)
-```
-
-**Napomena:** Filteri se mogu kombinovati — svi aktivni filteri se primjenjuju zajedno (AND logika).
-
----
-
-#### Bookmark stanje u listama materijala
-
-Kada je korisnik prijavljen, svaki materijal u API odgovoru sadrži polje `is_bookmarked`:
-
-```python
-user_bookmarks = session.exec(
-    select(Bookmark.material_id).where(Bookmark.user_id == current_user.id)
-).all()
-
-response = MaterialsResponse(
-    **material.model_dump(),
-    is_bookmarked=material.id in user_bookmarks,  # True ako je bookmarked
-)
-```
-
-**Javni endpoint (`/materials/public`)** ne šalje bookmark stanje jer nema informacije o korisniku — korisnici koji žele vidjeti svoje bookmarke trebaju koristiti `/materials/` s autentifikacijom.
-
----
-
-### Tim 2 — Materijali (Faris Ćosić)
-
-### Modeli
-
-#### `Material`
-| Polje | Tip | Opis |
-|---|---|---|
-| `id` | int | Primarni ključ |
-| `title` | str | Naziv materijala |
-| `description` | str? | Opis materijala |
-| `file_path` | str | Putanja do fajla na serveru |
-| `file_type` | str | Tip materijala (npr. `PDF`, `PPT`) |
-| `status` | str | `pending` / `approved` / `rejected` / `deleted` |
-| `number_of_downloads` | int | Broj preuzimanja |
-| `thumbnail_path` | str? | Putanja do thumbnail slike |
-| `subject_id` | int | FK → `subjects.id` |
-| `user_id` | int | FK → `users.id` |
-| `created_at` | datetime | Datum kreiranja |
-
-#### `Subject`
-| Polje | Tip | Opis |
-|---|---|---|
-| `id` | int | Primarni ključ |
-| `name` | str | Naziv predmeta |
-| `study_year` | int | Godina studija (1–4) |
-
-#### `Comment`
-| Polje | Tip | Opis |
-|---|---|---|
-| `id` | int | Primarni ključ |
-| `content` | str | Tekst komentara (maks. 500 znakova) |
-| `material_id` | int | FK → `materials.id` |
-| `user_id` | int | FK → `users.id` |
-| `created_at` | datetime | Datum kreiranja |
-| `updated_at` | datetime? | Datum izmjene |
-
-#### `Rating`
-| Polje | Tip | Opis |
-|---|---|---|
-| `id` | int | Primarni ključ |
-| `rating` | int | Ocjena (1–5) |
-| `material_id` | int | FK → `materials.id` |
-| `user_id` | int | FK → `users.id` |
-
-#### `Download`
-| Polje | Tip | Opis |
-|---|---|---|
-| `id` | int | Primarni ključ |
-| `material_id` | int | FK → `materials.id` |
-| `user_id` | int | FK → `users.id` |
-| `downloaded_at` | datetime | Datum preuzimanja |
-
-#### `Bookmark`
-| Polje | Tip | Opis |
-|---|---|---|
-| `id` | int | Primarni ključ |
-| `material_id` | int | FK → `materials.id` |
-| `user_id` | int | FK → `users.id` |
-
----
-
-### Endpointi
-
-#### `GET /materials/subjects`
-Vraća listu svih predmeta.
-
-- **Auth:** nije potrebna
-- **Response:** `Subject[]`
-
----
-
-#### `GET /materials/pending`
-Vraća listu materijala koji čekaju odobrenje.
-
-- **Auth:** admin
-- **Response:** `MaterialsResponse[]`
-- **Greške:** `403` ako korisnik nije admin
-
----
-
-#### `GET /materials/`
-Vraća paginirani spisak odobrenih materijala. Podržava filtriranje i prikaz samo vlastitih materijala.
-
-- **Auth:** opcionalna (potrebna za `mine_only`)
-- **Query params:**
-
-| Param | Tip | Opis |
-|---|---|---|
-| `years` | int[] | Filtriranje po godini studija |
-| `types` | str[] | Filtriranje po tipu fajla |
-| `subject_id` | int | Filtriranje po predmetu |
-| `mine_only` | bool | Prikazuje samo materijale prijavljenog korisnika |
-| `page` | int | Stranica (default: 1) |
-| `per_page` | int | Stavki po stranici (default: 10, maks: 50) |
-
-- **Response:** `PaginatedMaterialsResponse`
-
----
-
-#### `GET /materials/public`
-Isti kao `GET /materials/` ali bez autentikacije — za neprijavljene korisnike.
-
-- **Auth:** nije potrebna
-- **Query params:** `years`, `types`, `subject_id`, `page`, `per_page`
-- **Response:** `PaginatedMaterialsResponse`
-
----
-
-#### `GET /materials/{id}`
-Vraća detalje jednog materijala uključujući komentare i ocjene.
-
-- **Auth:** nije potrebna
-- **Response:** `MaterialDetailResponse`
-- **Greške:** `404` ako materijal ne postoji
-
----
-
-#### `GET /materials/{id}/preview`
-Vraća fajl inline za pregled u browseru (bez preuzimanja).
-
-- **Auth:** nije potrebna
-- **Response:** `FileResponse` (inline)
-- **Greške:** `404` ako materijal ili fajl ne postoje
-
----
-
-#### `PATCH /materials/{material_id}/approve`
-Admin odobrava materijal. Korisnik koji je postavio materijal dobiva notifikaciju.
-
-- **Auth:** admin
-- **Response:** `{ "message": "Materijal odobren." }`
-- **Greške:** `403`, `404`
-
----
-
-#### `PATCH /materials/{material_id}/reject`
-Admin odbija materijal. Korisnik koji je postavio materijal dobiva notifikaciju.
-
-- **Auth:** admin
-- **Response:** `{ "message": "Materijal odbijen." }`
-- **Greške:** `403`, `404`
-
----
-
-#### `PATCH /materials/{material_id}/update`
-Vlasnik materijala može izmijeniti naslov, opis, predmet, tip ili zamijeniti fajl. Ako se fajl zamijeni, status se vraća na `pending`.
-
-- **Auth:** vlasnik materijala
-- **Body (multipart/form-data):**
-
-| Polje | Tip | Obavezno |
-|---|---|---|
-| `title` | str | ne |
-| `description` | str | ne |
-| `subject_id` | int | ne |
-| `material_type` | str | ne |
-| `file` | UploadFile | ne |
-
-- **Dozvoljeni formati:** `.pdf`, `.doc`, `.docx`, `.ppt`, `.pptx`, `.zip`, `.txt`
-- **Response:** `{ "message": "Materijal ažuriran." }`
-- **Greške:** `403`, `404`, `400` (nedozvoljen format)
