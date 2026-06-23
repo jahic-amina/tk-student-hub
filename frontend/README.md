@@ -324,64 +324,6 @@ Notifikacije su grupisane u `notificationService` objekat. Token se automatski �
 
 ---
 
-## Forum API (src/services/forum.js)
-
-Osnovni URL: http://127.0.0.1:8000 (hardkodiran). Token se čita iz **localStorage (token ili access_token)**. Svi zahtjevi uključuju **Authorization: Bearer <token>** i Content-Type: application/json (osim uploada).
-
-| Funkcija                                          | Metoda   | Endpoint                       | Opis                                           |
-| ------------------------------------------------- | -------- | ------------------------------ | ---------------------------------------------- |
-| `getCategories()`                                 | `GET`    | `/forum/categories`            | Lista svih kategorija                          |
-| `getTopics({ category_id, search, page, per_page, sort_by, unanswered, days_old })`                     | `GET`   | `/forum/topics`   | Paginirana lista tema sa filterima                           |
-| `getTopicById(id)`                   | `GET`   | `/forum/topics/{id}` | Detalji jedne teme                        |
-| `incrementTopicView(id)`                       | `PATCH` | `/forum/topics/{id}/view`            | Povećava broj pregleda                      |
-|   `deleteTopic(topicId)`	                 |     `DELETE`	       |           `/forum/topics/{topicId}`	   |          Brisanje teme               |
-|   `createTopic(topicData)`	        |        `POST`	    |    `/forum/topics`	      |    `Kreiranje nove teme`                                           |
-|    `createComment(commentData)`	     |         `POST`	   |       `/forum/comments`	  |          Dodavanje komentara (moguć parent_id za odgovore)    |
-|    `voteOnComment(commentId, value)`	|    `POST`	    |    `/forum/comments/{commentId}/vote`	  |    Glas za komentar (value: 1 ili -1)                |
-|    `toggleTopicLike(topicId)`         | 	`POST`       |   	`/forum/topics/{topicId}/like`     | 	Like / uklanjanje like-a teme                         |
-|    `toggleTopicDislike(topicId)`       |        	`POST`  |	`/forum/topics/{topicId}/dislike`  |	Dislike / uklanjanje dislike-a teme                         |
-|    `toggleBestAnswer(commentId)`	|  `PATCH`  |	`/forum/comments/{commentId}/best-answer` |	Označava/uklanja najbolji odgovor                                 |
-|    `getPopularTags()`	| `GET`	 | /forum/tags |	`Popularni tagovi`                                                           |
-|    `deleteComment(commentId)` |	`DELETE` |	`/forum/comments/{commentId}` |	Brisanje komentara  |
-|    `updateComment(commentId, content)` |	`PUT` |	`/forum/comments/{commentId}` |	Izmjena komentara    |
-|    `reportTopic(topicId, reason)` |	`POST` |	`/forum/topics/{topicId}/report` |	Prijava teme za neprimjeren sadržaj     |
-|    `getActiveAnnouncements()` |	`GET`	| `/forum/topics/announcements/active` |	Aktivna admin obaveštenja     |
-|    `getActiveReports()` |	`GET` |	`/forum/topics/reports/active` |	Aktivne prijave (admin)        |
-|    `handleReportAction(reportId, action, explanation)` |	`PATCH`	 | `/forum/topics/reports/{reportId}/action?action={action}` |	Rješavanje prijave    |
-|    `getSearchSuggestions(query)` |	`GET` |	`/forum/topics/suggestions` |	Prijedlozi za pretragu (popularne, aktivne, filtrirane)             |
-|    `getPopularTopics()` |	`GET` |	`/forum/topics/popular` |	Globalne popularne teme (7 dana)             |
-|    `getCategoryPopularTopics(categoryId)` |	`GET`  |	`/forum/topics/category-popular/{categoryId}` |	Popularne teme u kategoriji           |
-|    `getRelatedTopics(topicId)` |	`GET` |	`/forum/topics/{topicId}/related` |	Slične teme unutar otvorene teme                 |
-|    `updateTopic(topicId, data)` |	`PUT` |	`/forum/topics/{topicId}` |	Izmjena teme                  |
-|    `uploadTopicAttachments(topicId, files)` |	`POST` |	`/forum/attachments/topic/{topicId}` |	Upload priloga uz temu (multipart/form-data)         |
-|    `uploadCommentAttachments(commentId, files)` |	`POST`	| `/forum/attachments/comment/{commentId}` |	Upload priloga uz komentar                      |
-    
----
-
-## Forum Admin API (src/services/forum_admin.js)
-
-
-| Funkcija                                          | Metoda   | Endpoint                       | Opis                                           |
-| ------------------------------------------------- | -------- | ------------------------------ | ---------------------------------------------- |
-| `getUsers()`	| `GET`	| `/admin/users` |	Lista svih korisnika |
-| `changeUserRole(userId, role)`	| `PATCH` |	`/admin/users/{userId}/role?role={role}` |	Promjena uloge |
-| `getReports(status)` |	`GET`	| `/admin/reports?status={status}` |	Prijave po statusu |
-| `dismissReport(reportId)` |	`DELETE` |	`/admin/reports/{reportId}` |	Odbacivanje prijave |
-| `toggleTopicLock(topicId)` |	`PATCH` |	`/admin/topics/{topicId}/lock` |	Zaključavanje/otključavanje teme |
-| `createAnnouncement(title, content, durationDays)` |	`POST` |	`/admin/announcements` |	Globalno obavještenje |
-| `getAllAnnouncements()` |	`GET` |	`/admin/announcements/all` |	Sva obavještenja  |
-| `updateAnnouncement(annId, data)` |	`PATCH` |	`/admin/announcements/{annId}` |	Izmjena obavještenja |
-| `deleteAnnouncement(annId)` |	`DELETE` |	`/admin/announcements/{annId}` |	Brisanje obavještenja |
-| `getHandledReports()` |	`GET` |	`/admin/reports?status=resolved` |	Riješene prijave |
-| `getGuidelines()` |	`GET` |	`/forum/guidelines/` |	Pravila foruma |
-| `createGuideline(title, content, order)` |	`POST` |	`/forum/guidelines/` |	Dodavanje pravila |
-| `updateGuideline(id, data)` |	`PATCH` |	`/forum/guidelines/{id}` |	Izmjena pravila  |
-| `deleteGuideline(id)` |	`DELETE` |	`/forum/guidelines/{id}` |	Brisanje pravila |
-| `postAdminNotice(topicId, content)` |	`POST` |	`/forum/comments/{topicId}/admin-notice` |	Admin obavještenje unutar teme |
-| `adminPullToReports(topicId)` |	`POST` |	`/admin/topics/{topicId}/pull-to-reports` |	Povlačenje teme u prijave |
-| `reopenReport(reportId)` |	`PATCH` |	`/admin/reports/{reportId}/reopen` |	Vraćanje riješene prijave u aktivne |
-| `resolveReport(reportId, action, explanation)` |	`PATCH` |	`/admin/reports/{reportId}/resolve` |	Rješavanje prijave uz objašnjenje |
-
 
 ### Napomene
 
@@ -1144,6 +1086,927 @@ Administratorska stranica za upravljanje oglasima. Prikazuje sve oglase s filter
 - Polje `updating` na svakom oglasu koristi se za disabled stanje dugmadi i prikaz loading teksta za vrijeme API poziva
 
 ---
+
+## TIM 4 - detaljan opis funkcionalnosti
+
+Tim 4 je zadužen za dio platforme koji svakom registrovanom studentu pruža vlastiti profil i personalizovan pregled platforme - dashboard. Frontend ovog modula omogućava studentu da pregleda i uređuje svoje osnovne podatke i biografiju, postavi, promijeni ili ukloni profilnu sliku, te promijeni lozinku - sve direktno sa svoje profilne stranice. Na istoj stranici student ima pregled svoje nedavne aktivnosti na platformi (objavljeni materijali, komentari na forumu, prihvaćene prijave na prakse) i pregled praksi na koje je trenutno prijavljen.
+Korisnicima s administratorskom ulogom omogućen je poseban, zaštićen dio sučelja za pregled svih registrovanih korisnika platforme, sa mogućnošću pretrage po imenu ili emailu i filtriranja po ulozi i statusu naloga. Osim toga, omogućeno mu je mijenjanje uloge i statusa korisnika, te trajno brisanje profila. Također ima i prikaz statistike registrovanih korisnika. 
+
+### Struktura foldera
+
+```
+frontend/src/
+├── components/
+│   ├── UserProfileCard.vue       - prikaz osnovnih podataka profila
+│   ├── AvatarUploadModal.vue     - modal za upload/brisanje avatara
+│   ├── ActivityFeed.vue          - lista nedavnih aktivnosti
+│   └── NotificationBell.vue     - zvonce s padajućom listom notifikacija
+├── views/
+│   ├── profiles/
+│   │   └── ProfileView.vue      - glavna stranica profila/dashboarda
+│   └── admin/
+│       └── AdminKorisniciView.vue      - pregled korisnika na platformi
+└── services/
+    └── api.js                   - sve funkcije za pozive prema backendu
+```
+
+### Princip rada
+
+Backend je izvor za sve podatke - frontend ih samo prikazuje i šalje korisničke akcije nazad. Tok podataka za svaku funkcionalnost slijedi isti obrazac:
+
+1. Korisnik otvori stranicu profila (`ProfileView.vue`)
+2. Pri učitavanju (`onMounted`), frontend paralelno poziva backend endpointe: podaci profila, historija aktivnosti, lista praksi
+3. Backend dohvata podatke iz baze, filtrirane prema identitetu korisnika iz JWT tokena
+4. Frontend prima JSON odgovore i renderuje ih kroz odgovarajuće komponente
+
+### Organizacija API poziva
+
+Svi pozivi prema backendu centralizovani su u `services/api.js`, koji izvozi pojedinačne `async` funkcije za svaku operaciju (npr. `getMyProfile`, `uploadAvatar`, `removeAvatar`). Komponente pozivaju gotove funkcije bez poznavanja detalja URL-ova, headera ili formata zahtjeva.
+
+---
+
+## Profil korisnika
+
+### `UserProfileCard.vue`
+
+Prikazuje gornju karticu profila:
+- Avatar (sliku ili inicijale ako slika ne postoji)
+- Puno ime, rola, email, telefon, datum učlanjenja
+
+Inicijali se generišu automatski iz punog imena korisnika (npr. "Amina Hodžić" → "AH") i prikazuju se kao zamjena za avatar kad slika nije postavljena. Klik na avatar otvara modal za upload slike.
+
+### `ProfileView.vue` - stranica profila
+
+Glavna stranica profila ima **dva stanja**, kontrolisana varijablom `isEditing`:
+
+**Prikaz profila** (`isEditing = false`)
+- Kartica s osnovnim podacima korisnika
+- Sekcija **"O meni"** - prikazuje biografiju korisnika, ili placeholder "Nije unesena biografija." ako nije unesena
+- Sekcija **"Trenutne prakse"**
+- Sekcija **"Nedavna aktivnost"**
+
+**Uređivanje profila** (`isEditing = true`)
+- Forma za izmjenu ličnih podataka
+- Forma za promjenu lozinke
+- Opcija za deaktivaciju naloga
+
+Pri otvaranju stranice, automatski se dohvataju podaci s backenda (`GET /profiles/me`). Dok traje dohvat, prikazuje se indikator učitavanja. Ako dohvat ne uspije, prikazuje se poruka greške.
+
+Komunikacija s backendom za profil ide kroz:
+- Axios instance s interceptor-om koji automatski dodaje `Authorization` header
+- Direktne funkcije iz `services/api.js` (`getMyProfile`, `uploadAvatar`, `removeAvatar`)
+
+---
+
+## Upload i uklanjanje profilne slike
+
+### `AvatarUploadModal.vue`
+
+Modal koji se otvara klikom na avatar u `UserProfileCard`. Sadrži:
+- Prikaz trenutne slike ili inicijala
+- Dugme za odabir nove slike (file picker)
+- Preview odabrane slike prije slanja
+- Klijentsku validaciju tipa i veličine fajla (s porukom greške ako fajl ne zadovoljava uslove)
+- Dugmad za potvrdu uploada i uklanjanje postojeće slike
+
+Modal prima trenutnu sliku i inicijale korisnika kao props, te emituje evente `save` (s odabranim fajlom) i `remove` prema roditeljskoj komponenti, koja zatim poziva odgovarajuće backend funkcije.
+
+### Tok uploada slike
+
+1. Korisnik klikne na avatar → otvara se modal
+2. Korisnik bira fajl → klijentska validacija (tip, veličina) → prikazuje se preview
+3. Klik na "Sačuvaj" → fajl se šalje prema stranici profila
+4. Stranica poziva funkciju za upload iz `api.js`
+5. Fajl se šalje kao `multipart/form-data` na `POST /profiles/me/avatar`
+6. Backend validira, sprema fajl i vraća novi URL slike
+7. Frontend odmah ažurira prikaz bez osvježavanja stranice
+
+### Tok uklanjanja slike
+
+Isti princip — poziva se `DELETE /profiles/me/avatar` bez tijela zahtjeva. Backend briše fajl s diska, a frontend reaktivno vraća prikaz inicijala umjesto slike.
+
+---
+
+## Historija aktivnosti
+
+### `ActivityFeed.vue`
+
+Samostalna, ponovno upotrebljiva komponenta koja prima dva propsa: `activities` (lista aktivnosti) i `loading` (boolean). Odgovorna isključivo za prikaz — ne sadrži logiku dohvatanja podataka.
+
+Funkcionalnosti:
+- Za svaki tip aktivnosti mapira odgovarajuću ikonu, boju i opisni label (npr. `material_uploaded` → „Uploadovao materijal", plava ikona)
+- Prikazuje naslov, podnaslov i relativno vrijeme aktivnosti
+- Funkcija `formatRelativeTime()` pretvara UTC timestamp u čitljiv tekst: „Pre 5 minuta", „Pre 3 sata", „Pre 2 dana"
+- Dok se podaci učitavaju, prikazuje skeleton loader (animirani sivi pravougaonici)
+- Ako je lista prazna, prikazuje se poruka „Nema nedavne aktivnosti"
+
+### Integracija u `ProfileView.vue`
+
+Definirane su reaktivne varijable `activities`, `activityLoading`, `hasMore` i `showingAll`, te dvije funkcije za dohvatanje:
+
+- `loadPreview()` — dohvata 3 najnovije aktivnosti, poziva se automatski pri učitavanju stranice
+- `loadAll()` / `handleShowAll()` — dohvata do 20 aktivnosti, poziva se klikom na dugme „Prikaži sve"
+
+---
+
+## Trenutne prakse
+
+U sekciji „Trenutne prakse" na profilu, lista dobijena s backenda iterira se i prikazuje:
+- Naziv prakse
+- Naziv kompanije
+- Status (prevedeno u čitljiv tekst — „Prihvaćeno" ili „U toku")
+
+Ako korisnik nema aktivnih prijava, prikazuje se odgovarajuća poruka „Nema trenutnih praksi."
+
+---
+
+## Sistem notifikacija
+
+### `NotificationBell.vue`
+
+Komponenta prikazuje:
+- Ikonu zvona s brojem nepročitanih notifikacija (izračunato lokalno iz dohvaćene liste)
+- Padajuću listu s mogućnošću označavanja pojedinih ili svih notifikacija kao pročitanih
+- Opciju brisanja historije notifikacija
+
+Komponenta prikazuje isključivo polje `notif.text` koje stiže gotovo s backenda, bez mapiranja po tipu notifikacije na frontendu. To znači da se novi tipovi notifikacija mogu dodavati samo kroz backend izmjene, bez potrebe za dodatnim frontend radom.
+
+---
+
+## Administratorski panel
+
+Dostupno samo korisnicima s ulogom `admin`. Pruža mogućnost pregleda svih registrovanih korisnika platforme.
+
+### Čuvanje uloge pri prijavi (`LoginView`)
+
+Nakon prijave, uz token i korisničko ime, sprema se i uloga:
+
+```javascript
+localStorage.setItem('token', response.access_token)
+const user = await getMe(response.access_token)
+localStorage.setItem('username', user.full_name)
+localStorage.setItem('role', user.role)
+```
+
+### Uslovni prikaz Admin linka (`NavBar`)
+
+Admin link u navigaciji prikazuje se samo administratorima:
+
+```javascript
+computed: {
+  isAdmin() {
+    return this.role === 'admin'
+  }
+}
+```
+
+```html
+<router-link v-if="isAdmin" to="/admin">Admin</router-link>
+```
+
+### Zaštićena ruta (`Router`)
+
+```javascript
+{
+  path: '/admin',
+  name: 'admin',
+  component: () => import('../views/admin/AdminKorisniciView.vue'),
+  meta: { requiresAuth: true, requiresAdmin: true }
+}
+```
+
+Vue Router `beforeEach` guard provjerava token i ulogu korisnika prije svakog pristupa `/admin` ruti. Korisnici bez admin uloge se preusmjeravaju na početnu stranicu.
+
+### `AdminKorisniciView.vue`
+
+Stranica administratorskog pregleda korisnika:
+
+- Prikaz liste korisnika (ime, email, uloga, status)
+- Pretraga po imenu ili email adresi (u realnom vremenu)
+- Filtriranje po ulozi (`member` / `admin`)
+- Filtriranje po statusu naloga (aktivan / deaktiviran)
+- Aktivacija/deaktivacija naloga (Uz ograničenje da administrator ne može sam sebi deaktivirati nalog u admin panelu)
+- Promjena uloge naloga (Uz ograničenje da administrator ne može sam sebi promijeniti ulogu)
+- Trajno brisanje naloga (Uz ograničenje da administrator ne može obrisati svoj nalog)
+- Prikaz statistike registrovanih naloga
+
+Pretraga i filteri pozivaju `fetchUsers()` pri svakoj promjeni, bez osvježavanja stranice.
+
+### API servis za admin (`api.js`)
+
+```javascript
+export async function getAllUsers(token, { search = '', role = '', is_active = '' } = {}) {
+  const params = new URLSearchParams()
+  if (search) params.append('search', search)
+  if (role) params.append('role', role)
+  if (is_active !== '') params.append('is_active', is_active)
+
+  const response = await fetch(`${BASE_URL}/admin/users?${params.toString()}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  return response.json()
+}
+```
+
+---
+
+## Komunikacija s backendom
+
+### Tok podataka — pregled profila
+
+1. Korisnik otvori stranicu `/profiles`
+2. Stranica poziva `GET /profiles/me` s JWT tokenom
+3. Backend vraća podatke prema `UserProfileResponse` shemi
+4. Frontend sprema podatke u reaktivnu varijablu i prikazuje stranicu
+5. Ako token nije validan, backend vraća `401` i frontend prikazuje grešku
+
+### Format komunikacije
+
+Sva komunikacija odvija se putem JSON formata. GET zahtjevi ne nose tijelo, dok POST/PATCH/DELETE zahtjevi nose JSON tijelo (ili `multipart/form-data` za upload fajlova).
+
+### Rukovanje greškama i stanjima učitavanja
+
+Svaka funkcija koja dohvata podatke prati vlastito stanje učitavanja kroz `ref` varijablu (npr. `activityLoading`), koja se koristi za prikaz skeleton loadera. Greške se hvataju kroz `try/catch` blokove i bilježe u konzolu.
+
+---
+## Sigurnost i zaštita ruta
+
+Zaštita postoji na dva nivoa:
+
+| Nivo | Mehanizam | Svrha |
+|---|---|---|
+| Router guard | `meta.requiresAdmin` + `beforeEach` | Sprječava navigaciju na `/admin` za ne-admin korisnike |
+| NavBar | `v-if="isAdmin"` | Admin link se ne prikazuje korisnicima koji nisu admin |
+
+> **Napomena:** Frontend zaštita je isključivo UX mjera — poboljšava korisničko iskustvo, ali ne predstavlja stvarnu sigurnost jer se frontend kod može zaobići. Stvarna sigurnosna granica je backend `require_admin` dependency koji se izvršava na svakom zahtjevu prema `/admin/*` rutama.
+
+---
+
+## Pregled API ruta
+
+**Base URL (lokalni razvoj):**
+- Backend: `http://127.0.0.1:8000`
+- Frontend (Vite dev server): `http://localhost:5173`
+
+| Metoda | Ruta | Auth | Opis |
+|---|---|---|---|
+| `GET` | `/profiles/me` | ✅ JWT | Dohvat podataka trenutnog korisnika |
+| `PATCH` | `/profiles/me` | ✅ JWT | Ažuriranje tekstualnih podataka profila |
+| `POST` | `/profiles/me/avatar` | ✅ JWT | Upload profilne slike (`multipart/form-data`, polje `file`) |
+| `DELETE` | `/profiles/me/avatar` | ✅ JWT | Uklanjanje profilne slike |
+| `GET` | `/uploads/{filename}` | ❌ | Statički pristup uploadanim slikama |
+| `PATCH` | `/profiles/me/password` | ✅ JWT | Promjena lozinke |
+| `GET` | `/api/users/me/activity` | ✅ JWT | Historija aktivnosti korisnika (`limit`, `offset`) |
+| `GET` | `/applications/me/all` | ✅ JWT | Aktivne prijave na prakse trenutnog korisnika |
+| `GET` | `/notifications/me` | ✅ JWT | Sve notifikacije korisnika |
+| `GET` | `/notifications/unread-count` | ✅ JWT | Broj nepročitanih notifikacija |
+| `POST` | `/notifications/read-all` | ✅ JWT | Označavanje svih notifikacija kao pročitanih |
+| `GET` | `/admin/users` | ✅ JWT (admin) | Lista svih korisnika, uz filtere (samo admin) |
+| `POST` | `/account/deactivate` | ✅ JWT | Deaktivacija vlastitog naloga |
+| `PATCH` | `/admin/users/{user_id}/role` | ✅ JWT (admin) | Promjena uloge korisnika |
+| `POST` | `/admin/users/{id}/deactivate` | ✅ JWT (admin) | Deaktivacija naloga od strane admina |
+| `POST` | `/admin/users/{id}/activate` | ✅ JWT (admin) | Aktivacija naloga od strane admina |
+| `DELETE` | `/admin/users/{user_id}` | ✅ JWT (admin) | Trajno brisanje naloga od strane admina |
+| `GET` | `/admin/stats` | ✅ JWT (admin) | Generiše statistike o regitrovanim nalozima |
+
+---
+
+## Dokumentacija modula
+
+### Tim 2 — Materijali (Lejla Kadušić) — Frontend
+
+#### Pregled
+
+Ova dokumentacija opisuje frontend implementaciju koju je radila Lejla Kadušić u okviru Tim 2 — modul Materijali. Implementacija obuhvata dugme i kostur forme za upload materijala, kompletnu funkcionalnost komentara i paginacijsku navigaciju.
+
+Kod se nalazi u `frontend/src/views/materials/` i `frontend/src/components/`.
+
+---
+
+#### Sprint 1 — Upload (dugme i kostur forme)
+
+**Dugme `+ DODAJTE MATERIJAL`** (`MaterialUploadForm.vue`)
+
+Dugme se prikazuje svim korisnicima osim adminu. Klik na dugme provjerava da li je korisnik prijavljen:
+- Ako **nije prijavljen** → preusmjerava na `/login`
+- Ako **jest prijavljen** → preusmjerava na `/materials/upload`
+
+**Kostur forme i modal uspjeha**
+
+Postavljen osnovni layout forme s prikazom poruke uspjeha kao modal (overlay s checkmark ikonom) nakon što backend potvrdi upload, te prikazom poruke greške u slučaju neuspjeha.
+
+**`uploadMaterial()` u `api.js`**
+
+Šalje `POST` zahtjev na `/materials/upload` s JWT tokenom iz `localStorage`.
+
+---
+
+#### Sprint 2 — Komentari (prikaz, dodavanje, brisanje)
+
+**`CommentList.vue`**
+
+Kontejner komponenta koja upravlja kompletnim stanjem komentara. Pri učitavanju stranice dohvaća komentare s backenda i prikazuje odgovarajući state:
+- **Loading state** — prikazuje se dok se komentari učitavaju
+- **Error state** — prikazuje se ako dohvaćanje ne uspije
+- **Empty state** — "Još uvijek nema komentara. Budite prvi koji će ostaviti komentar."
+- **Lista komentara** — `CommentCard` komponenta za svaki komentar
+
+Upravljanje listom bez refresha stranice:
+- Novi komentar se dodaje na vrh liste odmah nakon slanja
+- Obrisani komentar se uklanja iz liste odmah nakon brisanja
+
+**`CommentCard.vue`**
+
+Prikazuje jedan komentar s imenom autora, relativnim vremenom i tekstom komentara.
+
+Relativno vrijeme prikazuje se u čitljivom formatu:
+- Manje od minute → "Upravo sada"
+- Manje od sat vremena → "Prije N minuta"
+- Manje od dan → "Prije N sati"
+- Jedan dan → "Jučer"
+- Manje od sedmice → "Prije N dana"
+- Stariji komentari → standardni datum (DD.MM.YYYY)
+
+Prikaz dugmadi ovisi o ulozi korisnika — podaci se čitaju iz JWT tokena u `localStorage`:
+- Dugme **"Uredi"** vidljivo je samo autoru komentara
+- Dugme **"Obriši"** vidljivo je autoru komentara i administratoru
+
+Brisanje komentara otvara `ConfirmModal` za potvrdu. Nakon potvrde komentar se uklanja iz liste bez refresha. Prikazuje se kratka toast poruka o uspjehu ili grešci.
+
+**Napomena — ispravka timezone buga:** Backend vraća UTC timestamp bez oznake vremenske zone, što je uzrokovalo pogrešan prikaz relativnog vremena. Ispravka je implementirana dodavanjem `Z` sufiksa na timestamp string prije parsiranja.
+
+**`CommentForm.vue`**
+
+- Neprijavljenom korisniku prikazuje se poruka s linkom za prijavu umjesto forme
+- Prijavljenom korisniku prikazuje se `textarea` za unos komentara
+- Ispod textarea prikazuje se brojač unesenih karaktera (max 500)
+- Dugme "Objavi" onemogućeno je dok tekst nije validan (minimalno 1 karakter bez razmaka, maksimalno 500)
+- Nakon uspješnog slanja forma se čisti i novi komentar se odmah pojavljuje na vrhu liste
+
+**`ConfirmModal.vue`**
+
+Generalna reusable komponenta za potvrdu destruktivnih akcija — može se koristiti na više mjesta u projektu. Prima naslov, poruku i dvije funkcije: jednu za potvrdu i jednu za odustajanje.
+
+Zatvara se na tri načina:
+- Klik na dugme "Odustani"
+- Klik van modala
+- Pritisak tipke `ESC`
+
+**API funkcije (Sprint 2)**
+
+- `getComments(materialId)` — dohvaća komentare, javni endpoint bez tokena
+- `postComment(materialId, content)` — dodaje komentar, zahtijeva JWT
+- `deleteComment(materialId, commentId)` — briše komentar, zahtijeva JWT
+
+---
+
+#### Sprint 3 — Uređivanje komentara i paginacija
+
+**Uređivanje komentara (`CommentCard.vue`)**
+
+Klikom na "Uredi" tekst komentara se zamjenjuje poljem za unos s postojećim sadržajem — inline uređivanje bez otvaranja novog prozora. Dugme "Spremi" onemogućeno je dok tekst nije validan. "Odustani" vraća originalni prikaz bez izmjena.
+
+Nakon uspješnog uređivanja ispod teksta komentara prikazuje se oznaka "uređeno · datum i vrijeme izmjene" u sivom manjem fontu.
+
+**Paginacija (`MaterialsView.vue`)**
+
+Materijali su organizirani u tri taba s različitim tipovima paginacije:
+
+| Tab | Tip paginacije | Opis |
+|---|---|---|
+| Svi | Server-side | Stranica po stranica s backenda |
+| Moji materijali | Server-side | Stranica po stranica, samo vlastiti |
+| Najdraži | Lokalna | Svi dohvaćeni odjednom, filtrira se po bookmarku |
+
+Paginacijska navigacija prikazuje klikabilne brojeve stranica sa strelicama ← i →. Strelice su onemogućene na prvoj i zadnjoj stranici. Paginacija se resetuje na stranicu 1 pri promjeni filtera ili taba.
+
+**API funkcije (Sprint 3)**
+
+- `updateComment(materialId, commentId, content)` — uređuje komentar, zahtijeva JWT
+- `getMaterials(filters, page, perPage)` — lista materijala s paginacijom, za prijavljene korisnike
+- `getPublicMaterials(filters, page, perPage)` — lista materijala s paginacijom, javni endpoint
+
+---
+
+### Tim 2 — Materijali (Amer Imamović) — Frontend
+
+#### Pregled
+
+Ova dokumentacija opisuje frontend implementaciju koju je radio Amer Imamović u okviru Tim 2 — modul Materijali. Implementacija obuhvata brisanje materijala, toggle bookmark (omiljeni materijali) s vizuelnom povratnom informacijom, te kompletan filter sistem za pretragu materijala po godini studija, tipu materijala i predmetu.
+
+Kod se nalazi u `frontend/src/views/materials/` i `frontend/src/components/`.
+
+---
+
+#### Sprint 1 — Brisanje materijala
+
+**`DeleteMaterialButton.vue`**
+
+Dugme za brisanje dostupno je samo autoru materijala ili administratoru. Komponenta provjerava:
+- JWT token iz `localStorage`
+- Korisničke podatke (`user` objekt ili `user_id`)
+- Ulogu korisnika (`admin`, ili je autor)
+
+Logika autorizacije:
+```javascript
+const mozeBrisati = computed(() => {
+  if (!token || !currentUser) return false
+  if (currentUser.role === 'admin' || currentUser.is_admin === true) return true
+  if (currentUser.id === material.user_id) return true
+  return false
+})
+```
+
+**Prikaz brisanja:**
+1. Dugme se prikazuje kao `<button>` s crvenom pozadinom (bg-red-100) i trash ikonom
+2. Klik otvara `ConfirmModal` - "Potvrda brisanja: Da li ste sigurni da želite obrisati ovaj materijal?"
+3. Nakon potvrde šalje se `DELETE /materials/{id}` zahtjev
+4. Ako je uspješan (`204 No Content`) — materijal se uklanja iz liste
+5. Ako je greška (`403 Forbidden`) — prikazuje se poruka "Nemate dozvolu za brisanje ovog materijala."
+
+**API funkcija:**
+- `deleteMaterial(materialId)` — briše materijal, zahtijeva JWT
+
+---
+
+#### Sprint 2 — Bookmark (Omiljeni materijali)
+
+**Toggle bookmark dugme** — Zastavica (`MaterialCard.vue`)
+
+Zastavica se prikazuje u gornjem desnom uglu `MaterialCard` komponente (osim za admin korisnike). Vizuelni izgled:
+- **Narandžasta** (`bg-amber-400`) kada je materijal bookmarkovana — `is_bookmarked: true`
+- **Siva** (`bg-gray-200`) kada nije bookmarkovana — `is_bookmarked: false`
+- **Hover efekt** — Za sivu zastavicu postoji `hover:bg-gray-300` efekt
+
+```vue
+<button 
+  v-if="userRole !== 'admin'"
+  @click.stop="$emit('toggle-bookmark', material.id)"
+>
+  <div :class="[
+    'w-8 h-10 transition-all duration-300',
+    material.is_bookmarked ? 'bg-amber-400 shadow-md' : 'bg-gray-200 hover:bg-gray-300'
+  ]">
+    <!-- SVG ikona zastavice -->
+  </div>
+</button>
+```
+
+**Logika toggle bookmark-a** (`MaterialList.vue`):
+
+```javascript
+async function handleToggleBookmark(materialId) {
+  try {
+    const res = await toggleBookmark(materialId);
+    const material = materials.value.find(m => m.id === materialId);
+    if (material) {
+      material.is_bookmarked = res.is_bookmarked;  // Ažurira state
+    }
+  } catch (error) {
+    console.error("Greška kod bookmarka:", error);
+  }
+}
+```
+
+**Ključne napomene:**
+- Klik na zastavicu odmah vizuelno ažurira boju (bez čekanja na backend)
+- Materijal ostaje u listi čak i ako se togglea bookmark stanje
+- `is_bookmarked` svojstvo dolazi iz backend API-ja pri učitavanju liste
+- Tab "Najdraži materijali" filtrira samo materijale gdje je `is_bookmarked === true`
+
+**API funkcija:**
+- `toggleBookmark(materialId)` — toggle bookmark, vraća `{is_bookmarked: boolean}`
+
+---
+
+#### Sprint 3 — Filteri (Godina, Tip, Predmet)
+
+**`MaterialFilter.vue`** — Sidebar komponenta s filterima
+
+Prikazuje se samo na veličinama ekrana `md` i većim (`hidden md:block`). Komponenta je organizirana u tri sekcije:
+
+**1. Filtriranje po godini studija**
+```vue
+<input type="checkbox" :value="year" v-model="filters.years">
+```
+Korisniku se prikazuje izbor godina 1-4. Odabrane godine se čuvaju u nizu `filters.years`.
+
+**2. Filtriranje po tipu materijala**
+```javascript
+const typesMap = {
+  'skripta': 'Skripte',
+  'auditorne_vjezbe': 'Auditorne vježbe',
+  'laboratorijske_vjezbe': 'Laboratorijske vježbe',
+  'ispiti': 'Ispiti',
+  'projekat': 'Projekat'
+}
+```
+Prikazuje se checkbox za svaki tip. Odabrani tipovi se čuvaju u nizu `filters.types`.
+
+**3. Filtriranje po predmetu**
+```vue
+<select v-model="filters.subject_id">
+  <option :value="null">Svi predmeti</option>
+  <option v-for="s in filteredSubjects" :key="s.id" :value="s.id">
+    {{ s.name }}
+  </option>
+</select>
+```
+`<select>` dropdown je dinamički popunjen predmetima. Predmeti se prate po `study_year` — ako se odabere godinu 1, prikazuju se samo predmeti za godinu 1.
+
+**Logika filtera:**
+```javascript
+const filteredSubjects = computed(() => {
+  if (!filters.years.length) return subjects.value
+  const selectedYears = filters.years.map(Number)
+  return subjects.value.filter(subject => selectedYears.includes(Number(subject.study_year)))
+})
+
+watch(
+  () => filters.years.slice(),
+  () => {
+    if (!filters.subject_id) return
+    const isSelectedSubjectValid = filteredSubjects.value.some(
+      subject => Number(subject.id) === Number(filters.subject_id)
+    )
+    if (!isSelectedSubjectValid) {
+      filters.subject_id = null  // Reset ako predmet nije od odabrane godine
+      update()
+    }
+  }
+)
+```
+
+**Integracija filtera u `MaterialList.vue`:**
+
+```vue
+<MaterialFilter @change="handleFilterChange" />
+
+async function handleFilterChange(newFilters) {
+  trenutniFilteri.value = newFilters
+  trenutnastranica.value = 1
+  await loadMaterials(newFilters, 1);
+}
+```
+
+Kada korisnik promijeni filter, komponenta emituje `@change` event s novim filterima. `MaterialList` tada poziva `loadMaterials()` s novim filterima i resetuje stranicu na 1.
+
+**API pozivi s filterima:**
+
+Backend prima filtere kao query parametare:
+```
+GET /materials/?years=1&years=2&types=skripta&subject_id=5&page=1
+```
+
+Parametri se prosleđuju kao:
+```javascript
+const params = new URLSearchParams();
+if (filters.years?.length > 0) filters.years.forEach(y => params.append('years', y));
+if (filters.types?.length > 0) filters.types.forEach(t => params.append('types', t));
+if (filters.subject_id) params.append('subject_id', filters.subject_id);
+```
+
+**Napomena o autentifikaciji:** Za tab "Svi materijali" — ako je korisnik prijavljen, koristi se autorizirani endpoint `/materials/` koji vraća `is_bookmarked` stanje. Ako korisnik nije prijavljen, koristi se javni endpoint `/materials/public` (bez bookmark stanja).
+
+---
+### Tim 2 — Materijali (Marinela Mitić)
+
+#### Pregled
+
+Ovaj dio dokumentacije opisuje frontend implementaciju koju je radila Marinela Mitić u okviru Tim 2 — modul Materijali. Implementacija obuhvata polja i validaciju forme za dodavanje materijala, preuzimanje materijala, ocjenjivanje (zvjezdice), prikaz thumbnail sličica i dorada izgleda detaljne kartice (ime predmeta, godina, tip) te dark mode stilizaciju svih komponenti modula.
+
+Korištene tehnologije: **Vue 3** (Composition API i Options API), **Vue Router**, **Tailwind CSS**.
+
+Relevantni fajlovi:
+- `frontend/src/components/MaterialUploadForm.vue` — polja, validacija i drag&drop forme (dugme je rad kolegice)
+- `frontend/src/components/DownloadButton.vue` — preuzimanje fajla
+- `frontend/src/components/MaterialRating.vue` — ocjenjivanje zvjezdicama
+- `frontend/src/views/materials/MaterialDetailView.vue` — prikaz thumbnaila i povezivanje preuzimanja s ocjenjivanjem
+- `frontend/src/services/api.js` — API funkcije za komunikaciju s backendom
+
+---
+
+#### Sprint 1 — Forma (polja, validacija) i preuzimanje
+
+##### `MaterialUploadForm.vue` — polja, validacija obaveznih polja i drag&drop
+
+> **Podjela rada:** Dugme "+ DODAJTE MATERIJAL" i kostur forme rad su kolegice. Polja forme, validacija, drag&drop zona i slanje na backend su lično implementirani dio.
+
+Forma za upload materijala s poljima: naziv, opis, tip materijala, godina studija, predmet i fajl.
+
+**Validacija (`validateForm`)** se izvršava na strani klijenta prije slanja. U Sprintu 1 implementirana je provjera obaveznih polja — sva polja moraju biti popunjena, a prazna se označavaju crvenim okvirom:
+
+| Polje | Pravilo (Sprint 1) |
+|---|---|
+| Naziv | Obavezno |
+| Opis | Obavezno |
+| Tip materijala | Obavezno |
+| Godina studija | Obavezno |
+| Predmet | Obavezno |
+| Fajl | Obavezno |
+
+Objekat `errors` koristi dvije vrste vrijednosti: `true` (polje je prazno — prikazuje se samo crveni okvir) i tekstualnu poruku (polje ima sadržaj ali je neispravan — prikazuje se okvir i poruka ispod). U templatu se poruka prikazuje samo kada vrijednost nije `true` (`errors.title !== true`). Detaljnija validacija dužine (minimalan broj karaktera) dodana je u Sprintu 3.
+
+**Reaktivna validacija:** `watch` prati sva polja i ponovo pokreće validaciju čim korisnik počne ispravljati greške — ali tek nakon prvog pokušaja slanja, kako korisnik ne bi vidio greške prije nego što uopće pokuša poslati formu.
+
+**Filtriranje predmeta:** `filteredSubjects` (`computed`) prikazuje samo predmete odabrane godine studija. Godina studija (`studyYear`) se ne šalje na backend — služi samo za sužavanje liste predmeta, jer je godina već vezana za predmet u bazi.
+
+**Drag & drop:** Implementirana zona za prevlačenje fajla (`onFileDrop`, `triggerFileInput`, `onFileChange`). Stvarni `<input type="file">` je skriven (`class="hidden"`), a vidljiva drag zona programski pokreće njegov klik — čime se dobija prilagođen izgled umjesto stilski ograničenog nativnog inputa.
+
+**Slanje (`handleSubmit`):** Kreira `FormData` (zbog `multipart/form-data` slanja fajla) i šalje na backend. Greške se mapiraju po HTTP statusu:
+
+| Status | Poruka korisniku |
+|---|---|
+| `401` | Token istekao — korisnik se preusmjerava na login |
+| `400` | Format fajla nije podržan |
+| `409` | Materijal s tim nazivom/fajlom već postoji |
+
+##### `DownloadButton.vue` — preuzimanje fajla (blob obrazac)
+
+Komponenta koja preuzima fajl koristeći **blob download** obrazac. Kada korisnik klikne "PREUZMI":
+
+1. Dugme se onemogućava (`isDownloading`) da spriječi dvostruki klik
+2. Poziva se `downloadMaterial` (api.js) — šalje token kroz URL radi bilježenja preuzimanja
+3. Provjerava se HTTP status (`403`, `404`) i mapira na korisničku poruku
+4. Iz `Content-Disposition` zaglavlja se regexom izvlači originalni naziv fajla (sa `decodeURIComponent` za specijalne znakove), uz rezervni naziv `material-{id}`
+5. Odgovor se pretvara u `blob`, kreira se privremeni objektni URL, pravi nevidljivi `<a download>` element koji se programski klikne — fajl se preuzima direktno na disk, bez otvaranja u browseru — te se memorija oslobađa s `revokeObjectURL`
+6. Emituje se događaj `@downloaded` prema roditeljskoj komponenti
+
+**Zašto blob umjesto običnog linka:** Direktan `<a href>` ne bi omogućio slanje tokena niti obradu grešaka (403/404) s prikazom poruke, niti bi garantovao da se fajl preuzme umjesto da se otvori u tabu. Blob pristup daje punu kontrolu nad zahtjevom i odgovorom.
+
+---
+
+#### Sprint 2 — Ocjenjivanje (komponenta zvjezdica)
+
+##### `MaterialRating.vue`
+
+Komponenta prikazuje prosječnu ocjenu materijala (read-only zvjezdice + brojčani prikaz, npr. "4.2 / 5.0 (12 ocjena)") i interaktivne zvjezdice za ocjenjivanje.
+
+> **Napomena o rasporedu:** U Sprintu 2 implementiran je kompletan sistem ocjenjivanja — zvjezdice, slanje ocjene (`POST`), promjena ocjene (`PATCH`), modal za potvrdu promjene i sve poruke (neprijavljen korisnik ne može ocijeniti, već ste ocijenili, vlastiti materijal). Uslov "korisnik mora preuzeti materijal prije ocjenjivanja" (zaključavanje zvjezdica dok se ne preuzme) dodan je u Sprintu 3.
+
+**Poruke ovisno o stanju korisnika:**
+
+| Stanje korisnika | Prikaz |
+|---|---|
+| Prijavljen | Aktivne zvjezdice |
+| Nije prijavljen | Link "Prijavite se da biste mogli ocijeniti." |
+
+**Slanje ocjene (`submitRating`):** Ako korisnik nije prijavljen — ne radi ništa. Ako je već ocijenio (`selectedRating > 0`) — otvara se modal za potvrdu promjene. Provjera vlastitog materijala — poređenjem `user_id` iz JWT tokena s autorom materijala — sprječava ocjenjivanje vlastitog materijala uz poruku.
+
+**Promjena ocjene:** Prvo ocjenjivanje koristi `rateMaterial` (`POST`). Ako korisnik već ima ocjenu i klikne ponovo, otvara se modal ("Želite li promijeniti ocjenu?"); potvrdom se poziva `updateRating` (`PATCH`).
+
+**Razlikovanje statusa:** `rateMaterial` i `updateRating` vraćaju sirovi `response` (ne parsirani JSON), pa komponenta čita `response.status` da razlikuje greške — npr. `409` znači "već ste ocijenili ovaj materijal".
+
+**Modali:** Komponenta sadrži modal za potvrdu promjene ocjene i modal uspjeha (poruka "Hvala na ocjeni!" / "Ocjena promijenjena!").
+
+##### Prikaz broja preuzimanja
+
+Na stranici detalja prikazuje se brojač preuzimanja ("Broj preuzimanja: X"), vezan za polje `number_of_downloads` koje backend povećava pri svakom preuzimanju. Nakon uspješnog preuzimanja brojač se ažurira i lokalno (`updateDownloadCount`), bez potrebe za osvježavanjem stranice.
+
+---
+
+#### Sprint 3 — Thumbnail, provjera preuzimanja, validacija dužine i dark mode
+
+##### Provjera preuzimanja i otključavanje zvjezdica
+
+U Sprintu 3 dodan je uslov "preuzmi pa ocijeni" na frontendu. Zvjezdice su aktivne samo kada je korisnik prijavljen **i** kada je preuzeo materijal:
+
+```html
+:class="(isLoggedIn && hasDownloaded) ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'"
+```
+
+Ako je korisnik prijavljen ali nije preuzeo, prikazuje se poruka "Preuzmite materijal da biste mogli ocijeniti."
+
+**Provjera preuzimanja (dva načina):**
+- U `onMounted` se poziva `checkHasDownloaded` (backend `/has-downloaded`) i postavlja `hasDownloaded` — pokriva slučaj kada je korisnik preuzeo materijal u ranijoj posjeti.
+- `watch` prati `parentHasDownloaded` prop — kada korisnik preuzme materijal na istoj stranici, zvjezdice se otključavaju u realnom vremenu, bez osvježavanja stranice.
+
+##### Povezivanje preuzimanja i ocjenjivanja (`MaterialDetailView.vue`)
+
+`MaterialDetailView.vue` povezuje `DownloadButton` i `MaterialRating` u jedinstven tok:
+
+```html
+<DownloadButton @downloaded="updateDownloadCount" />
+<MaterialRating :parent-has-downloaded="hasDownloaded" />
+```
+
+Funkcija `updateDownloadCount` se okida na `@downloaded` događaj, povećava lokalni brojač preuzimanja i postavlja `hasDownloaded = true`. To se prosljeđuje `MaterialRating` komponenti kao prop, čime se zvjezdice odmah otključavaju — implementacija pravila "preuzmi pa ocijeni" bez osvježavanja stranice (komunikacija roditelj↔dijete: props naniže, emit naviše).
+
+##### Prikaz thumbnail sličice i detalja materijala (`MaterialDetailView.vue`)
+
+Thumbnail se prikazuje samo ako postoji (`v-if="material.thumbnail_path"`):
+
+```html
+<img :src="`http://127.0.0.1:8000/thumbnails/${material.thumbnail_path.split('/').pop()}`" ... />
+```
+
+Iz pune putanje koju vraća backend (`uploads/thumbnails/ime.png`) izvlači se samo naziv fajla (`split('/').pop()`) i lijepi na `/thumbnails/` statičku rutu servera.
+
+Pored thumbnaila, na detaljnoj kartici sređen je izgled prikaza i dodate su informacije o materijalu — **ime predmeta, godina studija i tip materijala**:
+
+```html
+<p>{{ material.subject?.name }} • {{ material.subject?.study_year }}. godina • {{ material.file_type }}</p>
+```
+
+##### Dodatna validacija forme (dužina polja)
+
+Osnovna validacija obaveznih polja (iz Sprinta 1) proširena je provjerom minimalne i maksimalne dužine teksta, uz konkretne poruke korisniku:
+
+| Polje | Pravilo |
+|---|---|
+| Naziv | Najmanje 3, najviše 100 karaktera |
+| Opis | Najmanje 10, najviše 1000 karaktera |
+
+Ako polje ne zadovoljava dužinu, u `errors` se umjesto `true` upisuje tekstualna poruka (npr. "Naziv mora imati najmanje 3 karaktera."), koja se prikazuje ispod polja.
+
+##### Dark mode stilizacija
+
+Sam mehanizam prebacivanja teme (toggle koji postavlja `dark` klasu) razvio je drugi član tima. Lično implementirani dio je **dark mode stilizacija svih komponenti modula Materijali** — ručno dodavanje Tailwind `dark:` varijanti (`dark:bg-...`, `dark:text-...`, `dark:border-...`) na sve elemente: formu za upload, sve modale i poruke (potvrda ocjene, uspjeh, greške) pojedinačno, kartice materijala, stranicu s detaljima i komponentu ocjenjivanja. Svaka poruka i komponenta obrađena je zasebno, čime je osigurano da cijeli modul ispravno i čitljivo izgleda u tamnom režimu.
+
+---
+
+#### API funkcije (`services/api.js`)
+
+| Funkcija | Endpoint | Opis |
+|---|---|---|
+| `uploadMaterial(formData)` | `POST /materials/upload` | Slanje novog materijala (FormData, bez ručnog Content-Type) |
+| `downloadMaterial(materialId)` | `GET /materials/{id}/download` | Preuzimanje (token kroz URL + cache-busting `t=`) |
+| `checkHasDownloaded(materialId)` | `GET /materials/{id}/has-downloaded` | Provjera da li je korisnik preuzeo |
+| `rateMaterial(materialId, rating)` | `POST /materials/{id}/rate` | Slanje ocjene |
+| `updateRating(materialId, rating)` | `PATCH /materials/{id}/rate` | Izmjena ocjene |
+
+Funkcije `rateMaterial` i `updateRating` vraćaju sirovi `response` (ne parsirani JSON) kako bi komponenta mogla razlikovati statuse (npr. `409` — već ocijenjeno). `downloadMaterial` dodaje `t={timestamp}` na URL radi izbjegavanja keširanja preglednika — bez toga se ponovljeno preuzimanje ne bi zabilježilo na backendu (browser bi servirao iz keša, ne bi pozvao backend).
+
+
+## Tim 2 — Materijali (Faris Ćosić) — Frontend
+
+### Pregled
+
+Ova dokumentacija opisuje frontend implementaciju koju je radio Faris Ćosić u okviru Tim 2 — modul Materijali. Implementacija obuhvata komponente za prikaz, pregled i upravljanje materijalima.
+
+Kod se nalazi u `frontend/src/views/materials/` i `frontend/src/components/`.
+
+---
+
+### Sprint 1
+
+#### Izrada MaterialCard komponente
+
+Kreirana komponenta `MaterialCard.vue` koja prikazuje osnovne informacije o materijalu: naslov, autora, datum, predmet, thumbnail, prosječnu ocjenu (zvjezdice) i broj preuzimanja. Komponenta podržava dva moda — standardni prikaz s Download/Delete dugmadima i pending mod s Odobri/Odbij dugmadima.
+
+**Props:**
+
+| Prop | Tip | Default | Opis |
+|---|---|---|---|
+| `material` | Object | — | Objekat materijala |
+| `pending` | Boolean | `false` | Ako je `true`, prikazuje Odobri/Odbij umjesto Download/Delete |
+| `userRole` | String | `'member'` | Rola prijavljenog korisnika |
+
+**Emits:** `click`, `deleted`, `approve`, `reject`, `toggle-bookmark`, `downloaded`
+
+#### Pregled materijala bez prijave
+
+Integrirana `getPublicMaterials()` API funkcija u `MaterialList.vue` za neprijavljene korisnike. Koristi `GET /materials/public` endpoint koji ne zahtijeva JWT token.
+
+#### Pregled materijala sa prijavom
+
+Integrirana `getMaterials()` API funkcija za prijavljene korisnike. Koristi `GET /materials/` endpoint koji uz svaki materijal vraća i `is_bookmarked` stanje. `MaterialList.vue` automatski bira između ova dva endpointa ovisno o tabu i prijavi korisnika.
+
+#### Detaljne informacije za materijal
+
+Kreirana komponenta `MaterialDetailView.vue` koja prikazuje sve detalje materijala: naslov, autora, datum, predmet, godinu, tip, thumbnail, opis, ocjene, komentare i broj preuzimanja. Integriran `DownloadButton`, `CommentList` i `MaterialRating`.
+
+---
+
+### Sprint 2
+
+#### Pregled detalja materijala
+
+Proširena `MaterialDetailView.vue` s dugmetom za inline pregled fajla u browseru bez preuzimanja. Dugme `PREGLEDAJ` prikazuje se samo za podržane ekstenzije (`.pdf`, `.txt`) i otvara fajl u novom tabu koristeći `GET /materials/{id}/preview` endpoint.
+
+#### Admin upravljanje materijalima
+
+Implementirana admin funkcionalnost u `MaterialDetailView.vue` — Odobri/Odbij dugmad vidljiva samo adminu kada je status materijala `pending`. Rola se čita iz `localStorage`. Nakon akcije prikazuje se `SuccessMessage` komponenta.
+
+
+#### Prikaz materijala na čekanju
+
+Kreirana komponenta `PendingMaterialList.vue` koja učitava sve pending materijale putem `GET /materials/pending` endpointa i prikazuje ih koristeći `MaterialCard` u pending modu.
+
+#### Odobravanje materijala
+
+Implementirana logika odobravanja i odbijanja u `PendingMaterialList.vue`. Nakon odobravanja ili odbijanja, materijal se lokalno uklanja iz liste bez ponovnog učitavanja stranice.
+
+```javascript
+async function handleApprove(id) {
+    await approveMaterial(id)
+    materials.value = materials.value.filter(m => m.id !== id)
+}
+
+async function handleReject(id) {
+    await rejectMaterial(id)
+    materials.value = materials.value.filter(m => m.id !== id)
+}
+```
+
+---
+
+### Sprint 3
+
+#### Ažuriranje materijala
+
+Dodana funkcionalnost inline uređivanja u `MaterialDetailView.vue`, vidljiva samo vlasniku materijala:
+
+- Toggle između prikaza i editovanja (dugmad Uredi / Spremi / Odustani)
+- Inline uređivanje naslova i opisa direktno u prikazu
+- Odabir godine studija i predmeta iz dropdown menija (predmeti filtrirani po odabranoj godini)
+- Drag-and-drop zamjena fajla ili odabir putem file input-a
+- Čuvanje originalnih vrijednosti i vraćanje pri otkazivanju
+- Nakon spremanja materijal se ponovo učitava s API-a
+
+```javascript
+function cancelEdit() {
+    material.value.title = originalTitle.value
+    material.value.description = originalDescription.value
+    isEditing.value = false
+    selectedFile.value = null
+}
+
+async function saveChanges() {
+    await updateMaterial(material.value.id, material.value.title, 
+        material.value.description, selectedFile.value, 
+        editSubjectId.value, editMaterialType.value)
+    material.value = await getMaterial(route.params.id)
+    isEditing.value = false
+}
+```
+
+#### - Preview materijala
+
+Implementirana logika za inline pregled fajla u `MaterialDetailView.vue`. Dugme `PREGLEDAJ` prikazuje se uvjetno na osnovu ekstenzije fajla, a fajl se otvara u novom tabu bez pokretanja preuzimanja.
+
+## Tim 3 Forum
+---
+
+## Forum API (src/services/forum.js)
+
+Osnovni URL: http://127.0.0.1:8000 (hardkodiran). Token se čita iz **localStorage (token ili access_token)**. Svi zahtjevi uključuju **Authorization: Bearer <token>** i Content-Type: application/json (osim uploada).
+
+| Funkcija                                          | Metoda   | Endpoint                       | Opis                                           |
+| ------------------------------------------------- | -------- | ------------------------------ | ---------------------------------------------- |
+| `getCategories()`                                 | `GET`    | `/forum/categories`            | Lista svih kategorija                          |
+| `getTopics({ category_id, search, page, per_page, sort_by, unanswered, days_old })`                     | `GET`   | `/forum/topics`   | Paginirana lista tema sa filterima                           |
+| `getTopicById(id)`                   | `GET`   | `/forum/topics/{id}` | Detalji jedne teme                        |
+| `incrementTopicView(id)`                       | `PATCH` | `/forum/topics/{id}/view`            | Povećava broj pregleda                      |
+|   `deleteTopic(topicId)`	                 |     `DELETE`	       |           `/forum/topics/{topicId}`	   |          Brisanje teme               |
+|   `createTopic(topicData)`	        |        `POST`	    |    `/forum/topics`	      |    `Kreiranje nove teme`                                           |
+|    `createComment(commentData)`	     |         `POST`	   |       `/forum/comments`	  |          Dodavanje komentara (moguć parent_id za odgovore)    |
+|    `voteOnComment(commentId, value)`	|    `POST`	    |    `/forum/comments/{commentId}/vote`	  |    Glas za komentar (value: 1 ili -1)                |
+|    `toggleTopicLike(topicId)`         | 	`POST`       |   	`/forum/topics/{topicId}/like`     | 	Like / uklanjanje like-a teme                         |
+|    `toggleTopicDislike(topicId)`       |        	`POST`  |	`/forum/topics/{topicId}/dislike`  |	Dislike / uklanjanje dislike-a teme                         |
+|    `toggleBestAnswer(commentId)`	|  `PATCH`  |	`/forum/comments/{commentId}/best-answer` |	Označava/uklanja najbolji odgovor                                 |
+|    `getPopularTags()`	| `GET`	 | /forum/tags |	`Popularni tagovi`                                                           |
+|    `deleteComment(commentId)` |	`DELETE` |	`/forum/comments/{commentId}` |	Brisanje komentara  |
+|    `updateComment(commentId, content)` |	`PUT` |	`/forum/comments/{commentId}` |	Izmjena komentara    |
+|    `reportTopic(topicId, reason)` |	`POST` |	`/forum/topics/{topicId}/report` |	Prijava teme za neprimjeren sadržaj     |
+|    `getActiveAnnouncements()` |	`GET`	| `/forum/topics/announcements/active` |	Aktivna admin obaveštenja     |
+|    `getActiveReports()` |	`GET` |	`/forum/topics/reports/active` |	Aktivne prijave (admin)        |
+|    `handleReportAction(reportId, action, explanation)` |	`PATCH`	 | `/forum/topics/reports/{reportId}/action?action={action}` |	Rješavanje prijave    |
+|    `getSearchSuggestions(query)` |	`GET` |	`/forum/topics/suggestions` |	Prijedlozi za pretragu (popularne, aktivne, filtrirane)             |
+|    `getPopularTopics()` |	`GET` |	`/forum/topics/popular` |	Globalne popularne teme (7 dana)             |
+|    `getCategoryPopularTopics(categoryId)` |	`GET`  |	`/forum/topics/category-popular/{categoryId}` |	Popularne teme u kategoriji           |
+|    `getRelatedTopics(topicId)` |	`GET` |	`/forum/topics/{topicId}/related` |	Slične teme unutar otvorene teme                 |
+|    `updateTopic(topicId, data)` |	`PUT` |	`/forum/topics/{topicId}` |	Izmjena teme                  |
+|    `uploadTopicAttachments(topicId, files)` |	`POST` |	`/forum/attachments/topic/{topicId}` |	Upload priloga uz temu (multipart/form-data)         |
+|    `uploadCommentAttachments(commentId, files)` |	`POST`	| `/forum/attachments/comment/{commentId}` |	Upload priloga uz komentar                      |
+    
+---
+
+## Forum Admin API (src/services/forum_admin.js)
+
+
+| Funkcija                                          | Metoda   | Endpoint                       | Opis                                           |
+| ------------------------------------------------- | -------- | ------------------------------ | ---------------------------------------------- |
+| `getUsers()`	| `GET`	| `/admin/users` |	Lista svih korisnika |
+| `changeUserRole(userId, role)`	| `PATCH` |	`/admin/users/{userId}/role?role={role}` |	Promjena uloge |
+| `getReports(status)` |	`GET`	| `/admin/reports?status={status}` |	Prijave po statusu |
+| `dismissReport(reportId)` |	`DELETE` |	`/admin/reports/{reportId}` |	Odbacivanje prijave |
+| `toggleTopicLock(topicId)` |	`PATCH` |	`/admin/topics/{topicId}/lock` |	Zaključavanje/otključavanje teme |
+| `createAnnouncement(title, content, durationDays)` |	`POST` |	`/admin/announcements` |	Globalno obavještenje |
+| `getAllAnnouncements()` |	`GET` |	`/admin/announcements/all` |	Sva obavještenja  |
+| `updateAnnouncement(annId, data)` |	`PATCH` |	`/admin/announcements/{annId}` |	Izmjena obavještenja |
+| `deleteAnnouncement(annId)` |	`DELETE` |	`/admin/announcements/{annId}` |	Brisanje obavještenja |
+| `getHandledReports()` |	`GET` |	`/admin/reports?status=resolved` |	Riješene prijave |
+| `getGuidelines()` |	`GET` |	`/forum/guidelines/` |	Pravila foruma |
+| `createGuideline(title, content, order)` |	`POST` |	`/forum/guidelines/` |	Dodavanje pravila |
+| `updateGuideline(id, data)` |	`PATCH` |	`/forum/guidelines/{id}` |	Izmjena pravila  |
+| `deleteGuideline(id)` |	`DELETE` |	`/forum/guidelines/{id}` |	Brisanje pravila |
+| `postAdminNotice(topicId, content)` |	`POST` |	`/forum/comments/{topicId}/admin-notice` |	Admin obavještenje unutar teme |
+| `adminPullToReports(topicId)` |	`POST` |	`/admin/topics/{topicId}/pull-to-reports` |	Povlačenje teme u prijave |
+| `reopenReport(reportId)` |	`PATCH` |	`/admin/reports/{reportId}/reopen` |	Vraćanje riješene prijave u aktivne |
+| `resolveReport(reportId, action, explanation)` |	`PATCH` |	`/admin/reports/{reportId}/resolve` |	Rješavanje prijave uz objašnjenje |
+
+## Forum views & components
 
 ### `ForumSidebar.vue`
 
@@ -2034,887 +2897,3 @@ Admin panel foruma. Tabovi: Aktivne prijave i Riješene prijave. Pretraga prijav
 
 
 ---
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## TIM 4 - detaljan opis funkcionalnosti
-
-Tim 4 je zadužen za dio platforme koji svakom registrovanom studentu pruža vlastiti profil i personalizovan pregled platforme - dashboard. Frontend ovog modula omogućava studentu da pregleda i uređuje svoje osnovne podatke i biografiju, postavi, promijeni ili ukloni profilnu sliku, te promijeni lozinku - sve direktno sa svoje profilne stranice. Na istoj stranici student ima pregled svoje nedavne aktivnosti na platformi (objavljeni materijali, komentari na forumu, prihvaćene prijave na prakse) i pregled praksi na koje je trenutno prijavljen.
-Korisnicima s administratorskom ulogom omogućen je poseban, zaštićen dio sučelja za pregled svih registrovanih korisnika platforme, sa mogućnošću pretrage po imenu ili emailu i filtriranja po ulozi i statusu naloga. Osim toga, omogućeno mu je mijenjanje uloge i statusa korisnika, te trajno brisanje profila. Također ima i prikaz statistike registrovanih korisnika. 
-
-### Struktura foldera
-
-```
-frontend/src/
-├── components/
-│   ├── UserProfileCard.vue       - prikaz osnovnih podataka profila
-│   ├── AvatarUploadModal.vue     - modal za upload/brisanje avatara
-│   ├── ActivityFeed.vue          - lista nedavnih aktivnosti
-│   └── NotificationBell.vue     - zvonce s padajućom listom notifikacija
-├── views/
-│   ├── profiles/
-│   │   └── ProfileView.vue      - glavna stranica profila/dashboarda
-│   └── admin/
-│       └── AdminKorisniciView.vue      - pregled korisnika na platformi
-└── services/
-    └── api.js                   - sve funkcije za pozive prema backendu
-```
-
-### Princip rada
-
-Backend je izvor za sve podatke - frontend ih samo prikazuje i šalje korisničke akcije nazad. Tok podataka za svaku funkcionalnost slijedi isti obrazac:
-
-1. Korisnik otvori stranicu profila (`ProfileView.vue`)
-2. Pri učitavanju (`onMounted`), frontend paralelno poziva backend endpointe: podaci profila, historija aktivnosti, lista praksi
-3. Backend dohvata podatke iz baze, filtrirane prema identitetu korisnika iz JWT tokena
-4. Frontend prima JSON odgovore i renderuje ih kroz odgovarajuće komponente
-
-### Organizacija API poziva
-
-Svi pozivi prema backendu centralizovani su u `services/api.js`, koji izvozi pojedinačne `async` funkcije za svaku operaciju (npr. `getMyProfile`, `uploadAvatar`, `removeAvatar`). Komponente pozivaju gotove funkcije bez poznavanja detalja URL-ova, headera ili formata zahtjeva.
-
----
-
-## Profil korisnika
-
-### `UserProfileCard.vue`
-
-Prikazuje gornju karticu profila:
-- Avatar (sliku ili inicijale ako slika ne postoji)
-- Puno ime, rola, email, telefon, datum učlanjenja
-
-Inicijali se generišu automatski iz punog imena korisnika (npr. "Amina Hodžić" → "AH") i prikazuju se kao zamjena za avatar kad slika nije postavljena. Klik na avatar otvara modal za upload slike.
-
-### `ProfileView.vue` - stranica profila
-
-Glavna stranica profila ima **dva stanja**, kontrolisana varijablom `isEditing`:
-
-**Prikaz profila** (`isEditing = false`)
-- Kartica s osnovnim podacima korisnika
-- Sekcija **"O meni"** - prikazuje biografiju korisnika, ili placeholder "Nije unesena biografija." ako nije unesena
-- Sekcija **"Trenutne prakse"**
-- Sekcija **"Nedavna aktivnost"**
-
-**Uređivanje profila** (`isEditing = true`)
-- Forma za izmjenu ličnih podataka
-- Forma za promjenu lozinke
-- Opcija za deaktivaciju naloga
-
-Pri otvaranju stranice, automatski se dohvataju podaci s backenda (`GET /profiles/me`). Dok traje dohvat, prikazuje se indikator učitavanja. Ako dohvat ne uspije, prikazuje se poruka greške.
-
-Komunikacija s backendom za profil ide kroz:
-- Axios instance s interceptor-om koji automatski dodaje `Authorization` header
-- Direktne funkcije iz `services/api.js` (`getMyProfile`, `uploadAvatar`, `removeAvatar`)
-
----
-
-## Upload i uklanjanje profilne slike
-
-### `AvatarUploadModal.vue`
-
-Modal koji se otvara klikom na avatar u `UserProfileCard`. Sadrži:
-- Prikaz trenutne slike ili inicijala
-- Dugme za odabir nove slike (file picker)
-- Preview odabrane slike prije slanja
-- Klijentsku validaciju tipa i veličine fajla (s porukom greške ako fajl ne zadovoljava uslove)
-- Dugmad za potvrdu uploada i uklanjanje postojeće slike
-
-Modal prima trenutnu sliku i inicijale korisnika kao props, te emituje evente `save` (s odabranim fajlom) i `remove` prema roditeljskoj komponenti, koja zatim poziva odgovarajuće backend funkcije.
-
-### Tok uploada slike
-
-1. Korisnik klikne na avatar → otvara se modal
-2. Korisnik bira fajl → klijentska validacija (tip, veličina) → prikazuje se preview
-3. Klik na "Sačuvaj" → fajl se šalje prema stranici profila
-4. Stranica poziva funkciju za upload iz `api.js`
-5. Fajl se šalje kao `multipart/form-data` na `POST /profiles/me/avatar`
-6. Backend validira, sprema fajl i vraća novi URL slike
-7. Frontend odmah ažurira prikaz bez osvježavanja stranice
-
-### Tok uklanjanja slike
-
-Isti princip — poziva se `DELETE /profiles/me/avatar` bez tijela zahtjeva. Backend briše fajl s diska, a frontend reaktivno vraća prikaz inicijala umjesto slike.
-
----
-
-## Historija aktivnosti
-
-### `ActivityFeed.vue`
-
-Samostalna, ponovno upotrebljiva komponenta koja prima dva propsa: `activities` (lista aktivnosti) i `loading` (boolean). Odgovorna isključivo za prikaz — ne sadrži logiku dohvatanja podataka.
-
-Funkcionalnosti:
-- Za svaki tip aktivnosti mapira odgovarajuću ikonu, boju i opisni label (npr. `material_uploaded` → „Uploadovao materijal", plava ikona)
-- Prikazuje naslov, podnaslov i relativno vrijeme aktivnosti
-- Funkcija `formatRelativeTime()` pretvara UTC timestamp u čitljiv tekst: „Pre 5 minuta", „Pre 3 sata", „Pre 2 dana"
-- Dok se podaci učitavaju, prikazuje skeleton loader (animirani sivi pravougaonici)
-- Ako je lista prazna, prikazuje se poruka „Nema nedavne aktivnosti"
-
-### Integracija u `ProfileView.vue`
-
-Definirane su reaktivne varijable `activities`, `activityLoading`, `hasMore` i `showingAll`, te dvije funkcije za dohvatanje:
-
-- `loadPreview()` — dohvata 3 najnovije aktivnosti, poziva se automatski pri učitavanju stranice
-- `loadAll()` / `handleShowAll()` — dohvata do 20 aktivnosti, poziva se klikom na dugme „Prikaži sve"
-
----
-
-## Trenutne prakse
-
-U sekciji „Trenutne prakse" na profilu, lista dobijena s backenda iterira se i prikazuje:
-- Naziv prakse
-- Naziv kompanije
-- Status (prevedeno u čitljiv tekst — „Prihvaćeno" ili „U toku")
-
-Ako korisnik nema aktivnih prijava, prikazuje se odgovarajuća poruka „Nema trenutnih praksi."
-
----
-
-## Sistem notifikacija
-
-### `NotificationBell.vue`
-
-Komponenta prikazuje:
-- Ikonu zvona s brojem nepročitanih notifikacija (izračunato lokalno iz dohvaćene liste)
-- Padajuću listu s mogućnošću označavanja pojedinih ili svih notifikacija kao pročitanih
-- Opciju brisanja historije notifikacija
-
-Komponenta prikazuje isključivo polje `notif.text` koje stiže gotovo s backenda, bez mapiranja po tipu notifikacije na frontendu. To znači da se novi tipovi notifikacija mogu dodavati samo kroz backend izmjene, bez potrebe za dodatnim frontend radom.
-
----
-
-## Administratorski panel
-
-Dostupno samo korisnicima s ulogom `admin`. Pruža mogućnost pregleda svih registrovanih korisnika platforme.
-
-### Čuvanje uloge pri prijavi (`LoginView`)
-
-Nakon prijave, uz token i korisničko ime, sprema se i uloga:
-
-```javascript
-localStorage.setItem('token', response.access_token)
-const user = await getMe(response.access_token)
-localStorage.setItem('username', user.full_name)
-localStorage.setItem('role', user.role)
-```
-
-### Uslovni prikaz Admin linka (`NavBar`)
-
-Admin link u navigaciji prikazuje se samo administratorima:
-
-```javascript
-computed: {
-  isAdmin() {
-    return this.role === 'admin'
-  }
-}
-```
-
-```html
-<router-link v-if="isAdmin" to="/admin">Admin</router-link>
-```
-
-### Zaštićena ruta (`Router`)
-
-```javascript
-{
-  path: '/admin',
-  name: 'admin',
-  component: () => import('../views/admin/AdminKorisniciView.vue'),
-  meta: { requiresAuth: true, requiresAdmin: true }
-}
-```
-
-Vue Router `beforeEach` guard provjerava token i ulogu korisnika prije svakog pristupa `/admin` ruti. Korisnici bez admin uloge se preusmjeravaju na početnu stranicu.
-
-### `AdminKorisniciView.vue`
-
-Stranica administratorskog pregleda korisnika:
-
-- Prikaz liste korisnika (ime, email, uloga, status)
-- Pretraga po imenu ili email adresi (u realnom vremenu)
-- Filtriranje po ulozi (`member` / `admin`)
-- Filtriranje po statusu naloga (aktivan / deaktiviran)
-- Aktivacija/deaktivacija naloga (Uz ograničenje da administrator ne može sam sebi deaktivirati nalog u admin panelu)
-- Promjena uloge naloga (Uz ograničenje da administrator ne može sam sebi promijeniti ulogu)
-- Trajno brisanje naloga (Uz ograničenje da administrator ne može obrisati svoj nalog)
-- Prikaz statistike registrovanih naloga
-
-Pretraga i filteri pozivaju `fetchUsers()` pri svakoj promjeni, bez osvježavanja stranice.
-
-### API servis za admin (`api.js`)
-
-```javascript
-export async function getAllUsers(token, { search = '', role = '', is_active = '' } = {}) {
-  const params = new URLSearchParams()
-  if (search) params.append('search', search)
-  if (role) params.append('role', role)
-  if (is_active !== '') params.append('is_active', is_active)
-
-  const response = await fetch(`${BASE_URL}/admin/users?${params.toString()}`, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  })
-  return response.json()
-}
-```
-
----
-
-## Komunikacija s backendom
-
-### Tok podataka — pregled profila
-
-1. Korisnik otvori stranicu `/profiles`
-2. Stranica poziva `GET /profiles/me` s JWT tokenom
-3. Backend vraća podatke prema `UserProfileResponse` shemi
-4. Frontend sprema podatke u reaktivnu varijablu i prikazuje stranicu
-5. Ako token nije validan, backend vraća `401` i frontend prikazuje grešku
-
-### Format komunikacije
-
-Sva komunikacija odvija se putem JSON formata. GET zahtjevi ne nose tijelo, dok POST/PATCH/DELETE zahtjevi nose JSON tijelo (ili `multipart/form-data` za upload fajlova).
-
-### Rukovanje greškama i stanjima učitavanja
-
-Svaka funkcija koja dohvata podatke prati vlastito stanje učitavanja kroz `ref` varijablu (npr. `activityLoading`), koja se koristi za prikaz skeleton loadera. Greške se hvataju kroz `try/catch` blokove i bilježe u konzolu.
-
----
-## Sigurnost i zaštita ruta
-
-Zaštita postoji na dva nivoa:
-
-| Nivo | Mehanizam | Svrha |
-|---|---|---|
-| Router guard | `meta.requiresAdmin` + `beforeEach` | Sprječava navigaciju na `/admin` za ne-admin korisnike |
-| NavBar | `v-if="isAdmin"` | Admin link se ne prikazuje korisnicima koji nisu admin |
-
-> **Napomena:** Frontend zaštita je isključivo UX mjera — poboljšava korisničko iskustvo, ali ne predstavlja stvarnu sigurnost jer se frontend kod može zaobići. Stvarna sigurnosna granica je backend `require_admin` dependency koji se izvršava na svakom zahtjevu prema `/admin/*` rutama.
-
----
-
-## Pregled API ruta
-
-**Base URL (lokalni razvoj):**
-- Backend: `http://127.0.0.1:8000`
-- Frontend (Vite dev server): `http://localhost:5173`
-
-| Metoda | Ruta | Auth | Opis |
-|---|---|---|---|
-| `GET` | `/profiles/me` | ✅ JWT | Dohvat podataka trenutnog korisnika |
-| `PATCH` | `/profiles/me` | ✅ JWT | Ažuriranje tekstualnih podataka profila |
-| `POST` | `/profiles/me/avatar` | ✅ JWT | Upload profilne slike (`multipart/form-data`, polje `file`) |
-| `DELETE` | `/profiles/me/avatar` | ✅ JWT | Uklanjanje profilne slike |
-| `GET` | `/uploads/{filename}` | ❌ | Statički pristup uploadanim slikama |
-| `PATCH` | `/profiles/me/password` | ✅ JWT | Promjena lozinke |
-| `GET` | `/api/users/me/activity` | ✅ JWT | Historija aktivnosti korisnika (`limit`, `offset`) |
-| `GET` | `/applications/me/all` | ✅ JWT | Aktivne prijave na prakse trenutnog korisnika |
-| `GET` | `/notifications/me` | ✅ JWT | Sve notifikacije korisnika |
-| `GET` | `/notifications/unread-count` | ✅ JWT | Broj nepročitanih notifikacija |
-| `POST` | `/notifications/read-all` | ✅ JWT | Označavanje svih notifikacija kao pročitanih |
-| `GET` | `/admin/users` | ✅ JWT (admin) | Lista svih korisnika, uz filtere (samo admin) |
-| `POST` | `/account/deactivate` | ✅ JWT | Deaktivacija vlastitog naloga |
-| `PATCH` | `/admin/users/{user_id}/role` | ✅ JWT (admin) | Promjena uloge korisnika |
-| `POST` | `/admin/users/{id}/deactivate` | ✅ JWT (admin) | Deaktivacija naloga od strane admina |
-| `POST` | `/admin/users/{id}/activate` | ✅ JWT (admin) | Aktivacija naloga od strane admina |
-| `DELETE` | `/admin/users/{user_id}` | ✅ JWT (admin) | Trajno brisanje naloga od strane admina |
-| `GET` | `/admin/stats` | ✅ JWT (admin) | Generiše statistike o regitrovanim nalozima |
-
----
-
-## Dokumentacija modula
-
-### Tim 2 — Materijali (Lejla Kadušić) — Frontend
-
-#### Pregled
-
-Ova dokumentacija opisuje frontend implementaciju koju je radila Lejla Kadušić u okviru Tim 2 — modul Materijali. Implementacija obuhvata dugme i kostur forme za upload materijala, kompletnu funkcionalnost komentara i paginacijsku navigaciju.
-
-Kod se nalazi u `frontend/src/views/materials/` i `frontend/src/components/`.
-
----
-
-#### Sprint 1 — Upload (dugme i kostur forme)
-
-**Dugme `+ DODAJTE MATERIJAL`** (`MaterialUploadForm.vue`)
-
-Dugme se prikazuje svim korisnicima osim adminu. Klik na dugme provjerava da li je korisnik prijavljen:
-- Ako **nije prijavljen** → preusmjerava na `/login`
-- Ako **jest prijavljen** → preusmjerava na `/materials/upload`
-
-**Kostur forme i modal uspjeha**
-
-Postavljen osnovni layout forme s prikazom poruke uspjeha kao modal (overlay s checkmark ikonom) nakon što backend potvrdi upload, te prikazom poruke greške u slučaju neuspjeha.
-
-**`uploadMaterial()` u `api.js`**
-
-Šalje `POST` zahtjev na `/materials/upload` s JWT tokenom iz `localStorage`.
-
----
-
-#### Sprint 2 — Komentari (prikaz, dodavanje, brisanje)
-
-**`CommentList.vue`**
-
-Kontejner komponenta koja upravlja kompletnim stanjem komentara. Pri učitavanju stranice dohvaća komentare s backenda i prikazuje odgovarajući state:
-- **Loading state** — prikazuje se dok se komentari učitavaju
-- **Error state** — prikazuje se ako dohvaćanje ne uspije
-- **Empty state** — "Još uvijek nema komentara. Budite prvi koji će ostaviti komentar."
-- **Lista komentara** — `CommentCard` komponenta za svaki komentar
-
-Upravljanje listom bez refresha stranice:
-- Novi komentar se dodaje na vrh liste odmah nakon slanja
-- Obrisani komentar se uklanja iz liste odmah nakon brisanja
-
-**`CommentCard.vue`**
-
-Prikazuje jedan komentar s imenom autora, relativnim vremenom i tekstom komentara.
-
-Relativno vrijeme prikazuje se u čitljivom formatu:
-- Manje od minute → "Upravo sada"
-- Manje od sat vremena → "Prije N minuta"
-- Manje od dan → "Prije N sati"
-- Jedan dan → "Jučer"
-- Manje od sedmice → "Prije N dana"
-- Stariji komentari → standardni datum (DD.MM.YYYY)
-
-Prikaz dugmadi ovisi o ulozi korisnika — podaci se čitaju iz JWT tokena u `localStorage`:
-- Dugme **"Uredi"** vidljivo je samo autoru komentara
-- Dugme **"Obriši"** vidljivo je autoru komentara i administratoru
-
-Brisanje komentara otvara `ConfirmModal` za potvrdu. Nakon potvrde komentar se uklanja iz liste bez refresha. Prikazuje se kratka toast poruka o uspjehu ili grešci.
-
-**Napomena — ispravka timezone buga:** Backend vraća UTC timestamp bez oznake vremenske zone, što je uzrokovalo pogrešan prikaz relativnog vremena. Ispravka je implementirana dodavanjem `Z` sufiksa na timestamp string prije parsiranja.
-
-**`CommentForm.vue`**
-
-- Neprijavljenom korisniku prikazuje se poruka s linkom za prijavu umjesto forme
-- Prijavljenom korisniku prikazuje se `textarea` za unos komentara
-- Ispod textarea prikazuje se brojač unesenih karaktera (max 500)
-- Dugme "Objavi" onemogućeno je dok tekst nije validan (minimalno 1 karakter bez razmaka, maksimalno 500)
-- Nakon uspješnog slanja forma se čisti i novi komentar se odmah pojavljuje na vrhu liste
-
-**`ConfirmModal.vue`**
-
-Generalna reusable komponenta za potvrdu destruktivnih akcija — može se koristiti na više mjesta u projektu. Prima naslov, poruku i dvije funkcije: jednu za potvrdu i jednu za odustajanje.
-
-Zatvara se na tri načina:
-- Klik na dugme "Odustani"
-- Klik van modala
-- Pritisak tipke `ESC`
-
-**API funkcije (Sprint 2)**
-
-- `getComments(materialId)` — dohvaća komentare, javni endpoint bez tokena
-- `postComment(materialId, content)` — dodaje komentar, zahtijeva JWT
-- `deleteComment(materialId, commentId)` — briše komentar, zahtijeva JWT
-
----
-
-#### Sprint 3 — Uređivanje komentara i paginacija
-
-**Uređivanje komentara (`CommentCard.vue`)**
-
-Klikom na "Uredi" tekst komentara se zamjenjuje poljem za unos s postojećim sadržajem — inline uređivanje bez otvaranja novog prozora. Dugme "Spremi" onemogućeno je dok tekst nije validan. "Odustani" vraća originalni prikaz bez izmjena.
-
-Nakon uspješnog uređivanja ispod teksta komentara prikazuje se oznaka "uređeno · datum i vrijeme izmjene" u sivom manjem fontu.
-
-**Paginacija (`MaterialsView.vue`)**
-
-Materijali su organizirani u tri taba s različitim tipovima paginacije:
-
-| Tab | Tip paginacije | Opis |
-|---|---|---|
-| Svi | Server-side | Stranica po stranica s backenda |
-| Moji materijali | Server-side | Stranica po stranica, samo vlastiti |
-| Najdraži | Lokalna | Svi dohvaćeni odjednom, filtrira se po bookmarku |
-
-Paginacijska navigacija prikazuje klikabilne brojeve stranica sa strelicama ← i →. Strelice su onemogućene na prvoj i zadnjoj stranici. Paginacija se resetuje na stranicu 1 pri promjeni filtera ili taba.
-
-**API funkcije (Sprint 3)**
-
-- `updateComment(materialId, commentId, content)` — uređuje komentar, zahtijeva JWT
-- `getMaterials(filters, page, perPage)` — lista materijala s paginacijom, za prijavljene korisnike
-- `getPublicMaterials(filters, page, perPage)` — lista materijala s paginacijom, javni endpoint
-
----
-
-### Tim 2 — Materijali (Amer Imamović) — Frontend
-
-#### Pregled
-
-Ova dokumentacija opisuje frontend implementaciju koju je radio Amer Imamović u okviru Tim 2 — modul Materijali. Implementacija obuhvata brisanje materijala, toggle bookmark (omiljeni materijali) s vizuelnom povratnom informacijom, te kompletan filter sistem za pretragu materijala po godini studija, tipu materijala i predmetu.
-
-Kod se nalazi u `frontend/src/views/materials/` i `frontend/src/components/`.
-
----
-
-#### Sprint 1 — Brisanje materijala
-
-**`DeleteMaterialButton.vue`**
-
-Dugme za brisanje dostupno je samo autoru materijala ili administratoru. Komponenta provjerava:
-- JWT token iz `localStorage`
-- Korisničke podatke (`user` objekt ili `user_id`)
-- Ulogu korisnika (`admin`, ili je autor)
-
-Logika autorizacije:
-```javascript
-const mozeBrisati = computed(() => {
-  if (!token || !currentUser) return false
-  if (currentUser.role === 'admin' || currentUser.is_admin === true) return true
-  if (currentUser.id === material.user_id) return true
-  return false
-})
-```
-
-**Prikaz brisanja:**
-1. Dugme se prikazuje kao `<button>` s crvenom pozadinom (bg-red-100) i trash ikonom
-2. Klik otvara `ConfirmModal` - "Potvrda brisanja: Da li ste sigurni da želite obrisati ovaj materijal?"
-3. Nakon potvrde šalje se `DELETE /materials/{id}` zahtjev
-4. Ako je uspješan (`204 No Content`) — materijal se uklanja iz liste
-5. Ako je greška (`403 Forbidden`) — prikazuje se poruka "Nemate dozvolu za brisanje ovog materijala."
-
-**API funkcija:**
-- `deleteMaterial(materialId)` — briše materijal, zahtijeva JWT
-
----
-
-#### Sprint 2 — Bookmark (Omiljeni materijali)
-
-**Toggle bookmark dugme** — Zastavica (`MaterialCard.vue`)
-
-Zastavica se prikazuje u gornjem desnom uglu `MaterialCard` komponente (osim za admin korisnike). Vizuelni izgled:
-- **Narandžasta** (`bg-amber-400`) kada je materijal bookmarkovana — `is_bookmarked: true`
-- **Siva** (`bg-gray-200`) kada nije bookmarkovana — `is_bookmarked: false`
-- **Hover efekt** — Za sivu zastavicu postoji `hover:bg-gray-300` efekt
-
-```vue
-<button 
-  v-if="userRole !== 'admin'"
-  @click.stop="$emit('toggle-bookmark', material.id)"
->
-  <div :class="[
-    'w-8 h-10 transition-all duration-300',
-    material.is_bookmarked ? 'bg-amber-400 shadow-md' : 'bg-gray-200 hover:bg-gray-300'
-  ]">
-    <!-- SVG ikona zastavice -->
-  </div>
-</button>
-```
-
-**Logika toggle bookmark-a** (`MaterialList.vue`):
-
-```javascript
-async function handleToggleBookmark(materialId) {
-  try {
-    const res = await toggleBookmark(materialId);
-    const material = materials.value.find(m => m.id === materialId);
-    if (material) {
-      material.is_bookmarked = res.is_bookmarked;  // Ažurira state
-    }
-  } catch (error) {
-    console.error("Greška kod bookmarka:", error);
-  }
-}
-```
-
-**Ključne napomene:**
-- Klik na zastavicu odmah vizuelno ažurira boju (bez čekanja na backend)
-- Materijal ostaje u listi čak i ako se togglea bookmark stanje
-- `is_bookmarked` svojstvo dolazi iz backend API-ja pri učitavanju liste
-- Tab "Najdraži materijali" filtrira samo materijale gdje je `is_bookmarked === true`
-
-**API funkcija:**
-- `toggleBookmark(materialId)` — toggle bookmark, vraća `{is_bookmarked: boolean}`
-
----
-
-#### Sprint 3 — Filteri (Godina, Tip, Predmet)
-
-**`MaterialFilter.vue`** — Sidebar komponenta s filterima
-
-Prikazuje se samo na veličinama ekrana `md` i većim (`hidden md:block`). Komponenta je organizirana u tri sekcije:
-
-**1. Filtriranje po godini studija**
-```vue
-<input type="checkbox" :value="year" v-model="filters.years">
-```
-Korisniku se prikazuje izbor godina 1-4. Odabrane godine se čuvaju u nizu `filters.years`.
-
-**2. Filtriranje po tipu materijala**
-```javascript
-const typesMap = {
-  'skripta': 'Skripte',
-  'auditorne_vjezbe': 'Auditorne vježbe',
-  'laboratorijske_vjezbe': 'Laboratorijske vježbe',
-  'ispiti': 'Ispiti',
-  'projekat': 'Projekat'
-}
-```
-Prikazuje se checkbox za svaki tip. Odabrani tipovi se čuvaju u nizu `filters.types`.
-
-**3. Filtriranje po predmetu**
-```vue
-<select v-model="filters.subject_id">
-  <option :value="null">Svi predmeti</option>
-  <option v-for="s in filteredSubjects" :key="s.id" :value="s.id">
-    {{ s.name }}
-  </option>
-</select>
-```
-`<select>` dropdown je dinamički popunjen predmetima. Predmeti se prate po `study_year` — ako se odabere godinu 1, prikazuju se samo predmeti za godinu 1.
-
-**Logika filtera:**
-```javascript
-const filteredSubjects = computed(() => {
-  if (!filters.years.length) return subjects.value
-  const selectedYears = filters.years.map(Number)
-  return subjects.value.filter(subject => selectedYears.includes(Number(subject.study_year)))
-})
-
-watch(
-  () => filters.years.slice(),
-  () => {
-    if (!filters.subject_id) return
-    const isSelectedSubjectValid = filteredSubjects.value.some(
-      subject => Number(subject.id) === Number(filters.subject_id)
-    )
-    if (!isSelectedSubjectValid) {
-      filters.subject_id = null  // Reset ako predmet nije od odabrane godine
-      update()
-    }
-  }
-)
-```
-
-**Integracija filtera u `MaterialList.vue`:**
-
-```vue
-<MaterialFilter @change="handleFilterChange" />
-
-async function handleFilterChange(newFilters) {
-  trenutniFilteri.value = newFilters
-  trenutnastranica.value = 1
-  await loadMaterials(newFilters, 1);
-}
-```
-
-Kada korisnik promijeni filter, komponenta emituje `@change` event s novim filterima. `MaterialList` tada poziva `loadMaterials()` s novim filterima i resetuje stranicu na 1.
-
-**API pozivi s filterima:**
-
-Backend prima filtere kao query parametare:
-```
-GET /materials/?years=1&years=2&types=skripta&subject_id=5&page=1
-```
-
-Parametri se prosleđuju kao:
-```javascript
-const params = new URLSearchParams();
-if (filters.years?.length > 0) filters.years.forEach(y => params.append('years', y));
-if (filters.types?.length > 0) filters.types.forEach(t => params.append('types', t));
-if (filters.subject_id) params.append('subject_id', filters.subject_id);
-```
-
-**Napomena o autentifikaciji:** Za tab "Svi materijali" — ako je korisnik prijavljen, koristi se autorizirani endpoint `/materials/` koji vraća `is_bookmarked` stanje. Ako korisnik nije prijavljen, koristi se javni endpoint `/materials/public` (bez bookmark stanja).
-
----
-### Tim 2 — Materijali (Marinela Mitić)
-
-#### Pregled
-
-Ovaj dio dokumentacije opisuje frontend implementaciju koju je radila Marinela Mitić u okviru Tim 2 — modul Materijali. Implementacija obuhvata polja i validaciju forme za dodavanje materijala, preuzimanje materijala, ocjenjivanje (zvjezdice), prikaz thumbnail sličica i dorada izgleda detaljne kartice (ime predmeta, godina, tip) te dark mode stilizaciju svih komponenti modula.
-
-Korištene tehnologije: **Vue 3** (Composition API i Options API), **Vue Router**, **Tailwind CSS**.
-
-Relevantni fajlovi:
-- `frontend/src/components/MaterialUploadForm.vue` — polja, validacija i drag&drop forme (dugme je rad kolegice)
-- `frontend/src/components/DownloadButton.vue` — preuzimanje fajla
-- `frontend/src/components/MaterialRating.vue` — ocjenjivanje zvjezdicama
-- `frontend/src/views/materials/MaterialDetailView.vue` — prikaz thumbnaila i povezivanje preuzimanja s ocjenjivanjem
-- `frontend/src/services/api.js` — API funkcije za komunikaciju s backendom
-
----
-
-#### Sprint 1 — Forma (polja, validacija) i preuzimanje
-
-##### `MaterialUploadForm.vue` — polja, validacija obaveznih polja i drag&drop
-
-> **Podjela rada:** Dugme "+ DODAJTE MATERIJAL" i kostur forme rad su kolegice. Polja forme, validacija, drag&drop zona i slanje na backend su lično implementirani dio.
-
-Forma za upload materijala s poljima: naziv, opis, tip materijala, godina studija, predmet i fajl.
-
-**Validacija (`validateForm`)** se izvršava na strani klijenta prije slanja. U Sprintu 1 implementirana je provjera obaveznih polja — sva polja moraju biti popunjena, a prazna se označavaju crvenim okvirom:
-
-| Polje | Pravilo (Sprint 1) |
-|---|---|
-| Naziv | Obavezno |
-| Opis | Obavezno |
-| Tip materijala | Obavezno |
-| Godina studija | Obavezno |
-| Predmet | Obavezno |
-| Fajl | Obavezno |
-
-Objekat `errors` koristi dvije vrste vrijednosti: `true` (polje je prazno — prikazuje se samo crveni okvir) i tekstualnu poruku (polje ima sadržaj ali je neispravan — prikazuje se okvir i poruka ispod). U templatu se poruka prikazuje samo kada vrijednost nije `true` (`errors.title !== true`). Detaljnija validacija dužine (minimalan broj karaktera) dodana je u Sprintu 3.
-
-**Reaktivna validacija:** `watch` prati sva polja i ponovo pokreće validaciju čim korisnik počne ispravljati greške — ali tek nakon prvog pokušaja slanja, kako korisnik ne bi vidio greške prije nego što uopće pokuša poslati formu.
-
-**Filtriranje predmeta:** `filteredSubjects` (`computed`) prikazuje samo predmete odabrane godine studija. Godina studija (`studyYear`) se ne šalje na backend — služi samo za sužavanje liste predmeta, jer je godina već vezana za predmet u bazi.
-
-**Drag & drop:** Implementirana zona za prevlačenje fajla (`onFileDrop`, `triggerFileInput`, `onFileChange`). Stvarni `<input type="file">` je skriven (`class="hidden"`), a vidljiva drag zona programski pokreće njegov klik — čime se dobija prilagođen izgled umjesto stilski ograničenog nativnog inputa.
-
-**Slanje (`handleSubmit`):** Kreira `FormData` (zbog `multipart/form-data` slanja fajla) i šalje na backend. Greške se mapiraju po HTTP statusu:
-
-| Status | Poruka korisniku |
-|---|---|
-| `401` | Token istekao — korisnik se preusmjerava na login |
-| `400` | Format fajla nije podržan |
-| `409` | Materijal s tim nazivom/fajlom već postoji |
-
-##### `DownloadButton.vue` — preuzimanje fajla (blob obrazac)
-
-Komponenta koja preuzima fajl koristeći **blob download** obrazac. Kada korisnik klikne "PREUZMI":
-
-1. Dugme se onemogućava (`isDownloading`) da spriječi dvostruki klik
-2. Poziva se `downloadMaterial` (api.js) — šalje token kroz URL radi bilježenja preuzimanja
-3. Provjerava se HTTP status (`403`, `404`) i mapira na korisničku poruku
-4. Iz `Content-Disposition` zaglavlja se regexom izvlači originalni naziv fajla (sa `decodeURIComponent` za specijalne znakove), uz rezervni naziv `material-{id}`
-5. Odgovor se pretvara u `blob`, kreira se privremeni objektni URL, pravi nevidljivi `<a download>` element koji se programski klikne — fajl se preuzima direktno na disk, bez otvaranja u browseru — te se memorija oslobađa s `revokeObjectURL`
-6. Emituje se događaj `@downloaded` prema roditeljskoj komponenti
-
-**Zašto blob umjesto običnog linka:** Direktan `<a href>` ne bi omogućio slanje tokena niti obradu grešaka (403/404) s prikazom poruke, niti bi garantovao da se fajl preuzme umjesto da se otvori u tabu. Blob pristup daje punu kontrolu nad zahtjevom i odgovorom.
-
----
-
-#### Sprint 2 — Ocjenjivanje (komponenta zvjezdica)
-
-##### `MaterialRating.vue`
-
-Komponenta prikazuje prosječnu ocjenu materijala (read-only zvjezdice + brojčani prikaz, npr. "4.2 / 5.0 (12 ocjena)") i interaktivne zvjezdice za ocjenjivanje.
-
-> **Napomena o rasporedu:** U Sprintu 2 implementiran je kompletan sistem ocjenjivanja — zvjezdice, slanje ocjene (`POST`), promjena ocjene (`PATCH`), modal za potvrdu promjene i sve poruke (neprijavljen korisnik ne može ocijeniti, već ste ocijenili, vlastiti materijal). Uslov "korisnik mora preuzeti materijal prije ocjenjivanja" (zaključavanje zvjezdica dok se ne preuzme) dodan je u Sprintu 3.
-
-**Poruke ovisno o stanju korisnika:**
-
-| Stanje korisnika | Prikaz |
-|---|---|
-| Prijavljen | Aktivne zvjezdice |
-| Nije prijavljen | Link "Prijavite se da biste mogli ocijeniti." |
-
-**Slanje ocjene (`submitRating`):** Ako korisnik nije prijavljen — ne radi ništa. Ako je već ocijenio (`selectedRating > 0`) — otvara se modal za potvrdu promjene. Provjera vlastitog materijala — poređenjem `user_id` iz JWT tokena s autorom materijala — sprječava ocjenjivanje vlastitog materijala uz poruku.
-
-**Promjena ocjene:** Prvo ocjenjivanje koristi `rateMaterial` (`POST`). Ako korisnik već ima ocjenu i klikne ponovo, otvara se modal ("Želite li promijeniti ocjenu?"); potvrdom se poziva `updateRating` (`PATCH`).
-
-**Razlikovanje statusa:** `rateMaterial` i `updateRating` vraćaju sirovi `response` (ne parsirani JSON), pa komponenta čita `response.status` da razlikuje greške — npr. `409` znači "već ste ocijenili ovaj materijal".
-
-**Modali:** Komponenta sadrži modal za potvrdu promjene ocjene i modal uspjeha (poruka "Hvala na ocjeni!" / "Ocjena promijenjena!").
-
-##### Prikaz broja preuzimanja
-
-Na stranici detalja prikazuje se brojač preuzimanja ("Broj preuzimanja: X"), vezan za polje `number_of_downloads` koje backend povećava pri svakom preuzimanju. Nakon uspješnog preuzimanja brojač se ažurira i lokalno (`updateDownloadCount`), bez potrebe za osvježavanjem stranice.
-
----
-
-#### Sprint 3 — Thumbnail, provjera preuzimanja, validacija dužine i dark mode
-
-##### Provjera preuzimanja i otključavanje zvjezdica
-
-U Sprintu 3 dodan je uslov "preuzmi pa ocijeni" na frontendu. Zvjezdice su aktivne samo kada je korisnik prijavljen **i** kada je preuzeo materijal:
-
-```html
-:class="(isLoggedIn && hasDownloaded) ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'"
-```
-
-Ako je korisnik prijavljen ali nije preuzeo, prikazuje se poruka "Preuzmite materijal da biste mogli ocijeniti."
-
-**Provjera preuzimanja (dva načina):**
-- U `onMounted` se poziva `checkHasDownloaded` (backend `/has-downloaded`) i postavlja `hasDownloaded` — pokriva slučaj kada je korisnik preuzeo materijal u ranijoj posjeti.
-- `watch` prati `parentHasDownloaded` prop — kada korisnik preuzme materijal na istoj stranici, zvjezdice se otključavaju u realnom vremenu, bez osvježavanja stranice.
-
-##### Povezivanje preuzimanja i ocjenjivanja (`MaterialDetailView.vue`)
-
-`MaterialDetailView.vue` povezuje `DownloadButton` i `MaterialRating` u jedinstven tok:
-
-```html
-<DownloadButton @downloaded="updateDownloadCount" />
-<MaterialRating :parent-has-downloaded="hasDownloaded" />
-```
-
-Funkcija `updateDownloadCount` se okida na `@downloaded` događaj, povećava lokalni brojač preuzimanja i postavlja `hasDownloaded = true`. To se prosljeđuje `MaterialRating` komponenti kao prop, čime se zvjezdice odmah otključavaju — implementacija pravila "preuzmi pa ocijeni" bez osvježavanja stranice (komunikacija roditelj↔dijete: props naniže, emit naviše).
-
-##### Prikaz thumbnail sličice i detalja materijala (`MaterialDetailView.vue`)
-
-Thumbnail se prikazuje samo ako postoji (`v-if="material.thumbnail_path"`):
-
-```html
-<img :src="`http://127.0.0.1:8000/thumbnails/${material.thumbnail_path.split('/').pop()}`" ... />
-```
-
-Iz pune putanje koju vraća backend (`uploads/thumbnails/ime.png`) izvlači se samo naziv fajla (`split('/').pop()`) i lijepi na `/thumbnails/` statičku rutu servera.
-
-Pored thumbnaila, na detaljnoj kartici sređen je izgled prikaza i dodate su informacije o materijalu — **ime predmeta, godina studija i tip materijala**:
-
-```html
-<p>{{ material.subject?.name }} • {{ material.subject?.study_year }}. godina • {{ material.file_type }}</p>
-```
-
-##### Dodatna validacija forme (dužina polja)
-
-Osnovna validacija obaveznih polja (iz Sprinta 1) proširena je provjerom minimalne i maksimalne dužine teksta, uz konkretne poruke korisniku:
-
-| Polje | Pravilo |
-|---|---|
-| Naziv | Najmanje 3, najviše 100 karaktera |
-| Opis | Najmanje 10, najviše 1000 karaktera |
-
-Ako polje ne zadovoljava dužinu, u `errors` se umjesto `true` upisuje tekstualna poruka (npr. "Naziv mora imati najmanje 3 karaktera."), koja se prikazuje ispod polja.
-
-##### Dark mode stilizacija
-
-Sam mehanizam prebacivanja teme (toggle koji postavlja `dark` klasu) razvio je drugi član tima. Lično implementirani dio je **dark mode stilizacija svih komponenti modula Materijali** — ručno dodavanje Tailwind `dark:` varijanti (`dark:bg-...`, `dark:text-...`, `dark:border-...`) na sve elemente: formu za upload, sve modale i poruke (potvrda ocjene, uspjeh, greške) pojedinačno, kartice materijala, stranicu s detaljima i komponentu ocjenjivanja. Svaka poruka i komponenta obrađena je zasebno, čime je osigurano da cijeli modul ispravno i čitljivo izgleda u tamnom režimu.
-
----
-
-#### API funkcije (`services/api.js`)
-
-| Funkcija | Endpoint | Opis |
-|---|---|---|
-| `uploadMaterial(formData)` | `POST /materials/upload` | Slanje novog materijala (FormData, bez ručnog Content-Type) |
-| `downloadMaterial(materialId)` | `GET /materials/{id}/download` | Preuzimanje (token kroz URL + cache-busting `t=`) |
-| `checkHasDownloaded(materialId)` | `GET /materials/{id}/has-downloaded` | Provjera da li je korisnik preuzeo |
-| `rateMaterial(materialId, rating)` | `POST /materials/{id}/rate` | Slanje ocjene |
-| `updateRating(materialId, rating)` | `PATCH /materials/{id}/rate` | Izmjena ocjene |
-
-Funkcije `rateMaterial` i `updateRating` vraćaju sirovi `response` (ne parsirani JSON) kako bi komponenta mogla razlikovati statuse (npr. `409` — već ocijenjeno). `downloadMaterial` dodaje `t={timestamp}` na URL radi izbjegavanja keširanja preglednika — bez toga se ponovljeno preuzimanje ne bi zabilježilo na backendu (browser bi servirao iz keša, ne bi pozvao backend).
-
-
-## Tim 2 — Materijali (Faris Ćosić) — Frontend
-
-### Pregled
-
-Ova dokumentacija opisuje frontend implementaciju koju je radio Faris Ćosić u okviru Tim 2 — modul Materijali. Implementacija obuhvata komponente za prikaz, pregled i upravljanje materijalima.
-
-Kod se nalazi u `frontend/src/views/materials/` i `frontend/src/components/`.
-
----
-
-### Sprint 1
-
-#### Izrada MaterialCard komponente
-
-Kreirana komponenta `MaterialCard.vue` koja prikazuje osnovne informacije o materijalu: naslov, autora, datum, predmet, thumbnail, prosječnu ocjenu (zvjezdice) i broj preuzimanja. Komponenta podržava dva moda — standardni prikaz s Download/Delete dugmadima i pending mod s Odobri/Odbij dugmadima.
-
-**Props:**
-
-| Prop | Tip | Default | Opis |
-|---|---|---|---|
-| `material` | Object | — | Objekat materijala |
-| `pending` | Boolean | `false` | Ako je `true`, prikazuje Odobri/Odbij umjesto Download/Delete |
-| `userRole` | String | `'member'` | Rola prijavljenog korisnika |
-
-**Emits:** `click`, `deleted`, `approve`, `reject`, `toggle-bookmark`, `downloaded`
-
-#### Pregled materijala bez prijave
-
-Integrirana `getPublicMaterials()` API funkcija u `MaterialList.vue` za neprijavljene korisnike. Koristi `GET /materials/public` endpoint koji ne zahtijeva JWT token.
-
-#### Pregled materijala sa prijavom
-
-Integrirana `getMaterials()` API funkcija za prijavljene korisnike. Koristi `GET /materials/` endpoint koji uz svaki materijal vraća i `is_bookmarked` stanje. `MaterialList.vue` automatski bira između ova dva endpointa ovisno o tabu i prijavi korisnika.
-
-#### Detaljne informacije za materijal
-
-Kreirana komponenta `MaterialDetailView.vue` koja prikazuje sve detalje materijala: naslov, autora, datum, predmet, godinu, tip, thumbnail, opis, ocjene, komentare i broj preuzimanja. Integriran `DownloadButton`, `CommentList` i `MaterialRating`.
-
----
-
-### Sprint 2
-
-#### Pregled detalja materijala
-
-Proširena `MaterialDetailView.vue` s dugmetom za inline pregled fajla u browseru bez preuzimanja. Dugme `PREGLEDAJ` prikazuje se samo za podržane ekstenzije (`.pdf`, `.txt`) i otvara fajl u novom tabu koristeći `GET /materials/{id}/preview` endpoint.
-
-#### Admin upravljanje materijalima
-
-Implementirana admin funkcionalnost u `MaterialDetailView.vue` — Odobri/Odbij dugmad vidljiva samo adminu kada je status materijala `pending`. Rola se čita iz `localStorage`. Nakon akcije prikazuje se `SuccessMessage` komponenta.
-
-
-#### Prikaz materijala na čekanju
-
-Kreirana komponenta `PendingMaterialList.vue` koja učitava sve pending materijale putem `GET /materials/pending` endpointa i prikazuje ih koristeći `MaterialCard` u pending modu.
-
-#### Odobravanje materijala
-
-Implementirana logika odobravanja i odbijanja u `PendingMaterialList.vue`. Nakon odobravanja ili odbijanja, materijal se lokalno uklanja iz liste bez ponovnog učitavanja stranice.
-
-```javascript
-async function handleApprove(id) {
-    await approveMaterial(id)
-    materials.value = materials.value.filter(m => m.id !== id)
-}
-
-async function handleReject(id) {
-    await rejectMaterial(id)
-    materials.value = materials.value.filter(m => m.id !== id)
-}
-```
-
----
-
-### Sprint 3
-
-#### Ažuriranje materijala
-
-Dodana funkcionalnost inline uređivanja u `MaterialDetailView.vue`, vidljiva samo vlasniku materijala:
-
-- Toggle između prikaza i editovanja (dugmad Uredi / Spremi / Odustani)
-- Inline uređivanje naslova i opisa direktno u prikazu
-- Odabir godine studija i predmeta iz dropdown menija (predmeti filtrirani po odabranoj godini)
-- Drag-and-drop zamjena fajla ili odabir putem file input-a
-- Čuvanje originalnih vrijednosti i vraćanje pri otkazivanju
-- Nakon spremanja materijal se ponovo učitava s API-a
-
-```javascript
-function cancelEdit() {
-    material.value.title = originalTitle.value
-    material.value.description = originalDescription.value
-    isEditing.value = false
-    selectedFile.value = null
-}
-
-async function saveChanges() {
-    await updateMaterial(material.value.id, material.value.title, 
-        material.value.description, selectedFile.value, 
-        editSubjectId.value, editMaterialType.value)
-    material.value = await getMaterial(route.params.id)
-    isEditing.value = false
-}
-```
-
-#### - Preview materijala
-
-Implementirana logika za inline pregled fajla u `MaterialDetailView.vue`. Dugme `PREGLEDAJ` prikazuje se uvjetno na osnovu ekstenzije fajla, a fajl se otvara u novom tabu bez pokretanja preuzimanja.
