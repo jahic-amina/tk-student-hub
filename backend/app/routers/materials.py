@@ -295,7 +295,7 @@ def get_public_materials(
     ) 
 
 @router.get("/{id}/preview")
-def preview_material(id: int, db: Session = Depends(get_db)):
+def preview_material(id: int, db: Session = Depends(get_db),current_user: User = Depends(get_current_user),):
     material = db.exec(select(Material).where(Material.id == id)).first()
     if not material:
         raise HTTPException(status_code=404, detail="Materijal sa tim ID-em ne postoji.")
@@ -677,7 +677,7 @@ def toggle_bookmark(
 
 
 @router.get("/{material_id}", response_model=MaterialDetailResponse)
-def get_material(material_id: int, session: Session = Depends(get_db)):
+def get_material(material_id: int, session: Session = Depends(get_db),current_user:User = Depends(get_current_user),):
     query = (
         select(Material)
         .where(Material.id == material_id)

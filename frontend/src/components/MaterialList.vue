@@ -3,12 +3,17 @@
     <div class="flex-grow min-w-0 w-full pr-4">
       <MaterialTabs v-if="userRole !== 'admin'" :activeTab="currentTab" @tab-change="handleTabChange" />
 
-      <h1 class="text-2xl font-bold uppercase mb-1">Pregled materijala</h1>
-      <p class="text-sm text-gray-500 mb-6">Dostupni materijal</p>
-
-      <div v-if="loading">Učitavanje...</div>
+      
+      <div v-if="!token">
+        <p class="text-gray-500 text-lg">Niste registrovani. Prijavite se da biste pregledali materijale.</p>
+      </div>
 
       <div v-else>
+        <h1 class="text-2xl font-bold uppercase mb-1">Pregled materijala</h1>
+        <p class="text-sm text-gray-500 mb-6">Dostupni materijal</p>
+        <div v-if="loading">Učitavanje...</div>
+
+        <div v-else>
         
         <div v-if="filteredMaterialsBookmark.length > 0" class="flex flex-col gap-4">
           <MaterialCard 
@@ -58,11 +63,13 @@
         </div>
 
       </div>
-    </div>
-    <div class="w-full md:w-[280px] shrink-0 flex flex-col items-stretch justify-start gap-4 text-left">
-      <MaterialFilter @change="handleFilterChange" />
-    </div>
-  </div>
+      </div> 
+    </div>  
+    <div v-if="token" class="w-full md:w-[280px] shrink-0 flex flex-col items-stretch justify-start gap-4 text-left">
+  <MaterialFilter @change="handleFilterChange" />
+</div>
+  
+  </div> 
 </template>
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
@@ -77,7 +84,7 @@ const currentTab = ref('all')
 
 const currentUserId = ref(Number(localStorage.getItem('user_id')) || null)
 const userRole = ref(localStorage.getItem('role') || 'member');
-
+const token = ref(localStorage.getItem('token'))
 const trenutnastranica = ref(1)
 const ukupnoStranica = ref(0)
 const trenutniFilteri = ref({})
@@ -97,12 +104,16 @@ async function loadMaterials(filters = {}, page = 1) {
     ukupnoStranica.value = rezultat.total_pages
     trenutnastranica.value = rezultat.page
   } else {
-    // If user is logged in, prefer the authenticated endpoint so bookmark state is included
-    const rezultat = token ? await getMaterials(filters, page) : await getPublicMaterials(filters, page)
-    materials.value = rezultat.items
-    ukupnoStranica.value = rezultat.total_pages
-    trenutnastranica.value = rezultat.page
+  if (!token) {
+    materials.value = []
+    loading.value = false
+    return
   }
+  const rezultat = await getMaterials(filters, page)
+  materials.value = rezultat.items
+  ukupnoStranica.value = rezultat.total_pages
+  trenutnastranica.value = rezultat.page
+}
   loading.value = false
 }
 
