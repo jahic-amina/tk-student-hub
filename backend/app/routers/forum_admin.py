@@ -4,7 +4,7 @@ from typing import List, Dict, Any
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User, UserRole
-from app.models.forum import TopicReport, AdminAnnouncement, ForumTopic, ForumCategory
+from app.models.forum import TopicReport, AdminAnnouncement, ForumTopic, ForumCategory, ForumComment
 from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/admin", tags=["Forum Admin"])
@@ -40,14 +40,17 @@ def get_reports(status: str = "pending", db: Session = Depends(get_db), admin: U
     if status not in ["pending", "resolved"]:
         raise HTTPException(status_code=400, detail="Nevažeći status prijave. Dozvoljeno je 'pending' ili 'resolved'.")
         
-    statement = select(TopicReport, ForumTopic).join(ForumTopic, TopicReport.topic_id == ForumTopic.id, isouter=True).where(TopicReport.status == status)
+    statement = select(TopicReport).where(TopicReport.status == status).order_by(TopicReport.created_at.desc())
     results = db.exec(statement).all()
 
     output = []
-    for report, topic in results:
+    for report in results:
+        topic = db.get(ForumTopic, report.topic_id) if report.topic_id else None
+        comment = db.get(ForumComment, report.comment_id) if report.comment_id else None
         output.append({
             "id": report.id,
             "report_id": report.id,
+            "report_type": "comment" if report.comment_id else "topic",
             "reason": report.reason,
             "created_at": report.created_at,
             "status": report.status,
@@ -57,7 +60,13 @@ def get_reports(status: str = "pending", db: Session = Depends(get_db), admin: U
                 "id": topic.id if topic else None,
                 "title": topic.title if topic else "Obrisana tema",
                 "content": topic.content if topic else ""
-            }
+            },
+            "comment": {
+                "id": comment.id if comment else None,
+                "content": comment.content if comment and not comment.is_deleted else ("deleted by user" if comment else "Komentar nije pronađen."),
+                "topic_id": comment.topic_id if comment else None,
+                "is_deleted": comment.is_deleted if comment else None,
+            } if comment else None,
         })
     return output
 
@@ -95,10 +104,16 @@ def resolve_report(
     db.add(report)
 
     if action == "accept":
-        topic = db.get(ForumTopic, report.topic_id)
-        if topic:
-            topic.is_deleted = True
-            db.add(topic)
+        if report.comment_id:
+            comment = db.get(ForumComment, report.comment_id)
+            if comment:
+                comment.is_deleted = True
+                db.add(comment)
+        else:
+            topic = db.get(ForumTopic, report.topic_id)
+            if topic:
+                topic.is_deleted = True
+                db.add(topic)
 
     db.commit()
     db.refresh(report)
@@ -122,7 +137,12 @@ def reopen_report(
     report.admin_explanation = None
     db.add(report)
 
-    if getattr(report, "topic", None) and getattr(report.topic, "is_deleted", False):
+    if report.comment_id:
+        comment = db.get(ForumComment, report.comment_id)
+        if comment and comment.is_deleted:
+            comment.is_deleted = False
+            db.add(comment)
+    elif getattr(report, "topic", None) and getattr(report.topic, "is_deleted", False):
         report.topic.is_deleted = False
         db.add(report.topic)
 

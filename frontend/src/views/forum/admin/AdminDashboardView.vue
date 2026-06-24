@@ -34,6 +34,7 @@ const showReportModal = ref(false);
 const handlingReportId = ref(null);
 const handlingAction = ref(''); 
 const adminExplanation = ref('');
+const reopeningId = ref(null);
 
 const openReportModal = (reportId, action) => {
   handlingReportId.value = reportId;

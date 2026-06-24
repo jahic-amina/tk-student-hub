@@ -8,7 +8,7 @@ from app.enums.activity import ActivityType
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from app.models.forum import ForumTopic, ForumComment, ForumCommentVote, CommentAttachment
+from app.models.forum import ForumTopic, ForumComment, ForumCommentVote, CommentAttachment, TopicReport
 from app.routers.forum_helpers import (
     get_author_data,
     get_comment_votes_count,
@@ -63,6 +63,9 @@ class VoteInput(BaseModel):
 
 class ForumCommentUpdate(BaseModel):
     content: str = Field(min_length=2)
+
+class ReportCreate(BaseModel):
+    reason: str = Field(min_length=3, max_length=100)
 
 class AdminNoticeCreate(BaseModel):
     content: str = Field(min_length=3)
@@ -569,6 +572,60 @@ def vote_on_comment(
         "votes_count": total_votes,
         "user_vote": user_vote,
     }
+
+@router.post("/{comment_id}/report")
+def report_comment(
+    comment_id: int,
+    report_data: ReportCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    comment = db.get(ForumComment, comment_id)
+    if not comment or comment.is_deleted:
+        raise HTTPException(status_code=404, detail="Komentar nije pronađen.")
+
+    topic = db.get(ForumTopic, comment.topic_id)
+    if not topic or topic.is_deleted:
+        raise HTTPException(status_code=404, detail="Tema komentara nije pronađena.")
+
+    # Provjera duplikata — ne dozvoli da isti korisnik dva puta prijavi isti komentar
+    existing_report = db.exec(
+        select(TopicReport).where(
+            TopicReport.comment_id == comment_id,
+            TopicReport.user_id == current_user.id,
+            TopicReport.status == "pending",
+        )
+    ).first()
+
+    if existing_report:
+        raise HTTPException(
+            status_code=400,
+            detail="Već ste prijavili ovaj komentar. Prijava je u obradi."
+        )
+
+    try:
+        report = TopicReport(
+            topic_id=topic.id,
+            comment_id=comment.id,
+            user_id=current_user.id,
+            reason=report_data.reason,
+        )
+        db.add(report)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        error_msg = str(e).lower()
+        if "no column named comment_id" in error_msg or "comment_id" in error_msg:
+            raise HTTPException(
+                status_code=500,
+                detail=(
+                    "Baza podataka nije ažurirana. Pokrenite sljedeću komandu u SQLite: "
+                    "ALTER TABLE topic_reports ADD COLUMN comment_id INTEGER REFERENCES forum_comments(id);"
+                )
+            )
+        raise HTTPException(status_code=500, detail="Greška pri slanju prijave.")
+
+    return {"success": True}
 
 @router.delete("/{comment_id}", status_code=status.HTTP_200_OK)
 def delete_comment(

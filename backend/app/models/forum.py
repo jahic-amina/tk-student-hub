@@ -111,13 +111,14 @@ class TopicReport(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     topic_id: int = Field(foreign_key="forum_topics.id")
+    comment_id: Optional[int] = Field(default=None, foreign_key="forum_comments.id", index=True)
     user_id: int = Field(foreign_key="users.id")
     reason: str = Field(max_length=100)
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    status: str = Field(default="pending") 
-    action_taken: Optional[str] = None 
-    admin_explanation: Optional[str] = None 
-    
+    status: str = Field(default="pending")
+    action_taken: Optional[str] = None
+    admin_explanation: Optional[str] = None
+
 
 class AdminAnnouncement(SQLModel, table=True):
     __tablename__ = "admin_announcements"

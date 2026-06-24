@@ -8,7 +8,7 @@ import re
 from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User, UserRole
-from app.models.forum import ForumCategory, ForumTopic, ForumTag, ForumTopicTag, TopicReport, AdminAnnouncement, TopicAttachment
+from app.models.forum import ForumCategory, ForumTopic, ForumTag, ForumTopicTag, TopicReport, AdminAnnouncement, TopicAttachment, ForumComment
 from app.routers.forum_likes import (
     get_topic_likes_count,
     get_topic_dislikes_count,
@@ -40,7 +40,6 @@ class ForumTopicUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=3, max_length=200)
     content: Optional[str] = Field(None, min_length=3)
 
-# FIX #2: Dodana schema koja je nedostajala
 class ReportActionPayload(BaseModel):
     explanation: Optional[str] = Field(None, max_length=500)
 
@@ -350,41 +349,88 @@ def get_related_topics_api(
 
 
 # --- REPORTS & ANNOUNCEMENTS ---
+
+def _safe_get_comment_id(report: TopicReport) -> Optional[int]:
+    """Sigurno dohvata comment_id čak i ako kolona još nije u bazi."""
+    try:
+        return report.comment_id
+    except AttributeError:
+        return None
+
+
 @router.get("/reports/active", response_model=List[Dict[str, Any]])
 def get_active_reports(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.role != UserRole.admin:
         raise HTTPException(status_code=403, detail="Nemate ovlaštenje.")
 
-    reports = db.exec(select(TopicReport).where(TopicReport.status == "pending").order_by(TopicReport.created_at.desc())).all()
+    reports = db.exec(
+        select(TopicReport)
+        .where(TopicReport.status == "pending")
+        .order_by(TopicReport.created_at.desc())
+    ).all()
+
     output = []
     for report in reports:
         topic = db.get(ForumTopic, report.topic_id)
-        if not topic or topic.is_deleted: continue
+        if not topic or topic.is_deleted:
+            continue
         reporter = db.get(User, report.user_id)
+        comment_id = _safe_get_comment_id(report)
+
+        # Ako je prijava za komentar, dohvati sadržaj komentara
+        reported_comment = None
+        if comment_id:
+            comment = db.get(ForumComment, comment_id)
+            if comment and not comment.is_deleted:
+                reported_comment = {
+                    "id": comment.id,
+                    "content": comment.content,
+                    "author_id": comment.user_id,
+                }
+
         output.append({
-            "report_id": report.id, "reason": report.reason, "created_at": report.created_at, "status": report.status,
+            "report_id": report.id,
+            "reason": report.reason,
+            "created_at": report.created_at,
+            "status": report.status,
             "reporter_name": reporter.full_name if reporter else "Nepoznat korisnik",
-            "topic": build_topic_list_item(db, topic, current_user.id)
+            "comment_id": comment_id,
+            "reported_comment": reported_comment,
+            "topic": build_topic_list_item(db, topic, current_user.id),
         })
     return output
+
 
 @router.get("/reports/handled", response_model=List[Dict[str, Any]])
 def get_handled_reports(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.role != UserRole.admin:
         raise HTTPException(status_code=403, detail="Nemate ovlaštenje.")
 
-    reports = db.exec(select(TopicReport).where(TopicReport.status.in_(["accepted", "dismissed"])).order_by(TopicReport.created_at.desc())).all()
+    reports = db.exec(
+        select(TopicReport)
+        .where(TopicReport.status.in_(["accepted", "dismissed"]))
+        .order_by(TopicReport.created_at.desc())
+    ).all()
+
     output = []
     for report in reports:
         topic = db.get(ForumTopic, report.topic_id)
-        if not topic or topic.is_deleted: continue
+        if not topic or topic.is_deleted:
+            continue
         reporter = db.get(User, report.user_id)
+        comment_id = _safe_get_comment_id(report)
+
         output.append({
-            "report_id": report.id, "reason": report.reason, "created_at": report.created_at, "status": report.status,
+            "report_id": report.id,
+            "reason": report.reason,
+            "created_at": report.created_at,
+            "status": report.status,
             "reporter_name": reporter.full_name if reporter else "Nepoznat korisnik",
-            "topic": build_topic_list_item(db, topic, current_user.id)
+            "comment_id": comment_id,
+            "topic": build_topic_list_item(db, topic, current_user.id),
         })
     return output
+
 
 @router.patch("/reports/{report_id}/action")
 def handle_report_action(
@@ -396,6 +442,7 @@ def handle_report_action(
 ):
     if current_user.role != UserRole.admin:
         raise HTTPException(status_code=403, detail="Nemate ovlaštenje.")
+
     report = db.get(TopicReport, report_id)
     if not report:
         raise HTTPException(status_code=404, detail="Prijava nije pronađena.")
@@ -410,17 +457,29 @@ def handle_report_action(
     report.action_taken = action
     report.admin_explanation = payload.explanation
 
-    # FIX #5: reports_count se povećava samo kada je prijava prihvaćena
     if action == "accept":
-        reporting_user = db.get(User, report.user_id)
-        if reporting_user:
-            reporting_user.reports_count += 1
-            db.add(reporting_user)
+        comment_id = _safe_get_comment_id(report)
+
+        if comment_id:
+            # Prijava za komentar — obriši komentar (soft delete)
+            comment = db.get(ForumComment, comment_id)
+            if comment and not comment.is_deleted:
+                comment.is_deleted = True
+                db.add(comment)
+        else:
+            # Prijava za temu — povećaj reports_count prijavljenom korisniku
+            topic = db.get(ForumTopic, report.topic_id)
+            if topic:
+                reported_user = db.get(User, topic.user_id)
+                if reported_user:
+                    reported_user.reports_count = (reported_user.reports_count or 0) + 1
+                    db.add(reported_user)
 
     db.add(report)
     db.commit()
 
     return {"success": True, "message": f"Prijava uspješno riješena sa statusom: {report.status}."}
+
 
 @router.get("/announcements/active")
 def get_active_announcements(db: Session = Depends(get_db)):
@@ -437,7 +496,6 @@ def get_active_announcements(db: Session = Depends(get_db)):
 def get_topic_details(
     topic_id: int,
     db: Session = Depends(get_db),
-    # FIX #4: Optional kako bi i neautentificirani korisnici mogli pregledati teme
     current_user: Optional[User] = Depends(get_current_user)
 ):
     topic = db.get(ForumTopic, topic_id)
@@ -453,7 +511,6 @@ def get_topic_details(
     comments_count = len(comments)
     votes_count = get_topic_votes_count(db, topic.id)
 
-    # FIX #4: Guard za like/dislike ako korisnik nije prijavljen
     user_id = current_user.id if current_user else None
     is_liked = is_topic_liked_by_user(db, topic.id, user_id) if user_id else False
     is_disliked = is_topic_disliked_by_user(db, topic.id, user_id) if user_id else False
@@ -536,10 +593,31 @@ def delete_topic(id: int, db: Session = Depends(get_db), current_user: User = De
     return {"message": "Tema je uspješno obrisana.", "topic_id": id}
 
 @router.post("/{topic_id}/report")
-def report_topic(topic_id: int, report_data: ReportCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def report_topic(
+    topic_id: int,
+    report_data: ReportCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     topic = db.get(ForumTopic, topic_id)
     if not topic or getattr(topic, "is_deleted", False):
         raise HTTPException(status_code=404, detail="Tema ne postoji.")
+
+    # Provjera duplikata — ne dozvoli da isti korisnik dva puta prijavi istu temu
+    existing_report = db.exec(
+        select(TopicReport).where(
+            TopicReport.topic_id == topic_id,
+            TopicReport.user_id == current_user.id,
+            TopicReport.status == "pending",
+        )
+    ).first()
+
+    if existing_report:
+        raise HTTPException(
+            status_code=400,
+            detail="Već ste prijavili ovu temu. Prijava je u obradi."
+        )
+
     report = TopicReport(topic_id=topic_id, user_id=current_user.id, reason=report_data.reason)
     db.add(report)
     db.commit()
