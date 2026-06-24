@@ -4,7 +4,9 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status
 from sqlmodel import Session, SQLModel, Field, select
+from sqlalchemy.orm import Session as SQLAlchemySession
 from pydantic import BaseModel
+from app.database import get_session
 
 from app.database import get_db
 from app.core.security import get_current_user, pwd_context
@@ -211,3 +213,28 @@ def get_public_profile_by_id(
         raise HTTPException(status_code=404, detail="Javni profil nije pronađen.")
 
     return user
+
+# Reset zaboravljene lozinke
+@router.post("/me/reset-forgotten-password")
+def reset_forgotten_password(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    user = db.get(User, current_user.id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Korisnik nije pronađen"
+        )
+    
+    temp_password = "12345678"
+    user.password_hash = pwd_context.hash(temp_password)
+    
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    
+    return {
+        "message": "Lozinka je resetovana na privremenu vrijednost (12345678). Možete je sada promijeniti.",
+        "temp_password": temp_password
+    }

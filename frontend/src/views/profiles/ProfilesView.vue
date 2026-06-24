@@ -108,10 +108,12 @@
                 </div>
                 <textarea v-model="form.biography" rows="3" placeholder="Dodaj biografiju..." class="w-full p-2.5 border rounded-xl resize-none dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"></textarea>
               </div>
-
               <div class="pt-4 border-t dark:border-gray-700 space-y-3">
                 <h3 class="font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider text-xs">Promijeni lozinku</h3>
-                <div><label class="block text-xs font-medium mb-1 text-gray-500 dark:text-gray-400">Stara lozinka</label><input v-model="security.current_password" type="password" class="w-full sm:w-1/2 p-2.5 border rounded-xl dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"/></div>
+                <div><label class="block text-xs font-medium mb-1 text-gray-500 dark:text-gray-400">Stara lozinka</label><input v-model="security.current_password" type="password" class="w-full sm:w-1/2 p-2.5 border rounded-xl dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"/>
+                <div><a href="#" @click.prevent="openForgotPasswordModal" class="text-orange-500 hover:text-orange-600 text-xs">Zaboravili ste lozinku?</a></div>
+
+                </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div><label class="block text-xs font-medium mb-1 text-gray-500 dark:text-gray-400">Nova lozinka</label><input v-model="security.new_password" type="password" class="w-full p-2.5 border rounded-xl dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"/></div>
                   <div><label class="block text-xs font-medium mb-1 text-gray-500 dark:text-gray-400">Ponovi novu lozinku</label><input v-model="security.confirm_password" type="password" class="w-full p-2.5 border rounded-xl dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"/></div>
@@ -145,6 +147,29 @@
       @remove="onRemove"
       :initials="(form.first_name?.charAt(0) || '') + (form.last_name?.charAt(0) || '')"
     />
+
+    <!-- MODAL ZA POTVRDU ZABORAVLJENE LOZINKE -->
+    <div v-if="showForgotPasswordModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-md shadow-xl border border-gray-100 dark:border-gray-700">
+        <h3 class="text-lg font-bold text-orange-600 dark:text-orange-400 mb-2">Zaboravljena lozinka</h3>
+        <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
+          Da li ste sigurni da ste zaboravili lozinku? Ako potvrdite, vaša lozinka će biti resetovana na privremenu vrijednost.
+        </p>
+        
+        <div v-if="forgotPasswordError" class="mb-4 p-3 rounded-xl text-xs bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-100 dark:border-red-800 font-medium">
+          ⚠️ {{ forgotPasswordError }}
+        </div>
+        
+        <div class="flex justify-end gap-3">
+          <button @click="closeForgotPasswordModal" :disabled="isForgotPasswordLoading" class="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl font-medium transition text-sm">
+            Ne
+          </button>
+          <button @click="confirmForgotPassword" :disabled="isForgotPasswordLoading" class="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl disabled:opacity-50 transition shadow-md text-sm">
+            {{ isForgotPasswordLoading ? 'Resetovanje...' : 'Da' }}
+          </button>
+        </div>
+      </div>
+    </div>
 
     <div v-if="showDeactivateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
       <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-md shadow-xl border border-gray-100 dark:border-gray-700">
@@ -296,10 +321,49 @@ const showSuccessModal = ref(false)
 const deactivatePassword = ref('')
 const deactivateError = ref('')
 const isDeactivating = ref(false)
+
+const showForgotPasswordModal = ref(false)
+const forgotPasswordError = ref('')
+const isForgotPasswordLoading = ref(false)
+const TEMP_PASSWORD = '12345678' // Privremena fiksna lozinka
+
 const closeDeactivateModal = () => {
   showDeactivateModal.value = false
   deactivatePassword.value = ''
   deactivateError.value = ''
+}
+
+const openForgotPasswordModal = () => {
+  showForgotPasswordModal.value = true
+  forgotPasswordError.value = ''
+}
+
+const closeForgotPasswordModal = () => {
+  showForgotPasswordModal.value = false
+  forgotPasswordError.value = ''
+}
+
+const confirmForgotPassword = async () => {
+  isForgotPasswordLoading.value = true
+  forgotPasswordError.value = ''
+
+  try {
+    await api.post('/profiles/me/reset-forgotten-password')
+
+    Object.assign(security, { 
+      current_password: TEMP_PASSWORD,
+      new_password: '',
+      confirm_password: ''
+    })
+
+    showToast('Lozinka je resetovana na: ' + TEMP_PASSWORD + '. Unesite novu lozinku ispod.')
+    closeForgotPasswordModal()
+    
+  } catch (err) {
+    forgotPasswordError.value = err.response?.data?.detail || 'Greška pri resetovanju lozinke. Pokušajte ponovo.'
+  } finally {
+    isForgotPasswordLoading.value = false
+  }
 }
 
 const isLoading = ref(false)
