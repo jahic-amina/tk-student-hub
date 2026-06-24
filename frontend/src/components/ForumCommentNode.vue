@@ -131,7 +131,7 @@ const medalKey = computed(() => `c-${props.comment.id}`);
       <div class="flex flex-col items-center gap-0.5 flex-shrink-0 pt-1">
         <button
           @click="emit('vote', comment, 1)"
-          :disabled="currentUserId === comment.author?.id"
+          :disabled="currentUserId === comment.author?.id || isAdmin === false"
           class="w-7 h-7 flex items-center justify-center rounded-lg transition-all"
           :class="[
             getUserVote(comment) === 1
@@ -149,7 +149,7 @@ const medalKey = computed(() => `c-${props.comment.id}`);
 
         <button
           @click="emit('vote', comment, -1)"
-          :disabled="currentUserId === comment.author?.id"
+          :disabled="currentUserId === comment.author?.id || isAdmin === false"
           class="w-7 h-7 flex items-center justify-center rounded-lg transition-all"
           :class="[
             getUserVote(comment) === -1
