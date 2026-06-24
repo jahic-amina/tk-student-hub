@@ -28,10 +28,12 @@ class Application(SQLModel, table=True):
     cv_path: str
     motivational_letter_path: str
     linkedin_url: Optional[str] = Field(default=None)
+    github_url: Optional[str] = Field(default=None)
     phone: str
 
     status: ApplicationStatus = Field(default=ApplicationStatus.pending)
     admin_feedback: Optional[str] = Field(default=None)
+    rating: Optional[int] = Field(default=None, ge=1, le=5)
     is_archived: bool = Field(default=False)
 
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -46,12 +48,18 @@ class ApplicationCreate(SQLModel):
     cv_path: str
     motivational_letter_path: str
     linkedin_url: Optional[str] = None
+    github_url: Optional[str] = None
     phone: str
 
     @field_validator("linkedin_url")
     @classmethod
     def validate_linkedin_url(cls, v):
         return _validate_linkedin_url(v)
+
+    @field_validator("github_url")
+    @classmethod
+    def validate_github_url(cls, v):
+        return _validate_github_url(v)
 
     @field_validator("phone")
     @classmethod
@@ -66,9 +74,11 @@ class ApplicationRead(SQLModel):
     cv_path: str
     motivational_letter_path: str
     linkedin_url: Optional[str] = None
+    github_url: Optional[str] = None
     phone: str
     status: ApplicationStatus
     admin_feedback: Optional[str] = None
+    rating: Optional[int] = None
     is_archived: bool
     created_at: datetime
     updated_at: datetime
@@ -77,6 +87,7 @@ class ApplicationRead(SQLModel):
 class ApplicationUpdate(SQLModel):
     status: Optional[ApplicationStatus] = None
     admin_feedback: Optional[str] = None
+    rating: Optional[int] = Field(default=None, ge=1, le=5)
     is_archived: Optional[bool] = None
 
 
@@ -87,6 +98,14 @@ def _validate_linkedin_url(v: Optional[str]) -> Optional[str]:
         pattern = r'^https://(www\.)?linkedin\.com/in/[a-zA-Z0-9_%-]+/?$'
         if not re.match(pattern, v.strip()):
             raise ValueError("LinkedIn URL must be in format https://linkedin.com/in/username.")
+    return v
+
+
+def _validate_github_url(v: Optional[str]) -> Optional[str]:
+    if v is not None:
+        pattern = r'^https://(www\.)?github\.com/[a-zA-Z0-9_%-]+/?$'
+        if not re.match(pattern, v.strip()):
+            raise ValueError("GitHub URL must be in format https://github.com/username.")
     return v
 
 
