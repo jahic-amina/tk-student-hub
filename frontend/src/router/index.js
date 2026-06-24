@@ -82,7 +82,7 @@ const routes = [
   },
   {
     path: "/prakse-i-edukacije",
-    name: "prakse-edukacije", // Ovdje sam preimenovao name da ne bude isto kao zadnja ruta ispod
+    name: "prakse-edukacije",
     component: AdsView,
     meta: { requiresAuth: true },
   },
@@ -102,6 +102,18 @@ const routes = [
     path: "/materials/pending", 
     name: "pending-materials",
     component: () => import("../views/materials/MaterialsView.vue"),
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: "/materials/pending-deletion", 
+    name: "pending-deletion-materials",
+    component: () => import("../views/materials/MaterialsView.vue"),
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: "/admin/materials/approval",
+    name: "admin-materials-approval",
+    component: () => import("../views/materials/AdminMaterialsApprovalView.vue"),
     meta: { requiresAuth: true, requiresAdmin: true },
   },
   {

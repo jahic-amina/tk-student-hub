@@ -318,6 +318,8 @@ export function getMaterialPreviewUrl(id) {
   return `${BASE_URL}/materials/${id}/preview`;
 }
 
+
+
 //amer
 export async function deleteMaterial(id) {
   const token = localStorage.getItem("token");
@@ -329,10 +331,15 @@ export async function deleteMaterial(id) {
   });
   return response;
 }
+
+
+
 export async function getSubjects() {
   const res = await fetch(`${BASE_URL}/materials/subjects`);
   return res.json();
 }
+
+
 export async function getMaterials(filters = {}, page = 1, perPage = 10) {
   const params = new URLSearchParams();
 
@@ -350,6 +357,7 @@ export async function getMaterials(filters = {}, page = 1, perPage = 10) {
   }
   params.append('page', page);
   params.append('per_page', perPage);
+
 
   const url = `${BASE_URL}/materials/?${params.toString()}`;
   const token = localStorage.getItem("token");
@@ -402,6 +410,39 @@ export async function getPublicMaterials(filters = {}, page = 1, perPage = 10) {
 export async function toggleBookmark(materialId) {
   const token = localStorage.getItem("token");
   const response = await fetch(`${BASE_URL}/materials/${materialId}/bookmark`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.json();
+}
+
+// Admin material deletion approval endpoints
+export async function getPendingDeletionMaterials(page = 1, perPage = 10) {
+  const token = localStorage.getItem("token");
+  const params = new URLSearchParams();
+  params.append('page', page);
+  params.append('per_page', perPage);
+  
+  const response = await fetch(`${BASE_URL}/materials/admin/pending-deletion?${params.toString()}`, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw new Error("Greška pri učitavanju materijala za brisanje");
+  return response.json();
+}
+
+export async function approveDeletion(materialId) {
+  const token = localStorage.getItem("token");
+  const response = await fetch(`${BASE_URL}/materials/${materialId}/approve-deletion`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.json();
+}
+
+export async function rejectDeletion(materialId) {
+  const token = localStorage.getItem("token");
+  const response = await fetch(`${BASE_URL}/materials/${materialId}/reject-deletion`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
   });

@@ -31,6 +31,7 @@ def get_materials_by_status(
         subject_id: Optional[int] = None,
     user_id: Optional[int] = None,
         current_user: Optional[User] = None,
+        exclude_pending_delete: bool = True,
 ):
     query = (
         select(
@@ -42,6 +43,11 @@ def get_materials_by_status(
     )
     if status is not None:
         query = query.where(Material.status == status)
+    
+    # Isključi pending_delete i deleted materijale iz javnog pregleda
+    if exclude_pending_delete:
+        query = query.where(Material.status.notin_(["pending_delete", "deleted"]))
+    
     if years:
         query = query.join(Subject, Material.subject_id == Subject.id).where(Subject.study_year.in_(years))
     if types:
@@ -729,7 +735,69 @@ def delete_material(
     if current_user.role != UserRole.admin and material.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Nemate dozvolu za brisanje ovog materijala.")
 
-    material.status = "deleted"
+    material.status = "pending_delete"
     db.add(material)
     db.commit()
     return None
+@router.get("/admin/pending-deletion", response_model=list[MaterialsResponse])
+def get_pending_deletion_materials(
+    session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Samo admin može da vidi materijale čiji je status pending_delete"""
+    if current_user.role != UserRole.admin:
+        raise HTTPException(status_code=403, detail="Samo admini mogu pristupiti ovoj funkciji.")
+    
+    materials = get_materials_by_status(
+        session=session,
+        status="pending_delete",
+        current_user=current_user,
+        exclude_pending_delete=False
+    )
+    return materials
+
+
+@router.post("/{material_id}/approve-deletion", status_code=200)
+def approve_deletion(
+    material_id: int,
+    session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role != UserRole.admin:
+        raise HTTPException(status_code=403, detail="Samo admini mogu odobravati brisanje.")
+    
+    material = session.exec(select(Material).where(Material.id == material_id)).first()
+    if not material:
+        raise HTTPException(status_code=404, detail="Materijal ne postoji.")
+    
+    if material.status != "pending_delete":
+        raise HTTPException(status_code=400, detail="Ovaj materijal nema zahtjev za brisanje.")
+    
+    material.status = "deleted"
+    session.add(material)
+    session.commit()
+    
+    return {"message": "Brisanje je odobreno", "material_id": material_id, "status": "deleted"}
+
+
+@router.post("/{material_id}/reject-deletion", status_code=200)
+def reject_deletion(
+    material_id: int,
+    session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role != UserRole.admin:
+        raise HTTPException(status_code=403, detail="Samo admini mogu odbijati brisanje.")
+    
+    material = session.exec(select(Material).where(Material.id == material_id)).first()
+    if not material:
+        raise HTTPException(status_code=404, detail="Materijal ne postoji.")
+    
+    if material.status != "pending_delete":
+        raise HTTPException(status_code=400, detail="Ovaj materijal nema zahtjev za brisanje.")
+    
+    material.status = "approved" 
+    session.add(material)
+    session.commit()
+    
+    return {"message": "Zahtjev za brisanje je odbijen (materijal vraćen u aktivne)", "material_id": material_id, "status": "approved"}
