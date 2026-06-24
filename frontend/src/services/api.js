@@ -623,11 +623,12 @@ export async function approveMaterial(id) {
   return response.json();
 }
 
-export async function rejectMaterial(id) {
+export async function rejectMaterial(id, rejectReason) {
   const token = localStorage.getItem("token");
   const response = await fetch(`${BASE_URL}/materials/${id}/reject`, {
     method: "PATCH",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ RejectReason: rejectReason }),
   });
   return response.json();
 }

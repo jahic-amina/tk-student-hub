@@ -166,7 +166,8 @@
             </div>
 
             <!-- Admin odobri/odbij -->
-            <div v-if="isAdmin && material.status === 'pending'" class="flex w-full gap-4 mb-6">
+            <div v-if="isAdmin && material.status === 'pending'">
+            <div class="flex gap-4 w-full mb-6">
                 <button @click="handleApprove"
                     class="flex-1 justify-center py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 font-medium">
                     <span>✓</span> Odobri
@@ -176,7 +177,15 @@
                     <span>✕</span> Odbij
                 </button>
             </div>
-
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-slate-400 mb-2">Razlog za odbijanje</p>
+                    <textarea v-model="rejectReason" rows="4"
+                            class="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none mb-4" />
+                </div>
+            </div>
+            <div v-if="material.status === 'rejected'" class="mb-6">
+                <p class="text-lg text-red-500 dark:text-slate-400 mb-2">Materijal je odbijen. Razlog: {{ material.reject_reason }}</p>
+            </div>
             <!-- Komentari -->
             <CommentList :material-id="material.id" />
         </div>
@@ -222,6 +231,8 @@ const subjects = ref([])
 const editYear = ref('')
 const editSubjectId = ref(null)
 const editMaterialType = ref('')
+
+const rejectReason = ref('')
 
 onMounted(async () => {
     material.value = await getMaterial(route.params.id)
@@ -305,8 +316,12 @@ async function handleApprove() {
 }
 
 async function handleReject() {
+    if(rejectReason.value.trim() === '') {
+        alert('Molimo unesite razlog za odbijanje materijala.')
+        return
+    }
     try {
-        await rejectMaterial(material.value.id)
+        await rejectMaterial(material.value.id, rejectReason.value)
         successMessage.value = 'Materijal odbijen!'
         successTitle.value = 'Odbijeno'
         successIcon.value = '❌'

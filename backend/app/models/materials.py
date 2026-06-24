@@ -24,6 +24,7 @@ class Material(SQLModel, table=True):
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
     number_of_downloads: int = Field(default=0)
     thumbnail_path: Optional[str] = Field(default=None, sa_column=Column(String, nullable=True))
+    reject_reason: Optional[str] = Field(default=None, sa_column=Column(String, nullable=True))
 
     subject_id: int = Field(foreign_key="subjects.id")
     user_id: int = Field(foreign_key="users.id")
@@ -33,6 +34,9 @@ class Material(SQLModel, table=True):
     ratings: list["Rating"] = Relationship(back_populates="material")
     user: Optional["User"] = Relationship()
 
+
+class RejectReason(SQLModel):
+    RejectReason: str
 
 class Rating(SQLModel, table=True):
     __tablename__ = "ratings"
@@ -129,6 +133,7 @@ class MaterialDetailResponse(SQLModel):
     average_rating: Optional[float] = None
     rating_count: Optional[int] = None
     file_extension: Optional[str] = None
+    reject_reason: Optional[str] = None
 class PaginatedMaterialsResponse(SQLModel):
     items: list[MaterialsResponse]
     total: int

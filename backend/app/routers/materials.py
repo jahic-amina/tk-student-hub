@@ -11,7 +11,7 @@ from app.core.security import get_current_user, decode_access_token
 from app.models.user import User, UserRole
 from app.models.materials import (
     Material, MaterialsResponse, MaterialDetailResponse, 
-    Rating, Comment, Subject, RatingCreate, CommentResponse, CommentCreate, Bookmark, Download, PaginatedMaterialsResponse, 
+    Rating, Comment, Subject, RatingCreate, CommentResponse, CommentCreate, Bookmark, Download, PaginatedMaterialsResponse, RejectReason
 )
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
@@ -248,14 +248,14 @@ def get_materials(
     per_page: int = Query(10, ge=1, le=50),
 ):
     user_id = current_user.id if mine_only and current_user else None
-    status = "approved" if not mine_only else None
+    status = None if mine_only else "approved"
 
     if mine_only and current_user is None:
         raise HTTPException(status_code=401, detail="Niste prijavljeni.")
 
     svi = get_materials_by_status(
         session,
-        status or "approved",
+        status,
         years=years,
         types=types,
         subject_id=subject_id,
@@ -421,6 +421,7 @@ def approve_material(
 @router.patch("/{material_id}/reject")
 def reject_material(
     material_id: int,
+    rejectReason: RejectReason,
     session: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -429,7 +430,11 @@ def reject_material(
     material = session.get(Material, material_id)
     if not material:
         raise HTTPException(status_code=404, detail="Materijal nije pronađen.")
+    if not rejectReason.RejectReason or rejectReason.RejectReason == "":
+        raise HTTPException(status_code=400, detail="Morate navesti razlog odbijanja.")
+    
     material.status = "rejected"
+    material.reject_reason = rejectReason.RejectReason
     session.add(material)
 
     tekst = f"Vaš materijal '{material.title}' je odbijen."
