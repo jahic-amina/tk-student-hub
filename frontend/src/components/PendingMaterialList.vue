@@ -10,15 +10,16 @@
 
         <div v-else class="flex flex-col gap-4">
             <MaterialCard 
-                v-for="material in materials" 
-                :key="material.id" 
-                :material="material" 
-                :pending="true"
-                :user-role="userRole"
-                @approve="handleApprove" 
-                @reject="handleReject" 
-                @click="$emit('open', $event)" 
-            />
+            v-for="material in materials" 
+            :key="material.id" 
+            :material="material" 
+            :pending="true"
+            :user-role="userRole"
+            :has-downloaded="downloadedMap[material.id] || false"
+            @approve="handleApprove" 
+            @reject="handleReject" 
+            @click="$emit('open', $event)" 
+        />
         </div>
     </div>
 </template>
@@ -26,7 +27,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import MaterialCard from './MaterialCard.vue'
-import { getPendingMaterials, approveMaterial, rejectMaterial } from '../services/api'
+import { getPendingMaterials, approveMaterial, rejectMaterial, checkHasDownloaded } from '../services/api'
 
 defineEmits(['open'])
 
@@ -34,20 +35,20 @@ const materials = ref([])
 const loading = ref(true)
 
 const userRole = ref(localStorage.getItem('role') || 'member')
+const downloadedMap = ref({})
 
 onMounted(async () => {
     materials.value = await getPendingMaterials()
+    for (const m of materials.value) {
+        try {
+            const res = await checkHasDownloaded(m.id)
+            downloadedMap.value[m.id] = res.has_downloaded
+        } catch {
+            downloadedMap.value[m.id] = false
+        }
+    }
     loading.value = false
 })
-
-async function handleApprove(id) {
-    try {
-        await approveMaterial(id)
-        materials.value = materials.value.filter(m => m.id !== id)
-    } catch (error) {
-        console.error('Greška prilikom odobravanja materijala:', error)
-    }
-}
 
 async function handleReject(id) {
     try {
@@ -55,6 +56,14 @@ async function handleReject(id) {
         materials.value = materials.value.filter(m => m.id !== id)
     } catch (error) {
         console.error('Greška prilikom odbijanja materijala:', error)
+    }
+}
+async function handleApprove(id) {
+    try {
+        await approveMaterial(id)
+        materials.value = materials.value.filter(m => m.id !== id)
+    } catch (error) {
+        console.error('Greška prilikom odobravanja materijala:', error)
     }
 }
 

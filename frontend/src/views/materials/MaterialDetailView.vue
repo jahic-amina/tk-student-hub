@@ -166,18 +166,23 @@
             </div>
 
             <!-- Admin odobri/odbij -->
-            <div v-if="isAdmin && material.status === 'pending'" class="flex w-full gap-4 mb-6">
-                <button @click="handleApprove"
-                    class="flex-1 justify-center py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 font-medium">
-                    <span>✓</span> Odobri
-                </button>
-                <button @click="handleReject"
-                    class="flex-1 justify-center py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2 font-medium">
-                    <span>✕</span> Odbij
-                </button>
-            </div>
-
-            <!-- Komentari -->
+            <div v-if="isAdmin && material.status === 'pending'" class="mb-6">
+                <!-- Poruka dok admin nije preuzeo -->
+                <p v-if="!hasDownloaded" class="text-sm text-gray-500 dark:text-slate-400 mb-2">
+                    Preuzmite materijal prije prihvatanja ili odbijanja.
+                </p>
+                <div class="flex w-full gap-4">
+                    <button @click="handleApprove" :disabled="!hasDownloaded"
+                        class="flex-1 justify-center py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span>✓</span> Odobri
+                    </button>
+                    <button @click="handleReject" :disabled="!hasDownloaded"
+                        class="flex-1 justify-center py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span>✕</span> Odbij
+                    </button>
+                    </div>
+               </div>
+                <!-- Komentari -->
             <CommentList :material-id="material.id" />
         </div>
     </div>

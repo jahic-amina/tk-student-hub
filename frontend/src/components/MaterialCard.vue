@@ -64,21 +64,25 @@
     </div>
         <div class="flex flex-col gap-2 shrink-0 mr-8" @click.stop>
                 <template v-if="pending">
-                    <button @click="$emit('approve', material.id)"
-                        class="w-32 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2">
-                        ✓ Odobri
-                    </button>
-                    <button @click="$emit('reject', material.id)"
-                        class="w-32 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2">
-                        ✕ Odbij
-                    </button>
-                </template>
+                <p v-if="!hasDownloaded" class="text-xs text-gray-500 dark:text-slate-400 mb-1 w-32">
+                    Preuzmite materijal prije odobrenja i odbijanja.
+                </p>
+                <button @click="$emit('approve', material.id)" :disabled="!hasDownloaded"
+                    class="w-32 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    ✓ Odobri
+                </button>
+                <button @click="$emit('reject', material.id)" :disabled="!hasDownloaded"
+                    class="w-32 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    ✕ Odbij
+                </button>
+            </template>
                 <template v-else>
                    <DownloadButton :material-id="material.id" class="w-full" @downloaded="$emit('downloaded', material.id)" />
                    <DeleteMaterialButton v-if="userRole === 'admin' || material.user?.id === currentUserId" :material="material" @deleted="$emit('deleted', material.id)" @click.stop class="w-full" />
                 </template>
             </div>
-        </div>
+    </div>
+
 </template>
 
 <script setup>
@@ -97,6 +101,10 @@ defineProps({
     userRole: {
         type: String,
         default: 'member'
+    },
+    hasDownloaded: {
+        type: Boolean,
+        default: false
     }
 })
 
