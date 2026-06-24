@@ -111,6 +111,11 @@ export async function reportTopic(topicId, reason) {
   return handleResponse(response, 'Prijavljivanje nije uspjelo.');
 }
 
+export async function reportComment(commentId, reason) {
+  const response = await fetch(`${BASE_URL}/forum/comments/${commentId}/report`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ reason }) });
+  return handleResponse(response, 'Prijavljivanje nije uspjelo.');
+}
+
 export async function getActiveAnnouncements() {
   const response = await fetch(`${BASE_URL}/forum/topics/announcements/active`, { headers: getHeaders() });
   return handleResponse(response, 'Greška pri učitavanju obavještenja.');

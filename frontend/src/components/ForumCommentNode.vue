@@ -2,6 +2,8 @@
 import { ref, computed } from 'vue';
 import ForumAvatar from './ForumAvatar.vue';
 import ForumAttachmentPreview from './ForumAttachmentPreview.vue';
+import { reportComment } from '../services/forum.js';
+
 
 defineOptions({ name: 'ForumCommentNode' })
 
@@ -32,6 +34,8 @@ const emit = defineEmits([
 const replyContentLocal = ref('');
 const editContentLocal  = ref('');
 const replyFilesLocal   = ref([]);
+const showReportOptions = ref(false);
+const reportReasons = ['Spam', 'Neprimjeren rječnik / Vrijeđanje', 'Off-topic', 'Netačne informacije'];
 
 const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.pdf', '.docx', '.txt'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -46,6 +50,22 @@ function handleReplyFileSelect(event) {
   }
   if (replyFilesLocal.value.length + files.length > MAX_FILES) { alert('Maksimalno 3 fajla.'); return; }
   replyFilesLocal.value = [...replyFilesLocal.value, ...files];
+}
+
+function toggleReportOptions(event) {
+  event.stopPropagation();
+  showReportOptions.value = !showReportOptions.value;
+}
+
+async function handleReportComment(reason) {
+  if (!reason) return;
+  try {
+    await reportComment(props.comment.id, reason);
+    alert('Komentar je uspješno prijavljen adminima.');
+    showReportOptions.value = false;
+  } catch (e) {
+    alert('Greška pri prijavi komentara.');
+  }
 }
 
 const MAX_VISUAL_DEPTH = 3;
@@ -247,6 +267,32 @@ const medalKey = computed(() => `c-${props.comment.id}`);
                 <path d="M5.25 5.25a3 3 0 0 0-3 3v10.5a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3V13.5a.75.75 0 0 0-1.5 0v5.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5V8.25a1.5 1.5 0 0 1 1.5-1.5h5.25a.75.75 0 0 0 0-1.5H5.25Z" />
               </svg>
             </button>
+
+            <div class="relative">
+              <button
+                v-if="currentUserId && currentUserId !== comment.author?.id && !comment.is_deleted"
+                @click.stop="toggleReportOptions"
+                class="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors font-medium px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 bg-transparent"
+                title="Prijavi komentar"
+              >
+                🚩 Prijavi
+              </button>
+
+              <div
+                v-if="showReportOptions"
+                @click.stop
+                class="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-700 border dark:border-slate-600 shadow-lg rounded-lg overflow-hidden z-20 text-xs"
+              >
+                <button
+                  v-for="reason in reportReasons"
+                  :key="reason"
+                  @click="handleReportComment(reason)"
+                  class="block w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-200 bg-transparent"
+                >
+                  {{ reason }}
+                </button>
+              </div>
+            </div>
 
             <button
               v-if="currentUserId === comment.author?.id || isAdmin"
