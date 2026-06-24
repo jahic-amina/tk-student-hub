@@ -35,6 +35,7 @@ import { ref, onMounted } from 'vue'
 import CommentCard from './CommentCard.vue'
 import CommentForm from './CommentForm.vue'
 import { getComments } from '../services/api.js'
+import MentionText from './MentionText.vue';
 
 const props = defineProps({
     materialId: {

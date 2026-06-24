@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue';
+import MentionText from './MentionText.vue';
 
 defineProps({
   isSubmitting: { type: Boolean, default: false },

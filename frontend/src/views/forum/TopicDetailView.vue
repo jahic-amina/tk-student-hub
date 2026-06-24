@@ -8,6 +8,7 @@ import ForumWidgets from '../../components/ForumWidgets.vue';
 import ForumGuidelines from '../../components/ForumGuidelines.vue'; 
 import { postAdminNotice } from '../../services/forum_admin.js';
 import { getTopicById, createComment, incrementTopicView } from '../../services/forum';
+import MentionText from '../../components/MentionText.vue';
 
 const props = defineProps({
   id: { type: [String, Number], required: true }

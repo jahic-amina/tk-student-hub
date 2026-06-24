@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import ForumAvatar from './ForumAvatar.vue';
+import MentionText from './MentionText.vue';
 
 defineOptions({ name: 'ForumCommentNode' })
 
@@ -256,7 +257,7 @@ const medalKey = computed(() => `c-${props.comment.id}`);
         </div>
 
         <p v-else class="text-slate-700 dark:text-slate-300 leading-relaxed text-sm whitespace-pre-line">
-          {{ comment.content }}
+          <MentionText :text="comment.content" />
         </p>
 
         <div class="mt-2">

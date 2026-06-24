@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue';
 import { voteOnComment, toggleBestAnswer, deleteComment, updateComment, createComment } from '../services/forum';
 import ForumAvatar from './ForumAvatar.vue';
 import ForumCommentNode from './ForumCommentNode.vue';
+import MentionText from './MentionText.vue';
 
 const props = defineProps({
   comments: { type: Array, required: true },
@@ -11,6 +12,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['refresh']);
+
 
 // ─── Trenutni korisnik ────────────────────────────────────────────────────────
 const currentUserId = ref(null);
@@ -258,7 +260,7 @@ function formatDate(dateValue) {
               </div>
             </div>
             <p v-else class="text-red-800 dark:text-red-300 leading-relaxed text-sm whitespace-pre-line font-medium">
-              {{ comment.content }}
+              <MentionText :text="comment.content" />
             </p>
 
             <p class="mt-2 text-[10px] text-red-400/60 dark:text-red-600/60 italic select-none">
