@@ -105,6 +105,7 @@ export default {
                 const user = await getMe(response.access_token)
                 localStorage.setItem('username', user.full_name)
                 localStorage.setItem('role', user.role)
+                localStorage.setItem('user_id', user.id)
                 window.location.href = '/'
             } else {
                 this.error = response.detail || 'Greška pri registraciji.'

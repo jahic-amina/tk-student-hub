@@ -2,10 +2,10 @@
   <div>
   <!-- Dugme za otvaranje forme za upload - Lejla -->
   <button
-  v-if="!showForm && !isAdmin"
+  v-if="!showForm && !isAdmin && token"
   @click="handleAddClick"
   class="bg-primary text-white px-6 py-3 rounded-lg font-semibold
-         hover:bg-orange-600 hover:shadow-md transition-all duration-200"
+         hover:bg-orange-600 hover:shadow-md transition-all duration-200 mx-4"
 >
   + DODAJTE MATERIJAL
 </button>
@@ -228,6 +228,7 @@ const props = defineProps({
 })
 
 const isAdmin = localStorage.getItem('role') === 'admin'
+const token = localStorage.getItem('token')
 
 // Reaktivne varijable za stanje
 const showForm = ref(props.directShow)

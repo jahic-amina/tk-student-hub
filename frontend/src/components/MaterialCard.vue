@@ -27,8 +27,7 @@
         </svg>
     </div>
 </button>
-
-        <div class="flex items-start gap-4 flex-1 cursor-pointer min-w-0" @click="$emit('click', material.id)">
+        <div class="flex flex-col sm:flex-row items-start gap-4 flex-1 cursor-pointer min-w-0" @click="$emit('click', material.id)">
         <div :class="['p-1 rounded-lg shrink-0 overflow-hidden w-20 h-24 flex items-center justify-center', material.thumbnail_path ? 'bg-gray-100' : 'bg-red-100 text-red-500']">
     <img 
     v-if="material.thumbnail_path" 
@@ -53,8 +52,7 @@
    <p class="text-sm text-gray-500 dark:text-slate-400">Datum postavljanja: {{ formatDate(material.created_at) }}</p>
    <p class="text-sm text-gray-500 dark:text-slate-400 mt-1">{{ material.subject?.name }}</p>
  </div>
-
-<div class="flex flex-col items-center justify-center shrink-0 px-4">
+    <div class="flex flex-col items-start sm:items-center justify-center shrink-0 sm:px-4">
     <div class="flex items-center gap-1">
         <span v-for="star in 5" :key="star" class="text-yellow-400 text-lg">
             {{ star <= Math.round(material.average_rating || 0) ? '★' : '☆' }}

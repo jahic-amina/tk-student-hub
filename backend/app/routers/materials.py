@@ -272,9 +272,30 @@ def get_materials(
         per_page=per_page,
         total_pages=(total + per_page - 1) // per_page,
     )
+    
+@router.get("/public", response_model=PaginatedMaterialsResponse)
+def get_public_materials(
+    session: Session = Depends(get_db),
+    years: Optional[list[int]] = Query(None),
+    types: Optional[list[str]] = Query(None),
+    subject_id: Optional[int] = Query(None),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(10, ge=1, le=50),
+):
+    svi = get_materials_by_status(session, "approved", years=years, types=types, subject_id=subject_id)
+    total = len(svi)
+    start = (page - 1) * per_page
+    end = start + per_page
+    return PaginatedMaterialsResponse(
+        items=svi[start:end],
+        total=total,
+        page=page,
+        per_page=per_page,
+        total_pages=(total + per_page - 1) // per_page,
+    ) 
 
 @router.get("/{id}/preview")
-def preview_material(id: int, db: Session = Depends(get_db)):
+def preview_material(id: int, db: Session = Depends(get_db),current_user: User = Depends(get_current_user),):
     material = db.exec(select(Material).where(Material.id == id)).first()
     if not material:
         raise HTTPException(status_code=404, detail="Materijal sa tim ID-em ne postoji.")
@@ -446,13 +467,20 @@ def update_material(
     if material_type:
         material.file_type = material_type
     if file:
-        validate_file_format(file)
-        if os.path.exists(material.file_path):
-            os.remove(material.file_path)
-        new_file_path = save_file_to_disk(file)
-        material.file_path = new_file_path
-        material.file_type = file.content_type
-        material.status = "pending"  
+        if file:
+            validate_file_format(file)
+            if os.path.exists(material.file_path):
+                os.remove(material.file_path)
+            if material.thumbnail_path and os.path.exists(material.thumbnail_path):
+                os.remove(material.thumbnail_path)
+            
+            new_file_path = save_file_to_disk(file)
+            new_thumbnail_path = generate_thumbnail(new_file_path)
+            
+            material.file_path = new_file_path
+            material.thumbnail_path = new_thumbnail_path
+       
+    material.status = "pending"  
     session.add(material)
     session.commit()
     session.refresh(material)
@@ -649,7 +677,7 @@ def toggle_bookmark(
 
 
 @router.get("/{material_id}", response_model=MaterialDetailResponse)
-def get_material(material_id: int, session: Session = Depends(get_db)):
+def get_material(material_id: int, session: Session = Depends(get_db),current_user:User = Depends(get_current_user),):
     query = (
         select(Material)
         .where(Material.id == material_id)
@@ -667,6 +695,7 @@ def get_material(material_id: int, session: Session = Depends(get_db)):
     material.comments.sort(key=lambda c: c.created_at, reverse=True)
     avg = sum(r.rating for r in material.ratings) / len(material.ratings) if material.ratings else None
     count = len(material.ratings)
+    ext = material.file_path.split('.')[-1].lower() if material.file_path else None
 
     return MaterialDetailResponse(
         id=material.id,
@@ -683,6 +712,7 @@ def get_material(material_id: int, session: Session = Depends(get_db)):
         average_rating=round(avg, 1) if avg else None,
         rating_count=count,
         thumbnail_path=material.thumbnail_path,
+        file_extension=ext
     )
 
 
