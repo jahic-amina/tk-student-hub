@@ -184,6 +184,7 @@ def create_application(
         motivational_letter_path=payload.motivational_letter_path,
         cv_path=payload.cv_path,
         linkedin_url=payload.linkedin_url,
+        github_url=payload.github_url,
         phone=payload.phone,
     )
 

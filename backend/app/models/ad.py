@@ -36,6 +36,7 @@ class Ad(SQLModel, table=True):
     deadline: date
     duration_months: Optional[int] = None
     compensation: Optional[float] = None
+    compensation_negotiable: bool = Field(default=False)
     currency: Optional[str] = Field(default="BAM", max_length=10)
     spots: int = Field(default=1)
     requirements: Optional[str] = None
@@ -63,6 +64,7 @@ class AdCreate(BaseModel):
     deadline: date
     duration_months: Optional[int] = None
     compensation: Optional[float] = None
+    compensation_negotiable: bool = False
     currency: Optional[str] = "BAM"
     spots: int = 1
     requirements: Optional[str] = None
@@ -95,8 +97,9 @@ class AdCreate(BaseModel):
 
     @model_validator(mode="after")
     def currency_required_if_compensation_set(self):
-        if self.compensation is not None and not self.currency:
-            raise ValueError("Currency is required when compensation is set.")
+        if not self.compensation_negotiable:
+            if self.compensation is not None and not self.currency:
+                raise ValueError("Currency is required when compensation is set.")
         return self
 
 
@@ -141,8 +144,9 @@ class AdUpdate(BaseModel):
 
     @model_validator(mode="after")
     def currency_required_if_compensation_set(self):
-        if self.compensation is not None and not self.currency:
-            raise ValueError("Currency is required when compensation is set.")
+        if not self.compensation_negotiable:
+            if self.compensation is not None and not self.currency:
+                raise ValueError("Currency is required when compensation is set.")
         return self
 
 
@@ -155,6 +159,7 @@ class AdPatch(BaseModel):
     deadline: Optional[date] = None
     duration_months: Optional[int] = None
     compensation: Optional[float] = None
+    compensation_negotiable: bool = None
     currency: Optional[str] = None
     spots: Optional[int] = None
     requirements: Optional[str] = None
@@ -219,6 +224,7 @@ class AdRead(BaseModel):
     deadline: date
     duration_months: Optional[int] = None
     compensation: Optional[float] = None
+    compensation_negotiable: bool = False
     currency: Optional[str] = None
     spots: int
     requirements: Optional[str] = None

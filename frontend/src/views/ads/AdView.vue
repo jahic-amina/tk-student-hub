@@ -121,12 +121,13 @@
                 </div>
               </div>
 
-              <router-link
-                :to="`/ads/${ad.id}/apply`"
-                class="block mt-6 bg-orange-600 text-white py-3 rounded-lg hover:bg-orange-700 transition font-semibold text-center text-sm no-underline"
+              <!-- Dugme otvara modal umjesto navigacije -->
+              <button
+                @click="openApplyModal"
+                class="block w-full mt-6 bg-orange-600 text-white py-3 rounded-lg hover:bg-orange-700 transition font-semibold text-center text-sm"
               >
                 Pošalji prijavu
-              </router-link>
+              </button>
             </template>
 
             <template v-else-if="!isUserLoggedIn && !isCompanyLoggedIn">
@@ -203,32 +204,193 @@
 
       </div>
     </div>
+
+    <!-- Apply Modal -->
+    <Teleport to="body">
+      <div
+        v-if="applyModalOpen"
+        class="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+        @click.self="closeApplyModal"
+      >
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="closeApplyModal" />
+
+        <!-- Modal panel -->
+        <div class="relative z-10 w-full sm:max-w-lg bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-3xl shadow-2xl border border-gray-100 dark:border-slate-700 flex flex-col max-h-[92vh]">
+
+          <!-- Modal header -->
+          <div class="flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-slate-700 shrink-0">
+            <div>
+              <p class="text-base font-bold text-gray-900 dark:text-slate-100">Pošalji prijavu</p>
+              <p class="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{{ ad?.title }}</p>
+            </div>
+            <button
+              @click="closeApplyModal"
+              class="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-200 transition"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Modal body (scrollable) -->
+          <div class="overflow-y-auto px-6 py-5 space-y-4 flex-1">
+
+            <!-- Greška -->
+            <div v-if="applyError" class="rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/50 p-3 text-sm text-red-700 dark:text-red-400">
+              {{ applyError }}
+            </div>
+
+            <!-- Uspjeh -->
+            <div v-if="applySuccess" class="rounded-xl bg-green-50 dark:bg-green-950/30 border border-green-100 dark:border-green-900/50 p-4 text-center">
+              <p class="text-2xl mb-2">🎉</p>
+              <p class="text-sm font-bold text-green-700 dark:text-green-400">Prijava je uspješno poslana!</p>
+              <p class="text-xs text-green-600 dark:text-green-500 mt-1">Pratite status prijave u svom profilu.</p>
+              <button
+                @click="closeApplyModal"
+                class="mt-4 bg-green-600 hover:bg-green-700 text-white text-sm font-bold py-2 px-6 rounded-xl transition"
+              >
+                Zatvori
+              </button>
+            </div>
+
+            <template v-if="!applySuccess">
+              <!-- Telefon -->
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5">
+                  Broj telefona <span class="text-red-500">*</span>
+                </label>
+                <input
+                  v-model="applyForm.phone"
+                  type="tel"
+                  placeholder="+387 61 123 456"
+                  class="w-full rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700/50 px-3 py-2.5 text-sm text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:border-orange-300 dark:focus:border-orange-500 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-950/50 transition"
+                />
+              </div>
+
+              <!-- LinkedIn -->
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5">
+                  LinkedIn profil <span class="text-gray-400 dark:text-slate-500 font-normal">(opciono)</span>
+                </label>
+                <input
+                  v-model="applyForm.linkedin_url"
+                  type="url"
+                  placeholder="https://linkedin.com/in/username"
+                  class="w-full rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700/50 px-3 py-2.5 text-sm text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:border-orange-300 dark:focus:border-orange-500 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-950/50 transition"
+                />
+              </div>
+
+              <!-- GitHub -->
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5">
+                  GitHub profil <span class="text-gray-400 dark:text-slate-500 font-normal">(opciono)</span>
+                </label>
+                <input
+                  v-model="applyForm.github_url"
+                  type="url"
+                  placeholder="https://github.com/username"
+                  class="w-full rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700/50 px-3 py-2.5 text-sm text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:border-orange-300 dark:focus:border-orange-500 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-950/50 transition"
+                />
+              </div>
+
+              <!-- CV upload -->
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5">
+                  CV <span class="text-red-500">*</span>
+                  <span class="text-gray-400 dark:text-slate-500 font-normal ml-1">(.pdf, max 5MB)</span>
+                </label>
+                <div
+                  class="relative rounded-xl border-2 border-dashed border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700/30 hover:border-orange-300 dark:hover:border-orange-600 transition-colors cursor-pointer"
+                  @click="$refs.cvInput.click()"
+                >
+                  <input
+                    ref="cvInput"
+                    type="file"
+                    accept=".pdf"
+                    class="hidden"
+                    @change="handleCvUpload"
+                  />
+                  <div class="flex items-center gap-3 px-4 py-3">
+                    <span class="text-xl">📄</span>
+                    <div class="flex-1 min-w-0">
+                      <p v-if="applyForm.cv_path" class="text-sm font-semibold text-green-600 dark:text-green-400 truncate">
+                        ✓ {{ cvFileName }}
+                      </p>
+                      <p v-else class="text-sm text-gray-400 dark:text-slate-500">Klikni za upload CV-a</p>
+                    </div>
+                    <span v-if="cvUploading" class="text-xs text-gray-400 dark:text-slate-500 shrink-0">Uploading...</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Motivaciono pismo upload -->
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5">
+                  Propratno pismo <span class="text-red-500">*</span>
+                  <span class="text-gray-400 dark:text-slate-500 font-normal ml-1">(.pdf, max 5MB)</span>
+                </label>
+                <div
+                  class="relative rounded-xl border-2 border-dashed border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700/30 hover:border-orange-300 dark:hover:border-orange-600 transition-colors cursor-pointer"
+                  @click="$refs.letterInput.click()"
+                >
+                  <input
+                    ref="letterInput"
+                    type="file"
+                    accept=".pdf"
+                    class="hidden"
+                    @change="handleLetterUpload"
+                  />
+                  <div class="flex items-center gap-3 px-4 py-3">
+                    <span class="text-xl">✉️</span>
+                    <div class="flex-1 min-w-0">
+                      <p v-if="applyForm.motivational_letter_path" class="text-sm font-semibold text-green-600 dark:text-green-400 truncate">
+                        ✓ {{ letterFileName }}
+                      </p>
+                      <p v-else class="text-sm text-gray-400 dark:text-slate-500">Klikni za upload propratnog pisma</p>
+                    </div>
+                    <span v-if="letterUploading" class="text-xs text-gray-400 dark:text-slate-500 shrink-0">Uploading...</span>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- Modal footer -->
+          <div v-if="!applySuccess" class="px-6 py-4 border-t border-gray-100 dark:border-slate-700 shrink-0">
+            <button
+              @click="submitApplication"
+              :disabled="applyLoading || cvUploading || letterUploading"
+              class="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl text-sm transition"
+            >
+              <span v-if="applyLoading">Slanje...</span>
+              <span v-else>Pošalji prijavu</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script>
-// Dodane funkcije za bookmarke iz api.js
 import { getAdById, getApprovedCompanies, getApplicationsByAd, getBookmarks, addBookmark, removeBookmark } from '../../services/api.js'
 import ApplicationCard from '../../components/application/ApplicationCard.vue'
 
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 const BASE_BADGE = 'px-3 py-1.5 rounded-full'
 
 function formatType(type) {
-  const map = {
-    internship: 'Praksa',
-    education: 'Edukacija',
-    scholarship: 'Stipendija'
-  }
+  const map = { internship: 'Praksa', education: 'Edukacija', scholarship: 'Stipendija' }
   return map[type] || 'Prilika'
 }
 
 function formatStatus(status) {
   const map = {
-    active: 'Aktivan',
-    pending: 'Na čekanju',
-    expired: 'Istekao',
-    rejected: 'Odbijen',
-    changes_requested: 'Potrebne izmjene'
+    active: 'Aktivan', pending: 'Na čekanju', expired: 'Istekao',
+    rejected: 'Odbijen', changes_requested: 'Potrebne izmjene'
   }
   return map[status] || 'Aktivan'
 }
@@ -240,9 +402,7 @@ function formatCompensation(value, currency) {
 
 export default {
   name: 'AdDetailView',
-  components: {
-    ApplicationCard
-  },
+  components: { ApplicationCard },
   data() {
     return {
       loading: false,
@@ -255,7 +415,23 @@ export default {
       loadingApplications: false,
       applicationsError: '',
       companyToken: localStorage.getItem('company_token'),
-      bookmarkId: null 
+      bookmarkId: null,
+      // Apply modal
+      applyModalOpen: false,
+      applyLoading: false,
+      applyError: '',
+      applySuccess: false,
+      cvUploading: false,
+      letterUploading: false,
+      cvFileName: '',
+      letterFileName: '',
+      applyForm: {
+        phone: '',
+        linkedin_url: '',
+        github_url: '',
+        cv_path: '',
+        motivational_letter_path: ''
+      }
     }
   },
   computed: {
@@ -263,8 +439,8 @@ export default {
       return this.isUserLoggedIn && this.userRole === 'admin'
     },
     userToken() {
-    return this.isCompanyLoggedIn ? this.companyToken : localStorage.getItem('token')
-  }
+      return this.isCompanyLoggedIn ? this.companyToken : localStorage.getItem('token')
+    }
   },
   methods: {
     getTypeClass(typeLabel) {
@@ -277,35 +453,145 @@ export default {
       if (statusLabel === 'Istekao') return `bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 ${BASE_BADGE}`
       return `bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 ${BASE_BADGE}`
     },
+
+    openApplyModal() {
+      this.applyForm = { phone: '', linkedin_url: '', github_url: '', cv_path: '', motivational_letter_path: '' }
+      this.applyError = ''
+      this.applySuccess = false
+      this.cvFileName = ''
+      this.letterFileName = ''
+      this.applyModalOpen = true
+      document.body.style.overflow = 'hidden'
+    },
+    closeApplyModal() {
+      this.applyModalOpen = false
+      document.body.style.overflow = ''
+    },
+
+    async handleCvUpload(event) {
+      const file = event.target.files[0]
+      if (!file) return
+      this.cvUploading = true
+      this.applyError = ''
+      try {
+        const formData = new FormData()
+        formData.append('file', file)
+        const token = localStorage.getItem('token')
+        const res = await fetch(`${BASE_URL}/applications/upload-cv`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData
+        })
+        if (!res.ok) {
+          const err = await res.json()
+          throw new Error(err.detail || 'Greška pri uploadu CV-a.')
+        }
+        const data = await res.json()
+        this.applyForm.cv_path = data.path
+        this.cvFileName = file.name
+      } catch (err) {
+        this.applyError = err.message
+      } finally {
+        this.cvUploading = false
+      }
+    },
+
+    async handleLetterUpload(event) {
+      const file = event.target.files[0]
+      if (!file) return
+      this.letterUploading = true
+      this.applyError = ''
+      try {
+        const formData = new FormData()
+        formData.append('file', file)
+        const token = localStorage.getItem('token')
+        const res = await fetch(`${BASE_URL}/applications/upload-cv`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData
+        })
+        if (!res.ok) {
+          const err = await res.json()
+          throw new Error(err.detail || 'Greška pri uploadu propratnog pisma.')
+        }
+        const data = await res.json()
+        this.applyForm.motivational_letter_path = data.path
+        this.letterFileName = file.name
+      } catch (err) {
+        this.applyError = err.message
+      } finally {
+        this.letterUploading = false
+      }
+    },
+
+    async submitApplication() {
+      this.applyError = ''
+
+      if (!this.applyForm.phone.trim()) {
+        this.applyError = 'Broj telefona je obavezan.'
+        return
+      }
+      if (!this.applyForm.cv_path) {
+        this.applyError = 'CV je obavezan.'
+        return
+      }
+      if (!this.applyForm.motivational_letter_path) {
+        this.applyError = 'Propratno pismo je obavezno.'
+        return
+      }
+
+      this.applyLoading = true
+      try {
+        const token = localStorage.getItem('token')
+        const payload = {
+          ad_id: this.ad.id,
+          phone: this.applyForm.phone.trim(),
+          cv_path: this.applyForm.cv_path,
+          motivational_letter_path: this.applyForm.motivational_letter_path,
+          linkedin_url: this.applyForm.linkedin_url.trim() || null,
+          github_url: this.applyForm.github_url.trim() || null,
+        }
+
+        const res = await fetch(`${BASE_URL}/applications/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        })
+
+        if (!res.ok) {
+          const err = await res.json()
+          throw new Error(err.detail || 'Greška pri slanju prijave.')
+        }
+
+        this.applySuccess = true
+      } catch (err) {
+        this.applyError = err.message
+      } finally {
+        this.applyLoading = false
+      }
+    },
+
     async fetchAd() {
       this.loading = true
       this.errorMessage = ''
-
       const adId = Number(this.$route.params.id)
       let found, companies
-
       try {
-        [found, companies] = await Promise.all([
-          getAdById(adId),
-          getApprovedCompanies()
-        ])
+        [found, companies] = await Promise.all([getAdById(adId), getApprovedCompanies()])
       } catch (err) {
-        console.error('Failed to fetch ad details:', err)
         this.errorMessage = 'Ne mogu učitati detalje oglasa. Provjeri da li je API pokrenut.'
         this.loading = false
         return
       }
-
       if (!found) {
         this.errorMessage = 'Oglas nije pronađen.'
         this.loading = false
         return
       }
-
-      const companiesById = new Map(
-        (companies || []).map(company => [company.id, company.company_name])
-      )
-
+      const companiesById = new Map((companies || []).map(c => [c.id, c.company_name]))
       this.ad = {
         id: found.id,
         title: found.title,
@@ -314,7 +600,7 @@ export default {
         description: found.description,
         tags: [found.field, found.location].filter(Boolean),
         typeLabel: formatType(found.type),
-        compensation: formatCompensation(found.compensation, found.currency),
+        compensation: found.compensation_negotiable ? 'Po dogovoru' : formatCompensation(found.compensation, found.currency),
         statusLabel: formatStatus(found.status),
         location: found.location,
         duration: found.duration_months ? `${found.duration_months} mjeseci` : null,
@@ -324,96 +610,72 @@ export default {
         spots: found.spots,
         deadline: found.deadline
       }
-
       this.loading = false
     },
+
     async fetchApplications() {
       const adId = Number(this.$route.params.id)
-      const isAdmin = this.isAdmin
-      const isCompany = this.isCompanyLoggedIn
-      
-      if (!isAdmin && !isCompany) return
-
-      const token = isCompany
-        ? localStorage.getItem('company_token')
-        : localStorage.getItem('token')
-
+      if (!this.isAdmin && !this.isCompanyLoggedIn) return
+      const token = this.isCompanyLoggedIn ? localStorage.getItem('company_token') : localStorage.getItem('token')
       if (!token || token === 'null' || token === 'undefined') return
-      
       this.loadingApplications = true
       this.applicationsError = ''
-      
       try {
-        const apps = await getApplicationsByAd(adId, token, isCompany)
+        const apps = await getApplicationsByAd(adId, token, this.isCompanyLoggedIn)
         this.applications = apps || []
       } catch (err) {
-        console.error('Failed to fetch applications:', err)
         this.applicationsError = 'Ne mogu učitati prijave.'
       } finally {
         this.loadingApplications = false
       }
     },
 
-    // --- PRAVA LOGIKA ZA SAČUVANE OGLASE SA API-JEM ---
     async checkBookmarkStatus() {
-      if (!this.isUserLoggedIn || this.isCompanyLoggedIn || this.isAdmin) return;
-      
+      if (!this.isUserLoggedIn || this.isCompanyLoggedIn || this.isAdmin) return
       const token = localStorage.getItem('token')
-      if (!token || token === 'null' || token === 'undefined') return;
-
+      if (!token || token === 'null' || token === 'undefined') return
       const adId = Number(this.$route.params.id)
-
       try {
         const bookmarks = await getBookmarks(token)
-        // Tražimo da li postoji bookmark sa istim ad_id
-        const foundBookmark = bookmarks.find(bm => bm.ad_id === adId)
-        
-        if (foundBookmark) {
-          // Ako je nađen, čuvamo ID iz baze kako bismo ga mogli obrisati
-          this.bookmarkId = foundBookmark.id;
-        } else {
-          this.bookmarkId = null;
-        }
+        const found = bookmarks.find(bm => bm.ad_id === adId)
+        this.bookmarkId = found ? found.id : null
       } catch (err) {
         console.error('Nisam uspio provjeriti status bookmarka:', err)
       }
     },
-    
+
     async toggleBookmark() {
       const token = localStorage.getItem('token')
-      
       if (!token || token === 'null' || token === 'undefined') {
         alert('Morate biti prijavljeni da biste sačuvali oglas.')
         return
       }
-
       const adId = Number(this.$route.params.id)
-
       try {
         if (this.bookmarkId) {
-          // Ako već postoji bookmarkId, brišemo ga iz baze
           await removeBookmark(this.bookmarkId, token)
-          this.bookmarkId = null;
+          this.bookmarkId = null
         } else {
-          // Ako ne postoji, dodajemo u bazu i uzimamo generisani ID
-          const newBookmark = await addBookmark(adId, token)
-          this.bookmarkId = newBookmark.id;
+          const nb = await addBookmark(adId, token)
+          this.bookmarkId = nb.id
         }
       } catch (err) {
-        console.error('Greška prilikom promjene statusa bookmarka:', err)
         alert('Došlo je do greške pri čuvanju oglasa. Molimo pokušajte ponovo.')
       }
     }
   },
+
   async mounted() {
     this.isUserLoggedIn = !!localStorage.getItem('token')
     this.isCompanyLoggedIn = !!localStorage.getItem('company_token')
     this.userRole = localStorage.getItem('role')
-    
     await this.fetchAd()
     await this.fetchApplications()
-    // Pokrećemo provjeru nakon što se komponenta učita
     await this.checkBookmarkStatus()
+  },
+
+  beforeUnmount() {
+    document.body.style.overflow = ''
   }
 }
 </script>

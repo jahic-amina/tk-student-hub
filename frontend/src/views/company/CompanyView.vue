@@ -196,6 +196,7 @@
               <label class="block text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Opis posla i zadataka</label>
               <textarea v-model="adForm.description" rows="3" placeholder="Unesite detaljan opis prakse..." class="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:border-orange-500"></textarea>
             </div>
+
             <div class="grid grid-cols-3 gap-2">
               <div>
                 <label class="block text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Trajanje (mj.)</label>
@@ -207,7 +208,27 @@
               </div>
               <div>
                 <label class="block text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Kompenzacija</label>
-                <input v-model.number="adForm.compensation" type="number" class="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:border-orange-500" />
+                <input
+                  v-if="!kompenzacijaPoDogovoru"
+                  v-model.number="adForm.compensation"
+                  type="number"
+                  class="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:border-orange-500"
+                />
+                <div
+                  v-else
+                  class="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 rounded-xl text-sm text-gray-400 dark:text-slate-500"
+                >
+                  Po dogovoru
+                </div>
+                <label class="flex items-center gap-2 mt-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    v-model="kompenzacijaPoDogovoru"
+                    @change="kompenzacijaPoDogovoru ? adForm.compensation = null : null"
+                    class="accent-orange-500"
+                  />
+                  <span class="text-xs text-gray-500 dark:text-slate-400">Po dogovoru</span>
+                </label>
               </div>
             </div>
 
@@ -243,6 +264,7 @@ export default {
       profileError: '', 
       adError: '',      
       company: null,
+      kompenzacijaPoDogovoru: false,
       ads: [],
       
       loggedInCompanyId: null,
@@ -379,7 +401,8 @@ export default {
             location: this.adForm.location,
             description: this.adForm.description,
             duration_months: Number(this.adForm.duration_months) || 3,
-            compensation: Number(this.adForm.compensation) || 0,
+            compensation: this.kompenzacijaPoDogovoru ? null : (Number(this.adForm.compensation) || 0),
+            compensation_negotiable: this.kompenzacijaPoDogovoru,
             spots: Number(this.adForm.spots) || 1,
             company_id: this.company.id, 
             deadline: this.adForm.deadline || defaultDeadline 
@@ -416,6 +439,7 @@ export default {
           spots: 1,
           deadline: ''
         };
+        this.kompenzacijaPoDogovoru = false;
         
       } catch (err) {
         console.error(err);

@@ -43,6 +43,7 @@ def ad_to_read(ad: Ad, db: Session) -> AdRead:
         deadline=ad.deadline,
         duration_months=ad.duration_months,
         compensation=ad.compensation,
+        compensation_negotiable=ad.compensation_negotiable,
         currency=ad.currency,
         spots=ad.spots,
         applicants_count=applicants_count,

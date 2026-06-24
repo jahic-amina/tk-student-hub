@@ -33,6 +33,17 @@
           LinkedIn profil
         </a>
       </div>
+      <div v-if="application.github_url" class="flex items-center gap-2 text-sm">
+        <span class="text-gray-400">🐙</span>
+        <a
+          :href="application.github_url"
+          target="_blank"
+          rel="noopener"
+          class="text-gray-700 dark:text-slate-300 hover:text-gray-900 dark:hover:text-slate-100 font-medium hover:underline truncate max-w-[200px]"
+        >
+          GitHub profil
+        </a>
+      </div>
       <div v-if="application.cv_path" class="flex items-center gap-2 text-sm">
         <span class="text-gray-400">📄</span>
         <button
@@ -50,6 +61,37 @@
         >
           Propratno pismo
         </button>
+      </div>
+    </div>
+
+    <!-- Rating -->
+    <div class="mb-5">
+      <p class="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5">Ocjena kandidata</p>
+      <div class="flex items-center gap-1">
+        <button
+          v-for="star in 5"
+          :key="star"
+          @click="handleRating(star)"
+          @mouseenter="hoveredRating = star"
+          @mouseleave="hoveredRating = 0"
+          :disabled="ratingLoading"
+          class="text-2xl transition-transform duration-100 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed leading-none"
+          :title="`Ocijeni sa ${star}`"
+        >
+          <span :class="star <= (hoveredRating || currentRating) ? 'text-amber-400' : 'text-gray-200 dark:text-slate-600'">
+            ★
+          </span>
+        </button>
+        <button
+          v-if="currentRating"
+          @click="handleRating(null)"
+          :disabled="ratingLoading"
+          class="ml-2 text-xs text-gray-400 dark:text-slate-500 hover:text-red-400 dark:hover:text-red-400 transition disabled:opacity-50"
+          title="Ukloni ocjenu"
+        >
+          ✕
+        </button>
+        <span v-if="ratingLoading" class="ml-2 text-xs text-gray-400 dark:text-slate-500">Čuvanje...</span>
       </div>
     </div>
 
@@ -116,13 +158,8 @@
         class="fixed inset-0 z-50 flex items-center justify-center"
         @click.self="closePdf"
       >
-        <!-- Backdrop -->
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="closePdf" />
-
-        <!-- Modal -->
         <div class="relative z-10 flex flex-col bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-[90vw] max-w-4xl h-[90vh] border border-transparent dark:border-slate-700">
-          
-          <!-- Modal header -->
           <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-700 shrink-0">
             <p class="font-bold text-gray-900 dark:text-slate-100 text-sm">{{ pdfModal.title }}</p>
             <div class="flex items-center gap-3">
@@ -145,8 +182,6 @@
               </button>
             </div>
           </div>
-
-          <!-- PDF iframe -->
           <iframe
             :src="pdfModal.url"
             class="flex-1 w-full rounded-b-2xl bg-white dark:bg-slate-100"
@@ -177,6 +212,10 @@ export default {
       accepting: false,
       showRejectForm: false,
       feedback: '',
+      // Rating
+      currentRating: this.application.rating || null,
+      hoveredRating: 0,
+      ratingLoading: false,
       pdfModal: {
         open: false,
         url: '',
@@ -238,6 +277,37 @@ export default {
       this.showRejectForm = !this.showRejectForm
       if (!this.showRejectForm) this.feedback = ''
     },
+    async handleRating(value) {
+      // Klik na istu zvjezdicu uklanja ocjenu
+      if (value === this.currentRating) value = null
+
+      this.ratingLoading = true
+      try {
+        const endpoint = this.isCompany
+          ? `${BASE_URL}/applications/company/${this.application.id}`
+          : `${BASE_URL}/applications/${this.application.id}`
+
+        const res = await fetch(endpoint, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.token}`
+          },
+          body: JSON.stringify({ rating: value })
+        })
+
+        if (!res.ok) throw new Error('Greška pri čuvanju ocjene.')
+
+        const updated = await res.json()
+        this.currentRating = updated.rating
+        this.$emit('updated', this.application.id, updated.status, updated)
+      } catch (err) {
+        console.error('Rating error:', err)
+        alert('Greška pri čuvanju ocjene. Pokušaj ponovo.')
+      } finally {
+        this.ratingLoading = false
+      }
+    },
     async handleAccept() {
       this.loading = true
       this.accepting = true
@@ -272,7 +342,6 @@ export default {
     }
   },
   beforeUnmount() {
-    // Osiguraj da se scroll vrati ako se komponenta uništi dok je modal otvoren
     document.body.style.overflow = ''
   }
 }
